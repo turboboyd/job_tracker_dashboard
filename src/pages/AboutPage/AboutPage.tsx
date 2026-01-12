@@ -1,4 +1,6 @@
-export function AboutPage() {
+import React from "react";
+
+const AboutPage: React.FC = () => {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">About</h1>
@@ -7,4 +9,7 @@ export function AboutPage() {
       </div>
     </div>
   );
-}
+};
+
+
+export default AboutPage;

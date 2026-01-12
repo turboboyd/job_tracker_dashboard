@@ -1,4 +1,4 @@
-export function NotFoundPage() {
+ const NotFoundPage=() => {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Page Not Found</h1>
@@ -8,3 +8,4 @@ export function NotFoundPage() {
     </div>
   );
 }
+export default NotFoundPage;

@@ -1,7 +1,13 @@
-import { AboutPage } from "./AboutPage/AboutPage";
-import { DashboardPage } from "./DashboardPage/DashboardPage";
-import { JobsPage } from "./JobsPage/JobsPage";
-import { MainPage } from "./MainPage/MainPage";
-import { NotFoundPage } from "./NotFoundPage/NotFoundPage";
+import { lazy } from "react";
 
-export { MainPage, DashboardPage, JobsPage, NotFoundPage, AboutPage };
+export const MainPage = lazy(() => import("./MainPage/MainPage"));
+export const AboutPage = lazy(() => import("./AboutPage/AboutPage"));
+export const ResourcesPage = lazy(
+  () => import("./ResourcesPage/ResourcesPage")
+);
+export const LoginPage = lazy(() => import("./LoginPage/LoginPage"));
+export const DashboardPage = lazy(
+  () => import("./DashboardPage/DashboardPage")
+);
+export const JobsPage = lazy(() => import("./JobsPage/JobsPage"));
+export const NotFoundPage = lazy(() => import("./NotFoundPage/NotFoundPage"));
