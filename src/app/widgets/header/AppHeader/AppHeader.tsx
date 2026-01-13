@@ -1,9 +1,16 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 
+import { UserMenu } from "src/app/widgets";
 import { useAuth } from "src/shared/lib";
-import { ThemeToggle } from "src/shared/ui/molecules/ThemeToggle/ThemeToggle";
-import { UserMenu } from "src/app/widgets/header/UserMenu/UserMenu";
+import { Button, ThemeToggle } from "src/shared/ui";
+import { LanguageSelect } from "src/shared/ui/molecules/LanguageSelect/LanguageSelect";
+
+type AppHeaderProps = {
+  sidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
+};
 
 type NavItem = {
   label: string;
@@ -30,18 +37,37 @@ function linkClass(isActive: boolean) {
   ].join(" ");
 }
 
-export const AppHeader: React.FC = () => {
+export const AppHeader: React.FC<AppHeaderProps> = ({
+  sidebarOpen,
+  onToggleSidebar,
+}) => {
   const { isAuthenticated } = useAuth();
-
   const navItems = isAuthenticated ? authNavItems : guestNavItems;
 
   return (
-    <header className="border-b border-border bg-card">
-      <div className="mx-auto flex max-w-5xl items-center justify-between p-4">
-        <div className="flex items-center gap-6">
-          <div className="text-sm font-semibold">Job Tracker</div>
+    <header className="h-16 bg-card shadow-[var(--shadow-sm)]">
+      <div className="mx-auto flex h-full max-w-container items-center justify-between pl-12 pr-4 ">
+        <div className="flex items-center gap-3">
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleSidebar}
+              aria-label="Toggle sidebar"
+            >
+              {sidebarOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          )}
 
-          <nav className="flex items-center gap-4">
+          {!isAuthenticated && (
+            <div className="text-sm font-semibold">Job Tracker</div>
+          )}
+
+          <nav className="hidden md:flex items-center gap-4">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -54,7 +80,6 @@ export const AppHeader: React.FC = () => {
           </nav>
         </div>
 
-        {/* RIGHT */}
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <UserMenu settingsPath="/account" />
@@ -66,7 +91,7 @@ export const AppHeader: React.FC = () => {
               Login
             </NavLink>
           )}
-
+          <LanguageSelect />
           <ThemeToggle />
         </div>
       </div>

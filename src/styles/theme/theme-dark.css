@@ -1,15 +1,23 @@
 .theme-dark {
-  --background: 15 23 42;
-  --foreground: 248 250 252;
+  --background: 15 23 42;        
+  --foreground: 248 250 252;   
 
-  --card: 30 41 59;
+  --card: 30 41 59;             
   --card-foreground: 248 250 252;
 
   --primary: 248 250 252;
   --primary-foreground: 15 23 42;
 
-  --muted: 51 65 85;
+  --muted: 51 65 85;           
   --muted-foreground: 203 213 225;
 
   --border: 51 65 85;
+
+  --input: 51 65 85;
+
+  --accent: 51 65 85;
+  --accent-foreground: 248 250 252;
+
+  --destructive: 239 68 68;     
+  --destructive-foreground: 248 250 252;
 }

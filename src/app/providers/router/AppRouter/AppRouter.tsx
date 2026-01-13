@@ -1,7 +1,7 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 
-import AppLayout from "../layouts/AppLayout";
+import { AppLayout } from "../layouts/AppLayout";
 import { RequireAuth } from "../RequireAuth/RequireAuth";
 import {
   publicRoutes,
