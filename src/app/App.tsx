@@ -1,18 +1,14 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { AppLayout } from "./layout/AppLayout";
-import { DashboardPage, JobsPage } from "../pages";
+import { Suspense } from "react";
 
+import { Loader } from "src/shared/ui";
+
+import { AppRouter } from "./providers/router";
 
 export function App() {
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/jobs" element={<JobsPage />} />
-      </Route>
-      <Route path="*" element={<div className="p-6">Not found</div>} />
-    </Routes>
+      <Suspense fallback={<Loader />}>
+        <AppRouter />
+      </Suspense>
+
   );
 }
