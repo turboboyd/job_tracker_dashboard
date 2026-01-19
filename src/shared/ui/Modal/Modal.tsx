@@ -40,7 +40,9 @@ export function Modal({
         <Dialog.Content
           className={classNames(
             "fixed left-1/2 top-1/2 z-50 w-[92vw] -translate-x-1/2 -translate-y-1/2",
-            "rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-md)]",
+            // Make modal usable on small screens: limit height and allow internal scrolling.
+            "max-h-[92vh] overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-[var(--shadow-md)]",
+            "flex flex-col",
             "focus:outline-none",
             sizeMap[size]
           )}
@@ -60,7 +62,9 @@ export function Modal({
             </div>
           ) : null}
 
-          {children}
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {children}
+          </div>
 
           {showClose ? (
             <Dialog.Close asChild>
