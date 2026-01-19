@@ -1,8 +1,9 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { AppHeader, AppSidebar, useSidebar } from "src/app/widgets";
 
+import { AppHeader, AppSidebar, useSidebar } from "src/app/widgets";
 import { useAuth } from "src/shared/lib";
+import { PageShell } from "src/shared/ui";
 
 export const AppLayout: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -13,6 +14,9 @@ export const AppLayout: React.FC = () => {
     defaultDesktopOpen: true,
   });
 
+  const hasSidebar = isAuthenticated;
+  const shiftClass = hasSidebar && sidebar.isOpen ? "md:ml-64" : "md:ml-0";
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppHeader
@@ -20,18 +24,20 @@ export const AppLayout: React.FC = () => {
         onToggleSidebar={sidebar.toggle}
       />
 
-      {isAuthenticated && (
+      {hasSidebar && (
         <AppSidebar isOpen={sidebar.isOpen} onClose={sidebar.close} />
       )}
 
-      <main
-        className={[
-          "pt-16",
-          isAuthenticated && sidebar.isOpen ? "md:pl-64" : "md:pl-0",
-        ].join(" ")}
-      >
-        <div className="mx-auto max-w-6xl p-4">
-          <Outlet />
+      <main >
+        <div
+          className={[
+            shiftClass,
+            "transition-[margin] duration-300 ease-out",
+          ].join(" ")}
+        >
+          <PageShell paddingX="md" paddingY="sm">
+            <Outlet />
+          </PageShell>
         </div>
       </main>
     </div>

@@ -1,6 +1,7 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { NavLink } from "react-router-dom";
 
 import { UserMenu } from "src/app/widgets";
 import { useAuth } from "src/shared/lib";
@@ -18,29 +19,25 @@ type NavItem = {
 };
 
 const guestNavItems: NavItem[] = [
-  { label: "Home", path: "/" },
-  { label: "Resources", path: "/resources" },
-  { label: "About", path: "/about" },
+  { label: "nav.home", path: "/" },
+  { label: "nav.resources", path: "/resources" },
+  { label: "nav.about", path: "/about" },
 ];
 
 const authNavItems: NavItem[] = [
-  { label: "Dashboard", path: "/dashboard" },
-  { label: "Jobs", path: "/dashboard/jobs" },
+  { label: "nav.dashboard", path: "/dashboard" },
+  { label: "nav.jobs", path: "/dashboard/jobs" },
 ];
 
 function linkClass(isActive: boolean) {
   return [
     "text-sm transition-colors",
-    isActive
-      ? "text-foreground"
-      : "text-muted-foreground hover:text-foreground",
+    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
   ].join(" ");
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = ({
-  sidebarOpen,
-  onToggleSidebar,
-}) => {
+export const AppHeader: React.FC<AppHeaderProps> = ({ sidebarOpen, onToggleSidebar }) => {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const navItems = isAuthenticated ? authNavItems : guestNavItems;
 
@@ -55,17 +52,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               onClick={onToggleSidebar}
               aria-label="Toggle sidebar"
             >
-              {sidebarOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
+              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           )}
 
-          {!isAuthenticated && (
-            <div className="text-sm font-semibold">Job Tracker</div>
-          )}
+          {!isAuthenticated && <div className="text-sm font-semibold">Job Tracker</div>}
 
           <nav className="hidden md:flex items-center gap-4">
             {navItems.map((item) => (
@@ -74,7 +65,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 to={item.path}
                 className={({ isActive }) => linkClass(isActive)}
               >
-                {item.label}
+                {t(item.label)}
               </NavLink>
             ))}
           </nav>
@@ -84,12 +75,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {isAuthenticated ? (
             <UserMenu settingsPath="/account" />
           ) : (
-            <NavLink
-              to="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Login
-            </NavLink>
+            <div className="flex items-center gap-3">
+              <NavLink
+                to="/login"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("auth.signIn")}
+              </NavLink>
+              <NavLink
+                to="/register"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("auth.createAccount")}
+              </NavLink>
+            </div>
           )}
           <LanguageSelect />
           <ThemeToggle />

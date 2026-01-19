@@ -5,8 +5,6 @@ import { useAuth } from "src/shared/lib/auth/useAuth";
 
 export const RequireAuth: React.FC = () => {
   const { isAuthenticated, isAuthReady } = useAuth();
-  console.log("🚀 ~ RequireAuth ~ isAuthReady:", isAuthReady)
-  console.log("🚀 ~ RequireAuth ~ isAuthenticated:", isAuthenticated)
   const location = useLocation();
 
   if (!isAuthReady) {
@@ -19,4 +17,3 @@ export const RequireAuth: React.FC = () => {
 
   return <Outlet />;
 };
-
