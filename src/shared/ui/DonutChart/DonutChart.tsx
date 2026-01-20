@@ -4,12 +4,12 @@ import {
   useMotionValue,
   animate,
 } from "framer-motion";
-import  { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Slice = {
   label: string;
   value: number;
-  className: string; 
+  className: string;
 };
 
 type Props = {
@@ -30,7 +30,7 @@ type Props = {
 };
 
 type Segment = Slice & {
-  idx: number; 
+  idx: number;
   frac: number;
   rawDash: number;
   visibleDash: number;
@@ -127,11 +127,10 @@ export function DonutChart({
     return segmentsArc.find((s) => s.label === activeKey) ?? null;
   }, [activeKey, segmentsArc]);
 
-
   const segmentsForRender = useMemo(() => {
     const base = zOrderBySlices
-      ? [...segmentsArc].sort((a, b) => a.baseZ - b.baseZ) 
-      : [...segmentsArc]; 
+      ? [...segmentsArc].sort((a, b) => a.baseZ - b.baseZ)
+      : [...segmentsArc];
 
     if (!activeKey) return base;
 
@@ -146,9 +145,11 @@ export function DonutChart({
 
   return (
     <div className="w-full">
-      <div className="text-sm font-semibold text-foreground">{title}</div>
+      <div className="text-sm font-semibold text-foreground leading-tight">
+        {title}
+      </div>
 
-      <div className="mt-3 flex items-center gap-5">
+      <div className="mt-lg flex items-center gap-lg">
         <motion.div
           className="relative shrink-0"
           style={{ width: outer, height: outer }}
@@ -247,7 +248,7 @@ export function DonutChart({
                       transition={{
                         strokeDasharray: {
                           duration: drawDuration,
-                          delay: seg.baseZ * stagger, 
+                          delay: seg.baseZ * stagger,
                           ease: [0.2, 0.8, 0.2, 1],
                         },
                         opacity: { duration: 0.15, ease: "easeOut" },
@@ -272,7 +273,6 @@ export function DonutChart({
             )}
           </svg>
 
-
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
             <div className="text-center">
               <div className="text-2xl font-semibold text-foreground leading-none">
@@ -283,20 +283,23 @@ export function DonutChart({
                 )}
               </div>
 
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="mt-1 text-xs text-muted-foreground leading-normal">
                 {centerBottom}
               </div>
 
               <AnimatePresence>
                 {active && (
                   <motion.div
-                    className="mt-3 inline-flex max-w-[160px] flex-col rounded-lg border border-border bg-background/70 px-2 py-1 text-[11px] text-foreground shadow-sm backdrop-blur"
+                    className="mt-md inline-flex max-w-[160px] flex-col rounded-lg border border-border bg-background/70 px-sm py-[6px] text-[11px] text-foreground shadow-sm backdrop-blur"
                     initial={{ opacity: 0, y: 6, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                    transition={{ duration: 0.16, ease: [0.2, 0.8, 0.2, 1] }}
+                    transition={{
+                      duration: 0.16,
+                      ease: [0.2, 0.8, 0.2, 1],
+                    }}
                   >
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-sm">
                       <span
                         className={[
                           "h-2 w-2 rounded-full",
@@ -326,26 +329,27 @@ export function DonutChart({
               <div
                 key={s.label}
                 className={[
-                  "flex items-center justify-between gap-3 rounded-md px-2 py-1 transition-colors",
+                  "flex items-center justify-between gap-sm rounded-md px-sm py-1",
+                  "transition-colors duration-fast ease-ease-out",
                   isLegendActive ? "bg-muted/50" : "",
                 ].join(" ")}
                 onMouseEnter={() => setActiveKey(s.value > 0 ? s.label : null)}
                 onMouseLeave={() => setActiveKey(null)}
               >
-                <div className="flex min-w-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-sm">
                   <span
                     className={[
                       "h-2.5 w-2.5 rounded-full",
                       dotClassFromStroke(s.className),
                     ].join(" ")}
                   />
-                  <span className="truncate text-sm text-foreground">
+                  <span className="truncate text-sm text-foreground leading-normal">
                     {s.label}
                   </span>
                 </div>
 
                 <motion.span
-                  className="text-sm text-muted-foreground"
+                  className="text-sm text-muted-foreground leading-normal"
                   initial={animateOnMount ? { opacity: 0, y: 2 } : undefined}
                   animate={animateOnMount ? { opacity: 1, y: 0 } : undefined}
                   transition={{ duration: 0.25, delay: idx * 0.04 }}
@@ -356,12 +360,14 @@ export function DonutChart({
             );
           })}
 
-          <div className="pt-2">
+          <div className="pt-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground leading-normal">
                 {totalLabel}
               </span>
-              <span className="text-xs text-muted-foreground">{total}</span>
+              <span className="text-xs text-muted-foreground leading-normal">
+                {total}
+              </span>
             </div>
           </div>
         </div>

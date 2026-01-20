@@ -7,19 +7,21 @@ import { classNames } from "src/shared/lib";
 const cardButtonVariants = cva(
   [
     "block w-full text-left",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     "disabled:pointer-events-none disabled:opacity-50",
-    "transition",
+    "transition-colors duration-fast ease-ease-out",
     "select-none",
   ].join(" "),
   {
     variants: {
       effect: {
         none: "",
-        scale: "transition-transform hover:scale-[1.01] active:scale-[0.99]",
-        lift: "hover:shadow-[var(--shadow-md)] active:shadow-[var(--shadow-sm)]",
+        scale:
+          "transition-transform duration-normal ease-ease-out hover:scale-[1.01] active:scale-[0.99]",
+        lift:
+          "transition-shadow duration-normal ease-ease-out hover:shadow-md active:shadow-sm",
         scaleLift:
-          "transition-all hover:scale-[1.01] active:scale-[0.99] hover:shadow-[var(--shadow-md)]",
+          "transition-all duration-normal ease-ease-out hover:scale-[1.01] active:scale-[0.99] hover:shadow-md active:shadow-sm",
       },
       radius: {
         none: "",

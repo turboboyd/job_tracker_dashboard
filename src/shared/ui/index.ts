@@ -14,6 +14,7 @@ export { Modal } from "./Modal/Modal";
 export { InlineError } from "./InlineError/InlineError";
 export { FormField } from "./FormField/FormField";
 export { TextArea } from "./TextArea/TextArea1";
+export { LinkButton } from "./LinkButton/LinkButton";
 
 // export { Select } from "./Select/Select";
 // export { Checkbox } from "./Checkbox/Checkbox";

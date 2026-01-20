@@ -7,8 +7,9 @@ import { classNames } from "src/shared/lib";
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center whitespace-nowrap",
-    "text-sm font-medium transition-colors",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border",
+    "text-sm font-medium",
+    "transition-colors duration-fast ease-ease-out",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     "disabled:pointer-events-none disabled:opacity-50",
     "select-none",
   ].join(" "),
@@ -30,9 +31,9 @@ const buttonVariants = cva(
       },
 
       size: {
-        default: "h-10 px-4",
-        sm: "h-9 px-3",
-        lg: "h-11 px-8",
+        default: "h-10 px-md",
+        sm: "h-9 px-sm",
+        lg: "h-11 px-lg",
         icon: "h-10 w-10 p-0",
       },
 
@@ -44,8 +45,8 @@ const buttonVariants = cva(
 
       shadow: {
         none: "",
-        sm: "shadow-[var(--shadow-sm)]",
-        md: "shadow-[var(--shadow-md)]",
+        sm: "shadow-sm",
+        md: "shadow-md",
       },
     },
 
@@ -53,17 +54,20 @@ const buttonVariants = cva(
       {
         variant: "outline",
         shadow: "sm",
-        className: "hover:shadow-[var(--shadow-md)]",
+        className:
+          "transition-shadow duration-normal ease-ease-out hover:shadow-md",
       },
       {
         variant: "default",
         shadow: "sm",
-        className: "hover:shadow-[var(--shadow-md)]",
+        className:
+          "transition-shadow duration-normal ease-ease-out hover:shadow-md",
       },
       {
         variant: "secondary",
         shadow: "sm",
-        className: "hover:shadow-[var(--shadow-md)]",
+        className:
+          "transition-shadow duration-normal ease-ease-out hover:shadow-md",
       },
     ],
 

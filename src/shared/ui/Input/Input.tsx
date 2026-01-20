@@ -1,57 +1,67 @@
-import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
 import { classNames } from "src/shared/lib";
 
-const inputVariants = cva(
-  [
-    "flex w-full",
-    "border border-border",
-    "bg-card text-sm text-card-foreground",
-    "placeholder:text-muted-foreground",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border",
-    "disabled:cursor-not-allowed disabled:opacity-50",
-    "transition-colors",
-  ].join(" "),
-  {
-    variants: {
-      inputSize: {
-        md: "h-10 px-3",
-      },
+export type InputSize = "sm" | "md" | "lg";
+export type InputRadius = "md" | "lg" | "xl";
+export type InputState = "default" | "error";
 
-      state: {
-        default: "",
-        error: "border-red-500 focus-visible:ring-red-500",
-      },
-      shape: {
-        md: "rounded-md",
-        lg: "rounded-lg",
-        pill: "rounded-full",
-      },
-    },
-    defaultVariants: {
-      inputSize: "md",
-      state: "default",
-      shape: "md",
-    },
-  }
-);
+export type InputProps = Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "size"
+> & {
+  state?: InputState;
+  inputSize?: InputSize;
+  radius?: InputRadius;
+};
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
-    VariantProps<typeof inputVariants> {}
+const sizeMap: Record<InputSize, string> = {
+  sm: "h-9 px-sm text-sm",
+  md: "h-10 px-sm text-sm",
+  lg: "h-11 px-md text-sm",
+};
+
+const radiusMap: Record<InputRadius, string> = {
+  md: "rounded-md",
+  lg: "rounded-lg",
+  xl: "rounded-xl",
+};
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, inputSize, state, shape, type = "text", ...props }, ref) => {
+  (
+    {
+      className,
+      state = "default",
+      inputSize = "md",
+      radius = "xl",
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <input
         ref={ref}
-        type={type}
-        className={classNames(inputVariants({ inputSize, state, shape }), className)}
+        disabled={disabled}
+        className={classNames(
+          "w-full border bg-background text-foreground",
+          "placeholder:text-muted-foreground",
+          "outline-none",
+          "shadow-sm",
+          "transition-colors duration-fast ease-ease-out",
+          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          disabled ? "pointer-events-none opacity-50" : "",
+          state === "error"
+            ? "border-destructive focus-visible:ring-destructive"
+            : "border-border",
+          sizeMap[inputSize],
+          radiusMap[radius],
+          className
+        )}
         {...props}
       />
     );
   }
-)
+);
 
 Input.displayName = "Input";

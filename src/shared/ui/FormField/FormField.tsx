@@ -1,7 +1,5 @@
 import React, { useId } from "react";
 
-import { classNames } from "src/shared/lib";
-
 type FieldRenderProps = {
   id: string;
   describedBy?: string;
@@ -37,23 +35,29 @@ export function FormField({
   const errorId = error ? `${id}-error` : undefined;
 
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
-
   const invalid = Boolean(error);
 
   return (
-    <div>
-      <label className="mb-1 block text-sm text-muted-foreground" htmlFor={id}>
-        {label} {required ? <span className="text-destructive">*</span> : null}
+    <div className="flex flex-col gap-1">
+      <label
+        className="text-sm font-medium text-muted-foreground leading-normal"
+        htmlFor={id}
+      >
+        {label}{" "}
+        {required ? (
+          <span className="text-destructive align-middle">*</span>
+        ) : null}
       </label>
 
-      <div className={classNames(error ? "rounded-xl" : "")}>
-        {typeof children === "function"
-          ? children({ id, describedBy, invalid, errorId, hintId })
-          : children}
-      </div>
+      {typeof children === "function"
+        ? children({ id, describedBy, invalid, errorId, hintId })
+        : children}
 
       {hint ? (
-        <div id={hintId} className="mt-1 text-xs text-muted-foreground">
+        <div
+          id={hintId}
+          className="text-xs text-muted-foreground leading-normal"
+        >
           {hint}
         </div>
       ) : null}
@@ -61,7 +65,7 @@ export function FormField({
       {error ? (
         <div
           id={errorId}
-          className="mt-1 text-xs text-destructive"
+          className="text-xs text-destructive leading-normal"
           role="alert"
         >
           {error}

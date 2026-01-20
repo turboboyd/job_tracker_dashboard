@@ -15,7 +15,16 @@ export const LanguageSelect: React.FC = () => {
     <select
       value={i18n.language?.slice(0, 2) ?? "en"}
       onChange={(e) => i18n.changeLanguage(e.target.value)}
-      className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground shadow-[var(--shadow-sm)] hover:bg-muted transition-colors"
+      className={[
+        "h-9 rounded-md border border-border bg-card",
+        "px-md text-sm text-foreground",
+        "shadow-sm",
+        "transition-colors duration-fast ease-ease-out",
+        "hover:bg-muted",
+        "outline-none",
+        "focus-visible:ring-2 focus-visible:ring-ring",
+        "focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+      ].join(" ")}
       aria-label="Select language"
     >
       {LANGS.map((l) => (

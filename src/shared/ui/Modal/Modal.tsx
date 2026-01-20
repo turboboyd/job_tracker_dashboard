@@ -2,7 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import React from "react";
 
 import { classNames } from "src/shared/lib";
-import { Button } from "src/shared/ui"; 
+import { Button } from "src/shared/ui";
 
 type ModalSize = "sm" | "md" | "lg";
 
@@ -35,36 +35,47 @@ export function Modal({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <Dialog.Overlay
+          className={classNames(
+            "fixed inset-0 z-modal",
+            "bg-black/50 backdrop-blur-sm",
+            "transition-opacity duration-normal ease-ease-out",
+            "data-[state=open]:opacity-100 data-[state=closed]:opacity-0"
+          )}
+        />
 
         <Dialog.Content
           className={classNames(
-            "fixed left-1/2 top-1/2 z-50 w-[92vw] -translate-x-1/2 -translate-y-1/2",
-            // Make modal usable on small screens: limit height and allow internal scrolling.
-            "max-h-[92vh] overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-[var(--shadow-md)]",
+            "fixed left-1/2 top-1/2 z-modal w-[92vw] -translate-x-1/2 -translate-y-1/2",
+            "max-h-[92vh] overflow-hidden",
+            "rounded-xl border border-border bg-card text-card-foreground",
+            "shadow-md",
+            "p-md sm:p-lg",
             "flex flex-col",
             "focus:outline-none",
+            "transition-transform transition-opacity duration-normal ease-ease-out",
+            "data-[state=open]:opacity-100 data-[state=open]:scale-100",
+            "data-[state=closed]:opacity-0 data-[state=closed]:scale-95",
             sizeMap[size]
           )}
         >
           {title || description ? (
-            <div className="mb-4 pr-20">
+            <div className="mb-md pr-20">
               {title ? (
-                <Dialog.Title className="text-lg font-semibold text-foreground">
+                <Dialog.Title className="text-lg font-semibold text-foreground leading-tight">
                   {title}
                 </Dialog.Title>
               ) : null}
+
               {description ? (
-                <Dialog.Description className="mt-1 text-sm text-muted-foreground">
+                <Dialog.Description className="mt-1 text-sm text-muted-foreground leading-normal">
                   {description}
                 </Dialog.Description>
               ) : null}
             </div>
           ) : null}
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-            {children}
-          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">{children}</div>
 
           {showClose ? (
             <Dialog.Close asChild>
@@ -72,7 +83,13 @@ export function Modal({
                 variant="outline"
                 size="sm"
                 shape="pill"
-                className="absolute right-3 top-3"
+                className={classNames(
+                  "absolute right-sm top-sm",
+                  "border-border bg-card text-foreground",
+                  "shadow-sm",
+                  "hover:bg-muted",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                )}
                 aria-label="Close"
               >
                 Close

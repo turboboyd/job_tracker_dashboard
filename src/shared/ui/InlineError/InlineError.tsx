@@ -1,11 +1,28 @@
-import React from "react";
 
-type Props = { message: string };
+import { classNames } from "src/shared/lib";
 
-export function InlineError({ message }: Props) {
+type Props = {
+  title?: string;
+  message: string;
+  className?: string;
+};
+
+export function InlineError({ title = "Error", message, className }: Props) {
   return (
-    <div className="rounded-xl border border-border bg-background p-3 text-sm text-foreground">
-      {message}
+    <div
+      className={classNames(
+        "rounded-xl border border-border bg-card p-md shadow-sm",
+        "text-foreground",
+        className
+      )}
+      role="alert"
+    >
+      <div className="text-sm font-semibold text-foreground leading-tight">
+        {title}
+      </div>
+      <div className="mt-1 text-sm text-muted-foreground leading-normal">
+        {message}
+      </div>
     </div>
   );
 }

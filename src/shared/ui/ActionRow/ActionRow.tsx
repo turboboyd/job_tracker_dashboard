@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import React, { useState } from "react";
 
-import { Button } from "src/shared/ui/Button/Button";
+import { classNames } from "src/shared/lib";
+import { Button, Card } from "src/shared/ui";
 
 type Props = {
   icon: React.ReactNode;
@@ -28,15 +29,19 @@ export function ActionRow({
   const shouldShake = iconShake || hovered;
 
   return (
-    <div
-      className={[
-        "flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3",
-        className ?? "",
-      ].join(" ")}
+    <Card
+      variant="default"
+      padding="none"
+      interactive
+      className={classNames(
+        "rounded-xl px-md py-sm",
+        "flex items-center justify-between gap-md",
+        className
+      )}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-sm">
         <motion.div
-          className="shrink-0"
+          className="shrink-0 text-foreground"
           animate={
             shouldShake
               ? {
@@ -61,7 +66,7 @@ export function ActionRow({
         </motion.div>
 
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-foreground">
+          <div className="truncate text-sm font-medium text-foreground leading-normal">
             {title}
           </div>
         </div>
@@ -70,8 +75,12 @@ export function ActionRow({
       <Button
         variant="link"
         onClick={onGo}
-        className="px-0"
         disabled={done}
+        className={classNames(
+          "px-0",
+          "transition-colors duration-fast ease-ease-out",
+          done ? "text-muted-foreground" : "text-primary"
+        )}
         onMouseEnter={() => {
           if (onGoHoverChange) onGoHoverChange(true);
           else setLocalHover(true);
@@ -91,6 +100,6 @@ export function ActionRow({
       >
         {done ? "Done" : "Go"}
       </Button>
-    </div>
+    </Card>
   );
 }
