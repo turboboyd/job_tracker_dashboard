@@ -9,20 +9,19 @@ type FieldRenderProps = {
 };
 
 type Props = {
-  label: string;
+  label: React.ReactNode;
   required?: boolean;
-
-  error?: string;
-  hint?: string;
-
+  description?: React.ReactNode;
+  hint?: React.ReactNode;
+  error?: React.ReactNode;
   htmlFor?: string;
-
   children: React.ReactNode | ((p: FieldRenderProps) => React.ReactNode);
 };
 
 export function FormField({
   label,
   required,
+  description,
   error,
   hint,
   htmlFor,
@@ -31,10 +30,11 @@ export function FormField({
   const autoId = useId();
   const id = htmlFor ?? `field-${autoId}`;
 
+  const descriptionId = description ? `${id}-desc` : undefined;
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
 
-  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
+  const describedBy = [descriptionId, hintId, errorId].filter(Boolean).join(" ") || undefined;
   const invalid = Boolean(error);
 
   return (
@@ -48,6 +48,15 @@ export function FormField({
           <span className="text-destructive align-middle">*</span>
         ) : null}
       </label>
+
+      {description ? (
+        <div
+          id={descriptionId}
+          className="text-xs text-muted-foreground leading-normal"
+        >
+          {description}
+        </div>
+      ) : null}
 
       {typeof children === "function"
         ? children({ id, describedBy, invalid, errorId, hintId })

@@ -7,7 +7,7 @@ import { detectPlatformFromUrl } from "src/entities/loop/lib/detectPlatformFromU
 import { LOOP_MATCH_STATUSES, LOOP_PLATFORMS } from "src/entities/loop/model/constants";
 import { normalizeError } from "src/shared/lib/errors/normalizeError";
 import { Modal, Button, Input, TextArea, InlineError } from "src/shared/ui";
-import { FormField } from "src/shared/ui/FormField/FormField";
+import { FormField } from "src/shared/ui/Form/FormField/FormField";
 
 import { LoopMatchStatus, LoopPlatform } from "../../model";
 

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 
 import { normalizeError, useAuth } from "src/shared/lib";
-import { Button, FormField, InlineError, Input } from "src/shared/ui";
+import { Button, InlineError, FormikInputField } from "src/shared/ui";
 
 import { GoogleSignInButton } from "../GoogleSignInButton/GoogleSignInButton";
 
@@ -78,6 +78,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     <div className="space-y-4">
       <GoogleSignInButton onSuccess={(from) => onSuccess(from)} onError={() => {}} />
 
+      {/* Divider */}
       <div className="relative py-1">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
@@ -112,87 +113,55 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
               {commonError ? <InlineError message={commonError} /> : null}
 
               <div className="grid grid-cols-1 gap-4">
-                <FormField
+                <FormikInputField
+                  formik={f}
+                  name="email"
                   label={t("auth.email")}
                   required
-                  error={f.touched.email ? (f.errors.email as string | undefined) : undefined}
-                >
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      name="email"
-                      value={f.values.email}
-                      onChange={f.handleChange}
-                      onBlur={f.handleBlur}
-                      placeholder="you@example.com"
-                      state={invalid ? "error" : "default"}
-                      aria-invalid={invalid}
-                      aria-describedby={describedBy}
-                      disabled={disabled}
-                      autoComplete="email"
-                      inputMode="email"
-                    />
-                  )}
-                </FormField>
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  disabled={disabled}
+                  // preset="auth"
+                />
 
-                <FormField
+                <FormikInputField
+                  formik={f}
+                  name="password"
                   label={t("auth.password")}
                   required
-                  error={f.touched.password ? (f.errors.password as string | undefined) : undefined}
-                >
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      name="password"
-                      type="password"
-                      value={f.values.password}
-                      onChange={f.handleChange}
-                      onBlur={f.handleBlur}
-                      placeholder="••••••••"
-                      state={invalid ? "error" : "default"}
-                      aria-invalid={invalid}
-                      aria-describedby={describedBy}
-                      disabled={disabled}
-                      autoComplete="new-password"
-                    />
-                  )}
-                </FormField>
+                  preset="password"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  disabled={disabled}
+                  // если хочешь, можно добавить hint:
+                  // hint={t("auth.validation.passwordMin")}
+                />
 
-                <FormField
+                <FormikInputField
+                  formik={f}
+                  name="confirmPassword"
                   label={t("auth.confirmPassword")}
                   required
-                  error={
-                    f.touched.confirmPassword
-                      ? (f.errors.confirmPassword as string | undefined)
-                      : undefined
-                  }
-                >
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      name="confirmPassword"
-                      type="password"
-                      value={f.values.confirmPassword}
-                      onChange={f.handleChange}
-                      onBlur={f.handleBlur}
-                      placeholder="••••••••"
-                      state={invalid ? "error" : "default"}
-                      aria-invalid={invalid}
-                      aria-describedby={describedBy}
-                      disabled={disabled}
-                      autoComplete="new-password"
-                    />
-                  )}
-                </FormField>
+                  preset="password"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  disabled={disabled}
+                />
               </div>
 
-              <div className="flex items-center gap-3">
-                <Button type="submit" variant="default" shadow="sm" shape="lg" disabled={disabled}>
+              <div className="flex flex-col gap-3">
+                <Button
+                  type="submit"
+                  variant="default"
+                  shadow="sm"
+                  shape="lg"
+                  disabled={disabled}
+                  className="w-full"
+                >
                   {disabled ? t("auth.creatingAccount") : t("auth.createAccount")}
                 </Button>
               </div>
-
-              <div className="text-xs text-muted-foreground">{t("auth.passwordHint")}</div>
             </form>
           );
         }}

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 
 import { normalizeError, useAuth } from "src/shared/lib";
-import { Button, FormField, InlineError, Input } from "src/shared/ui";
+import { Button, InlineError, FormikInputField } from "src/shared/ui";
 
 import { GoogleSignInButton } from "../GoogleSignInButton/GoogleSignInButton";
 
@@ -52,10 +52,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { t } = useTranslation();
   const { signInWithEmail } = useAuth();
 
-  const initialValues = useMemo<LoginValues>(
-    () => ({ email: "", password: "" }),
-    []
-  );
+  const initialValues = useMemo<LoginValues>(() => ({ email: "", password: "" }), []);
 
   const schema = useMemo<Yup.ObjectSchema<LoginValues>>(
     () =>
@@ -73,19 +70,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   return (
     <div className="space-y-4">
-      <GoogleSignInButton
-        onSuccess={(from) => onSuccess(from)}
-        onError={() => {}}
-      />
+      <GoogleSignInButton onSuccess={(from) => onSuccess(from)} onError={() => {}} />
 
       <div className="relative py-1">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-card px-2 text-xs text-muted-foreground">
-            {t("auth.or")}
-          </span>
+          <span className="bg-card px-2 text-xs text-muted-foreground">{t("auth.or")}</span>
         </div>
       </div>
 
@@ -106,8 +98,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         }}
       >
         {(f) => {
-          const commonError =
-            typeof f.status === "string" ? f.status : undefined;
+          const commonError = typeof f.status === "string" ? f.status : undefined;
           const disabled = f.isSubmitting;
 
           return (
@@ -115,75 +106,40 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
               {commonError ? <InlineError message={commonError} /> : null}
 
               <div className="grid grid-cols-1 gap-4">
-                <FormField
+                <FormikInputField
+                  formik={f}
+                  name="email"
                   label={t("auth.email")}
                   required
-                  error={
-                    f.touched.email
-                      ? (f.errors.email as string | undefined)
-                      : undefined
-                  }
-                >
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      name="email"
-                      value={f.values.email}
-                      onChange={f.handleChange}
-                      onBlur={f.handleBlur}
-                      placeholder="you@example.com"
-                      state={invalid ? "error" : "default"}
-                      aria-invalid={invalid}
-                      aria-describedby={describedBy}
-                      disabled={disabled}
-                      autoComplete="email"
-                      inputMode="email"
-                    />
-                  )}
-                </FormField>
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  disabled={disabled}
+                />
 
-                <FormField
+                <FormikInputField
+                  formik={f}
+                  name="password"
                   label={t("auth.password")}
                   required
-                  error={
-                    f.touched.password
-                      ? (f.errors.password as string | undefined)
-                      : undefined
-                  }
-                >
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      name="password"
-                      type="password"
-                      value={f.values.password}
-                      onChange={f.handleChange}
-                      onBlur={f.handleBlur}
-                      placeholder="••••••••"
-                      state={invalid ? "error" : "default"}
-                      aria-invalid={invalid}
-                      aria-describedby={describedBy}
-                      disabled={disabled}
-                      autoComplete="current-password"
-                    />
-                  )}
-                </FormField>
+                  preset="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  disabled={disabled}
+                />
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-3">
                 <Button
                   type="submit"
                   variant="default"
                   shadow="sm"
                   shape="lg"
                   disabled={disabled}
+                  className="w-full"
                 >
                   {disabled ? t("auth.signingIn") : t("auth.signIn")}
                 </Button>
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                {t("auth.tipGoogle")}
               </div>
             </form>
           );

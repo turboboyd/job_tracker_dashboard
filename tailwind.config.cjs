@@ -10,9 +10,9 @@ module.exports = {
       },
 
       spacing: {
-        sm: "var(--space-sm)", // 8px
-        md: "var(--space-md)", // 12px
-        lg: "var(--space-lg)", // 16px
+        sm: "var(--space-sm)", 
+        md: "var(--space-md)", 
+        lg: "var(--space-lg)", 
       },
 
       colors: {
@@ -84,13 +84,11 @@ module.exports = {
         semibold: "var(--font-semibold)",
       },
 
-
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
         lg: "var(--shadow-lg)",
       },
-
 
       transitionTimingFunction: {
         "ease-out": "var(--ease-out)",
@@ -102,11 +100,9 @@ module.exports = {
         slow: "var(--duration-slow)",
       },
 
-
       borderWidth: {
         DEFAULT: "var(--border-width)",
       },
-
 
       zIndex: {
         dropdown: "var(--z-dropdown)",
