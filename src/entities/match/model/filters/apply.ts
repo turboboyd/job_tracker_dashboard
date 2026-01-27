@@ -8,7 +8,13 @@ function toTime(v: unknown): number {
   return Number.isFinite(t) ? t : 0;
 }
 
-export function applyMatchesFilters(matches: Match[], filters: MatchesFiltersState): Match[] {
+
+type FilterStatus = MatchesFiltersState["statuses"][number];
+
+export function applyMatchesFilters(
+  matches: Match[],
+  filters: MatchesFiltersState
+): Match[] {
   const q = norm(filters.q);
 
   const loopSet = filters.loopIds.length ? new Set(filters.loopIds) : null;
@@ -26,12 +32,14 @@ export function applyMatchesFilters(matches: Match[], filters: MatchesFiltersSta
     }
 
     if (statusSet) {
-      const s = (m.status ?? null) as any;
-      if (!statusSet.has(s)) return false;
+      const s = (m.status ?? null) as FilterStatus | null;
+      if (s == null || !statusSet.has(s)) return false;
     }
 
     if (q) {
-      const hay = `${m.title ?? ""} ${m.company ?? ""} ${m.location ?? ""} ${m.description ?? ""}`.toLowerCase();
+      const hay = `${m.title ?? ""} ${m.company ?? ""} ${m.location ?? ""} ${
+        m.description ?? ""
+      }`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
 
@@ -39,18 +47,28 @@ export function applyMatchesFilters(matches: Match[], filters: MatchesFiltersSta
   });
 }
 
-export function applyMatchesSort(list: Match[], sort: MatchSortKey): Match[] {
+export function applyMatchesSort(
+  list: Match[],
+  sort: MatchSortKey
+): Match[] {
   const arr = [...list];
 
-  if (sort === "matchedAtDesc") arr.sort((a, b) => toTime(b.matchedAt) - toTime(a.matchedAt));
-  if (sort === "matchedAtAsc") arr.sort((a, b) => toTime(a.matchedAt) - toTime(b.matchedAt));
-  if (sort === "titleAsc") arr.sort((a, b) => cmpStr(a.title ?? "", b.title ?? ""));
-  if (sort === "companyAsc") arr.sort((a, b) => cmpStr(a.company ?? "", b.company ?? ""));
+  if (sort === "matchedAtDesc")
+    arr.sort((a, b) => toTime(b.matchedAt) - toTime(a.matchedAt));
+  if (sort === "matchedAtAsc")
+    arr.sort((a, b) => toTime(a.matchedAt) - toTime(b.matchedAt));
+  if (sort === "titleAsc")
+    arr.sort((a, b) => cmpStr(a.title ?? "", b.title ?? ""));
+  if (sort === "companyAsc")
+    arr.sort((a, b) => cmpStr(a.company ?? "", b.company ?? ""));
 
   return arr;
 }
 
-export function selectVisibleMatches(matches: Match[], filters: MatchesFiltersState): Match[] {
+export function selectVisibleMatches(
+  matches: Match[],
+  filters: MatchesFiltersState
+): Match[] {
   const filtered = applyMatchesFilters(matches, filters);
   return applyMatchesSort(filtered, filters.sort);
 }

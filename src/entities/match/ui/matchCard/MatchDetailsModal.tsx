@@ -1,5 +1,3 @@
-// src/entities/loop/ui/matchCard/MatchDetailsModal.tsx
-
 import React, { useMemo, useState } from "react";
 
 import { prettyStatus } from "src/entities/loop/lib";
@@ -22,7 +20,9 @@ export type MatchLike = {
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <div className="text-xs font-medium text-muted-foreground">{children}</div>;
+  return (
+    <div className="text-xs font-medium text-muted-foreground">{children}</div>
+  );
 }
 
 function Field({
@@ -35,7 +35,9 @@ function Field({
   return (
     <div className="grid grid-cols-1 gap-1 sm:grid-cols-3 sm:gap-3">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="sm:col-span-2 text-sm text-foreground break-words">{children}</div>
+      <div className="sm:col-span-2 text-sm text-foreground break-words">
+        {children}
+      </div>
     </div>
   );
 }
@@ -59,13 +61,13 @@ function MutedPill({ children }: { children: React.ReactNode }) {
 function ConfirmDeleteModal({
   open,
   onOpenChange,
-  title,
+
   busy,
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
+
   busy: boolean;
   onConfirm: () => void;
 }) {
@@ -75,7 +77,7 @@ function ConfirmDeleteModal({
       onOpenChange={onOpenChange}
       size="sm"
       title="Delete match?"
-      description={title ? `This action cannot be undone. (${title})` : "This action cannot be undone."}
+      description={`This action cannot be undone.`}
     >
       <div className="space-y-md">
         <div className="text-sm text-foreground">
@@ -117,7 +119,7 @@ export function MatchDetailsModal({
   loopName,
   busy,
   onDelete,
-}: {    
+}: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   match: MatchLike;
@@ -127,7 +129,10 @@ export function MatchDetailsModal({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const matchedAt = useMemo(() => formatMatchedAt(match.matchedAt), [match.matchedAt]);
+  const matchedAt = useMemo(
+    () => formatMatchedAt(match.matchedAt),
+    [match.matchedAt]
+  );
 
   const platform = useMemo(() => {
     const p = normalizePlatform(match.platform);
@@ -136,7 +141,8 @@ export function MatchDetailsModal({
 
   const modalTitle = match.title || "Match";
   const modalDescription =
-    [match.company || "", match.location || ""].filter(Boolean).join(" • ") || undefined;
+    [match.company || "", match.location || ""].filter(Boolean).join(" • ") ||
+    undefined;
 
   return (
     <>
@@ -148,7 +154,6 @@ export function MatchDetailsModal({
         description={modalDescription}
       >
         <div className="space-y-md">
-
           <div className="flex flex-wrap items-center justify-between gap-sm">
             <div className="flex flex-wrap items-center gap-sm">
               <MetaPill>{platform || "—"}</MetaPill>
@@ -159,7 +164,13 @@ export function MatchDetailsModal({
 
             <div className="flex flex-wrap items-center gap-sm">
               {match.url ? (
-                <Button variant="outline" size="sm" shape="pill" shadow="sm" asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  shape="pill"
+                  shadow="sm"
+                  asChild
+                >
                   <a href={match.url} target="_blank" rel="noreferrer noopener">
                     Open link
                   </a>
@@ -179,9 +190,13 @@ export function MatchDetailsModal({
             </div>
           </div>
 
-
           <div className="grid gap-md md:grid-cols-2">
-            <Card variant="default" padding="sm" shadow="sm" className="space-y-sm">
+            <Card
+              variant="default"
+              padding="sm"
+              shadow="sm"
+              className="space-y-sm"
+            >
               <SectionTitle>Overview</SectionTitle>
               <div className="h-px bg-border" />
               <div className="space-y-sm">
@@ -192,7 +207,12 @@ export function MatchDetailsModal({
               </div>
             </Card>
 
-            <Card variant="default" padding="sm" shadow="sm" className="space-y-sm">
+            <Card
+              variant="default"
+              padding="sm"
+              shadow="sm"
+              className="space-y-sm"
+            >
               <SectionTitle>Details</SectionTitle>
               <div className="h-px bg-border" />
               <div className="space-y-sm">
@@ -203,7 +223,12 @@ export function MatchDetailsModal({
             </Card>
           </div>
 
-          <Card variant="default" padding="sm" shadow="sm" className="space-y-sm">
+          <Card
+            variant="default"
+            padding="sm"
+            shadow="sm"
+            className="space-y-sm"
+          >
             <SectionTitle>Description</SectionTitle>
             <div className="h-px bg-border" />
             <div className="text-sm text-foreground whitespace-pre-wrap">
@@ -216,10 +241,8 @@ export function MatchDetailsModal({
       <ConfirmDeleteModal
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={match.title || ""}
         busy={busy}
         onConfirm={() => {
-
           setConfirmOpen(false);
           onOpenChange(false);
           onDelete(match.id);
