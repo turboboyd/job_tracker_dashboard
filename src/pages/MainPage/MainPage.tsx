@@ -1,115 +1,131 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
-import { Button, Input } from "src/shared/ui";
+import { AppRoutes, RoutePath } from "src/app/providers/router/routeConfig/routeConfig";
+import { useAuthSelectors } from "src/features/auth";
+import { LinkButton } from "src/shared/ui";
 
-const MainPage = () => {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+import {
+  HeroSection,
+  HowToStartBlock,
+  buildFeatures,
+  buildQuickStats,
+  buildPreviewModel,
+  FeaturesSection,
+  FooterNote,
+} from "./components";
+import type { CtaBlock } from "./components";
+
+const MainPage: React.FC = () => {
+  const { t } = useTranslation();
+
+  const { isAuthenticated } = useAuthSelectors();
+
+  const quickStats = useMemo(() => buildQuickStats(t), [t]);
+  const features = useMemo(() => buildFeatures(t), [t]);
+  const previewModel = useMemo(() => buildPreviewModel(t), [t]);
+
+  const ctaPrimary: CtaBlock = isAuthenticated ? (
+    <LinkButton
+      to={RoutePath[AppRoutes.DASHBOARD]}
+      variant="default"
+      shadow="sm"
+      size="lg"
+      className="w-full sm:w-auto"
+    >
+      {t("home.goToDashboard", "Go to Dashboard")}
+    </LinkButton>
+  ) : (
+    <LinkButton
+      to={RoutePath[AppRoutes.LOGIN]}
+      variant="outline"
+      shadow="sm"
+      size="lg"
+      className="w-full sm:w-auto"
+    >
+      {t("home.signIn", "Sign in")}
+    </LinkButton>
+  );
+
+  const ctaSecondary: CtaBlock = isAuthenticated ? (
+    <LinkButton
+      to={RoutePath[AppRoutes.RESOURCES]}
+      variant="outline"
+      size="lg"
+      className="w-full sm:w-auto"
+    >
+      {t("home.viewResources", "Resources & tips")}
+    </LinkButton>
+  ) : (
+    <LinkButton
+      to={RoutePath[AppRoutes.REGISTER]}
+      variant="default"
+      shadow="sm"
+      size="lg"
+      className="w-full sm:w-auto"
+    >
+      {t("home.createAccount", "Create account")}
+    </LinkButton>
+  );
+
+  const learnMoreCta: CtaBlock = (
+    <LinkButton
+      to={RoutePath[AppRoutes.RESOURCES]}
+      variant="ghost"
+      size="lg"
+      className="w-full sm:w-auto"
+    >
+      {t("home.learnMore", "Learn more")}
+    </LinkButton>
+  );
 
   return (
-    <div
-      className={
-        theme === "light" ? "theme-light space-y-6" : "theme-dark space-y-6"
-      }
-    >
-      <ul>
-        <li>
-          <Link to="/about">About</Link>
-        </li>
-        <li>
-          <Link to="/resources">Resources</Link>
-        </li>
-        <li>
-          <Link to="/login">Login</Link>
-        </li>
-        <li>
-          <Link to="/dashboard">Dashboard (private позже)</Link>
-        </li>
-        <li>
-          <Link to="/dashboard/jobs">Jobs (private позже)</Link>
-        </li>
-      </ul>
-      <Input placeholder="This is a Tailwind input" />
-      <Input shape="pill" placeholder="This is a Tailwind input" />
-      <h1 className="text-2xl font-semibold">MainPage — UI Lab</h1>
+    // Scroll container (AppLayout uses overflow-hidden at higher levels)
+    <div className="h-full min-h-0 overflow-y-auto bg-background text-foreground">
+      <div className="mx-auto max-w-container px-lg py-10 sm:py-14">
+        <HeroSection
+          badgeText={t(
+            "home.badge",
+            "Job Tracker Dashboard • less chaos, more results",
+          )}
+          title={t("home.title2", "Systematic job search")}
+          titleMuted={t("home.title2b", "instead of 100 tabs")}
+          subtitle={t(
+            "home.subtitle2",
+            "Build a loop (your search scenario) to open job searches across platforms, save the best matches, and move through stages from saved to offer.",
+          )}
+          ctaPrimary={ctaPrimary}
+          ctaSecondary={ctaSecondary}
+          ctaTertiary={learnMoreCta}
+          quickStats={quickStats}
+          preview={previewModel}
+        />
 
-      {/* Блок для объяснений */}
-      <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
-        Здесь мы визуально тестируем Tailwind и shadcn Button. Меняй
-        variant/size и смотри разницу.
+        <div className="mt-10 sm:mt-12">
+          <FeaturesSection features={features} />
+        </div>
+
+        <HowToStartBlock ctaPrimary={ctaPrimary} ctaSecondary={ctaSecondary} />
+
+        <FooterNote
+          title={t("home.footer.title", "Why this feels better")}
+          text={t(
+            "home.footer.text",
+            "Instead of rebuilding searches manually every day, you follow a scenario: filters are saved, links are ready, and statuses are visible. Less chaos — more control.",
+          )}
+          pills={[
+            { label: t("home.footer.pill1", "Consistent"), tone: "success" },
+            { label: t("home.footer.pill2", "Clear next steps"), tone: "info" },
+            { label: t("home.footer.pill3", "Less noise"), tone: "warning" },
+          ]}
+          ctaPrimary={ctaPrimary}
+          ctaSecondary={ctaSecondary}
+        />
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button variant="secondary" onClick={() => setTheme("light")}>
-          Light
-        </Button>
-        <Button variant="secondary" onClick={() => setTheme("dark")}>
-          Dark
-        </Button>
-      </div>
-
-      {/* Кнопки: варианты */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Variants</h2>
-        <div className="flex flex-wrap gap-3">
-          <Button>default</Button>
-          <Button variant="secondary">secondary</Button>
-          <Button variant="outline">outline</Button>
-          <Button variant="ghost">ghost</Button>
-          <Button variant="link">link</Button>
-          <Button disabled>disabled</Button>
-          <Button shape="pill">X</Button>
-        </div>
-      </section>
-
-      {/* Кнопки: размеры */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Sizes</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button size="sm">small</Button>
-          <Button>default</Button>
-          <Button size="lg">large</Button>
-          <Button size="icon" aria-label="icon button">
-            ✓
-          </Button>
-        </div>
-      </section>
-
-      {/* Пояснение как читать классы */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">How to read Tailwind classes</h2>
-
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-sm text-card-foreground">
-            Этот блок использует классы:
-          </div>
-
-          <pre className="mt-2 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">
-            {`rounded-lg border border-border bg-card p-4`}
-          </pre>
-
-          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-            <li>
-              <b>rounded-lg</b> — скругление
-            </li>
-            <li>
-              <b>border</b> — рамка 1px
-            </li>
-            <li>
-              <b>border-border</b> — цвет рамки из темы
-            </li>
-            <li>
-              <b>bg-card</b> — фон карточки из темы
-            </li>
-            <li>
-              <b>p-4</b> — padding со всех сторон
-            </li>
-          </ul>
-        </div>
-      </section>
+      <div className="mx-auto max-w-container px-lg pb-10 sm:pb-14"></div>
     </div>
   );
-}
-
+};
 
 export default MainPage;
