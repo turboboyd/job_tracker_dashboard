@@ -1,0 +1,85 @@
+{
+  "common": {
+    "loading": "Laden…",
+    "status": "Status",
+    "details": "Details",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "cancel": "Abbrechen",
+    "save": "Speichern"
+  },
+  "status": {
+    "new": "Neu",
+    "saved": "Gespeichert",
+    "interview": "Vorstellungsgespräch",
+    "offer": "Angebot",
+    "applied": "Beworben",
+    "rejected": "Abgelehnt"
+  },
+  "list": {
+    "title": "Matches",
+    "subtitle": "Alle Matches über all deine Loops.",
+    "empty": "Noch keine Matches."
+  },
+  "filters": {
+    "showing": "{{filtered}} von {{total}} angezeigt",
+    "pageShowing": "{{from}}–{{to}} von {{total}} angezeigt",
+    "reset": "Zurücksetzen",
+    "clearAll": "Alles löschen",
+    "search": { "label": "Suche" },
+    "sort": {
+      "label": "Sortieren",
+      "options": {
+        "matchedAtDesc": "Neueste",
+        "matchedAtAsc": "Älteste",
+        "titleAsc": "Titel A→Z",
+        "companyAsc": "Firma A→Z"
+      }
+    },
+    "loops": { "label": "Loops", "all": "Alle Loops", "loading": "Laden…" },
+    "platforms": { "label": "Plattformen", "all": "Alle Plattformen" },
+    "statuses": { "label": "Status", "all": "Alle Status" },
+    "chips": {
+      "search": "Suche: {{q}}",
+      "sort": "Sortieren: {{value}}",
+      "loops": "Loops: {{value}}",
+      "platforms": "Plattformen: {{value}}",
+      "statuses": "Status: {{value}}"
+    },
+    "common": {
+      "clear": "Löschen",
+      "removeFilter": "Filter entfernen"
+    }
+  },
+  "modal": {
+    "editTitle": "Match bearbeiten",
+    "loop": "Loop: {{name}}",
+    "fields": {
+      "title": "Titel",
+      "company": "Firma",
+      "location": "Ort",
+      "url": "URL",
+      "matchedAt": "Datum",
+      "description": "Beschreibung"
+    }
+  },
+  "details": {
+    "title": "Match",
+    "subtitle": "Vollständige Match-Details.",
+    "back": "Zurück",
+    "backToFiltered": "Zurück zur Filterung",
+    "allMatches": "Alle Matches",
+    "notFound": "Match nicht gefunden.",
+    "openLink": "Link öffnen",
+    "descriptionTitle": "Beschreibung",
+    "noDescription": "Keine Beschreibung.",
+    "actionsTitle": "Aktionen",
+    "metaTitle": "Details",
+    "fields": {
+      "loop": "Loop",
+      "location": "Ort",
+      "platform": "Plattform",
+      "matchedAt": "Datum"
+    }
+  }
+}

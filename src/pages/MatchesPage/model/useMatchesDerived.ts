@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { LoopMatchStatus } from "src/entities/loop/model/types";
+import type { LoopMatchStatus } from "src/entities/loopMatch";
 
 function cmpStr(a: string, b: string) {
   return a.localeCompare(b, undefined, { sensitivity: "base" });

@@ -1,13 +1,14 @@
 import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { UpdateMatchInput } from "src/entities/match/api/matchesApi";
-import { matchesFiltersDefaults } from "src/entities/match/model";
-import { useAuth } from "src/shared/lib";
+import type { UpdateMatchInput, LoopMatchStatus } from "src/entities/loopMatch";
+import { useAuthSelectors } from "src/features/auth";
 import { usePagination } from "src/shared/lib/pagination/usePagination";
 
+import { matchesFiltersDefaults } from "./filters";
 import { useMatchesDerived } from "./useMatchesDerived";
 import { useMatchesMutations } from "./useMatchesMutations";
-import { useMatchesPage } from "./useMatchesPage";
+import { useMatchesPage, writeMatchesStateToUrl } from "./useMatchesPage";
 import { useMatchesQueries } from "./useMatchesQueries";
 
 function stableFiltersKey(filters: unknown): string {
@@ -27,7 +28,7 @@ function stableFiltersKey(filters: unknown): string {
 
     const obj = val as Record<string, unknown>;
     const keys = Object.keys(obj).sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
     );
 
     const out: Record<string, unknown> = {};
@@ -43,26 +44,33 @@ function stableFiltersKey(filters: unknown): string {
 }
 
 export function useMatchesPageController() {
-  const { user } = useAuth();
-  const userId = user?.uid ?? null;
+  const { userId } = useAuthSelectors();
 
-  const { matchesQ, loopsQ, matches, loops } = useMatchesQueries(userId);
-  const { busy, actions } = useMatchesMutations(userId);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const { filters, setFilters, reset, visible } = useMatchesPage({ matches });
+  const { matchesQ, loopsQ, matches, loops } = useMatchesQueries();
+  const { busy, actions } = useMatchesMutations();
+
+  const { filters, setFilters, reset, visible, initialPage } = useMatchesPage({
+    matches,
+    search: location.search,
+    navigate,
+    location,
+  });
 
   const [editingId, setEditingId] = React.useState<string | null>(null);
 
   const { loopIdToName, platformOptions, statusOptions } = useMatchesDerived(
     matches,
-    loops
+    loops,
   );
 
   const filtersKey = React.useMemo(() => stableFiltersKey(filters), [filters]);
 
   const resetKey = React.useMemo(() => {
     return [
-      `uid:${userId ?? "anon"}`,
+      `userId:${userId ?? "anon"}`,
       `filters:${filtersKey}`,
       `total:${matches.length}`,
       `visible:${visible.length}`,
@@ -71,14 +79,32 @@ export function useMatchesPageController() {
 
   const pagination = usePagination({
     totalItems: visible.length,
-    pageSize: 10,
+    pageSize: 6,
+    initialPage,
     resetKey,
   });
+
+  const setPage = React.useCallback(
+    (next: number | ((prev: number) => number)) => {
+      pagination.setPage(next);
+
+      const nextValue = typeof next === "function" ? next(pagination.page) : next;
+      const safe = Math.max(1, Number(nextValue) || 1);
+      writeMatchesStateToUrl({
+        navigate,
+        location,
+        filters,
+        page: safe,
+        replace: true,
+      });
+    },
+    [pagination, navigate, location, filters],
+  );
 
   const pagedMatches = React.useMemo(() => {
     return visible.slice(
       pagination.offset,
-      pagination.offset + pagination.limit
+      pagination.offset + pagination.limit,
     );
   }, [visible, pagination.offset, pagination.limit]);
 
@@ -89,7 +115,7 @@ export function useMatchesPageController() {
 
   const resetFilters = React.useCallback(
     () => setFilters(matchesFiltersDefaults),
-    [setFilters]
+    [setFilters],
   );
 
   const onReset = reset ?? resetFilters;
@@ -99,7 +125,7 @@ export function useMatchesPageController() {
       await actions.onSaveEdit(matchId, patch);
       setEditingId(null);
     },
-    [actions]
+    [actions],
   );
 
   return {
@@ -119,15 +145,23 @@ export function useMatchesPageController() {
     onReset,
 
     visible,
-    pagination,
+    pagination: { ...pagination, setPage },
     pagedMatches,
 
     editingMatch,
     setEditingId,
 
     actions: {
-      onDelete: actions.onDelete,
-      onUpdateStatus: actions.onUpdateStatus,
+      onDelete: async (matchId: string) => {
+        const m = matches.find((x) => x.id === matchId);
+        if (!m) return;
+        await actions.onDelete(m.id, m.loopId);
+      },
+      onUpdateStatus: async (matchId: string, status: LoopMatchStatus) => {
+        const m = matches.find((x) => x.id === matchId);
+        if (!m) return;
+        await actions.onUpdateStatus(m.id, m.loopId, status);
+      },
       onSaveEdit,
     },
   };

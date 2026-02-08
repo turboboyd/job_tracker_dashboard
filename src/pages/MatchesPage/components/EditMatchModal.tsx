@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button, Modal, InputField, TextAreaField } from "src/shared/ui";
 
@@ -41,6 +42,7 @@ export function EditMatchModal({
   onClose: () => void;
   onSave: (matchId: string, patch: Record<string, unknown>) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [localBusy, setLocalBusy] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -95,8 +97,8 @@ export function EditMatchModal({
       onOpenChange={(v) => {
         if (!v) onClose();
       }}
-      title="Edit match"
-      description={loopName ? `Loop: ${loopName}` : undefined}
+      title={t("matches.modal.editTitle")}
+      description={loopName ? t("matches.modal.loop", { name: loopName }) : undefined}
       size="lg"
       showClose={false}
     >
@@ -104,7 +106,7 @@ export function EditMatchModal({
         <div className="grid grid-cols-1 gap-md md:grid-cols-2">
           <div className="md:col-span-2">
             <InputField
-              label="Title"
+              label={t("matches.modal.fields.title")}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={disabled}
@@ -112,28 +114,28 @@ export function EditMatchModal({
           </div>
 
           <InputField
-            label="Company"
+            label={t("matches.modal.fields.company")}
             value={company}
             onChange={(e) => setCompany(e.target.value)}
             disabled={disabled}
           />
 
           <InputField
-            label="Location"
+            label={t("matches.modal.fields.location")}
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             disabled={disabled}
           />
 
           <InputField
-            label="URL"
+            label={t("matches.modal.fields.url")}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             disabled={disabled}
           />
 
           <InputField
-            label="Matched date"
+            label={t("matches.modal.fields.matchedAt")}
             type="date"
             value={matchedAt}
             onChange={(e) => setMatchedAt(e.target.value)}
@@ -142,7 +144,7 @@ export function EditMatchModal({
 
           <div className="md:col-span-2">
             <TextAreaField
-              label="Description"
+              label={t("matches.modal.fields.description")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={disabled}
@@ -160,7 +162,7 @@ export function EditMatchModal({
             disabled={disabled}
             onClick={onClose}
           >
-            Cancel
+            {t("matches.common.cancel")}
           </Button>
 
           <Button
@@ -171,7 +173,7 @@ export function EditMatchModal({
             disabled={disabled}
             onClick={save}
           >
-            Save
+            {t("matches.common.save")}
           </Button>
         </div>
       </div>

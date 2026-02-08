@@ -1,11 +1,13 @@
-import { skipToken } from "@reduxjs/toolkit/query";
+import { useGetLoopsQuery } from "src/entities/loop";
+import { useGetAllMatchesQuery } from "src/entities/loopMatch";
+import { useAuthSelectors } from "src/features/auth";
 
-import { useGetLoopsQuery } from "src/entities/loop/api/loopApi";
-import { useGetAllMatchesQuery } from "src/entities/match/api/matchesApi";
+export function useMatchesQueries() {
+  const { isAuthReady, isAuthenticated } = useAuthSelectors();
+  const skip = !isAuthReady || !isAuthenticated;
 
-export function useMatchesQueries(userId: string | null) {
-  const matchesQ = useGetAllMatchesQuery(userId ? { userId } : skipToken);
-  const loopsQ = useGetLoopsQuery(userId ? { userId } : skipToken);
+  const matchesQ = useGetAllMatchesQuery(undefined, { skip });
+  const loopsQ = useGetLoopsQuery(undefined, { skip });
 
   const matches = matchesQ.data ?? [];
   const loops = loopsQ.data ?? [];
