@@ -6,6 +6,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
 import {
@@ -23,31 +24,6 @@ type Item = {
   hint?: string;
 };
 
-const items: Item[] = [
-  {
-    to: RoutePath[AppRoutes.SETTINGS_PROFILE],
-    label: "Profile",
-    icon: User,
-  },
-  {
-    to: RoutePath[AppRoutes.SETTINGS_NOTIFICATIONS],
-    label: "Notifications",
-    icon: Bell,
-  },
-  {
-    to: RoutePath[AppRoutes.SETTINGS_PIPELINE_STATUSES],
-    label: "Pipeline / Statuses",
-    icon: SlidersHorizontal,
-  },
-  {
-    to: RoutePath[AppRoutes.SETTINGS_DANGER_ZONE],
-    label: "Danger Zone",
-    icon: ShieldAlert,
-    variant: "danger",
-    hint: "Sensitive actions",
-  },
-];
-
 function baseItemClass(isActive: boolean) {
   return [
     "group flex items-center justify-between gap-2",
@@ -57,97 +33,99 @@ function baseItemClass(isActive: boolean) {
     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
     isActive
       ? "bg-muted text-foreground"
-      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+      : "text-muted-foreground hover:bg-muted hover:text-foreground",
   ].join(" ");
 }
 
-function leftBlockClass(isActive: boolean) {
-  return [
-    "flex items-center gap-2 min-w-0",
-    isActive ? "text-foreground" : "",
-  ].join(" ");
-}
-
-function iconClass(isActive: boolean, variant: Item["variant"]) {
-  const base = "h-4 w-4 shrink-0 transition duration-normal ease-in-out";
+function iconClass(isActive: boolean, variant: Item["variant"] | undefined) {
   if (variant === "danger") {
     return isActive
-      ? `${base} text-destructive`
-      : `${base} text-muted-foreground group-hover:text-destructive`;
+      ? "text-destructive"
+      : "text-destructive/80 group-hover:text-destructive";
   }
   return isActive
-    ? `${base} text-foreground`
-    : `${base} text-muted-foreground group-hover:text-foreground`;
-}
-
-function labelClass(variant: Item["variant"]) {
-  const base = "truncate text-sm font-medium";
-  if (variant === "danger") return `${base}`;
-  return base;
-}
-
-function hintClass() {
-  return "mt-0.5 truncate text-xs text-muted-foreground";
-}
-
-function chevronClass(isActive: boolean) {
-  return [
-    "h-4 w-4 shrink-0",
-    "transition duration-normal ease-in-out",
-    isActive ? "opacity-100" : "opacity-0 group-hover:opacity-60",
-  ].join(" ");
+    ? "text-foreground"
+    : "text-muted-foreground group-hover:text-foreground";
 }
 
 export function SettingsSidebar() {
+  const { t } = useTranslation();
+
+  const items: Item[] = [
+    {
+      to: RoutePath[AppRoutes.SETTINGS_PROFILE],
+      label: t("accountSettings.sidebar.profile", "Profile"),
+      icon: User,
+    },
+    {
+      to: RoutePath[AppRoutes.SETTINGS_NOTIFICATIONS],
+      label: t("accountSettings.sidebar.notifications", "Notifications"),
+      icon: Bell,
+    },
+    {
+      to: RoutePath[AppRoutes.SETTINGS_PIPELINE_STATUSES],
+      label: t(
+        "accountSettings.sidebar.pipelineStatuses",
+        "Pipeline / Statuses"
+      ),
+      icon: SlidersHorizontal,
+    },
+    {
+      to: RoutePath[AppRoutes.SETTINGS_DANGER_ZONE],
+      label: t("accountSettings.sidebar.dangerZone", "Danger Zone"),
+      icon: ShieldAlert,
+      variant: "danger",
+      hint: t("accountSettings.sidebar.sensitiveActions", "Sensitive actions"),
+    },
+  ];
+
   return (
-    <Card padding="sm" shadow="sm" className="h-fit">
-      <SectionHeader title="Settings" subtitle="Account" />
+    <Card className="p-4">
+      <SectionHeader
+        title={t("accountSettings.sidebar.settings", "Settings")}
+        subtitle={t("accountSettings.sidebar.account", "Account")}
+      />
 
-      <nav className="mt-3 flex flex-col gap-1">
-        {items.map((item) => {
-          const Icon = item.icon;
+      <div className="mt-3 space-y-1">
+        {items.map((item) => (
+          <NavLink key={item.to} to={item.to}>
+            {({ isActive }) => {
+              const Icon = item.icon;
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => baseItemClass(isActive)}
-            >
-              {({ isActive }) => (
-                <>
-                  <div className={leftBlockClass(isActive)}>
-                    <Icon className={iconClass(isActive, item.variant)} />
-
+              return (
+                <div className={baseItemClass(isActive)}>
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      className={[
+                        "h-4 w-4",
+                        iconClass(isActive, item.variant),
+                      ].join(" ")}
+                    />
                     <div className="min-w-0">
-                      <div
-                        className={[
-                          labelClass(item.variant),
-                          item.variant === "danger"
-                            ? isActive
-                              ? "text-destructive"
-                              : "group-hover:text-destructive"
-                            : "",
-                        ].join(" ")}
-                      >
+                      <div className="truncate text-sm font-medium">
                         {item.label}
                       </div>
-
                       {item.hint ? (
-                        <div className={hintClass()}>{item.hint}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {item.hint}
+                        </div>
                       ) : null}
                     </div>
                   </div>
 
-                  <ChevronRight className={chevronClass(isActive)} />
-                </>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                </div>
+              );
+            }}
+          </NavLink>
+        ))}
+      </div>
 
-      <div className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
-        Tip: use the menu to switch sections.
+      <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+        {t(
+          "accountSettings.sidebar.tip",
+          "Tip: use the menu to switch sections."
+        )}
       </div>
     </Card>
   );

@@ -1,7 +1,10 @@
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
-import type { DateFormat } from "src/app/store/userSettings";
+import type { DateFormat } from "src/entities/userSettings/api/userSettingsApi";
 import { Button } from "src/shared/ui/Button/Button";
+import { Card } from "src/shared/ui/Card/Card";
+import { SectionHeader } from "src/shared/ui/PageHeaders/PageHeaders";
 
 import { DateFormatField } from "./DateFormatField";
 import { TimeZoneField } from "./TimeZoneField";
@@ -9,91 +12,101 @@ import { TimeZoneField } from "./TimeZoneField";
 export type TimeZoneOption = { value: string; label: string };
 
 type Props = {
+  title: string;
+  subtitle: string;
+
   timeZone: string;
   timeZoneOptions: ReadonlyArray<TimeZoneOption>;
   dateFormat: DateFormat;
 
-  disabled: boolean;
-  isSaving: boolean;
-  hasChanges: boolean;
+  onTimeZoneChange: (next: string) => void;
+  onDateFormatChange: (next: DateFormat) => void;
 
-  onTimeZoneChange: (v: string) => void;
-  onDateFormatChange: (fmt: DateFormat) => void;
+  isSaving: boolean;
+  error: string | null;
+
+  saveDisabled: boolean;
+  resetDisabled: boolean;
 
   onReset: () => void;
   onSave: () => void;
-
-  errorMessage?: string | null;
 };
 
 export function PreferencesSection({
+  title,
+  subtitle,
+
   timeZone,
   timeZoneOptions,
   dateFormat,
-  disabled,
-  isSaving,
-  hasChanges,
+
   onTimeZoneChange,
   onDateFormatChange,
+
+  isSaving,
+  error,
+
+  saveDisabled,
+  resetDisabled,
+
   onReset,
   onSave,
-  errorMessage,
 }: Props) {
-  const saveDisabled = disabled || isSaving || !hasChanges;
-  const resetDisabled = disabled || isSaving || !hasChanges;
+  const { t } = useTranslation();
 
-  const footerHint = useMemo(() => {
-    if (disabled) return "Sign in to edit preferences.";
-    if (!hasChanges) return "No changes yet.";
-    return "Unsaved changes.";
-  }, [disabled, hasChanges]);
+  const hasChanges = useMemo(() => {
+    return !(resetDisabled && saveDisabled);
+  }, [resetDisabled, saveDisabled]);
+
+  const footerText = useMemo(() => {
+    if (error) return error;
+    if (!hasChanges) {
+      return t("accountSettings.preferences.noChanges", "No changes yet.");
+    }
+    return "";
+  }, [error, hasChanges, t]);
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4">
+    <Card className="p-4">
+      <SectionHeader title={title} subtitle={subtitle} />
+
+      <div className="mt-4 space-y-4">
         <TimeZoneField
           value={timeZone}
           options={timeZoneOptions}
-          disabled={disabled || isSaving}
           onChange={onTimeZoneChange}
         />
 
-        <DateFormatField
-          value={dateFormat}
-          disabled={disabled || isSaving}
-          onChange={onDateFormatChange}
-        />
-      </div>
+        <DateFormatField value={dateFormat} onChange={onDateFormatChange} />
 
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <div className="text-xs text-muted-foreground">{footerHint}</div>
+        {footerText ? (
+          <div
+            className={
+              error
+                ? "text-sm text-destructive"
+                : "text-sm text-muted-foreground"
+            }
+          >
+            {footerText}
+          </div>
+        ) : null}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-2 pt-2">
           <Button
-            variant="outline"
-            shadow="sm"
-            disabled={resetDisabled}
+            variant="secondary"
             onClick={onReset}
+            disabled={resetDisabled || isSaving}
           >
-            Reset
+            {t("accountSettings.common.reset", "Reset")}
           </Button>
 
-          <Button
-            variant="default"
-            shadow="sm"
-            disabled={saveDisabled}
-            onClick={onSave}
-          >
-            {isSaving ? "Saving..." : "Save"}
+          <Button onClick={onSave} disabled={saveDisabled || isSaving}>
+            {isSaving
+              ? t("accountSettings.common.saving", "Saving...")
+              : t("accountSettings.common.save", "Save")}
           </Button>
         </div>
       </div>
-
-      {errorMessage ? (
-        <div className="rounded-lg border border-destructive bg-destructive/10 px-4 py-3 text-sm text-foreground">
-          {errorMessage}
-        </div>
-      ) : null}
-    </div>
+    </Card>
   );
 }

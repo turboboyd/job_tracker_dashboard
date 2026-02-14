@@ -1,0 +1,45 @@
+{
+  "page": {
+    "title": "Настройки аккаунта",
+    "subtitle": "Профиль"
+  },
+  "sidebar": {
+    "settings": "Настройки",
+    "account": "Аккаунт",
+    "profile": "Профиль",
+    "notifications": "Уведомления",
+    "pipelineStatuses": "Воронка / Статусы",
+    "dangerZone": "Опасная зона",
+    "sensitiveActions": "Чувствительные действия",
+    "tip": "Подсказка: переключай секции через меню слева."
+  },
+  "profilePrefs": {
+    "title": "Профиль и предпочтения",
+    "subtitle": "Управляй данными аккаунта и настройками приложения"
+  },
+  "profile": {
+    "title": "Профиль",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "email": "Email",
+    "appLanguage": "Язык приложения",
+    "appLanguageHint": "Сохраняется локально и синхронизируется с Firestore после входа"
+  },
+  "preferences": {
+    "title": "Предпочтения",
+    "storage": "Firestore",
+    "timeZone": "Часовой пояс",
+    "dateFormat": "Формат даты",
+    "preview": "Пример",
+    "noChanges": "Пока нет изменений.",
+    "dateFormatExample1": "29.01.2026",
+    "dateFormatExample2": "01/29/2026",
+    "dateFormatExample3": "2026-01-29"
+  },
+  "common": {
+    "save": "Сохранить",
+    "reset": "Сбросить",
+    "saving": "Сохранение...",
+    "placeholder": "—"
+  }
+}
