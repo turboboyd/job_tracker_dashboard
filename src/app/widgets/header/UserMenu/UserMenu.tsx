@@ -1,8 +1,13 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import { LogoutButton } from "src/features/auth/ui/LogoutButton/LogoutButton";
-import { useAuth } from "src/shared/lib";
+import {
+  AppRoutes,
+  RoutePath,
+} from "src/app/providers/router/routeConfig/routeConfig";
+import { useAuthSelectors } from "src/entities/auth";
+import { LogoutButton } from "src/features/auth";
 import { Button } from "src/shared/ui";
 
 type UserMenuProps = {
@@ -10,10 +15,14 @@ type UserMenuProps = {
 };
 
 export const UserMenu: React.FC<UserMenuProps> = ({
-  settingsPath = "/account",
+  settingsPath = `${RoutePath[AppRoutes.SETTINGS_PROFILE]}`,
 }) => {
-  const { user } = useAuth();
-  const displayName = user?.displayName ?? user?.email ?? "User";
+  const { t } = useTranslation();
+  const { user, isAuthReady } = useAuthSelectors();
+  if (!isAuthReady) return null;
+  if (!user) return null;
+
+  const displayName = user.displayName ?? user.email ?? "User";
 
   return (
     <div className="relative group">
@@ -55,7 +64,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
               transition-colors
             "
           >
-            Account Settings
+            {t("header.accountSettings")}
           </NavLink>
 
           <div className="h-px bg-border" />

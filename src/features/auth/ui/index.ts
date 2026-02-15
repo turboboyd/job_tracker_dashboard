@@ -6,6 +6,5 @@ export { EmailPasswordAuthForm } from "./EmailPasswordAuthForm/EmailPasswordAuth
 export { AuthDivider } from "./AuthDivider";
 
 ////
-export { AuthFormShell,AuthFormShellProps } from "./AuthFormShell";
-export { AuthPageShell,AuthPageShellProps } from "./AuthPageShell";
-
+export { AuthFormShell, type AuthFormShellProps } from "./AuthFormShell";
+export { AuthPageShell, type AuthPageShellProps } from "./AuthPageShell";

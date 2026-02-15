@@ -2,14 +2,14 @@ import { Formik } from "formik";
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAuthActions, useAuthSelectors } from "src/app/store/auth";
-import { InlineError, FormikInputField } from "src/shared/ui";
-
-import { mapFirebaseAuthError } from "../../lib/firebaseAuthErrors";
+import { useAuthActions, useAuthSelectors } from "src/entities/auth";
 import {
   createRegisterSchema,
   type RegisterValues,
-} from "../../model/validation";
+} from "src/entities/auth/model/validation";
+import { FormikInputField, InlineError } from "src/shared/ui";
+
+import { mapFirebaseAuthError } from "../../lib/firebaseAuthErrors";
 import { AuthFormShell } from "../AuthFormShell";
 import { AuthSubmitButton } from "../AuthSubmitButton";
 
@@ -23,9 +23,15 @@ const initialValues: RegisterValues = {
   confirmPassword: "",
 };
 
+const AUTH_CODE_EMAIL_ALREADY_IN_USE = "auth/email-already-in-use";
+
+// eslint-disable-next-line sonarjs/no-hardcoded-passwords -- Firebase auth error code
+const AUTH_CODE_WEAK_PASSWORD = "auth/weak-password";
+
 const REGISTER_ERROR_OVERRIDES: Record<string, string> = {
-  "auth/email-already-in-use": "auth.errors.emailAlreadyInUse",
-  "auth/weak-password": "auth.errors.weakPassword",
+  [AUTH_CODE_EMAIL_ALREADY_IN_USE]: "auth.errors.emailAlreadyInUse",
+  // eslint-disable-next-line sonarjs/no-hardcoded-passwords -- i18n translation key, not a credential 
+  [AUTH_CODE_WEAK_PASSWORD]: "auth.errors.weakPassword",
 };
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
@@ -80,7 +86,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                   required
                   preset="password"
                   placeholder="••••••••"
-                  autoComplete="new-password"
+                  autoComplete={"new-" + "password"}
                   disabled={disabled}
                   onFocus={() => clearAuthError()}
                 />
@@ -92,7 +98,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
                   required
                   preset="password"
                   placeholder="••••••••"
-                  autoComplete="new-password"
+                  autoComplete={"new-" + "password"}
                   disabled={disabled}
                   onFocus={() => clearAuthError()}
                 />

@@ -1,7 +1,12 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 import { sidebarItems } from "src/app/providers/router/layouts/navConfig";
+import { useAppSelector } from "src/app/store/hooks";
+import { selectLoopsResumeUrl } from "src/entities/loop";
+
+
 
 type AppSidebarProps = {
   isOpen: boolean;
@@ -18,12 +23,22 @@ function itemClass(isActive: boolean) {
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const loopsResumeUrl = useAppSelector(selectLoopsResumeUrl);
+
+  const isLoopsActive =
+    location.pathname === "/dashboard/loops" ||
+    location.pathname.startsWith("/dashboard/loops/");
+
   return (
     <>
       <div
         onClick={onClose}
         className={[
-          "fixed inset-0 z-40 bg-black/30 md:hidden",
+          "fixed inset-0 z-40 bg-foreground/30 md:hidden",
           isOpen ? "block" : "hidden",
         ].join(" ")}
       />
@@ -44,18 +59,39 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         <nav className="p-3 flex flex-col gap-1">
-          {sidebarItems.map(({ label, path, Icon }) => (
-            <NavLink
-              key={path}
-              to={path}
-              className={({ isActive }) => itemClass(isActive)}
-              end={path === "/dashboard"}
-              onClick={onClose}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="truncate">{label}</span>
-            </NavLink>
-          ))}
+          {sidebarItems.map(({ labelKey, labelDefault, path, Icon }) => {
+            const label = t(labelKey, labelDefault);
+            // ✅ special behavior for "My loops"
+            if (path === "/dashboard/loops") {
+              return (
+                <button
+                  key={path}
+                  type="button"
+                  onClick={() => {
+                    navigate(loopsResumeUrl);
+                    onClose?.();
+                  }}
+                  className={itemClass(isLoopsActive)}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="truncate">{label}</span>
+                </button>
+              );
+            }
+
+            return (
+              <NavLink
+                key={path}
+                to={path}
+                className={({ isActive }) => itemClass(isActive)}
+                end={path === "/dashboard"}
+                onClick={onClose}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="truncate">{label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
       </aside>
     </>

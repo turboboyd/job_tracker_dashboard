@@ -1,7 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
-  content: ["./src/**/*.{ts,tsx,js,jsx}", "./public/index.html"],
+  content: [
+    "./src/**/*.{ts,tsx,js,jsx}",
+    "./node_modules/@tremor/**/*.{js,ts,jsx,tsx}",
+    "./public/index.html",
+  ],
   theme: {
     extend: {
       maxWidth: {
@@ -10,9 +14,9 @@ module.exports = {
       },
 
       spacing: {
-        sm: "var(--space-sm)", 
-        md: "var(--space-md)", 
-        lg: "var(--space-lg)", 
+        sm: "var(--space-sm)",
+        md: "var(--space-md)",
+        lg: "var(--space-lg)",
       },
 
       colors: {

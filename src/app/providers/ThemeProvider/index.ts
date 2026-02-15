@@ -1,5 +1,2 @@
-import { Theme, ThemeContext } from "./lib/ThemeContext";
-import { useTheme } from "./lib/useTheme";
-import { ThemeProvider } from "./ui/ThemeProvider";
-
-export { ThemeProvider, useTheme, ThemeContext, Theme };
+export { ThemeProvider, useTheme } from "src/shared/lib/theme";
+export type { ThemeMode, ThemeContextValue } from "src/shared/lib/theme";

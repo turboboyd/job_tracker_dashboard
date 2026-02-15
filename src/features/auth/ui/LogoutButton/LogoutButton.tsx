@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAuthActions, useAuthSelectors } from "src/app/store/auth";
+import { useAuthActions, useAuthSelectors } from "src/entities/auth";
 import { Button } from "src/shared/ui";
 
 export type LogoutButtonProps = {

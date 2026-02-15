@@ -11,19 +11,27 @@ import {
 
 export const AppRouter: React.FC = () => {
   return (
-    <Routes>
-      <Route element={<AppLayout />}>
-        {publicRoutes.map((route) => (
-          <Route key={route.path} path={route.path} element={route.element} />
-        ))}
-
-        <Route element={<RequireAuth />}>
-          {privateRoutes.map(({ path, element }) => (
-            <Route key={path} path={path} element={element} />
+    <React.Suspense
+      fallback={
+        <div className="h-screen w-full grid place-items-center text-sm text-muted-foreground">
+          Loading…
+        </div>
+      }
+    >
+      <Routes>
+        <Route element={<AppLayout />}>
+          {publicRoutes.map((route) => (
+            <Route key={route.path} path={route.path} element={route.element} />
           ))}
+
+          <Route element={<RequireAuth />}>
+            {privateRoutes.map(({ path, element }) => (
+              <Route key={path} path={path} element={element} />
+            ))}
+          </Route>
+          <Route path={notFoundRoute.path} element={notFoundRoute.element} />
         </Route>
-        <Route path={notFoundRoute.path} element={notFoundRoute.element} />
-      </Route>
-    </Routes>
+      </Routes>
+    </React.Suspense>
   );
 };

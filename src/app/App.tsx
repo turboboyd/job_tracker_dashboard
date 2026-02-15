@@ -6,9 +6,8 @@ import { AppRouter } from "./providers/router";
 
 export function App() {
   return (
-      <Suspense fallback={<Loader />}>
-        <AppRouter />
-      </Suspense>
-
+    <Suspense fallback={<Loader />}>
+      <AppRouter />
+    </Suspense>
   );
 }

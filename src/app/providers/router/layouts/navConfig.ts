@@ -11,20 +11,68 @@ import {
   Mail,
 } from "lucide-react";
 
+import { AppRoutes, RoutePath } from "../routeConfig/routeConfig";
+
 export type SidebarItem = {
-  label: string;
+  labelKey: string;
+  labelDefault: string;
   path: string;
   Icon: LucideIcon;
 };
 
 export const sidebarItems: SidebarItem[] = [
-  { label: "Overview", path: "/dashboard", Icon: LayoutDashboard },
-  { label: "My loops", path: "/dashboard/loops", Icon: Repeat2 },
-  { label: "Board", path: "/dashboard/board", Icon: Presentation },
-  { label: "All Matches", path: "/dashboard/matches", Icon: Share2 },
-  { label: "My Applications", path: "/dashboard/applications", Icon: FileText },
-  { label: "Questions", path: "/dashboard/questions", Icon: HelpCircle },
-  { label: "CV Checker", path: "/dashboard/cv-checker", Icon: ClipboardCheck },
-  { label: "CV Builder", path: "/dashboard/cv-builder", Icon: FileEdit },
-  { label: "Inbox", path: "/dashboard/inbox", Icon: Mail },
+  {
+    labelKey: "common.nav.overview",
+    labelDefault: "Overview",
+    path: RoutePath[AppRoutes.DASHBOARD],
+    Icon: LayoutDashboard,
+  },
+  {
+    labelKey: "common.nav.myLoops",
+    labelDefault: "My loops",
+    path: RoutePath[AppRoutes.LOOPS],
+    Icon: Repeat2,
+  },
+  {
+    labelKey: "common.nav.board",
+    labelDefault: "Board",
+    path: RoutePath[AppRoutes.BOARD],
+    Icon: Presentation,
+  },
+  {
+    labelKey: "common.nav.allMatches",
+    labelDefault: "All Matches",
+    path: RoutePath[AppRoutes.MATCHES],
+    Icon: Share2,
+  },
+  {
+    labelKey: "common.nav.myApplications",
+    labelDefault: "My Applications",
+    path: RoutePath[AppRoutes.APPLICATIONS],
+    Icon: FileText,
+  },
+  {
+    labelKey: "common.nav.questions",
+    labelDefault: "Questions",
+    path: RoutePath[AppRoutes.QUESTIONS],
+    Icon: HelpCircle,
+  },
+  {
+    labelKey: "common.nav.cvChecker",
+    labelDefault: "CV Checker",
+    path: RoutePath[AppRoutes.CV_CHECKER],
+    Icon: ClipboardCheck,
+  },
+  {
+    labelKey: "common.nav.cvBuilder",
+    labelDefault: "CV Builder",
+    path: RoutePath[AppRoutes.CV_BUILDER],
+    Icon: FileEdit,
+  },
+  {
+    labelKey: "common.nav.inbox",
+    labelDefault: "Inbox",
+    path: RoutePath[AppRoutes.INBOX],
+    Icon: Mail,
+  },
 ];

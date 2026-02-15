@@ -1,7 +1,9 @@
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-import { useAuthSelectors } from "src/app/store/auth";
+import { useAuthSelectors } from "src/entities/auth";
+
+import { AppRoutes, RoutePath } from "../routeConfig/routeConfig";
 
 export const RequireAuth: React.FC = () => {
   const { isAuthenticated, isAuthReady } = useAuthSelectors();
@@ -13,7 +15,13 @@ export const RequireAuth: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return (
+      <Navigate
+        to={RoutePath[AppRoutes.LOGIN]}
+        replace
+        state={{ from: location }}
+      />
+    );
   }
 
   return <Outlet />;

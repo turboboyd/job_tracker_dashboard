@@ -2,19 +2,17 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
-import { useAuthActions, useAuthSelectors } from "src/app/store/auth";
+
+import { useAuthActions, useAuthSelectors } from "src/entities/auth";
 import { Button } from "src/shared/ui";
 import { GoogleIcon } from "src/shared/ui/icons/GoogleIcon";
 
+import {
+  type AuthRedirectLocationState,
+  getAuthRedirectFrom,
+} from "../../lib/authRedirect";
 import { mapGoogleAuthError } from "../../lib/firebaseAuthErrors";
 
-type LocationState = { from?: { pathname?: string; search?: string } };
-
-function getFrom(state: LocationState | null): string {
-  const fromPath = state?.from?.pathname ?? "/dashboard";
-  const fromSearch = state?.from?.search ?? "";
-  return `${fromPath}${fromSearch}`;
-}
 
 export type GoogleSignInButtonProps = {
   onSuccess?: (from: string) => void;
@@ -38,7 +36,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
     try {
       await signInWithGoogle();
-      const from = getFrom(location.state as LocationState | null);
+      const from = getAuthRedirectFrom(
+        location.state as AuthRedirectLocationState | null,
+      );
       onSuccess?.(from);
     } catch (e: unknown) {
       onError?.(mapGoogleAuthError(e, t));
@@ -51,7 +51,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     <div className="space-y-2">
       <Button
         variant="outline"
-        className={["w-full justify-center gap-2", className].filter(Boolean).join(" ")}
+        className={["w-full justify-center gap-2", className]
+          .filter(Boolean)
+          .join(" ")}
         onClick={onClick}
         disabled={disabled}
       >

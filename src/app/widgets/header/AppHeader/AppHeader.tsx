@@ -3,10 +3,14 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
+import {
+  AppRoutes,
+  RoutePath,
+} from "src/app/providers/router/routeConfig/routeConfig";
 import { UserMenu } from "src/app/widgets";
-import { useAuth } from "src/shared/lib";
+import { useAuthSelectors } from "src/entities/auth";
 import { Button, ThemeToggle } from "src/shared/ui";
-import { LanguageSelect } from "src/shared/ui/molecules/LanguageSelect/LanguageSelect";
+import { LanguageSelectConnected } from "src/shared/ui/molecules/LanguageSelect/LanguageSelectConnected";
 
 type AppHeaderProps = {
   sidebarOpen?: boolean;
@@ -19,26 +23,31 @@ type NavItem = {
 };
 
 const guestNavItems: NavItem[] = [
-  { label: "nav.home", path: "/" },
-  { label: "nav.resources", path: "/resources" },
-  { label: "nav.about", path: "/about" },
+  { label: "header.home", path: "/" },
+  { label: "header.resources", path: "/resources" },
+  { label: "header.about", path: "/about" },
 ];
 
 const authNavItems: NavItem[] = [
-  { label: "nav.dashboard", path: "/dashboard" },
-  { label: "nav.jobs", path: "/dashboard/jobs" },
+  { label: "header.dashboard", path: "/dashboard" },
 ];
 
 function linkClass(isActive: boolean) {
   return [
     "text-sm transition-colors",
-    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+    isActive
+      ? "text-foreground"
+      : "text-muted-foreground hover:text-foreground",
   ].join(" ");
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = ({ sidebarOpen, onToggleSidebar }) => {
+export const AppHeader: React.FC<AppHeaderProps> = ({
+  sidebarOpen,
+  onToggleSidebar,
+}) => {
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthSelectors();
+
   const navItems = isAuthenticated ? authNavItems : guestNavItems;
 
   return (
@@ -52,11 +61,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ sidebarOpen, onToggleSideb
               onClick={onToggleSidebar}
               aria-label="Toggle sidebar"
             >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {sidebarOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
           )}
 
-          {!isAuthenticated && <div className="text-sm font-semibold">Job Tracker</div>}
+          {!isAuthenticated && (
+            <div className="text-sm font-semibold">{t("header.appName")}</div>
+          )}
 
           <nav className="hidden md:flex items-center gap-4">
             {navItems.map((item) => (
@@ -73,24 +88,26 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ sidebarOpen, onToggleSideb
 
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <UserMenu settingsPath="/account" />
+            <UserMenu
+              settingsPath={`${RoutePath[AppRoutes.SETTINGS_PROFILE]}`}
+            />
           ) : (
             <div className="flex items-center gap-3">
               <NavLink
-                to="/login"
+                to={RoutePath[AppRoutes.LOGIN]}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {t("auth.signIn")}
               </NavLink>
               <NavLink
-                to="/register"
+                to={RoutePath[AppRoutes.REGISTER]}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {t("auth.createAccount")}
               </NavLink>
             </div>
           )}
-          <LanguageSelect />
+          <LanguageSelectConnected labelMode="short" />
           <ThemeToggle />
         </div>
       </div>
