@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 
 import { auth, db } from "src/shared/config/firebase/firebase";
+import { seedDemoDataIfNeeded } from "src/shared/lib/seed/seedDemoData";
 
 import type { AuthError } from "./authTypes";
 
@@ -17,7 +18,6 @@ import type { AuthError } from "./authTypes";
 
 
 //demo
-import { seedDemoDataIfNeeded } from "src/shared/lib/seed/seedDemoData";
 
 
 
