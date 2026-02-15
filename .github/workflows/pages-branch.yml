@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      PUBLIC_URL: /job-tracker-dashboard
       FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
       FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
@@ -50,21 +51,16 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Detect output dir (dist/build)
-        shell: bash
+      - name: Debug dist (index + tree)
         run: |
-          if [ -d "dist" ]; then
-            echo "PAGES_DIR=dist" >> $GITHUB_ENV
-          elif [ -d "build" ]; then
-            echo "PAGES_DIR=build" >> $GITHUB_ENV
-          else
-            echo "Не найден dist/ или build/ после сборки. Проверь, куда билдит проект." >&2
-            exit 1
-          fi
+          echo "==== dist tree ===="
+          ls -la dist || true
+          echo "==== dist/index.html (first 120 lines) ===="
+          sed -n '1,120p' dist/index.html || true
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: ${{ env.PAGES_DIR }}
+          publish_dir: dist
