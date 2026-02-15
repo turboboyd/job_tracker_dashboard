@@ -1,0 +1,42 @@
+{
+  "loginTitle": "Welcome back",
+  "loginSubtitle": "Sign in to continue",
+  "registerTitle": "Create your account",
+  "registerSubtitle": "Start tracking your job search",
+  "email": "Email",
+  "password": "Password",
+  "confirmPassword": "Confirm password",
+  "passwordHint": "At least 6 characters",
+  "signIn": "Sign in",
+  "signingIn": "Signing in…",
+  "createAccount": "Create account",
+  "creatingAccount": "Creating account…",
+  "noAccount": "No account?",
+  "haveAccount": "Already have an account?",
+  "or": "or",
+  "errorTitle": "Something went wrong",
+  "emailPassword": {
+    "continue": "Continue",
+    "createAccount": "Create account",
+    "signingIn": "Signing in…",
+    "creatingAccount": "Creating account…",
+    "switchToSignUp": "Sign up",
+    "switchToSignIn": "Sign in"
+  },
+  "google": {
+    "signIn": "Sign in with Google",
+    "opening": "Opening Google…"
+  },
+  "logout": {
+    "logout": "Log out",
+    "signingOut": "Logging out…"
+  },
+  "validation": {
+    "emailInvalid": "Enter a valid email",
+    "emailRequired": "Email is required",
+    "passwordMin": "Password must be at least 6 characters",
+    "passwordRequired": "Password is required",
+    "passwordsMustMatch": "Passwords must match",
+    "confirmPasswordRequired": "Please confirm your password"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "threshold": 2,
+  "reporters": ["console", "html"],
+  "ignore": [
+    "**/*.test.*",
+    "**/*.stories.*",
+    "**/node_modules/**",
+    "**/dist/**"
+  ],
+  "min-lines": 5,
+  "min-tokens": 50
+}

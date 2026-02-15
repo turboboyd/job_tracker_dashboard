@@ -1,15 +1,39 @@
 .theme-light {
-  --background: 248 250 252; /* slate-50 */
-  --foreground: 15 23 42;    /* slate-900 */
+  --background: 255 251 247;
+  --foreground: 39 31 27;
+
+  --primary: 230 94 76;
+  --primary-foreground: 255 255 255;
+
+  --secondary: 252 248 244;
+  --secondary-foreground: 92 76 64;
+
+  --accent: 97 196 181;
+  --accent-foreground: 39 31 27;
 
   --card: 255 255 255;
-  --card-foreground: 15 23 42;
+  --card-foreground: 39 31 27;
 
-  --primary: 15 23 42;
-  --primary-foreground: 248 250 252;
+  --popover: 255 255 255;
+  --popover-foreground: 39 31 27;
 
-  --muted: 241 245 249;
-  --muted-foreground: 100 116 139;
+  --border: 234 225 217;
+  --input: 255 255 255;
+  --ring: 230 94 76;
 
-  --border: 226 232 240;
+  --muted: 245 239 234;
+  --muted-foreground: 115 99 87;
+
+  --success: 220 245 233;
+  --success-foreground: 28 125 74;
+
+  --warning: 255 244 214;
+  --warning-foreground: 148 101 0;
+
+  --info: 224 235 252;
+  --info-foreground: 40 84 156;
+
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
 }
+

@@ -1,0 +1,110 @@
+{
+  "badge": "Jobsuche-Loop",
+  "goToDashboard": "Zum Dashboard",
+  "signIn": "Anmelden",
+  "viewResources": "Ressourcen & Tipps",
+  "createAccount": "Konto erstellen",
+  "learnMore": "Mehr erfahren",
+  "title2": "Systematische Jobsuche",
+  "title2b": "statt 100 Tabs",
+  "subtitle2": "Ein Szenario → Plattform-Links → gespeicherte Matches → Pipeline",
+
+  "stats": {
+    "organized": {
+      "label": "Ordnung",
+      "value": "Alles an einem Ort",
+      "hint": "Jobs, Status, Notizen, Links"
+    },
+    "speed": {
+      "label": "Tempo",
+      "value": "Schneller bei jedem Schritt",
+      "hint": "Vorlagen, Filter, gespeicherte Suchen"
+    },
+    "clarity": {
+      "label": "Klarheit",
+      "value": "Sieh, was funktioniert",
+      "hint": "Historie, Funnel, Kennzahlen"
+    }
+  },
+
+  "features": {
+    "track": {
+      "title": "Bewerbungen ohne Chaos verfolgen",
+      "text": "Speichere Jobs, behalte Links, verfolge Status und Deadlines. Alles bleibt an einem Ort statt in Lesezeichen zu verschwinden.",
+      "p1": "Status und Änderungshistorie",
+      "p2": "Notizen und Gesprächslinks",
+      "p3": "Schnelle Suche in deiner Liste"
+    },
+    "links": {
+      "title": "Plattform-Suchlinks für dein Szenario",
+      "text": "Erstelle Filter einmal und erhalte fertige Links für verschiedene Plattformen. Loop aktualisieren → Suchen aktualisieren.",
+      "p1": "Ein Filtersatz für viele Seiten",
+      "p2": "Filter werden im Loop gespeichert",
+      "p3": "Flexibel, erweiterbar"
+    },
+    "pipeline": {
+      "title": "Funnel + Prozesskontrolle",
+      "text": "Sieh, wo Zeit verloren geht: wie viele Saves, Bewerbungen, Antworten, Interviews. Verbessere die Strategie mit echten Zahlen.",
+      "p1": "Klare Struktur nach Phasen",
+      "p2": "Fokus auf die nächste Aktion",
+      "p3": "Rhythmus: Planung und Disziplin"
+    }
+  },
+
+  "preview": {
+    "title": "So sieht es im echten Leben aus",
+    "sub": "Szenario → Links → Matches → Status",
+    "tag": "Demo",
+    "loop": "Loop",
+    "loopTitle": "Fachinformatiker AE • React • Frankfurt",
+    "badge1": "Radius: 30 km",
+    "badge2": "Modus: hybrid",
+    "badge3": "Veröffentlicht: 7 T.",
+    "badge4": "Sprache: de/en",
+    "links": "Plattform-Links",
+    "open": "Öffnen",
+    "pipeline": "Pipeline",
+    "saved": "Gespeichert",
+    "applied": "Beworben",
+    "interview": "Interview"
+  },
+
+  "pill": {
+    "live": "Live",
+    "saved": "Gespeichert",
+    "applied": "Beworben",
+    "interview": "Interview",
+    "offer": "Angebot"
+  },
+
+  "start": {
+    "title": "Wie du startest (ohne auszubrennen)",
+    "sub": "Ein kleines System schlägt Motivation.",
+    "stepLabel": "Schritt",
+    "micro": "Einfach halten. Täglich bleiben.",
+    "note": "Starte mit einem Loop. Verbessere ihn nach 3 Tagen.",
+    "extra": "Später kannst du jederzeit erweitern: mehr Plattformen, mehr Filter, mehr Stufen.",
+    "resources": "Spickzettel & Guides",
+    "createLoop": "Ersten Loop erstellen",
+    "s1": {
+      "title": "Erstelle deinen Loop in 60 Sekunden",
+      "text": "Rolle, Ort, Format, Keywords wählen – fertig."
+    },
+    "s2": {
+      "title": "Plattformen mit einem Szenario öffnen",
+      "text": "Ein Klick pro Plattform – gleiche Filter überall."
+    },
+    "s3": {
+      "title": "Matches speichern und Status bewegen",
+      "text": "Behalte im Blick, was du gespeichert, wo du dich beworben und wo du Rückmeldung bekommen hast."
+    }
+  },
+
+  "footer": {
+    "title": "Warum sich das besser anfühlt",
+    "text": "Weil dich das System trägt, wenn die Motivation niedrig ist.",
+    "pill1": "Konsequent",
+    "pill2": "Klare nächste Schritte",
+    "pill3": "Weniger Lärm"
+  }
+}

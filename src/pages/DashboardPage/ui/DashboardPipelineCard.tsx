@@ -1,0 +1,107 @@
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+
+import {
+  AppRoutes,
+  RoutePath,
+} from "src/app/providers/router/routeConfig/routeConfig";
+import { DonutChart } from "src/shared/ui";
+import { Card } from "src/shared/ui/Card/Card";
+
+type Summary = {
+  total: number;
+  new: number;
+  applied: number;
+  saved: number;
+  interview: number;
+  offer: number;
+  rejected: number;
+};
+
+type Props = {
+  summary: Summary;
+  size?: number;
+  stroke?: number;
+};
+
+export function DashboardPipelineCard({
+  summary,
+  size = 240,
+  stroke = 16,
+}: Props) {
+   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
+
+  // "Воронка" — это только активные этапы, без Saved.
+  const inPipeline =
+    summary.new +
+    summary.applied +
+    summary.interview +
+    summary.offer +
+    summary.rejected;
+
+  return (
+    <Card padding="md" className="rounded-3xl">
+      <div className="flex justify-center">
+        <DonutChart
+          title={t("pipeline.title", "Applications pipeline")}
+          totalLabel={t("pipeline.totalLabel", "In pipeline")}
+          centerTop={`${inPipeline}`}
+          centerBottom={t("pipeline.centerBottom", "of {{total}} total", {
+            total: summary.total,
+          })}
+          size={size}
+          stroke={stroke}
+          slices={[
+            {
+              label: t("status.new", "New"),
+              value: summary.new,
+              className: "stroke-sky-500",
+            },
+            {
+              label: t("status.applied", "Applied"),
+              value: summary.applied,
+              className: "stroke-blue-500",
+            },
+            {
+              label: t("status.interview", "Interview"),
+              value: summary.interview,
+              className: "stroke-purple-500",
+            },
+            {
+              label: t("status.offer", "Offer"),
+              value: summary.offer,
+              className: "stroke-emerald-500",
+            },
+            {
+              label: t("status.rejected", "Rejected"),
+              value: summary.rejected,
+              className: "stroke-red-500",
+            },
+          ]}
+        />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-background p-3">
+        <div className="text-sm font-medium text-foreground">
+          {t(
+            "pipeline.profileCta.title",
+            "Improve your results",
+          )}
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          {t(
+            "pipeline.profileCta.subtitle",
+            "Fill out your profile so we can tailor your applications.",
+          )}
+        </div>
+
+        <Link
+          to={RoutePath[AppRoutes.SETTINGS_PROFILE]}
+          className="mt-3 inline-flex items-center justify-center rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+        >
+          {t("pipeline.profileCta.button", "Complete profile")}
+        </Link>
+      </div>
+    </Card>
+  );
+}

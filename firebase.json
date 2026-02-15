@@ -1,0 +1,5 @@
+{
+  "firestore": {
+    "rules": "./project-root/firestore.rules"
+  }
+}

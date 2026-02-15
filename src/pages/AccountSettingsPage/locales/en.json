@@ -1,0 +1,45 @@
+{
+  "page": {
+    "title": "Account settings",
+    "subtitle": "Profile"
+  },
+  "sidebar": {
+    "settings": "Settings",
+    "account": "Account",
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "pipelineStatuses": "Pipeline / Statuses",
+    "dangerZone": "Danger Zone",
+    "sensitiveActions": "Sensitive actions",
+    "tip": "Tip: use the menu to switch sections."
+  },
+  "profilePrefs": {
+    "title": "Profile & Preferences",
+    "subtitle": "Manage your account details and app settings"
+  },
+  "profile": {
+    "title": "Profile",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "appLanguage": "App language",
+    "appLanguageHint": "Stored locally and synced to Firestore when signed in"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "storage": "Firestore",
+    "timeZone": "Time zone",
+    "dateFormat": "Date format",
+    "preview": "Preview",
+    "noChanges": "No changes yet.",
+    "dateFormatExample1": "29.01.2026",
+    "dateFormatExample2": "01/29/2026",
+    "dateFormatExample3": "2026-01-29"
+  },
+  "common": {
+    "save": "Save",
+    "reset": "Reset",
+    "saving": "Saving...",
+    "placeholder": "—"
+  }
+}

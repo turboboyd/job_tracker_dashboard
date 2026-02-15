@@ -1,0 +1,39 @@
+{
+  "auth": {
+    "signIn": "Anmelden",
+    "signingIn": "Anmeldung…",
+    "createAccount": "Konto erstellen",
+    "creatingAccount": "Konto wird erstellt…",
+    "loginTitle": "Willkommen zurück",
+    "loginSubtitle": "Melde dich an, um fortzufahren.",
+    "registerTitle": "Konto erstellen",
+    "registerSubtitle": "Starte in wenigen Minuten mit dem Tracking deiner Jobsuche.",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "passwordHint": "Mindestens 8 Zeichen.",
+    "noAccount": "Noch kein Konto?",
+    "haveAccount": "Schon ein Konto?",
+    "or": "oder",
+    "errorTitle": "Etwas ist schiefgelaufen",
+    "google": {
+      "signIn": "Mit Google fortfahren",
+      "opening": "Google wird geöffnet…"
+    },
+    "logout": {
+      "logout": "Abmelden",
+      "signingOut": "Abmeldung…"
+    },
+    "emailPassword": {
+      "continue": "Weiter",
+      "createAccount": "Konto erstellen",
+      "creatingAccount": "Konto wird erstellt…",
+      "signingIn": "Anmeldung…",
+      "switchToSignIn": "Zum Login wechseln",
+      "switchToSignUp": "Zur Registrierung wechseln"
+    }
+  },
+  "common": {
+    "backToHome": "Zur Startseite"
+  }
+}

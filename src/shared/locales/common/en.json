@@ -1,0 +1,17 @@
+{
+  "backToHome": "Back to home",
+  "go": "Go",
+  "done": "Done",
+  "close": "Close",
+  "nav": {
+    "overview": "Overview",
+    "myLoops": "My loops",
+    "board": "Board",
+    "allMatches": "All Matches",
+    "myApplications": "My Applications",
+    "questions": "Questions",
+    "cvChecker": "CV Checker",
+    "cvBuilder": "CV Builder",
+    "inbox": "Inbox"
+  }
+}

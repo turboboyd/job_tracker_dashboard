@@ -7,13 +7,14 @@
 @import "./theme/theme-dark.css";
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
   html,
   body {
     height: 100%;
-  }
-
-  body {
     margin: 0;
     @apply bg-background text-foreground;
   }
+
 }

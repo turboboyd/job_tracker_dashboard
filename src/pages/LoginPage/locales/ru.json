@@ -1,0 +1,39 @@
+{
+  "auth": {
+    "signIn": "Войти",
+    "signingIn": "Вход…",
+    "createAccount": "Создать аккаунт",
+    "creatingAccount": "Создание аккаунта…",
+    "loginTitle": "С возвращением",
+    "loginSubtitle": "Войдите, чтобы продолжить.",
+    "registerTitle": "Создайте аккаунт",
+    "registerSubtitle": "Начните отслеживать поиск работы за несколько минут.",
+    "email": "Email",
+    "password": "Пароль",
+    "confirmPassword": "Повторите пароль",
+    "passwordHint": "Минимум 8 символов.",
+    "noAccount": "Нет аккаунта?",
+    "haveAccount": "Уже есть аккаунт?",
+    "or": "или",
+    "errorTitle": "Произошла ошибка",
+    "google": {
+      "signIn": "Продолжить с Google",
+      "opening": "Открываем Google…"
+    },
+    "logout": {
+      "logout": "Выйти",
+      "signingOut": "Выходим…"
+    },
+    "emailPassword": {
+      "continue": "Продолжить",
+      "createAccount": "Создать аккаунт",
+      "creatingAccount": "Создание аккаунта…",
+      "signingIn": "Вход…",
+      "switchToSignIn": "Перейти ко входу",
+      "switchToSignUp": "Перейти к регистрации"
+    }
+  },
+  "common": {
+    "backToHome": "Назад на главную"
+  }
+}
