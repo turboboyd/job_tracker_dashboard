@@ -3,8 +3,12 @@ import dotenv from "dotenv";
 export function buildEnv(isProd: boolean): Record<string, string> {
   dotenv.config();
 
+  const publicUrl = process.env.PUBLIC_URL ?? "";
+
   const env = {
     NODE_ENV: isProd ? "production" : "development",
+    PUBLIC_URL: publicUrl,
+
     FIREBASE_API_KEY: process.env.FIREBASE_API_KEY ?? "",
     FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN ?? "",
     FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ?? "",
@@ -15,7 +19,7 @@ export function buildEnv(isProd: boolean): Record<string, string> {
 
   return {
     __ENV__: JSON.stringify(env),
-     __IS_PROD__: JSON.stringify(isProd),
-    __PUBLIC_URL__: JSON.stringify(process.env.PUBLIC_URL || ""),
+    __IS_PROD__: JSON.stringify(isProd),
+    __PUBLIC_URL__: JSON.stringify(publicUrl),
   };
 }

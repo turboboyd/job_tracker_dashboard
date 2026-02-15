@@ -11,14 +11,14 @@ import { initAuthListener } from "./entities/auth";
 
 import "./styles/globals.css";
 
+declare const __IS_PROD__: boolean;
+
 const container = document.getElementById("root");
 if (!container) throw new Error("Root element #root not found");
 
 store.dispatch(initAuthListener());
 
-
-const rawBase = (process.env.PUBLIC_URL ?? "").trim();
-const basename = rawBase ? rawBase.replace(/\/$/, "") : "/";
+const basename = __IS_PROD__ ? "/job_tracker_dashboard" : "/";
 
 createRoot(container).render(
   <React.StrictMode>

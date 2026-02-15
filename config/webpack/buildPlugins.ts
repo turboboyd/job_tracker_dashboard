@@ -40,9 +40,9 @@ export function buildPlugins(
 
     new ESLintWebpackPlugin({
       extensions: ["js", "jsx", "ts", "tsx"],
-      failOnError: isProd, 
-      emitWarning: isDev, 
-      emitError: isProd, 
+      failOnError: isProd,
+      emitWarning: isDev,
+      emitError: isProd,
     }),
   ];
 

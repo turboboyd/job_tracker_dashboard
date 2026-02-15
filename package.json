@@ -61,6 +61,7 @@
     "autoprefixer": "^10.4.23",
     "babel-loader": "^10.0.0",
     "copy-webpack-plugin": "^13.0.1",
+    "cross-env": "^10.1.0",
     "css-loader": "^7.1.2",
     "dependency-cruiser": "^17.3.7",
     "dotenv": "^17.2.3",
