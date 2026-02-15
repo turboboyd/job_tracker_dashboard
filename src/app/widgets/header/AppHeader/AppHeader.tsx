@@ -50,10 +50,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   const navItems = isAuthenticated ? authNavItems : guestNavItems;
 
+  // ✅ Minimal fix:
+  // Move ONLY the left group (close button + dashboard link/title) to the right
+  // when the desktop sidebar is open, so it doesn't get hidden on zoom.
+  // We do NOT touch overall header layout/overflow/sticky to keep scrolling exactly as before.
+  const leftShiftClass =
+    isAuthenticated && sidebarOpen ? "md:translate-x-64" : "md:translate-x-0";
+
   return (
     <header className="h-16 bg-card shadow-[var(--shadow-sm)]">
-      <div className="mx-auto flex h-full max-w-container items-center justify-between pl-12 pr-4 ">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex h-full max-w-container items-center justify-between pl-12 pr-4">
+        <div
+          className={[
+            "flex items-center gap-3",
+            "transition-transform duration-300 ease-out",
+            leftShiftClass,
+          ].join(" ")}
+        >
           {isAuthenticated && (
             <Button
               variant="ghost"

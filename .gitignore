@@ -32,3 +32,6 @@ storybook-static/
 
 
 report
+
+# functions
+/functions/node_modules

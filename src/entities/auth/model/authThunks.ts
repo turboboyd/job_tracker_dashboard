@@ -9,9 +9,17 @@ import {
   signOut,
 } from "firebase/auth";
 
-import { auth } from "src/shared/config/firebase/firebase";
+import { auth, db } from "src/shared/config/firebase/firebase";
 
 import type { AuthError } from "./authTypes";
+
+
+
+
+//demo
+import { seedDemoDataIfNeeded } from "src/shared/lib/seed/seedDemoData";
+
+
 
 
 function toAuthError(e: unknown): AuthError {
@@ -26,22 +34,23 @@ function toAuthError(e: unknown): AuthError {
   }
   return { message: "Authentication error" };
 }
-
 export const signInWithGoogle = createAsyncThunk<void, void, { rejectValue: AuthError }>(
   "auth/signInWithGoogle",
   async (_, { rejectWithValue }) => {
     try {
-      await setPersistence(auth, browserLocalPersistence).catch(() => {
-        // ignore
-      });
+      await setPersistence(auth, browserLocalPersistence).catch(() => {});
 
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const cred = await signInWithPopup(auth, provider);
+
+      await seedDemoDataIfNeeded({ db, uid: cred.user.uid });
     } catch (e) {
+      console.error("[signInWithGoogle] error:", e);
       return rejectWithValue(toAuthError(e));
     }
   }
 );
+
 
 export const signInWithEmail = createAsyncThunk<
   void,
@@ -69,11 +78,16 @@ export const signUpWithEmail = createAsyncThunk<
       // ignore
     });
 
-    await createUserWithEmailAndPassword(auth, email, password);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    // ✅ берём uid из результата регистрации
+    await seedDemoDataIfNeeded({ db, uid: cred.user.uid });
   } catch (e) {
+    console.error("[signUpWithEmail] error:", e);
     return rejectWithValue(toAuthError(e));
   }
 });
+
 
 export const signOutThunk = createAsyncThunk<void, void, { rejectValue: AuthError }>(
   "auth/signOut",
