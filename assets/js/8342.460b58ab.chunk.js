@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[8342],{88342(e){e.exports=JSON.parse('{"title":"Ресурсы","subtitle":"Это страница ресурсов."}')}}]);

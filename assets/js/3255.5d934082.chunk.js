@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[3255],{23255(e){e.exports=JSON.parse('{"title":"Вопросы профиля","subtitle":"Вопросы и ответы для заполнения профиля."}')}}]);

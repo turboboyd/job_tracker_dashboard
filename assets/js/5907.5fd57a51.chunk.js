@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[5907],{65907(e){e.exports=JSON.parse('{"title":"CV-Check","subtitle":"Kommt bald. Lade deinen Lebenslauf hoch oder füge ihn ein, um Feedback zu Struktur und Klarheit zu erhalten."}')}}]);

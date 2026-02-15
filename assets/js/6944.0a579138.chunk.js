@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[6944],{6944(e){e.exports=JSON.parse('{"title":"Fragen","subtitle":"Kommt bald. Wir helfen dir, dein Profil und deine Jobsuch-Strategie mit einem kurzen Q&A zu verbessern."}')}}]);

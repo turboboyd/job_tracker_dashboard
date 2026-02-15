@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[1881],{41881(e){e.exports=JSON.parse('{"title":"Конструктор CV","subtitle":"Скоро. Собирай аккуратное CV из профиля и экспортируй."}')}}]);

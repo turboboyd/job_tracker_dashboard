@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[7468],{7468(e,s,r){r.r(s),r.d(s,{default:()=>c});var t=r(22022),a=r(74848);const c=()=>{const{t:e}=(0,t.Bd)();return(0,a.jsxs)("div",{className:"space-y-4",children:[(0,a.jsx)("h1",{className:"text-xl font-semibold",children:e("resources.title","Resources")}),(0,a.jsx)("div",{className:"rounded-lg border bg-white p-4 text-sm text-slate-700",children:e("resources.subtitle","This is the Resources page.")})]})}}}]);
+//# sourceMappingURL=7468.9ba6ea00.chunk.js.map

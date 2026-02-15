@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[5553],{45553(e){e.exports=JSON.parse('{"title":"Входящие","subtitle":"Скоро. Храни письма рекрутеров и фоллоу-апы в одном месте."}')}}]);

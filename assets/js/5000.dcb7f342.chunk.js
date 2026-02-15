@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[5e3],{75e3(e){e.exports=JSON.parse('{"title":"Über","subtitle":"Build läuft. Nächstes: API + RTK Query + UI kit."}')}}]);

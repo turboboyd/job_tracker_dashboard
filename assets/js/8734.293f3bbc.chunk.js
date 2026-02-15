@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[8734],{28734(s,e,a){a.r(e),a.d(e,{default:()=>r});var t=a(74848);function r(){return(0,t.jsxs)("div",{className:"space-y-2",children:[(0,t.jsx)("div",{className:"text-xl font-semibold text-foreground",children:"My applications"}),(0,t.jsx)("div",{className:"text-sm text-muted-foreground",children:"Coming soon. Track submitted applications and statuses."})]})}}}]);
+//# sourceMappingURL=8734.293f3bbc.chunk.js.map

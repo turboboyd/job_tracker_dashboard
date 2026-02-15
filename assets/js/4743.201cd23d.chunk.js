@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[4743],{74743(e){e.exports=JSON.parse('{"title":"CV-Builder","subtitle":"Kommt bald. Erstelle einen sauberen Lebenslauf aus deinem Profil und exportiere ihn."}')}}]);
