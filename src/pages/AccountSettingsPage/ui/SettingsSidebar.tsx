@@ -1,3 +1,5 @@
+// src/pages/AccountSettingsPage/ui/SettingsSidebar.tsx
+
 import {
   Bell,
   ShieldAlert,
@@ -26,14 +28,17 @@ type Item = {
 
 function baseItemClass(isActive: boolean) {
   return [
-    "group flex items-center justify-between gap-2",
-    "rounded-md px-sm py-2",
+    "group flex items-center gap-2",
+    "justify-start",
+    "rounded-md px-3 py-2.5",
     "border border-transparent",
     "transition duration-normal ease-in-out",
     "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
     isActive
       ? "bg-muted text-foreground"
       : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    "md:justify-between md:px-sm md:py-2",
+    "w-auto shrink-0 md:w-full",
   ].join(" ");
 }
 
@@ -80,48 +85,62 @@ export function SettingsSidebar() {
   ];
 
   return (
-    <Card className="p-4">
+    <Card className="p-3 sm:p-4 lg:sticky lg:top-6">
       <SectionHeader
         title={t("accountSettings.sidebar.settings", "Settings")}
         subtitle={t("accountSettings.sidebar.account", "Account")}
       />
 
-      <div className="mt-3 space-y-1">
-        {items.map((item) => (
-          <NavLink key={item.to} to={item.to}>
-            {({ isActive }) => {
-              const Icon = item.icon;
+      <div className="mt-3 relative">
+        {/* Gradient hint (right side) to show horizontal scroll on mobile */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent md:hidden" />
 
-              return (
-                <div className={baseItemClass(isActive)}>
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      className={[
-                        "h-4 w-4",
-                        iconClass(isActive, item.variant),
-                      ].join(" ")}
-                    />
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium">
-                        {item.label}
-                      </div>
-                      {item.hint ? (
-                        <div className="truncate text-xs text-muted-foreground">
-                          {item.hint}
+        <div
+          className={[
+            "flex gap-2 overflow-x-auto pb-2",
+            "[-ms-overflow-style:none] [scrollbar-width:none]",
+            "[&::-webkit-scrollbar]:hidden",
+            "md:block md:space-y-1 md:overflow-visible md:pb-0",
+          ].join(" ")}
+        >
+          {items.map((item) => (
+            <NavLink key={item.to} to={item.to} className="block">
+              {({ isActive }) => {
+                const Icon = item.icon;
+
+                return (
+                  <div className={baseItemClass(isActive)}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Icon
+                        className={[
+                          "h-4 w-4",
+                          iconClass(isActive, item.variant),
+                        ].join(" ")}
+                      />
+
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">
+                          {item.label}
                         </div>
-                      ) : null}
-                    </div>
-                  </div>
 
-                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
-                </div>
-              );
-            }}
-          </NavLink>
-        ))}
+                        {item.hint ? (
+                          <div className="hidden md:block truncate text-xs text-muted-foreground">
+                            {item.hint}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <ChevronRight className="hidden md:block h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                  </div>
+                );
+              }}
+            </NavLink>
+          ))}
+        </div>
       </div>
 
-      <div className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+      <div className="mt-4 hidden sm:block border-t border-border pt-3 text-xs text-muted-foreground">
         {t(
           "accountSettings.sidebar.tip",
           "Tip: use the menu to switch sections."

@@ -30,8 +30,13 @@ export function BoardColumn({
   const itemIds = React.useMemo(() => matches.map((m) => m.id), [matches]);
 
   return (
-    <div className="w-[320px] shrink-0 h-full min-h-0 flex flex-col">
-      <Card variant="subtle" padding="md" shadow="none" className="shrink-0 mb-md">
+    <div className="w-[calc(100vw-2rem)] md:w-[320px] shrink-0 h-full min-h-0 flex flex-col">
+      <Card
+        variant="subtle"
+        padding="md"
+        shadow="none"
+        className="shrink-0 mb-sm md:mb-md"
+      >
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold text-foreground">{title}</div>
           <div className="text-xs text-muted-foreground">{matches.length}</div>
@@ -44,7 +49,7 @@ export function BoardColumn({
           items={itemIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col gap-md">
+          <div className="flex flex-col gap-sm md:gap-md">
             {matches.map((m, i) => (
               <BoardMatchCard
                 key={m.id}

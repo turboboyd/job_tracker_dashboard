@@ -83,7 +83,7 @@ export function BoardMatchCardView({
   } else if (busy) {
     cursorClass = "opacity-60 cursor-not-allowed";
   } else {
-    cursorClass = "cursor-grab";
+    cursorClass = "cursor-pointer md:cursor-grab";
   }
 
   return (
@@ -121,7 +121,7 @@ export function BoardMatchCardView({
               disabled={busy}
               className={classNames(
                 "absolute right-2 top-2",
-                "inline-flex h-8 w-8 items-center justify-center rounded-full",
+                "inline-flex h-10 w-10 md:h-8 md:w-8 items-center justify-center rounded-full",
                 "border border-border bg-card text-muted-foreground",
                 "shadow-sm",
                 "hover:bg-muted hover:text-foreground",
@@ -134,7 +134,7 @@ export function BoardMatchCardView({
               }}
               onClick={onQuickDelete}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
             </button>
           ) : null}
 

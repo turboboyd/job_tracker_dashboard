@@ -54,5 +54,6 @@ export function getLaneStatusFromOverId(
 ): LoopMatchStatus | null {
 
   if (overId.startsWith("lane:")) return overId.slice(5) as LoopMatchStatus;
+  if (overId.startsWith("lane-tab:")) return overId.slice(9) as LoopMatchStatus;
   return null;
 }

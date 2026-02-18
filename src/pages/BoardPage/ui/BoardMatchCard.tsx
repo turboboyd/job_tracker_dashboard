@@ -38,7 +38,11 @@ export function BoardMatchCard({ match, loopName, busy, onDelete, index }: Props
     <div
       ref={setNodeRef}
       style={style}
-      className={classNames("touch-none select-none", isDragging && "z-10")}
+      // Mobile: keep vertical scroll usable while still allowing drag after long-press.
+      className={classNames(
+        "select-none touch-pan-y touch-manipulation md:touch-none",
+        isDragging && "z-10",
+      )}
       {...attributes}
       {...listeners}
     >

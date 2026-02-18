@@ -1,5 +1,6 @@
 import {
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -37,6 +38,10 @@ export function useBoardColumnsDnd(vm: BoardVM): UseBoardColumnsDndResult {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
+    }),
+    // Mobile: allow normal scrolling; start drag only after a short long-press.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 220, tolerance: 6 },
     }),
   );
 

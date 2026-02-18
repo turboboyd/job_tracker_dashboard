@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -5,8 +6,6 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { sidebarItems } from "src/app/providers/router/layouts/navConfig";
 import { useAppSelector } from "src/app/store/hooks";
 import { selectLoopsResumeUrl } from "src/entities/loop";
-
-
 
 type AppSidebarProps = {
   isOpen: boolean;
@@ -46,22 +45,37 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
       <aside
         className={[
           "fixed left-0 top-0 z-50 h-screen w-72 md:w-64",
-          "bg-card ",
+          "bg-card",
           "shadow-[var(--shadow-md)]",
           "transition-transform duration-200 ease-out",
           isOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
       >
-        <div className="h-16 flex items-center px-4">
+        <div className="h-16 flex items-center justify-between px-4">
           <div className="text-base font-semibold text-foreground">
             Job Tracker
           </div>
+
+          {/* Mobile-only close button (<= 760px) */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close sidebar"
+            className={[
+              "max-[760px]:inline-flex min-[761px]:hidden",
+              "h-9 w-9 items-center justify-center rounded-md",
+              "text-muted-foreground hover:bg-muted hover:text-foreground",
+              "transition-colors",
+            ].join(" ")}
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <nav className="p-3 flex flex-col gap-1">
           {sidebarItems.map(({ labelKey, labelDefault, path, Icon }) => {
             const label = t(labelKey, labelDefault);
-            // ✅ special behavior for "My loops"
+
             if (path === "/dashboard/loops") {
               return (
                 <button

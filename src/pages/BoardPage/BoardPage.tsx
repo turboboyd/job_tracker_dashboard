@@ -20,8 +20,7 @@ export default function BoardPage() {
     <div className="h-full min-h-0 flex flex-col overflow-hidden">
       <PageHeader title={title} subtitle={subtitle} />
 
-
-      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <BoardState matchesQ={matchesQ} isEmpty={isEmpty}>
           <BoardColumns vm={vm} />
         </BoardState>

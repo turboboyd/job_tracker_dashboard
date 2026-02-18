@@ -22,7 +22,7 @@ export function BoardLane({ status, children }: Props) {
       className={classNames(
         "flex-1 min-h-0",
         "rounded-xl border border-border bg-muted/40",
-        "p-md",
+        "p-sm md:p-md",
         "overflow-y-auto overflow-x-hidden",
         isOver && "bg-muted ring-2 ring-primary/40",
       )}

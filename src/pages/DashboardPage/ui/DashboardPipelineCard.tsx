@@ -1,10 +1,6 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 
-import {
-  AppRoutes,
-  RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
 import { DonutChart } from "src/shared/ui";
 import { Card } from "src/shared/ui/Card/Card";
 
@@ -29,9 +25,17 @@ export function DashboardPipelineCard({
   size = 240,
   stroke = 16,
 }: Props) {
-   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
+  const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
 
-  // "Воронка" — это только активные этапы, без Saved.
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const inPipeline =
     summary.new +
     summary.applied +
@@ -39,8 +43,14 @@ export function DashboardPipelineCard({
     summary.offer +
     summary.rejected;
 
+  const responsiveSize = isMobile ? 200 : size;
+  const responsiveStroke = isMobile ? 14 : stroke;
+
   return (
-    <Card padding="md" className="rounded-3xl">
+    <Card
+      padding="md"
+      className="rounded-3xl p-4 sm:p-6"
+    >
       <div className="flex justify-center">
         <DonutChart
           title={t("pipeline.title", "Applications pipeline")}
@@ -49,8 +59,8 @@ export function DashboardPipelineCard({
           centerBottom={t("pipeline.centerBottom", "of {{total}} total", {
             total: summary.total,
           })}
-          size={size}
-          stroke={stroke}
+          size={responsiveSize}
+          stroke={responsiveStroke}
           slices={[
             {
               label: t("status.new", "New"),
@@ -79,28 +89,6 @@ export function DashboardPipelineCard({
             },
           ]}
         />
-      </div>
-
-      <div className="mt-4 rounded-2xl border border-border bg-background p-3">
-        <div className="text-sm font-medium text-foreground">
-          {t(
-            "pipeline.profileCta.title",
-            "Improve your results",
-          )}
-        </div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          {t(
-            "pipeline.profileCta.subtitle",
-            "Fill out your profile so we can tailor your applications.",
-          )}
-        </div>
-
-        <Link
-          to={RoutePath[AppRoutes.SETTINGS_PROFILE]}
-          className="mt-3 inline-flex items-center justify-center rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
-        >
-          {t("pipeline.profileCta.button", "Complete profile")}
-        </Link>
       </div>
     </Card>
   );
