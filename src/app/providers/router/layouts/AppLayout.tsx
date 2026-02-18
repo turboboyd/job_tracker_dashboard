@@ -30,21 +30,16 @@ export const AppLayout: React.FC = () => {
         <AppSidebar isOpen={sidebar.isOpen} onClose={sidebar.close} />
       )}
 
-      <main className="flex-1 min-h-0 overflow-hidden">
+      {/* Main content scroll lives here */}
+      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div
           className={[
             shiftClass,
-            "h-full min-h-0",
+            "min-h-full",
             "transition-[margin] duration-300 ease-out",
           ].join(" ")}
         >
-          <PageShell
-            paddingX="md"
-            paddingY="sm"
-            fullHeight
-            layout="flexCol"
-            overflow="hidden"
-          >
+          <PageShell paddingX="md" paddingY="sm" fullHeight layout="flexCol">
             <Outlet />
           </PageShell>
         </div>

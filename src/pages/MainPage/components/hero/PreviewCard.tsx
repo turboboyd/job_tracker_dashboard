@@ -1,9 +1,6 @@
 import React from "react";
-
 import { Card } from "src/shared/ui";
-
 import { StatusPill } from "../StatusPill";
-
 import type { PreviewModel } from "./types";
 
 function MiniArrow() {
@@ -18,7 +15,7 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
   return (
     <div className="w-full max-w-xl">
       <Card className="p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-foreground break-words [hyphens:auto]">
               {model.header.title}
@@ -27,8 +24,7 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
               {model.header.subtitle}
             </div>
           </div>
-
-          <div className="flex shrink-0 flex-wrap items-center gap-sm">
+          <div className="flex w-full flex-wrap items-center gap-sm sm:w-auto sm:justify-end">
             <StatusPill
               label={model.header.liveLabel}
               tone="info"
@@ -39,9 +35,7 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
             </span>
           </div>
         </div>
-
         <div className="mt-4 space-y-md">
-          {/* Loop */}
           <div className="rounded-2xl border border-border bg-background p-lg">
             <div className="flex flex-wrap items-center justify-between gap-sm">
               <div className="text-xs text-muted-foreground">
@@ -53,11 +47,9 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
                 className="border border-border"
               />
             </div>
-
             <div className="mt-2 text-sm font-semibold text-foreground break-words [hyphens:auto]">
               {model.loop.title}
             </div>
-
             <div className="mt-2 flex flex-wrap gap-sm">
               {model.loop.badges.map((b) => (
                 <span
@@ -69,10 +61,8 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
               ))}
             </div>
           </div>
-
-          {/* Links */}
           <div className="rounded-2xl border border-border bg-background p-lg">
-            <div className="flex items-center justify-between gap-md">
+            <div className="flex flex-wrap items-center justify-between gap-sm">
               <div className="text-xs text-muted-foreground">
                 {model.links.title}
               </div>
@@ -80,7 +70,6 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
                 {model.links.openLabel}
               </span>
             </div>
-
             <div className="mt-2 grid grid-cols-1 gap-sm sm:grid-cols-2">
               {model.links.items.map((x) => (
                 <div
@@ -99,8 +88,6 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
               ))}
             </div>
           </div>
-
-          {/* Pipeline */}
           <div className="rounded-2xl border border-border bg-background p-lg">
             <div className="flex items-center justify-between gap-md">
               <div className="text-xs text-muted-foreground">
@@ -117,8 +104,7 @@ export function PreviewCard({ model }: { model: PreviewModel }) {
                 ))}
               </div>
             </div>
-
-            <div className="mt-3 grid grid-cols-3 gap-sm text-center">
+            <div className="mt-3 grid grid-cols-1 gap-sm text-center sm:grid-cols-3">
               {model.pipeline.stats.map((s) => (
                 <div
                   key={s.k}

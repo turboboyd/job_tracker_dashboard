@@ -8,24 +8,32 @@ type HeaderProps = {
 
 export function PageHeader({ title, subtitle, right }: HeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-3">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <div className="text-2xl font-semibold text-foreground">{title}</div>
-        {subtitle ? <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div> : null}
+        <div className="text-2xl font-semibold text-foreground break-words [hyphens:auto]">
+          {title}
+        </div>
+        {subtitle ? (
+          <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
+        ) : null}
       </div>
-      {right}
+      <div className="w-full sm:w-auto">{right}</div>
     </div>
   );
 }
 
 export function SectionHeader({ title, subtitle, right }: HeaderProps) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <div className="text-base font-semibold text-foreground">{title}</div>
-        {subtitle ? <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div> : null}
+        <div className="text-base font-semibold text-foreground break-words [hyphens:auto]">
+          {title}
+        </div>
+        {subtitle ? (
+          <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
+        ) : null}
       </div>
-      {right}
+      <div className="w-full sm:w-auto">{right}</div>
     </div>
   );
 }
