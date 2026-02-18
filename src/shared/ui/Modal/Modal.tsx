@@ -59,7 +59,17 @@ export function Modal({
             "transition-transform transition-opacity duration-normal ease-ease-out",
             "data-[state=open]:opacity-100 data-[state=open]:scale-100",
             "data-[state=closed]:opacity-0 data-[state=closed]:scale-95",
-            sizeMap[size]
+            sizeMap[size],
+
+            "max-[500px]:left-0 max-[500px]:top-0",
+            "max-[500px]:w-screen max-[500px]:h-screen",
+            "max-[500px]:max-h-screen",
+            "max-[500px]:translate-x-0 max-[500px]:translate-y-0",
+            "max-[500px]:rounded-none",
+            "max-[500px]:border-0",
+            "max-[500px]:p-4",
+            "max-[500px]:pt-[max(1rem,env(safe-area-inset-top))]",
+            "max-[500px]:pb-[max(1rem,env(safe-area-inset-bottom))]"
           )}
         >
           {title || description ? (
@@ -91,6 +101,7 @@ export function Modal({
                   "border-border bg-card text-foreground",
                   "shadow-sm",
                   "hover:bg-muted",
+                  "max-[500px]:right-4 max-[500px]:top-4 max-[500px]:h-10",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 )}
                 aria-label={t("common.close", "Close")}

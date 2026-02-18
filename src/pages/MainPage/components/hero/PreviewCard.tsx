@@ -1,6 +1,9 @@
 import React from "react";
+
 import { Card } from "src/shared/ui";
+
 import { StatusPill } from "../StatusPill";
+
 import type { PreviewModel } from "./types";
 
 function MiniArrow() {
