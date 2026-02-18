@@ -193,9 +193,10 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
         }}
       />
 
-      <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 space-y-4">
+        {/* Header + actions (responsive) */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-semibold text-foreground">
                 {t("loops.searchLinksTitle", "Search links")}
@@ -217,26 +218,55 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
               )}
             </p>
 
-            {appliedBadges.length ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {appliedBadges.map((b) => (
-                  <span
-                    key={b}
-                    className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground"
-                  >
-                    {b}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+            {/* Mobile: collapse filters to reduce clutter */}
+            <div className="mt-2">
+              <details className="sm:hidden">
+                <summary className="cursor-pointer select-none text-sm text-muted-foreground">
+                  {t("loops.filters", "Filters")} ({appliedBadges.length})
+                </summary>
+
+                {appliedBadges.length ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {appliedBadges.map((b) => (
+                      <span
+                        key={b}
+                        className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground"
+                      >
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {t("loops.noFilters", "No filters applied")}
+                  </div>
+                )}
+              </details>
+
+              {/* Desktop/tablet: show filters inline */}
+              {appliedBadges.length ? (
+                <div className="hidden sm:flex flex-wrap gap-2">
+                  {appliedBadges.map((b) => (
+                    <span
+                      key={b}
+                      className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground"
+                    >
+                      {b}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Actions: stack on mobile, row on larger screens */}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <Button
               variant="outline"
               shape="lg"
               onClick={() => setIsSettingsOpen(true)}
               disabled={isSaving}
+              className="w-full sm:w-auto"
             >
               {t("loops.myLoopSettings", "My Loop settings")}
             </Button>
@@ -246,6 +276,7 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
               shape="lg"
               onClick={() => setIsSourcesModalOpen(true)}
               disabled={!canEditSources}
+              className="w-full sm:w-auto"
             >
               {t("loops.editSources", "Edit sources")}
             </Button>
@@ -256,6 +287,7 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
               shadow="sm"
               onClick={() => openAddModal(undefined)}
               disabled={!userId}
+              className="w-full sm:w-auto"
             >
               {t("loops.addMatch", "Add match")}
             </Button>

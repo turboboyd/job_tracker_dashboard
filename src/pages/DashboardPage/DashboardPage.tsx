@@ -90,7 +90,7 @@ export default function DashboardPage() {
               {t("onboardingTitle")}
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
               <DashboardOnboardingActions
                 hasJobs={hasMatches}
                 onGoProfile={goProfile}
