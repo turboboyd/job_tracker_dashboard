@@ -10,13 +10,12 @@ export const baseApi = createApi({
     "LoopRuns",
     "LoopMatches",
     "UserSettings",
+    "ResourceFavorites",
     "Outcome",
     "PublicStats",
   ],
-
   keepUnusedDataFor: 60,
   refetchOnFocus: true,
   refetchOnReconnect: true,
-
   endpoints: () => ({}),
 });

@@ -9,8 +9,7 @@ export function TrendsTooltip({
   label,
 }: {
   active?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payload?: any[];
+  payload?: Array<{ dataKey?: unknown; value?: unknown }>;
   label?: string | number;
 }) {
   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
@@ -20,9 +19,11 @@ export function TrendsTooltip({
   const title = typeof label === "string" ? label : String(label ?? "");
 
   const items = payload
-    .filter((p) => SERIES.includes(p.dataKey as SeriesKey))
+    .filter((p): p is { dataKey: SeriesKey; value?: unknown } =>
+      typeof p.dataKey === "string" && SERIES.includes(p.dataKey as SeriesKey)
+    )
     .map((p) => {
-      const key = p.dataKey as SeriesKey;
+      const key = p.dataKey;
       return {
         key,
         label: String(t(`status.${key}`, { defaultValue: key })),

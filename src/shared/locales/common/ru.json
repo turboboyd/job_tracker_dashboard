@@ -1,17 +1,18 @@
 {
-  "backToHome": "На главную",
+  "backToHome": "Вернуться на главную",
   "go": "Перейти",
   "done": "Готово",
   "close": "Закрыть",
   "nav": {
     "overview": "Обзор",
-    "myLoops": "Мои лупы",
+    "myLoops": "Мои циклы",
     "board": "Доска",
     "allMatches": "Все совпадения",
-    "myApplications": "Мои отклики",
+    "myApplications": "Мои заявки",
+    "Resources": "Ресурсы",
     "questions": "Вопросы",
-    "cvChecker": "Проверка CV",
-    "cvBuilder": "Создание CV",
+    "cvChecker": "Проверка резюме",
+    "cvBuilder": "Конструктор резюме",
     "inbox": "Входящие"
   }
 }

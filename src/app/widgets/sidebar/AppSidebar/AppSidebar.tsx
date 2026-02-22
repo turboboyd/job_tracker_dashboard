@@ -6,6 +6,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { sidebarItems } from "src/app/providers/router/layouts/navConfig";
 import { useAppSelector } from "src/app/store/hooks";
 import { selectLoopsResumeUrl } from "src/entities/loop";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
 
 type AppSidebarProps = {
   isOpen: boolean;
@@ -29,8 +30,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
   const loopsResumeUrl = useAppSelector(selectLoopsResumeUrl);
 
   const isLoopsActive =
-    location.pathname === "/dashboard/loops" ||
-    location.pathname.startsWith("/dashboard/loops/");
+    location.pathname === RoutePath[AppRoutes.LOOPS] ||
+    location.pathname.startsWith(RoutePath[AppRoutes.LOOPS]);
 
   return (
     <>
@@ -76,7 +77,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
           {sidebarItems.map(({ labelKey, labelDefault, path, Icon }) => {
             const label = t(labelKey, labelDefault);
 
-            if (path === "/dashboard/loops") {
+            if (path === RoutePath[AppRoutes.LOOPS]) {
               return (
                 <button
                   key={path}
@@ -98,7 +99,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
                 key={path}
                 to={path}
                 className={({ isActive }) => itemClass(isActive)}
-                end={path === "/dashboard"}
+                end={path === RoutePath[AppRoutes.DASHBOARD]}
                 onClick={onClose}
               >
                 <Icon className="h-5 w-5" />

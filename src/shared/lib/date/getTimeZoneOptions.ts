@@ -1,8 +1,9 @@
 export function getTimeZoneOptions(): string[] {
-  const anyIntl = Intl as unknown as {
-    supportedValuesOf?: (key: string) => string[];
-  };
-  const supported = anyIntl.supportedValuesOf?.("timeZone");
+  const supported = (
+    Intl as typeof Intl & {
+      supportedValuesOf?: (key: string) => string[];
+    }
+  ).supportedValuesOf?.("timeZone");
 
   if (Array.isArray(supported) && supported.length > 50) {
     return supported;

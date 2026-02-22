@@ -1,4 +1,107 @@
 {
   "title": "Ressourcen",
-  "subtitle": "Dies ist die Ressourcenseite."
+  "subtitle": "Ausgewählte Links zu Lebenslauf, Interviews, Lernen und Produktivität während der Jobsuche.",
+  "tabs": {
+    "all": "Alle",
+    "favorites": "Favoriten"
+  },
+  "categories": {
+    "all": "Alle",
+    "cv": "Lebenslauf",
+    "interview": "Interviews",
+    "jobBoards": "Jobbörsen",
+    "learning": "Lernen",
+    "productivity": "Produktivität"
+  },
+  "actions": {
+    "open": "Öffnen",
+    "reset": "Zurücksetzen",
+    "retry": "Erneut versuchen",
+    "save": "Zu Favoriten speichern",
+    "unsave": "Aus Favoriten entfernen",
+    "suggest": {
+      "label": "Ressource vorschlagen",
+      "email": "danivdenis1@gmail.com",
+      "subject": "Ressourcenvorschlag"
+    }
+  },
+  "filters": {
+    "title": "Finde, was du brauchst",
+    "subtitle": "Nach Kategorie filtern oder nach Stichwörtern suchen."
+  },
+  "search": {
+    "label": "Suche",
+    "placeholder": "ATS, STAR, React, remote…"
+  },
+  "results": {
+    "none": "Keine Ergebnisse",
+    "count": "{{count}} Ressourcen"
+  },
+  "favorites": {
+    "loading": "Lädt…",
+    "count": "{{count}} gespeichert"
+  },
+  "errors": {
+    "loadFailed": "Favoriten konnten nicht geladen werden. Prüfe Firestore-Regeln/Berechtigungen."
+  },
+  "empty": "Probiere ein anderes Stichwort oder wechsle den Kategorien-Filter.",
+  "tags": {
+    "cv": "Lebenslauf",
+    "ats": "ATS",
+    "coverLetter": "Anschreiben",
+    "templates": "Vorlagen",
+    "interview": "Interview",
+    "systemDesign": "Systemdesign",
+    "engineering": "Engineering",
+    "profile": "Profil",
+    "search": "Suche",
+    "remote": "Remote",
+    "jobs": "Jobs",
+    "learning": "Lernen",
+    "focus": "Fokus",
+    "productivity": "Produktivität",
+    "planning": "Planung"
+  },
+  "items": {
+    "ats": {
+      "title": "ATS-freundliche CV-Checkliste",
+      "description": "Kurze Checkliste, damit dein CV das ATS-Screening besteht und gut lesbar bleibt."
+    },
+    "coverLetter": {
+      "title": "Struktur fürs Anschreiben",
+      "description": "Einfache Struktur: Einstieg, Fit, Beleg/Beweise, Abschluss."
+    },
+    "behavioral": {
+      "title": "Behavioral-Interview vorbereiten (STAR)",
+      "description": "STAR hilft Stories klar zu erzählen: Situation, Task, Action, Result."
+    },
+    "systemDesign": {
+      "title": "Systemdesign-Basics (Praxis-Guide)",
+      "description": "Für Software-Rollen: Inhalte, Struktur der Antworten und Kommunikation von Trade-offs."
+    },
+    "linkedin": {
+      "title": "LinkedIn-Profil-Checkliste",
+      "description": "Kleine Verbesserungen für bessere Sichtbarkeit: Headline, About, Keywords, Projekte."
+    },
+    "remote": {
+      "title": "Remote-Jobs: Best Practices",
+      "description": "Wie du Remote-Angebote bewertest und dich gut aufstellst."
+    },
+    "javascript": {
+      "title": "Moderner JavaScript-Kurs",
+      "description": "Starke JS-Grundlagen und moderne Patterns – gut für Interviews und den Alltag."
+    },
+    "react": {
+      "title": "React-Dokumentation (Lernen + Referenz)",
+      "description": "Offizielle Docs zu modernen React-Patterns, Hooks und Best Practices."
+    },
+    "deepWork": {
+      "title": "Fokus & Deep Work",
+      "description": "Taktiken zum Schutz deines Fokus: Batching, Wochenreview, weniger Ablenkungen."
+    },
+    "timeboxing": {
+      "title": "Timeboxing: Praxisleitfaden",
+      "description": "Plane den Tag in Blöcken, damit Fortschritt sichtbar bleibt und du nicht ausbrennst."
+    }
+  }
 }

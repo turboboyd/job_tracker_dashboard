@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   FileEdit,
   Mail,
+  BookOpen,
 } from "lucide-react";
 
 import { AppRoutes, RoutePath } from "../routeConfig/routeConfig";
@@ -51,6 +52,14 @@ export const sidebarItems: SidebarItem[] = [
     path: RoutePath[AppRoutes.APPLICATIONS],
     Icon: FileText,
   },
+
+  {
+    labelKey: "common.nav.resources",
+    labelDefault: "Resources",
+    path: RoutePath[AppRoutes.DASHBOARD_RESOURCES],
+    Icon: BookOpen,
+  },
+
   {
     labelKey: "common.nav.questions",
     labelDefault: "Questions",

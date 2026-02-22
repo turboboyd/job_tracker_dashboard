@@ -47,7 +47,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const secretAutoComplete = joinKey("current", secretFieldName).replace(".", "-");
 
 
-  const secretPreset = secretFieldName as unknown as never;
+  // For password-like fields use the dedicated preset (adds toggle, etc.)
+  const secretPreset = secretFieldName === "password" ? "password" : "default";
 
   const wrongSecretCode = joinKey("auth", "wrong-" + secretFieldName);
 

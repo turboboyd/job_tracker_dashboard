@@ -1,17 +1,18 @@
 {
-  "backToHome": "Zur Startseite",
+  "backToHome": "Zurück zur Startseite",
   "go": "Los",
   "done": "Fertig",
   "close": "Schließen",
   "nav": {
     "overview": "Übersicht",
-    "myLoops": "Meine Loops",
+    "myLoops": "Meine Zyklen",
     "board": "Board",
-    "allMatches": "Alle Matches",
+    "allMatches": "Alle Übereinstimmungen",
     "myApplications": "Meine Bewerbungen",
+    "Resources": "Ressourcen",
     "questions": "Fragen",
-    "cvChecker": "CV Check",
-    "cvBuilder": "CV Builder",
+    "cvChecker": "Lebenslauf-Prüfung",
+    "cvBuilder": "Lebenslauf-Builder",
     "inbox": "Posteingang"
   }
 }

@@ -22,7 +22,6 @@ service cloud.firestore {
     }
 
     function isValidLoop(data) {
-      // Required fields
       return data.keys().hasOnly([
         "name",
         "titles",
@@ -42,7 +41,6 @@ service cloud.firestore {
       && (data.radiusKm is number)
       && (data.remoteMode is string)
       && (data.platforms is list)
-      // optional
       && (!("filters" in data) || data.filters is map)
       && (!("createdAt" in data) || data.createdAt is string)
       && (!("updatedAt" in data) || data.updatedAt is string)
@@ -90,20 +88,46 @@ service cloud.firestore {
     }
 
     // ----------------------------
+    // Favorites: users/{uid}/private/resourcesFavorites
+    // ----------------------------
+    function isValidResourceFavorites(data) {
+      // We keep it strict on allowed fields + list size,
+      // but avoid .all() to prevent parser/linter issues.
+      return data.keys().hasOnly(["ids", "updatedAt", "userId"])
+        && ("ids" in data)
+        && (data.ids is list)
+        && (data.ids.size() <= 500)
+        && (!("userId" in data) || ((data.userId is string) && (data.userId == uid())))
+        && (!("updatedAt" in data) || (data.updatedAt is timestamp));
+    }
+
+    function favoritesUserIdUnchanged() {
+      return !("userId" in resource.data)
+        || request.resource.data.userId == resource.data.userId;
+    }
+
+    match /users/{userId}/private/resourcesFavorites {
+      allow read: if isSelf(userId);
+
+      allow create: if isSelf(userId) && isValidResourceFavorites(request.resource.data);
+
+      allow update: if isSelf(userId)
+        && isValidResourceFavorites(request.resource.data)
+        && favoritesUserIdUnchanged();
+
+      allow delete: if isSelf(userId);
+    }
+
+    // ----------------------------
     // Private per-user data
     // ----------------------------
 
-    // ✅ IMPORTANT:
     // Root user doc (users/{uid}) — required for aggregation calls like getCountFromServer()
-    // which hit: /documents/users/{uid}:runAggregationQuery
     match /users/{userId} {
       allow read: if isSelf(userId);
-
-      // If you don't store profile data in users/{uid}, keep writes blocked:
       allow write: if false;
     }
 
-    // users/{uid}/loops/{loopId}
     match /users/{userId}/loops/{loopId} {
       allow read: if isSelf(userId);
 
@@ -116,7 +140,6 @@ service cloud.firestore {
       allow delete: if isSelf(userId);
     }
 
-    // users/{uid}/loopMatches/{matchId}
     match /users/{userId}/loopMatches/{matchId} {
       allow read: if isSelf(userId);
 
@@ -131,7 +154,6 @@ service cloud.firestore {
 
     // ----------------------------
     // User settings: users/{uid}/private/settings
-    // users (col) / {uid} (doc) / private (col) / settings (doc)
     // ----------------------------
     match /users/{userId}/private/settings {
       allow read: if isSelf(userId);
@@ -142,18 +164,15 @@ service cloud.firestore {
         && isValidSettings(request.resource.data)
         && settingsUserIdUnchanged();
 
-      // usually settings are not deleted
       allow delete: if false;
     }
 
     function settingsUserIdUnchanged() {
-      // If userId is stored in the doc, it must not change.
       return !("userId" in resource.data)
         || request.resource.data.userId == resource.data.userId;
     }
 
     function isValidSettings(data) {
-      // Allowed fields only
       return data.keys().hasOnly([
         "timeZone",
         "dateFormat",
@@ -162,7 +181,6 @@ service cloud.firestore {
         "updatedAt",
         "userId"
       ])
-      // optional binding to owner
       && (!("userId" in data) || (data.userId is string && data.userId == uid()))
       && (!("timeZone" in data) || (data.timeZone is string && data.timeZone.size() >= 1 && data.timeZone.size() <= 64))
       && (!("dateFormat" in data) || data.dateFormat in ["DD.MM.YYYY", "MM/DD/YYYY", "YYYY-MM-DD"])

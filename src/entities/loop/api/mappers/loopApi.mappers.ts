@@ -7,6 +7,7 @@ import {
 
 import {
   DEFAULT_CANONICAL_FILTERS,
+  PLATFORM_BY_ID,
   type CanonicalFilters,
   type Loop,
   type LoopPlatform,
@@ -26,6 +27,19 @@ function trimStr(v: unknown): string {
 function trimArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v.map(trimStr).filter(Boolean);
+}
+
+const REMOTE_MODE_VALUES = ["any", "remote_only"] as const;
+
+function isRemoteMode(v: unknown): v is RemoteMode {
+  return (
+    typeof v === "string" &&
+    (REMOTE_MODE_VALUES as readonly string[]).includes(v)
+  );
+}
+
+function isLoopPlatform(v: unknown): v is LoopPlatform {
+  return typeof v === "string" && v in PLATFORM_BY_ID;
 }
 
 
@@ -84,9 +98,9 @@ export function mapLoopDoc(d: QueryDocumentSnapshot): Loop {
       : [],
     location: String(rest.location ?? ""),
     radiusKm: Number(rest.radiusKm ?? 30),
-    remoteMode: (rest.remoteMode as RemoteMode) ?? "any",
+    remoteMode: isRemoteMode(rest.remoteMode) ? rest.remoteMode : "any",
     platforms: Array.isArray(rest.platforms)
-      ? (rest.platforms.map((x) => String(x)) as LoopPlatform[])
+      ? rest.platforms.filter(isLoopPlatform)
       : [],
     filters: normalizedFilters,
     createdAtTs: null,
@@ -112,9 +126,9 @@ export function mapLoopSnap(s: DocumentSnapshot): Loop | null {
       : [],
     location: String(rest.location ?? ""),
     radiusKm: Number(rest.radiusKm ?? 30),
-    remoteMode: (rest.remoteMode as RemoteMode) ?? "any",
+    remoteMode: isRemoteMode(rest.remoteMode) ? rest.remoteMode : "any",
     platforms: Array.isArray(rest.platforms)
-      ? (rest.platforms.map((x) => String(x)) as LoopPlatform[])
+      ? rest.platforms.filter(isLoopPlatform)
       : [],
     filters: normalizedFilters,
     createdAtTs: null,

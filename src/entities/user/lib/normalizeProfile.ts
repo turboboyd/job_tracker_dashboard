@@ -17,8 +17,8 @@ export function normalizeProfile(uid: string, raw?: Partial<UserProfile> | null)
     photoURL: user?.photoURL ?? (raw?.photoURL ?? base.photoURL),
     email: user?.email ?? (raw?.email ?? base.email),
 
-    createdAt: typeof raw?.createdAt === "number" ? raw!.createdAt : base.createdAt,
-    updatedAt: typeof raw?.updatedAt === "number" ? raw!.updatedAt : base.updatedAt,
+    createdAt: raw && typeof raw.createdAt === "number" ? raw.createdAt : base.createdAt,
+    updatedAt: raw && typeof raw.updatedAt === "number" ? raw.updatedAt : base.updatedAt,
   };
 
   return merged;

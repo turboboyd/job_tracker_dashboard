@@ -1,4 +1,108 @@
 {
-  "title": "Resources",
-  "subtitle": "This is the Resources page."
-}
+
+    "title": "Resources",
+    "subtitle": "Hand-picked links for CV, interviews, learning, and staying productive during the job search.",
+    "tabs": {
+      "all": "All",
+      "favorites": "Favorites"
+    },
+    "categories": {
+      "all": "All",
+      "cv": "CV",
+      "interview": "Interviews",
+      "jobBoards": "Job boards",
+      "learning": "Learning",
+      "productivity": "Productivity"
+    },
+    "actions": {
+      "open": "Open",
+      "reset": "Reset",
+      "retry": "Retry",
+      "save": "Save to favorites",
+      "unsave": "Remove from favorites",
+      "suggest": {
+        "label": "Suggest a resource",
+        "email": "danivdenis1@gmail.com",
+        "subject": "Resource suggestion"
+      }
+    },
+    "filters": {
+      "title": "Find what you need",
+      "subtitle": "Filter by category or search by keywords."
+    },
+    "search": {
+      "label": "Search",
+      "placeholder": "ATS, STAR, React, remote…"
+    },
+    "results": {
+      "none": "No results",
+      "count": "{{count}} resources"
+    },
+    "favorites": {
+      "loading": "Loading…",
+      "count": "{{count}} saved"
+    },
+    "errors": {
+      "loadFailed": "Could not load favorites. Check Firestore rules/permissions."
+    },
+    "empty": "Try another keyword or switch the category filter.",
+    "tags": {
+      "cv": "CV",
+      "ats": "ATS",
+      "coverLetter": "Cover letter",
+      "templates": "Templates",
+      "interview": "Interview",
+      "systemDesign": "System design",
+      "engineering": "Engineering",
+      "profile": "Profile",
+      "search": "Search",
+      "remote": "Remote",
+      "jobs": "Jobs",
+      "learning": "Learning",
+      "focus": "Focus",
+      "productivity": "Productivity",
+      "planning": "Planning"
+    },
+    "items": {
+      "ats": {
+        "title": "ATS-friendly CV checklist",
+        "description": "A quick checklist to make sure your CV passes basic ATS screening and stays readable."
+      },
+      "coverLetter": {
+        "title": "Cover letter structure",
+        "description": "A simple structure that works for most roles: hook, fit, proof, close."
+      },
+      "behavioral": {
+        "title": "Behavioral interview prep (STAR)",
+        "description": "Use STAR to tell stories clearly: Situation, Task, Action, Result."
+      },
+      "systemDesign": {
+        "title": "System design basics (practical guide)",
+        "description": "For software roles: what to cover, how to structure answers, and how to communicate trade-offs."
+      },
+      "linkedin": {
+        "title": "LinkedIn profile checklist",
+        "description": "Small improvements that boost recruiter search visibility: headline, about, keywords, projects."
+      },
+      "remote": {
+        "title": "Remote jobs: best practices",
+        "description": "How to evaluate remote offers and set yourself up for success."
+      },
+      "javascript": {
+        "title": "Modern JavaScript course",
+        "description": "High-quality JS fundamentals and modern patterns. Useful for frontend interviews and daily work."
+      },
+      "react": {
+        "title": "React docs (learn + reference)",
+        "description": "Official docs for modern React patterns, hooks, and best practices."
+      },
+      "deepWork": {
+        "title": "Focus & deep work",
+        "description": "A set of tactics to protect focus while applying: batching, weekly review, and distractions hygiene."
+      },
+      "timeboxing": {
+        "title": "Timeboxing: a practical guide",
+        "description": "Plan your day in blocks so progress is visible and you don’t burn out."
+      }
+    }
+  }

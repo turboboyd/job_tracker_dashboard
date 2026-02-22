@@ -4,13 +4,14 @@ import {
   buildDailyBuckets,
   buildMonthlyBuckets,
   buildWeeklyBuckets,
+  type Bucket,
   type MatchTimestampsLike,
 } from "../../model/dashboardTimeSeries";
 
 import { formatLabel, toNumberSafe } from "./trends.constants";
 import type { ModeKey, RangeKey, TrendsPoint } from "./trends.types";
 
-type BucketLike = { startMs: number; counts: Record<string, unknown> };
+type BucketLike = Pick<Bucket, "startMs" | "counts">;
 
 export function useTrendsBuckets(params: {
   matches: MatchTimestampsLike[];
@@ -24,18 +25,18 @@ export function useTrendsBuckets(params: {
     const byUpdatedAt = mode === "updated";
 
     if (range === "12m") {
-      return buildMonthlyBuckets(matches, { months: 12, byUpdatedAt, locale }) as unknown as BucketLike[];
+      return buildMonthlyBuckets(matches, { months: 12, byUpdatedAt, locale });
     }
 
     if (range === "7d") {
-      return buildDailyBuckets(matches, { days: 7, byUpdatedAt, locale }) as unknown as BucketLike[];
+      return buildDailyBuckets(matches, { days: 7, byUpdatedAt, locale });
     }
 
     if (range === "30d") {
-      return buildWeeklyBuckets(matches, { weeks: 5, byUpdatedAt, locale }) as unknown as BucketLike[];
+      return buildWeeklyBuckets(matches, { weeks: 5, byUpdatedAt, locale });
     }
 
-    return buildWeeklyBuckets(matches, { weeks: 13, byUpdatedAt, locale }) as unknown as BucketLike[];
+    return buildWeeklyBuckets(matches, { weeks: 13, byUpdatedAt, locale });
   }, [matches, range, mode, locale]);
 }
 

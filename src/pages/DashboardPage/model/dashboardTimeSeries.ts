@@ -26,17 +26,32 @@ export function parseMs(v: unknown): number | null {
   }
 
   // Firestore Timestamp-like: { seconds, nanoseconds } or { toMillis() }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const anyV: any = v;
-  if (anyV && typeof anyV.toMillis === "function") {
-    const n = anyV.toMillis();
+  if (isTimestampWithToMillis(v)) {
+    const n = v.toMillis();
     return typeof n === "number" && Number.isFinite(n) ? n : null;
   }
-  if (anyV && typeof anyV.seconds === "number") {
-    return Math.round(anyV.seconds * 1000);
+  if (isTimestampWithSeconds(v)) {
+    return Math.round(v.seconds * 1000);
   }
 
   return null;
+}
+
+type TimestampWithToMillis = { toMillis: () => unknown };
+type TimestampWithSeconds = { seconds: number; nanoseconds?: number };
+
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === "object" && x !== null;
+}
+
+function isTimestampWithToMillis(v: unknown): v is TimestampWithToMillis {
+  if (!isRecord(v)) return false;
+  return typeof v.toMillis === "function";
+}
+
+function isTimestampWithSeconds(v: unknown): v is TimestampWithSeconds {
+  if (!isRecord(v)) return false;
+  return typeof v.seconds === "number" && Number.isFinite(v.seconds);
 }
 
 export function diffDays(aMs: number, bMs: number): number {

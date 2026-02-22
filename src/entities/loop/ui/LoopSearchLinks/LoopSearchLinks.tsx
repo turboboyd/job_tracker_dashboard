@@ -39,23 +39,14 @@ function isNonEmptyString(x: unknown): x is string {
   return typeof x === "string" && x.trim().length > 0;
 }
 
-function getSafeFilterString(
+function getSafeFilterNumber(
   f: CanonicalFilters,
-  key: "role" | "location"
-): string {
-  const v = (f as unknown as Record<string, unknown>)[key];
-  return typeof v === "string" ? v : "";
-}
-
-function getSafeFilterNumber(f: CanonicalFilters, key: "radiusKm" | "postedWithin"): number {
-  const v = (f as unknown as Record<string, unknown>)[key];
+  key: "radiusKm" | "postedWithin"
+): number {
+  // Keep defensive conversion for older persisted values.
+  const v = f[key] as unknown;
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : 0;
-}
-
-function getSafeFilterWorkMode(f: CanonicalFilters): string {
-  const v = (f as unknown as Record<string, unknown>)["workMode"];
-  return typeof v === "string" ? v : "any";
 }
 
 export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
@@ -136,10 +127,10 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
   const appliedBadges = useMemo(() => {
     const out: string[] = [];
 
-    const role = getSafeFilterString(appliedFilters, "role").trim();
-    const location = getSafeFilterString(appliedFilters, "location").trim();
+    const role = appliedFilters.role.trim();
+    const location = appliedFilters.location.trim();
     const radiusKm = getSafeFilterNumber(appliedFilters, "radiusKm");
-    const workMode = getSafeFilterWorkMode(appliedFilters);
+    const workMode = appliedFilters.workMode;
     const postedWithin = getSafeFilterNumber(appliedFilters, "postedWithin");
 
     if (isNonEmptyString(role)) out.push(t("loops.badgeRole", "Role: {{value}}", { value: role }));

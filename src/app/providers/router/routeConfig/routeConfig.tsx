@@ -33,6 +33,7 @@ export enum AppRoutes {
   MAIN = "main",
   ABOUT = "about",
   RESOURCES = "resources",
+  DASHBOARD_RESOURCES = "dashboard_resources",
   LOGIN = "login",
   REGISTER = "register",
   DASHBOARD = "dashboard",
@@ -64,6 +65,7 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.MAIN]: `/`,
   [AppRoutes.ABOUT]: "/about",
   [AppRoutes.RESOURCES]: "/resources",
+  [AppRoutes.DASHBOARD_RESOURCES]: "/dashboard/resources",
   [AppRoutes.LOGIN]: "/login",
   [AppRoutes.REGISTER]: "/register",
   [AppRoutes.WHATS_NEW]: "/whats-new",
@@ -112,6 +114,7 @@ export const publicRoutes: RouteItem[] = [
 ];
 
 export const privateRoutes: RouteItem[] = [
+  { path: RoutePath[AppRoutes.DASHBOARD_RESOURCES], element: <ResourcesPage /> },
   { path: RoutePath[AppRoutes.DASHBOARD], element: <DashboardPage /> },
 
   // Dashboard tabs
