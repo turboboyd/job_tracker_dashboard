@@ -2,6 +2,7 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "../layouts/AppLayout";
+import { PublicOnly } from "../PublicOnly/PublicOnly";
 import { RequireAuth } from "../RequireAuth/RequireAuth";
 import {
   publicRoutes,
@@ -20,15 +21,22 @@ export const AppRouter: React.FC = () => {
     >
       <Routes>
         <Route element={<AppLayout />}>
-          {publicRoutes.map((route) => (
-            <Route key={route.path} path={route.path} element={route.element} />
-          ))}
+          <Route element={<PublicOnly />}>
+            {publicRoutes.map((route) => (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={route.element}
+              />
+            ))}
+          </Route>
 
           <Route element={<RequireAuth />}>
             {privateRoutes.map(({ path, element }) => (
               <Route key={path} path={path} element={element} />
             ))}
           </Route>
+
           <Route path={notFoundRoute.path} element={notFoundRoute.element} />
         </Route>
       </Routes>

@@ -117,7 +117,7 @@ export const privateRoutes: RouteItem[] = [
   { path: RoutePath[AppRoutes.DASHBOARD_RESOURCES], element: <ResourcesPage /> },
   { path: RoutePath[AppRoutes.DASHBOARD], element: <DashboardPage /> },
 
-  // Dashboard tabs
+
   {
     path: RoutePath[AppRoutes.DASHBOARD_ANALYTICS],
     element: <DashboardAnalyticsPage />,

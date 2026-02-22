@@ -56,6 +56,19 @@ function cleanPatch(patch: UpdateLoopMatchInput["patch"]): UpdateLoopMatchInput[
   return out;
 }
 
+function mapLoopMatchDoc(id: string, data: Record<string, unknown>): LoopMatch {
+  // Firestore stores server timestamps as Timestamp objects.
+  // Those are not serializable and must not end up in RTK Query cache.
+  const rest = { ...data };
+  delete (rest as { createdAtTs?: unknown }).createdAtTs;
+  delete (rest as { updatedAtTs?: unknown }).updatedAtTs;
+
+  return {
+    id,
+    ...(rest as Omit<LoopMatch, "id">),
+  };
+}
+
 export const loopMatchesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // --------------------
@@ -71,10 +84,9 @@ export const loopMatchesApi = baseApi.injectEndpoints({
           );
 
           const snap = await getDocs(q);
-          const matches: LoopMatch[] = snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as Omit<LoopMatch, "id">),
-          }));
+          const matches: LoopMatch[] = snap.docs.map((d) =>
+            mapLoopMatchDoc(d.id, d.data() as Record<string, unknown>),
+          );
 
           return { data: matches };
         } catch (e) {
@@ -106,10 +118,9 @@ export const loopMatchesApi = baseApi.injectEndpoints({
           );
 
           const snap = await getDocs(q);
-          const matches: LoopMatch[] = snap.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as Omit<LoopMatch, "id">),
-          }));
+          const matches: LoopMatch[] = snap.docs.map((d) =>
+            mapLoopMatchDoc(d.id, d.data() as Record<string, unknown>),
+          );
 
           return { data: matches };
         } catch (e) {
@@ -131,11 +142,12 @@ export const loopMatchesApi = baseApi.injectEndpoints({
           const snap = await getDoc(userLoopMatchDoc(uid, matchId));
           if (!snap.exists()) return { data: null };
 
-          const m: LoopMatch = {
-            id: snap.id,
-            ...(snap.data() as Omit<LoopMatch, "id">),
+          return {
+            data: mapLoopMatchDoc(
+              snap.id,
+              (snap.data() as Record<string, unknown>) ?? {},
+            ),
           };
-          return { data: m };
         } catch (e) {
           return rtkError(toMsg(e));
         }

@@ -5,17 +5,18 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
-  Timestamp,
 } from "firebase/firestore";
 
 import { baseApi } from "src/shared/api/rtk/baseApi";
 import { guardRtk } from "src/shared/api/rtk/guardRtk";
 import type { ApiError } from "src/shared/api/rtk/rtkError";
 import { db } from "src/shared/config/firebase/firebase";
+import { toMillisOptional } from "src/shared/lib/firestore/toMillis";
 
 export type ResourceFavorites = {
   ids: string[];
-  updatedAt?: Timestamp;
+  // Keep this serializable for RTK Query cache / Redux devtools.
+  updatedAt?: number;
   userId?: string;
 };
 
@@ -37,7 +38,7 @@ const normalizeFavorites = (
 ): ResourceFavorites => {
   return {
     ids: normalizeIds(input?.ids),
-    updatedAt: input?.updatedAt,
+    updatedAt: toMillisOptional((input as { updatedAt?: unknown } | null)?.updatedAt),
     userId: typeof input?.userId === "string" ? input.userId : undefined,
   };
 };
