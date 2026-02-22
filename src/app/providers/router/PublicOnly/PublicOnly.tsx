@@ -5,19 +5,19 @@ import { useAuthSelectors } from "src/entities/auth";
 
 import { AppRoutes, RoutePath } from "../routeConfig/routeConfig";
 
-export const RequireAuth: React.FC = () => {
-  const { isAuthenticated, isAuthReady } = useAuthSelectors();
 
+export const PublicOnly: React.FC = () => {
+  const { isAuthenticated, isAuthReady } = useAuthSelectors();
   const location = useLocation();
 
   if (!isAuthReady) {
     return <div className="p-4">Checking session...</div>;
   }
 
-  if (!isAuthenticated) {
+  if (isAuthenticated) {
     return (
       <Navigate
-        to={RoutePath[AppRoutes.MAIN]}
+        to={RoutePath[AppRoutes.DASHBOARD]}
         replace
         state={{ from: location }}
       />

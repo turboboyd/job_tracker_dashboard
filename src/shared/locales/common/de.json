@@ -9,10 +9,10 @@
     "board": "Board",
     "allMatches": "Alle Übereinstimmungen",
     "myApplications": "Meine Bewerbungen",
-    "Resources": "Ressourcen",
     "questions": "Fragen",
     "cvChecker": "Lebenslauf-Prüfung",
     "cvBuilder": "Lebenslauf-Builder",
-    "inbox": "Posteingang"
+    "inbox": "Posteingang",
+    "resources": "Ressourcen"
   }
 }

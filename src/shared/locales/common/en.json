@@ -9,10 +9,10 @@
     "board": "Board",
     "allMatches": "All Matches",
     "myApplications": "My Applications",
-    "Resources": "Resources",
     "questions": "Questions",
     "cvChecker": "CV Checker",
     "cvBuilder": "CV Builder",
-    "inbox": "Inbox"
+    "inbox": "Inbox",
+    "resources": "Resources"
   }
 }

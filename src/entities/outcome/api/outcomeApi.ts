@@ -6,6 +6,7 @@ import { userOutcomeDoc } from "src/shared/api/firestoreRefs";
 import { baseApi } from "src/shared/api/rtk/baseApi";
 import { guardRtk } from "src/shared/api/rtk/guardRtk";
 import type { ApiError } from "src/shared/api/rtk/rtkError";
+import { toMillisOptional } from "src/shared/lib/firestore/toMillis";
 
 import type { UserOutcome } from "../model/types";
 
@@ -16,7 +17,15 @@ export const outcomeApi = baseApi.injectEndpoints({
         guardRtk(async () => {
           const ref = userOutcomeDoc(uid);
           const snap = await getDoc(ref);
-          return snap.exists() ? (snap.data() as UserOutcome) : null;
+          if (!snap.exists()) return null;
+
+          const raw = (snap.data() ?? {}) as Record<string, unknown>;
+          return {
+            userId: typeof raw.userId === "string" ? raw.userId : uid,
+            employmentStatus: (raw.employmentStatus as UserOutcome["employmentStatus"]) ?? "waiting",
+            feedback: raw.feedback as UserOutcome["feedback"],
+            updatedAt: toMillisOptional(raw.updatedAt),
+          };
         }),
       providesTags: (_r, _e, arg) => [{ type: "UserSettings", id: `outcome-${arg.uid}` }],
     }),
@@ -25,7 +34,7 @@ export const outcomeApi = baseApi.injectEndpoints({
       queryFn: ({ uid, data }): Promise<QueryReturnValue<UserOutcome, ApiError, undefined>> =>
         guardRtk(async () => {
           const ref = userOutcomeDoc(uid);
-          const payload: UserOutcome = { ...data, userId: uid };
+          const payload: UserOutcome = { ...data, userId: uid, updatedAt: Date.now() };
           await setDoc(ref, { ...payload, updatedAt: serverTimestamp() }, { merge: true });
           return payload;
         }),

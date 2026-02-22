@@ -9,10 +9,10 @@
     "board": "Доска",
     "allMatches": "Все совпадения",
     "myApplications": "Мои заявки",
-    "Resources": "Ресурсы",
     "questions": "Вопросы",
     "cvChecker": "Проверка резюме",
     "cvBuilder": "Конструктор резюме",
-    "inbox": "Входящие"
+    "inbox": "Входящие",
+    "resources": "Ресурсы"
   }
 }
