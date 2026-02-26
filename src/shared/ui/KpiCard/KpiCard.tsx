@@ -3,7 +3,7 @@ import React from "react";
 import { Card } from "src/shared/ui";
 
 type Props = {
-  title: string;
+  title: React.ReactNode;
   value: number | string;
   icon?: React.ReactNode;
 };

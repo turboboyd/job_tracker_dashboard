@@ -1,7 +1,8 @@
 import { SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { toMillis } from "src/shared/lib/firestore/toMillis";
 import { Button } from "src/shared/ui";
 
 import { useDashboardData } from "./model/useDashboardData";
@@ -12,13 +13,58 @@ import {
   DashboardInsightsCard,
   DashboardStatusRadarCard,
 } from "./ui";
+import type { ModeKey, RangeKey } from "./ui/trends/trends.types";
+
+type CustomRange = { from: Date; to: Date } | null;
+
+function clampDayStart(ms: number): number {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+function presetDays(range: Exclude<RangeKey, "custom">): number {
+  if (range === "12m") return 365;
+  if (range === "90d") return 90;
+  if (range === "30d") return 30;
+  return 7;
+}
 
 export function DashboardAnalyticsPage() {
-    const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
+  const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
   const [loopsModalOpen, setLoopsModalOpen] = useState(false);
 
-  const { loops, loopsFilter, setLoopsFilter, chartMatches } =
-    useDashboardData();
+  // Stable "now" so memo calculations are deterministic (lint: react-hooks/purity)
+  const [nowMs] = useState(() => Date.now());
+
+  const [range, setRange] = useState<RangeKey>("7d");
+  const [mode, setMode] = useState<ModeKey>("created");
+  const [customRange, setCustomRange] = useState<CustomRange>(null);
+
+  const { loops, loopsFilter, setLoopsFilter, chartMatches } = useDashboardData();
+
+  const filteredMatches = useMemo(() => {
+    let fromMs = 0;
+    let toMs = nowMs;
+
+    if (range === "custom" && customRange) {
+      fromMs = clampDayStart(customRange.from.getTime());
+      toMs = clampDayStart(customRange.to.getTime()) + 24 * 60 * 60 * 1000 - 1;
+    } else {
+      const days = presetDays(range as Exclude<RangeKey, "custom">);
+      fromMs = nowMs - days * 24 * 60 * 60 * 1000;
+      toMs = nowMs;
+    }
+
+    return chartMatches.filter((m) => {
+      const ts =
+        mode === "updated"
+          ? toMillis(m.updatedAt) || toMillis(m.createdAt)
+          : toMillis(m.createdAt);
+      if (!ts) return false;
+      return ts >= fromMs && ts <= toMs;
+    });
+  }, [chartMatches, range, mode, customRange, nowMs]);
 
   return (
     <div className="flex h-full flex-col">
@@ -55,11 +101,19 @@ export function DashboardAnalyticsPage() {
 
       <div className="flex-1 overflow-y-auto pb-6">
         <div className="space-y-6 p-6">
-          <DashboardTrendsCard matches={chartMatches} />
+          <DashboardTrendsCard
+            matches={chartMatches}
+            range={range}
+            mode={mode}
+            customRange={customRange}
+            onRangeChange={setRange}
+            onModeChange={setMode}
+            onCustomRangeChange={setCustomRange}
+          />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <DashboardInsightsCard matches={chartMatches} />
-            <DashboardStatusRadarCard matches={chartMatches} />
+            <DashboardInsightsCard matches={filteredMatches} />
+            <DashboardStatusRadarCard matches={filteredMatches} />
           </div>
         </div>
       </div>

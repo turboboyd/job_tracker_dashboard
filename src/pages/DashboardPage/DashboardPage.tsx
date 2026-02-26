@@ -38,7 +38,7 @@ export default function DashboardPage() {
   const goProfile = () => navigate(RoutePath[AppRoutes.SETTINGS_PROFILE]);
   const goQuestions = () => navigate(RoutePath[AppRoutes.PROFILE_QUESTIONS]);
   const goLoop = () => navigate(RoutePath[AppRoutes.LOOPS]);
-  const goMatches = () => navigate(RoutePath[AppRoutes.MATCHES]);
+  const goMatches = () => navigate(RoutePath[AppRoutes.APPLICATIONS]);
 
   // Чтобы не сортировать/маппить на каждый рендер
   const loopsForModal = useMemo(
@@ -113,11 +113,12 @@ export default function DashboardPage() {
             error={error}
             summary={pipelineSummary}
             onGoJobs={(status) => {
-              if (!status) return navigate(RoutePath[AppRoutes.MATCHES]);
-              return navigate(`${RoutePath[AppRoutes.MATCHES]}?status=${status}`);
+              // Applications page is the canonical pipeline list.
+              if (!status) return navigate(RoutePath[AppRoutes.APPLICATIONS]);
+              return navigate(`${RoutePath[AppRoutes.APPLICATIONS]}?col=${status}`);
             }}
             onAddFirstJob={() =>
-              navigate(`${RoutePath[AppRoutes.MATCHES]}?focus=add`)
+              navigate(`${RoutePath[AppRoutes.APPLICATIONS]}?focus=add`)
             }
           />
         </div>

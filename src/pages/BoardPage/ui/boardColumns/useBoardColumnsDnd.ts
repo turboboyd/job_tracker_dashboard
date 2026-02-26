@@ -9,7 +9,8 @@ import {
 } from "@dnd-kit/core";
 import React from "react";
 
-import type { LoopMatch, LoopMatchStatus } from "src/entities/loopMatch";
+import { getBoardColumn, type BoardColumnKey } from "src/entities/application/model/status";
+import type { LoopMatch } from "src/entities/loopMatch";
 
 import type { BoardDragPayload, BoardVM } from "../../model/types";
 
@@ -54,7 +55,7 @@ export function useBoardColumnsDnd(vm: BoardVM): UseBoardColumnsDndResult {
   const pendingDropRef = React.useRef<
     | {
         matchId: string;
-        toStatus: LoopMatchStatus;
+        toStatus: BoardColumnKey;
         toIndex: number;
       }
     | null
@@ -100,9 +101,9 @@ export function useBoardColumnsDnd(vm: BoardVM): UseBoardColumnsDndResult {
       const id = String(e.active.id);
       setActiveId(id);
 
-      const fromStatus =
-        findContainerOfId(columnsState, id) ??
-        (activeMatch?.status as LoopMatchStatus | undefined);
+      const fromStatus: BoardColumnKey | undefined =
+        (findContainerOfId(columnsState, id) as BoardColumnKey | null) ??
+        (activeMatch ? getBoardColumn(activeMatch.status) : undefined);
       const fromIndex = fromStatus
         ? columnsState.get(fromStatus)?.findIndex((x) => x.id === id) ?? 0
         : 0;
@@ -140,9 +141,9 @@ export function useBoardColumnsDnd(vm: BoardVM): UseBoardColumnsDndResult {
         | undefined;
 
       const toStatus =
-        (overSortable?.containerId as LoopMatchStatus | undefined) ??
+        (overSortable?.containerId as BoardColumnKey | undefined) ??
         (overLaneStatus ??
-          (findContainerOfId(next, overIdStr) as LoopMatchStatus | null));
+          (findContainerOfId(next, overIdStr) as BoardColumnKey | null));
 
       if (!toStatus) return prev;
 

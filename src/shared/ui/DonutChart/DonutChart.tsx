@@ -9,7 +9,13 @@ import { useEffect, useMemo, useState } from "react";
 type Slice = {
   label: string;
   value: number;
+  /**
+   * Tailwind / CSS classes applied to the segment.
+   * If you pass `color`, this can be an empty string.
+   */
   className: string;
+  /** Optional direct stroke color (e.g. hex). */
+  color?: string;
 };
 
 type Props = {
@@ -187,7 +193,8 @@ export function DonutChart({
               segmentsForRender.map((seg) => {
                 const isActive = activeKey === seg.label;
 
-                const segStroke = strokeColorFromClass(seg.className);
+                // Prefer explicit segment color when provided (used by dashboards/status charts).
+                const segStroke = seg.color ?? strokeColorFromClass(seg.className);
 
                 let segOpacity = 1;
                 if (!isActive && activeKey) {
@@ -307,7 +314,10 @@ export function DonutChart({
                     <div className="flex items-center justify-center gap-sm">
                       <span
                         className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: strokeColorFromClass(active.className) }}
+                        style={{
+                          backgroundColor:
+                            active.color ?? strokeColorFromClass(active.className),
+                        }}
                       />
                       <span className="truncate font-medium">
                         {active.label}
@@ -333,6 +343,8 @@ export function DonutChart({
             {slices.map((s, idx) => {
               const isLegendActive = active?.label === s.label && s.value > 0;
 
+              const dotColor = s.color ?? strokeColorFromClass(s.className);
+
               return (
                 <div
                   key={s.label}
@@ -341,13 +353,18 @@ export function DonutChart({
                     "transition-colors duration-fast ease-ease-out",
                     isLegendActive ? "bg-muted/50" : "",
                   ].join(" ")}
+                  style={
+                    isLegendActive && dotColor && dotColor !== "currentColor"
+                      ? { backgroundColor: withAlpha(dotColor, 0.1) }
+                      : undefined
+                  }
                   onMouseEnter={() => setActiveKey(s.value > 0 ? s.label : null)}
                   onMouseLeave={() => setActiveKey(null)}
                 >
                   <div className="flex min-w-0 items-center gap-sm">
                     <span
                       className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: strokeColorFromClass(s.className) }}
+                      style={{ backgroundColor: dotColor }}
                     />
                     <span className="truncate text-sm text-foreground leading-normal">
                       {s.label}
@@ -421,4 +438,37 @@ function strokeColorFromClass(strokeClass: string) {
   if (strokeClass.includes("stroke-red")) return "#ef4444";
   if (strokeClass.includes("stroke-slate")) return "#64748b";
   return "currentColor";
+}
+
+/**
+ * Applies alpha to a color.
+ * Supports hex (#rrggbb / #rgb) and rgb()/rgba() strings. Falls back to the original value.
+ */
+function withAlpha(color: string, alpha: number) {
+  const a = Math.max(0, Math.min(1, alpha));
+
+  // rgb()/rgba()
+  const rgbMatch = color
+    .replace(/\s+/g, "")
+    .match(/^rgba?\((\d+),(\d+),(\d+)(?:,([\d.]+))?\)$/i);
+  if (rgbMatch) {
+    const r = Number(rgbMatch[1]);
+    const g = Number(rgbMatch[2]);
+    const b = Number(rgbMatch[3]);
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
+  // #rgb / #rrggbb
+  const hex = color.trim();
+  const hexMatch = hex.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const raw = hexMatch[1];
+    const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
+  return color;
 }

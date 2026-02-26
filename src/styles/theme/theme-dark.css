@@ -34,4 +34,12 @@
 
   --muted: 51 65 85;
   --muted-foreground: 203 213 225;
+
+    /* status colors (LIGHT) */
+  --status-info: 37 99 235;     /* blue-500   ACTIVE */
+  --status-purple: 124 58 237;   /* violet-500 INTERVIEW */
+  --status-warning: 217 119 6;  /* amber-500  OFFER */
+  --status-success: 5 150 105;   /* green-500  HIRED */
+  --status-danger: 220 38 38;    /* red-500    REJECTED */
+  --status-neutral: 100 116 139; /* gray-500   NO_RESPONSE */
 }

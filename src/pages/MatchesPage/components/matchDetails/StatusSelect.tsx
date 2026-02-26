@@ -1,41 +1,21 @@
-import { useTranslation } from "react-i18next";
+import React from "react";
 
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import type { StatusKey } from "src/entities/application/model/status";
+import { StatusMenu } from "src/entities/application/ui/StatusKit";
 
 type Props = {
-  value: LoopMatchStatus;
-  disabled: boolean;
   label: string;
-  onChange: (next: LoopMatchStatus) => void;
+  value: StatusKey;
+  disabled: boolean;
+  onChange: (next: StatusKey) => void;
+  className?: string;
 };
 
-export function StatusSelect({ value, disabled, label, onChange }: Props) {
-  const { t } = useTranslation();
-
-  const options: LoopMatchStatus[] = [
-    "new",
-    "saved",
-    "interview",
-    "offer",
-    "applied",
-    "rejected",
-  ];
-
+export function StatusSelect({ label, value, disabled, onChange, className }: Props) {
   return (
-    <label className="flex items-center justify-between gap-md text-sm">
+    <label className={"flex items-center justify-between gap-md text-sm " + (className ?? "")}>
       <span className="text-muted-foreground">{label}</span>
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value as LoopMatchStatus)}
-        className="h-9 rounded-full px-sm border border-border bg-card text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        {options.map((s) => (
-          <option key={s} value={s}>
-            {t(`matches.status.${s}`)}
-          </option>
-        ))}
-      </select>
+      <StatusMenu value={value} disabled={disabled} onChange={onChange} size="sm" />
     </label>
   );
 }

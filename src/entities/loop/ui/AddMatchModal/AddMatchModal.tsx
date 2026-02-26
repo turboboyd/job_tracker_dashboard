@@ -1,6 +1,6 @@
 import { Formik } from "formik";
 import type { TFunction } from "i18next";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import * as Yup from "yup";
 
@@ -139,6 +139,13 @@ export function AddMatchModal({
 
   const schema = useMemo(() => makeSchema(t), [t]);
 
+  // If user manually selects a platform, do NOT override it via URL auto-detection.
+  const platformManuallySetRef = useRef(false);
+
+  useEffect(() => {
+    if (open) platformManuallySetRef.current = false;
+  }, [open]);
+
   const initial: Values = useMemo(
     () => ({
       title: "",
@@ -147,7 +154,7 @@ export function AddMatchModal({
       platform: platformOrDefault(defaultPlatform),
       url: "",
       description: "",
-      status: "new",
+      status: "SAVED",
       matchedAt: isoNow(),
     }),
     [defaultPlatform]
@@ -286,7 +293,10 @@ export function AddMatchModal({
                       id={id}
                       name="platform"
                       value={f.values.platform}
-                      onChange={f.handleChange}
+                      onChange={(e) => {
+                        platformManuallySetRef.current = true;
+                        f.handleChange(e);
+                      }}
                       onBlur={f.handleBlur}
                       aria-describedby={describedBy}
                       disabled={disabled}
@@ -319,7 +329,9 @@ export function AddMatchModal({
                         f.setFieldValue("url", next);
 
                         const detected = detectPlatformFromUrl(next);
-                        if (detected) f.setFieldValue("platform", detected);
+                        if (!platformManuallySetRef.current && detected) {
+                          f.setFieldValue("platform", detected);
+                        }
                       }}
                       onBlur={f.handleBlur}
                       placeholder={t("loops.jobUrlPlaceholder", { defaultValue: "company.com/job" })}

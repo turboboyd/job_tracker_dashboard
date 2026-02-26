@@ -1,12 +1,11 @@
+import type { StatusKey } from "src/entities/application/model/status";
 import type { LoopPlatform } from "src/entities/loop/model";
 
-export type LoopMatchStatus =
-  | "new"
-  | "saved"
-  | "interview"
-  | "offer"
-  | "applied"
-  | "rejected";
+/**
+ * Loop matches are represented with the same status system as Applications.
+ * No local enums/unions here: use the shared StatusKey from status.ts.
+ */
+export type LoopMatchStatus = StatusKey;
 
 /**
  * Canonical in-app model for a match.

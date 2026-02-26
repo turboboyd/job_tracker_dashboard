@@ -1,4 +1,4 @@
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import type { BoardColumnKey } from "src/entities/application/model/status";
 
 import type { BoardDragPayload, BoardOrderByStatus } from "./types";
 
@@ -10,7 +10,7 @@ function clamp(n: number, min: number, max: number): number {
 export function applyDropToOrder(
   prev: BoardOrderByStatus,
   payload: BoardDragPayload,
-  toStatus: LoopMatchStatus,
+  toStatus: BoardColumnKey,
   toIndex: number,
 ): BoardOrderByStatus {
   const next: BoardOrderByStatus = { ...prev };

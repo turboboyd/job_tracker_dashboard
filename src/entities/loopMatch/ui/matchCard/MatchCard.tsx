@@ -1,7 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { classNames } from "src/shared/lib";
+import { StatusBadge } from "src/entities/application/ui/StatusBadge/StatusBadge";
+import { StatusMenu } from "src/entities/application/ui/StatusKit";
 import { Button, Card } from "src/shared/ui";
 
 import type { LoopMatch, LoopMatchStatus } from "../../model/types";
@@ -16,15 +17,6 @@ type MatchCardProps = {
   onDelete: (matchId: LoopMatch["id"]) => void;
   onEdit?: (matchId: LoopMatch["id"]) => void;
 };
-
-const STATUS_OPTIONS = [
-  "new",
-  "saved",
-  "interview",
-  "offer",
-  "applied",
-  "rejected",
-] as const satisfies readonly LoopMatchStatus[];
 
 export function MatchCard({
   match,
@@ -77,22 +69,12 @@ export function MatchCard({
       <div className="flex flex-wrap items-center justify-between gap-sm pt-xs">
         <label className="flex items-center gap-sm text-sm">
           <span className="text-muted-foreground">{t("matches.common.status")}</span>
-          <select
-            value={match.status}
-            disabled={busy}
-            onChange={(e) => onUpdateStatus(match.id, e.target.value as LoopMatchStatus)}
-            className={classNames(
-              "h-9 rounded-full px-sm",
-              "border border-border bg-card text-foreground",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            )}
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {t(`matches.status.${s}`)}
-              </option>
-            ))}
-          </select>
+          <StatusMenu
+              value={match.status}
+              disabled={busy}
+              onChange={(s) => onUpdateStatus(match.id, s as LoopMatchStatus)}
+              size="sm"
+            />
         </label>
 
         <div className="flex items-center gap-sm">
@@ -128,36 +110,5 @@ type StatusPillProps = {
 };
 
 function StatusPill({ value }: StatusPillProps) {
-  const { t } = useTranslation();
-  return (
-    <span
-      className={classNames(
-        "inline-flex items-center",
-        "rounded-full px-sm py-[2px]",
-        "text-xs font-medium",
-        getStatusPalette(value),
-      )}
-    >
-      {t(`matches.status.${value}`)}
-    </span>
-  );
-}
-
-function getStatusPalette(status: LoopMatchStatus) {
-  switch (status) {
-    case "new":
-      return "bg-info text-info-foreground";
-    case "saved":
-      return "bg-secondary text-secondary-foreground";
-    case "applied":
-      return "bg-muted text-foreground";
-    case "interview":
-      return "bg-warning text-warning-foreground";
-    case "offer":
-      return "bg-success text-success-foreground";
-    case "rejected":
-      return "bg-destructive text-destructive-foreground";
-    default:
-      return "bg-muted text-foreground";
-  }
+  return <StatusBadge status={value} />;
 }

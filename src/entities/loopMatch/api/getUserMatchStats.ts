@@ -4,7 +4,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 
-import { userLoopMatchesCol } from "src/shared/api/firestoreRefs";
+import { userApplicationsCol } from "src/shared/api/firestoreRefs";
 
 
 
@@ -18,8 +18,8 @@ function inc(map: Record<string, number>, key: string) {
 }
 
 export async function getUserMatchStats(uid: string): Promise<MatchStats> {
-  // Data lives under: users/{uid}/loopMatches
-  const q = query(userLoopMatchesCol(uid));
+  // Unified source: users/{uid}/applications, filtered by loopLinkage.loopId presence
+  const q = query(userApplicationsCol(uid));
 
   const snap = await getDocs(q);
 
@@ -29,10 +29,15 @@ export async function getUserMatchStats(uid: string): Promise<MatchStats> {
   snap.forEach((doc) => {
     const data = doc.data() as DocumentData;
 
+    // count only items that belong to some loop
+    const loopId = data?.loopLinkage?.loopId;
+    if (typeof loopId !== "string" || loopId.trim().length === 0) return;
+
     total += 1;
 
     // Статусы не фиксируем: берём то, что реально лежит в базе
-    const statusRaw = data?.status;
+    // Legacy status for UI: derived from applications.process.status
+    const statusRaw = data?.process?.status;
     const status =
       typeof statusRaw === "string" && statusRaw.trim().length > 0
         ? statusRaw.trim()

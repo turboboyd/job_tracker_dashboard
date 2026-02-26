@@ -1,130 +1,173 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "jobs",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "loops",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "createdAtTs", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "loopMatches",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "matchedAt", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "loopMatches",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "loopId", "order": "ASCENDING" },
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "matchedAt", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    },
-
-    // -----------------------------
-    // NEW: applications (README v1)
-    // -----------------------------
-    {
-      "collectionGroup": "applications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "archived", "order": "ASCENDING" },
-        { "fieldPath": "process.status", "order": "ASCENDING" },
-        { "fieldPath": "process.lastStatusChangeAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "applications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "archived", "order": "ASCENDING" },
-        { "fieldPath": "priority.score", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "applications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "archived", "order": "ASCENDING" },
-        { "fieldPath": "process.needsFollowUp", "order": "ASCENDING" },
-        { "fieldPath": "process.followUpDueAt", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "applications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "archived", "order": "ASCENDING" },
-        { "fieldPath": "process.needsReapplySuggestion", "order": "ASCENDING" },
-        { "fieldPath": "process.reapplyEligibleAt", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "applications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "archived", "order": "ASCENDING" },
-        { "fieldPath": "job.source", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "applications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "job.companyId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "applications",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "vacancy.roleFingerprint", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-
-    // -----------------------------
-    // NEW: history
-    // -----------------------------
-    {
-      "collectionGroup": "history",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "type", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-
-    // -----------------------------
-    // Optional: stats
-    // -----------------------------
-    {
-      "collectionGroup": "stats",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "periodType", "order": "ASCENDING" },
-        { "fieldPath": "periodKey", "order": "DESCENDING" }
-      ]
-    }
-  ],
-  "fieldOverrides": []
+    "indexes": [
+        // ===============================
+        // loops (оставляем)
+        // ===============================
+        {
+            "collectionGroup": "loops",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "userId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAtTs",
+                    "order": "DESCENDING"
+                },
+                {
+                    "fieldPath": "__name__",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        // ===============================
+        // applications — базовые списки
+        // ===============================
+        {
+            "collectionGroup": "applications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "archived",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "process.stage",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "updatedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "applications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "process.stage",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "process.subStatus",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "updatedAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        // ===============================
+        // ghosting: ACTIVE + subStatus + appliedAt (30 дней)
+        // ===============================
+        {
+            "collectionGroup": "applications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "process.stage",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "process.subStatus",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "process.appliedAt",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        // ===============================
+        // follow-ups (оставляем как было)
+        // ===============================
+        {
+            "collectionGroup": "applications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "archived",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "process.needsFollowUp",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "process.followUpDueAt",
+                    "order": "ASCENDING"
+                }
+            ]
+        },
+        // ===============================
+        // matches (теперь это applications)
+        // hasLoop = true
+        // ===============================
+        {
+            "collectionGroup": "applications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "hasLoop",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "applications",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "loopLinkage.loopId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        // ===============================
+        // history (упрощённый)
+        // ===============================
+        {
+            "collectionGroup": "history",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "type",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "createdAt",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        // ===============================
+        // stats (оставляем)
+        // ===============================
+        {
+            "collectionGroup": "stats",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "periodType",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "periodKey",
+                    "order": "DESCENDING"
+                }
+            ]
+        }
+    ],
+    "fieldOverrides": []
 }

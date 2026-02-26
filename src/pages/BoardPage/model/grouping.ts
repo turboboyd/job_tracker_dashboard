@@ -1,18 +1,19 @@
-import { LOOP_MATCH_STATUSES } from "src/entities/loop";
-import type { LoopMatch, LoopMatchStatus } from "src/entities/loopMatch";
+import { BOARD_COLUMNS_LIST, getBoardColumn, type BoardColumnKey } from "src/entities/application/model/status";
+import type { LoopMatch } from "src/entities/loopMatch";
 
 
 export function groupMatchesByStatus(
   matches: readonly LoopMatch[],
-): Map<LoopMatchStatus, LoopMatch[]> {
-  const map = new Map<LoopMatchStatus, LoopMatch[]>();
+): Map<BoardColumnKey, LoopMatch[]> {
+  const map = new Map<BoardColumnKey, LoopMatch[]>();
 
-  for (const s of LOOP_MATCH_STATUSES) {
-    map.set(s.value, []);
+  for (const s of BOARD_COLUMNS_LIST) {
+    map.set(s.key, []);
   }
 
   for (const match of matches) {
-    (map.get(match.status) ?? []).push(match);
+    const col = getBoardColumn(match.status);
+    (map.get(col) ?? []).push(match);
   }
 
   return map;

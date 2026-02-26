@@ -1,20 +1,24 @@
 import {
-  addDoc,
   deleteDoc,
   getDoc,
   getDocs,
-  orderBy,
   query,
-  serverTimestamp,
-  updateDoc,
   where,
-  type FieldValue,
-  type UpdateData,
+  Timestamp,
 } from "firebase/firestore";
 
-import { userLoopMatchDoc, userLoopMatchesCol } from "src/shared/api/firestoreRefs";
+import { normalizeStatus, STATUS } from "src/entities/application/model/status";
+import {
+  createApplication,
+  updateApplicationWithHistory,
+  changeStatus,
+  type ApplicationDoc,
+  type ProcessStatus,
+} from "src/features/applications/firestoreApplications";
+import { userApplicationDoc, userApplicationsCol } from "src/shared/api/firestoreRefs";
 import { baseApi } from "src/shared/api/rtk/baseApi";
 import { requireUidFromState } from "src/shared/api/rtk/requireUid";
+import { db } from "src/shared/config/firebase/firebase";
 
 import type {
   CreateLoopMatchInput,
@@ -35,9 +39,8 @@ function rtkError(message: string) {
   return { error: { message } as ApiError } as const;
 }
 
-function makeTimestamps(): { iso: string; server: FieldValue } {
-  const iso = new Date().toISOString();
-  return { iso, server: serverTimestamp() };
+function isoNow(): string {
+  return new Date().toISOString();
 }
 
 export type GetMatchesByLoopArgs = { loopId: string };
@@ -56,16 +59,72 @@ function cleanPatch(patch: UpdateLoopMatchInput["patch"]): UpdateLoopMatchInput[
   return out;
 }
 
-function mapLoopMatchDoc(id: string, data: Record<string, unknown>): LoopMatch {
-  // Firestore stores server timestamps as Timestamp objects.
-  // Those are not serializable and must not end up in RTK Query cache.
-  const rest = { ...data };
-  delete (rest as { createdAtTs?: unknown }).createdAtTs;
-  delete (rest as { updatedAtTs?: unknown }).updatedAtTs;
+// Loop match status is the shared StatusKey.
+
+function statusKeyToProcessStatus(s: LoopMatch["status"]): ProcessStatus {
+  const meta = STATUS[s];
+  switch (meta.stage) {
+    case "ACTIVE":
+      return "APPLIED";
+    case "INTERVIEW":
+      return "INTERVIEW_1";
+    case "OFFER":
+      return "OFFER";
+    case "HIRED":
+      // Backend enum has no dedicated "HIRED/STARTED" value. Keep it in the latest available stage.
+      return "OFFER";
+    case "REJECTED":
+      return "REJECTED";
+    case "NO_RESPONSE":
+      return "NO_RESPONSE";
+    case "ARCHIVED":
+      // Backend enum has no archived value. Treat as inactive/saved.
+      return "SAVED";
+    default:
+      return "SAVED";
+  }
+}
+
+type ToDateLike = { toDate: () => Date };
+
+function isToDateLike(x: unknown): x is ToDateLike {
+  const r = x && typeof x === "object" ? (x as Record<string, unknown>) : null;
+  return typeof r?.toDate === "function";
+}
+
+function tsToIso(v: unknown): string {
+  if (!v) return "";
+  if (v instanceof Timestamp) return v.toDate().toISOString();
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "number") return new Date(v).toISOString();
+  if (isToDateLike(v)) return v.toDate().toISOString();
+  return "";
+}
+
+function mapApplicationToLoopMatch(id: string, app: ApplicationDoc): LoopMatch {
+  const matchedAt =
+    tsToIso(app.loopLinkage?.matchedAt) || tsToIso(app.createdAt) || isoNow();
+  const createdAt = tsToIso(app.createdAt) || matchedAt;
+  const updatedAt = tsToIso(app.updatedAt) || createdAt;
+
+  const norm = normalizeStatus(app);
 
   return {
     id,
-    ...(rest as Omit<LoopMatch, "id">),
+    loopId: app.loopLinkage?.loopId ?? "",
+    title: app.job.roleTitle,
+    company: app.job.companyName,
+    location: app.job.locationText ?? "",
+    platform:
+      (typeof app.loopLinkage?.platform === "string" && app.loopLinkage.platform) ||
+      (typeof app.job?.source === "string" && app.job.source) ||
+      "",
+    url: app.job.vacancyUrl ?? "",
+    description: app.vacancy?.rawDescription ?? "",
+    status: norm.subStatus,
+    matchedAt,
+    createdAt,
+    updatedAt,
   };
 }
 
@@ -78,17 +137,16 @@ export const loopMatchesApi = baseApi.injectEndpoints({
       async queryFn(_arg, api) {
         try {
           const uid = requireUidFromState(api.getState());
-          const q = query(
-            userLoopMatchesCol(uid),
-            orderBy("matchedAt", "desc")
-          );
+          // Unified source: users/{uid}/applications.
+          // We avoid orderBy to keep indexes simple and sort client-side.
+          const snap = await getDocs(query(userApplicationsCol(uid)));
+          const items: LoopMatch[] = snap.docs
+            .map((d) => ({ id: d.id, app: d.data() as ApplicationDoc }))
+            .filter((x) => Boolean(x.app.loopLinkage?.loopId))
+            .map((x) => mapApplicationToLoopMatch(x.id, x.app));
 
-          const snap = await getDocs(q);
-          const matches: LoopMatch[] = snap.docs.map((d) =>
-            mapLoopMatchDoc(d.id, d.data() as Record<string, unknown>),
-          );
-
-          return { data: matches };
+          items.sort((a, b) => (b.matchedAt || "").localeCompare(a.matchedAt || ""));
+          return { data: items };
         } catch (e) {
           return rtkError(toMsg(e));
         }
@@ -109,20 +167,16 @@ export const loopMatchesApi = baseApi.injectEndpoints({
       async queryFn({ loopId }, api) {
         try {
           const uid = requireUidFromState(api.getState());
-          const q = query(
-            userLoopMatchesCol(uid),
-            // loopId remains a field to filter matches that belong to a loop
-            // (even though ownership is already enforced by path)
-            where("loopId", "==", loopId),
-            orderBy("matchedAt", "desc")
+          const snap = await getDocs(
+            query(userApplicationsCol(uid), where("loopLinkage.loopId", "==", loopId)),
           );
 
-          const snap = await getDocs(q);
-          const matches: LoopMatch[] = snap.docs.map((d) =>
-            mapLoopMatchDoc(d.id, d.data() as Record<string, unknown>),
+          const items: LoopMatch[] = snap.docs.map((d) =>
+            mapApplicationToLoopMatch(d.id, d.data() as ApplicationDoc),
           );
 
-          return { data: matches };
+          items.sort((a, b) => (b.matchedAt || "").localeCompare(a.matchedAt || ""));
+          return { data: items };
         } catch (e) {
           return rtkError(toMsg(e));
         }
@@ -139,15 +193,10 @@ export const loopMatchesApi = baseApi.injectEndpoints({
       async queryFn({ matchId }, api) {
         try {
           const uid = requireUidFromState(api.getState());
-          const snap = await getDoc(userLoopMatchDoc(uid, matchId));
+          const snap = await getDoc(userApplicationDoc(uid, matchId));
           if (!snap.exists()) return { data: null };
 
-          return {
-            data: mapLoopMatchDoc(
-              snap.id,
-              (snap.data() as Record<string, unknown>) ?? {},
-            ),
-          };
+          return { data: mapApplicationToLoopMatch(snap.id, snap.data() as ApplicationDoc) };
         } catch (e) {
           return rtkError(toMsg(e));
         }
@@ -164,19 +213,23 @@ export const loopMatchesApi = baseApi.injectEndpoints({
       async queryFn(input, api) {
         try {
           const uid = requireUidFromState(api.getState());
-          const { iso, server } = makeTimestamps();
 
-          const payload = {
-            ...input,
-            url: normalizeUrl(input.url),
-            createdAt: iso,
-            updatedAt: iso,
-            createdAtTs: server,
-            updatedAtTs: server,
-          } as Record<string, unknown>;
+          const id = await createApplication(db, uid, {
+            companyName: input.company,
+            roleTitle: input.title,
+            locationText: input.location,
+            vacancyUrl: normalizeUrl(input.url),
+            source: String(input.platform ?? "").toLowerCase(),
+            rawDescription: input.description,
+            status: statusKeyToProcessStatus(input.status),
 
-          const ref = await addDoc(userLoopMatchesCol(uid), payload);
-          return { data: { id: ref.id } };
+            loopId: input.loopId,
+            loopPlatform: String(input.platform ?? "").toLowerCase(),
+            loopMatchedAt: input.matchedAt ? new Date(input.matchedAt) : undefined,
+            loopSource: "loop",
+          });
+
+          return { data: { id } };
         } catch (e) {
           return rtkError(toMsg(e));
         }
@@ -193,14 +246,9 @@ export const loopMatchesApi = baseApi.injectEndpoints({
     updateMatchStatus: builder.mutation<void, UpdateLoopMatchStatusInput>({
       async queryFn({ matchId, status }, api) {
         try {
-          const { iso, server } = makeTimestamps();
           const uid = requireUidFromState(api.getState());
 
-          await updateDoc(userLoopMatchDoc(uid, matchId), {
-            status,
-            updatedAt: iso,
-            updatedAtTs: server,
-          } as UpdateData<Omit<LoopMatch, "id">>);
+          await changeStatus(db, uid, matchId, statusKeyToProcessStatus(status));
 
           return { data: undefined };
         } catch (e) {
@@ -220,16 +268,37 @@ export const loopMatchesApi = baseApi.injectEndpoints({
     updateMatch: builder.mutation<void, UpdateLoopMatchInput>({
       async queryFn({ matchId, patch }, api) {
         try {
-          const { iso, server } = makeTimestamps();
-          const cleaned = cleanPatch(patch);
-
           const uid = requireUidFromState(api.getState());
 
-          await updateDoc(userLoopMatchDoc(uid, matchId), {
-            ...cleaned,
-            updatedAt: iso,
-            updatedAtTs: server,
-          } as UpdateData<Omit<LoopMatch, "id">>);
+          const p = cleanPatch(patch);
+          const dotPatch: Record<string, unknown> = {};
+
+          if (typeof p.title === "string") dotPatch["job.roleTitle"] = p.title;
+          if (typeof p.company === "string") dotPatch["job.companyName"] = p.company;
+          if (typeof p.location === "string") dotPatch["job.locationText"] = p.location;
+          if (typeof p.url === "string") dotPatch["job.vacancyUrl"] = p.url;
+          if (typeof p.platform === "string") {
+            dotPatch["loopLinkage.platform"] = p.platform;
+            dotPatch["job.source"] = p.platform;
+          }
+          if (typeof p.description === "string") dotPatch["vacancy.rawDescription"] = p.description;
+          if (typeof p.matchedAt === "string" && p.matchedAt.trim()) {
+            dotPatch["loopLinkage.matchedAt"] = Timestamp.fromDate(new Date(p.matchedAt));
+          }
+          if (typeof p.status === "string") {
+            dotPatch["process.status"] = statusKeyToProcessStatus(p.status);
+            dotPatch["process.lastStatusChangeAt"] = Timestamp.fromDate(new Date());
+          }
+
+          await updateApplicationWithHistory(db, uid, matchId, dotPatch, () => [
+            {
+              actor: "user",
+              type: "FIELD_CHANGE",
+              fieldPath: "legacy.loopMatch",
+              oldValue: null,
+              newValue: p,
+            },
+          ]);
 
           return { data: undefined };
         } catch (e) {
@@ -250,7 +319,7 @@ export const loopMatchesApi = baseApi.injectEndpoints({
       async queryFn({ matchId }, api) {
         try {
           const uid = requireUidFromState(api.getState());
-          await deleteDoc(userLoopMatchDoc(uid, matchId));
+          await deleteDoc(userApplicationDoc(uid, matchId));
           return { data: undefined };
         } catch (e) {
           return rtkError(toMsg(e));

@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import { StatusLabel, StatusMenu } from "src/entities/application/ui/StatusKit";
 import { classNames } from "src/shared/lib";
 import { Button, Modal } from "src/shared/ui";
 
@@ -46,14 +47,6 @@ export function MatchDetailsModal({
       .filter(Boolean);
     return parts.join(" • ");
   }, [match.location, platform, matchedAt, loopName]);
-
-  const statusLabel = React.useMemo(
-    () =>
-      t(`matches.status.${match.status}`, {
-        defaultValue: match.status,
-      }),
-    [match.status, t],
-  );
 
   const title = React.useMemo(() => {
     const raw = String(match.title ?? "").trim();
@@ -103,7 +96,7 @@ export function MatchDetailsModal({
         <div className={classNames("flex flex-wrap items-center justify-end gap-sm pt-sm")}>
           {/* Keep status visible, but do not duplicate the whole summary card */}
           <span className="mr-auto rounded-full border border-border bg-card px-sm py-1 text-xs text-muted-foreground">
-            {statusLabel}
+            <StatusLabel status={match.status} />
           </span>
 
           {hasUrl ? (
@@ -115,11 +108,7 @@ export function MatchDetailsModal({
           ) : null}
 
           {onUpdateStatus ? (
-            <StatusSelect
-              value={match.status}
-              disabled={busy}
-              onChange={(s) => onUpdateStatus(match.id, s)}
-            />
+            <StatusMenu value={match.status} disabled={busy} onChange={(s) => onUpdateStatus(match.id, s)} size="sm" />
           ) : null}
 
           {onEdit ? (
@@ -163,35 +152,3 @@ function Field({ label, value }: FieldProps) {
   );
 }
 
-type StatusSelectProps = Readonly<{
-  value: LoopMatchStatus;
-  disabled: boolean;
-  onChange: (next: LoopMatchStatus) => void;
-}>;
-
-function StatusSelect({ value, disabled, onChange }: StatusSelectProps) {
-  const { t } = useTranslation();
-  const options: LoopMatchStatus[] = ["new", "saved", "interview", "offer", "applied", "rejected"];
-
-  return (
-    <label className="flex items-center gap-sm text-sm">
-      <span className="text-muted-foreground">{t("matches.common.status", { defaultValue: "Status" })}</span>
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value as LoopMatchStatus)}
-        className={classNames(
-          "h-9 rounded-full px-sm",
-          "border border-border bg-card text-foreground",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        )}
-      >
-        {options.map((s) => (
-          <option key={s} value={s}>
-            {t(`matches.status.${s}`, { defaultValue: s })}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}

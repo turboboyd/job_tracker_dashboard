@@ -2,8 +2,7 @@ import { DndContext, DragOverlay, closestCorners, useDroppable } from "@dnd-kit/
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { LOOP_MATCH_STATUSES } from "src/entities/loop";
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application/model/status";
 
 import type { BoardVM } from "../model/types";
 
@@ -17,7 +16,7 @@ function StatusTabTarget({
   isActive,
   onClick,
 }: {
-  status: LoopMatchStatus;
+  status: BoardColumnKey;
   label: string;
   isActive: boolean;
   onClick: () => void;
@@ -50,27 +49,27 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
 
   const statuses = React.useMemo(
     () =>
-      LOOP_MATCH_STATUSES.map((s) => ({
-        status: s.value as LoopMatchStatus,
-        title: t(`board.status.${s.value}`, s.label),
+      BOARD_COLUMNS_LIST.map((c) => ({
+        status: c.key,
+        title: t(c.labelKey, { defaultValue: c.key }),
       })),
     [t],
   );
 
-  const [activeStatus, setActiveStatus] = React.useState<LoopMatchStatus>(
-    (statuses[0]?.status ?? "new") as LoopMatchStatus,
+  const [activeStatus, setActiveStatus] = React.useState<BoardColumnKey>(
+    (statuses[0]?.status ?? "ACTIVE") as BoardColumnKey,
   );
 
   const scrollerRef = React.useRef<HTMLDivElement | null>(null);
   const colRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
   const setColRef = React.useCallback(
-    (status: LoopMatchStatus) => (el: HTMLDivElement | null) => {
+    (status: BoardColumnKey) => (el: HTMLDivElement | null) => {
       colRefs.current[status] = el;
     },
     [],
   );
 
-  const scrollToStatus = React.useCallback((status: LoopMatchStatus) => {
+  const scrollToStatus = React.useCallback((status: BoardColumnKey) => {
     const el = colRefs.current[status];
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
@@ -86,7 +85,7 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
 
       // Find nearest column start relative to current scroll.
       const left = scroller.scrollLeft;
-      let bestStatus: LoopMatchStatus = activeStatus;
+      let bestStatus: BoardColumnKey = activeStatus;
       let bestDist = Number.POSITIVE_INFINITY;
       for (const { status } of statuses) {
         const el = colRefs.current[status];
@@ -163,7 +162,11 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
             {statuses.map(({ status, title }) => {
               const matches = columnsState.get(status) ?? [];
               return (
-                <div key={status} ref={setColRef(status)} className="snap-start">
+                <div
+                  key={status}
+                  ref={setColRef(status)}
+                  className="snap-start h-full"
+                >
                   <BoardColumn
                     status={status}
                     title={title}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import type { StatusKey } from "src/entities/application/model/status";
 import { Card } from "src/shared/ui";
 
 import { buildDailyBuckets, type MatchTimestampsLike } from "../model/dashboardTimeSeries";
@@ -9,7 +9,7 @@ import { buildDailyBuckets, type MatchTimestampsLike } from "../model/dashboardT
 type RangeKey = "7d" | "30d";
 
 const LS_KEY = "dashboard:goals:weeklyApplied:v1";
-const PIPELINE_STATUS: LoopMatchStatus = "applied";
+const PIPELINE_STATUS: StatusKey = "APPLIED";
 
 function clampInt(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.trunc(v)));

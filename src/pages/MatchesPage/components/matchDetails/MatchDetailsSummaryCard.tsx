@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { StatusPill } from "src/entities/application/ui/StatusKit";
 import type { LoopMatch } from "src/entities/loopMatch";
 import { formatMatchedAt, normalizePlatform } from "src/entities/loopMatch";
 import { Card } from "src/shared/ui";
@@ -43,9 +44,7 @@ export function MatchDetailsSummaryCard({ match, loopName }: Props) {
             ) : null}
           </div>
 
-          <span className="inline-flex items-center rounded-full bg-muted px-sm py-[2px] text-xs font-medium text-foreground">
-            {t(`matches.status.${match.status}`)}
-          </span>
+          <StatusPill status={match.status} />
         </div>
 
         {match.url ? (

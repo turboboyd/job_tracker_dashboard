@@ -56,6 +56,23 @@ module.exports = {
 
         info: "rgb(var(--info))",
         "info-foreground": "rgb(var(--info-foreground))",
+
+        // Application statuses (single source of truth via CSS vars in globals.css)
+        // Column/Stage mapping:
+        // ACTIVE -> status.info
+        // INTERVIEW -> status.purple
+        // OFFER -> status.warning
+        // HIRED -> status.success
+        // REJECTED -> status.danger
+        // NO_RESPONSE -> status.neutral
+        status: {
+          neutral: "rgb(var(--status-neutral))", // NO_RESPONSE / unknown / inactive
+          info: "rgb(var(--status-info))", // ACTIVE
+          warning: "rgb(var(--status-warning))", // OFFER
+          success: "rgb(var(--status-success))", // HIRED
+          danger: "rgb(var(--status-danger))", // REJECTED
+          purple: "rgb(var(--status-purple))", // INTERVIEW
+        },
       },
 
       borderRadius: {

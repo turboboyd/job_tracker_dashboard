@@ -7,12 +7,14 @@ export const LOOP_PLATFORMS: Array<{ value: LoopPlatform; label: string }> =
   PLATFORM_REGISTRY.map((p) => ({ value: p.id, label: p.label }));
 
 export const LOOP_MATCH_STATUSES = [
-  { value: "new", label: "New" },
-  { value: "saved", label: "Saved" },
-  { value: "applied", label: "Applied" },
-  { value: "interview", label: "Interview" },
-  { value: "offer", label: "Offer" },
-  { value: "rejected", label: "Rejected" },
+  // NOTE: These labels are for loop/match UI only.
+  // Values MUST be StatusKey from src/entities/application/model/status.ts
+  { value: "SAVED", label: "New" },
+  { value: "REVIEWED", label: "Saved" },
+  { value: "APPLIED", label: "Applied" },
+  { value: "HR_CALL_SCHEDULED", label: "Interview" },
+  { value: "OFFER_RECEIVED", label: "Offer" },
+  { value: "REJECTED_PRE_INTERVIEW", label: "Rejected" },
 ] as const satisfies ReadonlyArray<{ value: LoopMatchStatus; label: string }>;
 
 const LOOP_PLATFORM_SET: ReadonlySet<string> = new Set(ALL_PLATFORMS);

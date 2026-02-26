@@ -35,5 +35,13 @@
 
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
+
+   /* status colors (DARK) - чуть ярче/контрастнее */
+  --status-info: 37 99 235;     /* blue-400 */
+  --status-purple: 124 58 237;  /* violet-400 */
+  --status-warning: 217 119 6;  /* amber-400 */
+  --status-success: 5 150 105;  /* green-400 */
+  --status-danger: 220 38 38;  /* red-400 */
+  --status-neutral: 100 116 139; /* gray-400 */
 }
 

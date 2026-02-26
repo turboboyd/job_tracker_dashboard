@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { AppRoutes, RoutePath } from "src/app/providers/router/routeConfig/routeConfig";
+import { StatusBadge } from "src/entities/application/ui/StatusBadge/StatusBadge";
+import { StatusMenu } from "src/entities/application/ui/StatusKit";
 import type { LoopMatchStatus, UpdateMatchInput } from "src/entities/loopMatch";
 import { formatMatchedAt, normalizePlatform } from "src/entities/loopMatch";
-import { classNames, getErrorMessage } from "src/shared/lib";
+import { getErrorMessage } from "src/shared/lib";
 import { Button, Card, PageHeader, PageMessage } from "src/shared/ui";
 
 import { EditMatchModal } from "../MatchesPage/components/EditMatchModal";
@@ -162,14 +164,7 @@ export default function MatchDetailsPage() {
                       ) : null}
                     </div>
 
-                    <span
-                      className={classNames(
-                        "inline-flex items-center rounded-full px-sm py-[2px] text-xs font-medium",
-                        getStatusPalette(match.status),
-                      )}
-                    >
-                      {t(`matches.status.${match.status}`)}
-                    </span>
+                    <StatusPill status={match.status} />
                   </div>
 
                   {match.url ? (
@@ -270,15 +265,6 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const STATUS_OPTIONS = [
-  "new",
-  "saved",
-  "interview",
-  "offer",
-  "applied",
-  "rejected",
-] as const satisfies readonly LoopMatchStatus[];
-
 function StatusSelect({
   value,
   disabled,
@@ -290,44 +276,19 @@ function StatusSelect({
   label: string;
   onChange: (next: LoopMatchStatus) => void;
 }) {
-  const { t } = useTranslation();
-
-  const options = STATUS_OPTIONS;
-
   return (
     <label className="flex items-center justify-between gap-md text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <select
+      <StatusMenu
         value={value}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value as LoopMatchStatus)}
-        className="h-9 rounded-full px-sm border border-border bg-card text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        {options.map((s) => (
-          <option key={s} value={s}>
-            {t(`matches.status.${s}`)}
-          </option>
-        ))}
-      </select>
+        onChange={(s) => onChange(s as LoopMatchStatus)}
+        size="sm"
+      />
     </label>
   );
 }
 
-function getStatusPalette(status: LoopMatchStatus) {
-  switch (status) {
-    case "new":
-      return "bg-info text-info-foreground";
-    case "saved":
-      return "bg-secondary text-secondary-foreground";
-    case "applied":
-      return "bg-muted text-foreground";
-    case "interview":
-      return "bg-warning text-warning-foreground";
-    case "offer":
-      return "bg-success text-success-foreground";
-    case "rejected":
-      return "bg-destructive text-destructive-foreground";
-    default:
-      return "bg-muted text-foreground";
-  }
+function StatusPill({ status }: { status: LoopMatchStatus }) {
+  return <StatusBadge status={status} />;
 }

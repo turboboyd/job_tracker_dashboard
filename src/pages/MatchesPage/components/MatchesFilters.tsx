@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import { getStatusMeta } from "src/entities/application/model/status";
 import type { LoopMatchStatus } from "src/entities/loopMatch";
 import { classNames } from "src/shared/lib";
 import {
@@ -65,7 +66,13 @@ function labelSort(t: TFunction, v: MatchesSort) {
 }
 
 function labelStatus(t: TFunction, v: LoopMatchStatus) {
-  return t(`matches.status.${v}`);
+  const meta = getStatusMeta(v);
+  const humanizeKey = (k: string) =>
+    k
+      .split("_")
+      .map((p) => (p ? p[0].toUpperCase() + p.slice(1).toLowerCase() : p))
+      .join(" ");
+  return t(meta.labelKey, { defaultValue: humanizeKey(meta.key) });
 }
 
 function buildChips(args: {

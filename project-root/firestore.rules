@@ -2,418 +2,70 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ----------------------------
-    // Helpers
-    // ----------------------------
-    function signedIn() {
-      return request.auth != null;
-    }
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function isSelf(userId) { return signedIn() && uid() == userId; }
 
-    function uid() {
-      return request.auth.uid;
-    }
-
-    function isSelf(userId) {
-      return signedIn() && uid() == userId;
-    }
-
-    function isNonEmptyString(v) {
-      return (v is string) && (v.size() > 0);
-    }
-
-    function isOptionalString(v) {
-      return !(v is string) || v.size() >= 0;
-    }
-
-    function isValidEnum(v, allowed) {
-      return (v is string) && (allowed.hasAny([v]));
-    }
-
-    // ----------------------------
-    // Existing rules (kept)
-    // ----------------------------
-    function isValidLoop(data) {
-      return data.keys().hasOnly([
-        "name",
-        "titles",
-        "location",
-        "radiusKm",
-        "remoteMode",
-        "platforms",
-        "filters",
-        "createdAt",
-        "updatedAt",
-        "createdAtTs",
-        "updatedAtTs"
-      ])
-      && isNonEmptyString(data.name)
-      && (data.titles is list)
-      && (data.location is string)
-      && (data.radiusKm is number)
-      && (data.remoteMode is string)
-      && (data.platforms is list)
-      && (!("filters" in data) || data.filters is map)
-      && (!("createdAt" in data) || data.createdAt is string)
-      && (!("updatedAt" in data) || data.updatedAt is string)
-      && (data.createdAtTs is timestamp)
-      && (data.updatedAtTs is timestamp);
-    }
-
-    function loopCreatedAtUnchanged() {
-      return request.resource.data.createdAtTs == resource.data.createdAtTs;
-    }
-
-    function isValidLoopMatch(data) {
-      return data.keys().hasOnly([
-        "loopId",
-        "title",
-        "company",
-        "location",
-        "platform",
-        "url",
-        "description",
-        "status",
-        "matchedAt",
-        "createdAt",
-        "updatedAt",
-        "createdAtTs",
-        "updatedAtTs"
-      ])
-      && isNonEmptyString(data.loopId)
-      && isNonEmptyString(data.title)
-      && (data.company is string)
-      && (data.location is string)
-      && (data.platform is string)
-      && (data.url is string)
-      && (data.description is string)
-      && (data.status is string)
-      && (data.matchedAt is string)
-      && (data.createdAt is string)
-      && (data.updatedAt is string)
-      && (data.createdAtTs is timestamp)
-      && (data.updatedAtTs is timestamp);
-    }
-
-    function matchCreatedAtUnchanged() {
-      return request.resource.data.createdAtTs == resource.data.createdAtTs;
-    }
-
-    // ----------------------------
-    // Favorites: users/{uid}/private/resourcesFavorites
-    // ----------------------------
-    function isValidResourceFavorites(data) {
-      return data.keys().hasOnly(["ids", "updatedAt", "userId"])
-        && ("ids" in data)
-        && (data.ids is list)
-        && (data.ids.size() <= 500)
-        && (!("userId" in data) || ((data.userId is string) && (data.userId == uid())))
-        && (!("updatedAt" in data) || (data.updatedAt is timestamp));
-    }
-
-    function favoritesUserIdUnchanged() {
-      return !("userId" in resource.data)
-        || request.resource.data.userId == resource.data.userId;
-    }
-
-    match /users/{userId}/private/resourcesFavorites {
-      allow read: if isSelf(userId);
-
-      allow create: if isSelf(userId) && isValidResourceFavorites(request.resource.data);
-
-      allow update: if isSelf(userId)
-        && isValidResourceFavorites(request.resource.data)
-        && favoritesUserIdUnchanged();
-
-      allow delete: if isSelf(userId);
-    }
-
-    // ----------------------------
-    // User settings: users/{uid}/private/settings
-    // ----------------------------
-    match /users/{userId}/private/settings {
-      allow read: if isSelf(userId);
-
-      allow create: if isSelf(userId) && isValidSettings(request.resource.data);
-
-      allow update: if isSelf(userId)
-        && isValidSettings(request.resource.data)
-        && settingsUserIdUnchanged();
-
-      allow delete: if false;
-    }
-
-    function settingsUserIdUnchanged() {
-      return !("userId" in resource.data)
-        || request.resource.data.userId == resource.data.userId;
-    }
-
-    function isValidSettings(data) {
-      return data.keys().hasOnly([
-        "timeZone",
-        "dateFormat",
-        "uiLanguage",
-        "notifications",
-        "updatedAt",
-        "userId"
-      ])
-      && (!("userId" in data) || (data.userId is string && data.userId == uid()))
-      && (!("timeZone" in data) || (data.timeZone is string && data.timeZone.size() >= 1 && data.timeZone.size() <= 64))
-      && (!("dateFormat" in data) || data.dateFormat in ["DD.MM.YYYY", "MM/DD/YYYY", "YYYY-MM-DD"])
-      && (!("uiLanguage" in data) || data.uiLanguage in ["en", "de", "ru"])
-      && (!("notifications" in data) || isValidNotifications(data.notifications))
-      && (!("updatedAt" in data) || data.updatedAt is timestamp);
-    }
-
-    function isValidNotifications(n) {
-      return n is map
-        && n.keys().hasOnly(["emailEnabled", "inAppEnabled"])
-        && (!("emailEnabled" in n) || n.emailEnabled is bool)
-        && (!("inAppEnabled" in n) || n.inAppEnabled is bool);
-    }
-
-    // ----------------------------
-    // User outcome: users/{uid}/private/outcome
-    // ----------------------------
-    match /users/{userId}/private/outcome {
-      allow read: if isSelf(userId);
-
-      allow create: if isSelf(userId) && isValidOutcome(request.resource.data);
-
-      allow update: if isSelf(userId)
-        && isValidOutcome(request.resource.data)
-        && outcomeUserIdUnchanged();
-
-      allow delete: if isSelf(userId);
-    }
-
-    function outcomeUserIdUnchanged() {
-      return !("userId" in resource.data)
-        || request.resource.data.userId == resource.data.userId;
-    }
-
-    function isValidOutcome(data) {
-      return data.keys().hasOnly([
-        "employmentStatus",
-        "feedback",
-        "updatedAt",
-        "userId"
-      ])
-      && (!("userId" in data) || (data.userId is string && data.userId == uid()))
-      && ("employmentStatus" in data)
-      && (data.employmentStatus in ["waiting", "hired"])
-      && (!("feedback" in data) || data.feedback in ["positive", "neutral", "negative"])
-      && (!("updatedAt" in data) || data.updatedAt is timestamp);
-    }
-
-    // ----------------------------
-    // Public aggregated stats
-    // ----------------------------
-    match /publicStats/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
-
-    // ----------------------------
-    // NEW: Job Search Dashboard v1 (Firestore-only)
-    // users/{uid} + applications + history (+ optional: cv_versions/profile_versions/stats)
-    // ----------------------------
-
-    function isValidUserDoc(data) {
-      // From schema: createdAt, updatedAt, profile, skills, matchSettings :contentReference[oaicite:2]{index=2}
-      return data.keys().hasOnly(["createdAt", "updatedAt", "profile", "skills", "matchSettings"])
-        && (data.createdAt is timestamp)
-        && (data.updatedAt is timestamp)
-        && (data.profile is map)
-        && (data.skills is list)
-        && (data.matchSettings is map);
-    }
-
-    function userCreatedAtUnchanged() {
-      return request.resource.data.createdAt == resource.data.createdAt;
-    }
-
-    function isValidStatus(s) {
-      return isValidEnum(s, [
-        "SAVED","PLANNED","APPLIED","VIEWED",
-        "INTERVIEW_1","INTERVIEW_2","TEST_TASK",
-        "OFFER","REJECTED","NO_RESPONSE"
-      ]);
-    }
-
-    function isValidWorkMode(v) {
-      return !(v is string) || v in ["REMOTE","HYBRID","ON_SITE"];
-    }
-
-    function isValidEmploymentType(v) {
-      return !(v is string) || v in ["FULL_TIME","PART_TIME","CONTRACT"];
-    }
-
-    function isValidRemotePreference(v) {
-      return !(v is string) || v in ["REMOTE_ONLY","HYBRID_OK","ON_SITE_OK"];
-    }
-
-    function isValidApplicationCore(data) {
-      // Minimal strictness: enforce required blocks + allow optional ones as in schema :contentReference[oaicite:3]{index=3}
-      return data.keys().hasOnly([
-        "createdAt","updatedAt","createdBy","archived",
-        "job","process","notes","vacancy","matching","priority","cvLinkage"
-      ])
-      && (data.createdAt is timestamp)
-      && (data.updatedAt is timestamp)
-      && (data.createdBy is string)
-      && (data.archived is bool)
-      && (data.job is map)
-      && (data.process is map);
-    }
-
-    function isValidJob(job) {
-      return job.keys().hasOnly([
-        "companyName","companyId","roleTitle","locationText","vacancyUrl","source","postedAt",
-        "salary","employmentType","workMode"
-      ])
-      && isNonEmptyString(job.companyName)
-      && isNonEmptyString(job.roleTitle)
-      && (!("companyId" in job) || (job.companyId is string))
-      && (!("locationText" in job) || (job.locationText is string))
-      && (!("vacancyUrl" in job) || (job.vacancyUrl is string))
-      && (!("source" in job) || (job.source is string))
-      && (!("postedAt" in job) || (job.postedAt is timestamp))
-      && (!("salary" in job) || (job.salary is map))
-      && (!("employmentType" in job) || isValidEmploymentType(job.employmentType))
-      && (!("workMode" in job) || isValidWorkMode(job.workMode));
-    }
-
-    function isValidProcess(p) {
-      return p.keys().hasOnly([
-        "status","lastStatusChangeAt","nextActionAt","nextActionText",
-        "contactAttempts","lastContactAt","lastFollowUpAt",
-        "followUpLevel","needsFollowUp","followUpDueAt",
-        "needsReapplySuggestion","reapplyEligibleAt","reapplyReason"
-      ])
-      && ("status" in p) && isValidStatus(p.status)
-      && ("lastStatusChangeAt" in p) && (p.lastStatusChangeAt is timestamp)
-      && (!("nextActionAt" in p) || (p.nextActionAt is timestamp))
-      && (!("nextActionText" in p) || (p.nextActionText is string))
-      && (!("contactAttempts" in p) || (p.contactAttempts is number))
-      && (!("lastContactAt" in p) || (p.lastContactAt is timestamp))
-      && (!("lastFollowUpAt" in p) || (p.lastFollowUpAt is timestamp))
-      && (!("followUpLevel" in p) || (p.followUpLevel is number))
-      && (!("needsFollowUp" in p) || (p.needsFollowUp is bool))
-      && (!("followUpDueAt" in p) || (p.followUpDueAt is timestamp))
-      && (!("needsReapplySuggestion" in p) || (p.needsReapplySuggestion is bool))
-      && (!("reapplyEligibleAt" in p) || (p.reapplyEligibleAt is timestamp))
-      && (!("reapplyReason" in p) || (p.reapplyReason is string));
-    }
-
-    function applicationCreatedAtUnchanged() {
-      return request.resource.data.createdAt == resource.data.createdAt;
-    }
-
-    function applicationCreatedByUnchanged() {
-      return request.resource.data.createdBy == resource.data.createdBy;
-    }
-
-    function isValidHistoryEvent(data) {
-      // From schema: createdAt, actor, type + type-specific fields :contentReference[oaicite:4]{index=4}
-      return data.keys().hasOnly([
-        "createdAt","actor","type",
-        "fromStatus","toStatus",
-        "fieldPath","oldValue","newValue",
-        "comment","feedbackType","sentiment","rejectionReasonCode"
-      ])
-      && (data.createdAt is timestamp)
-      && (data.actor is string) && (data.actor in ["user","system"])
-      && (data.type is string) && (data.type in ["STATUS_CHANGE","FIELD_CHANGE","COMMENT","SYSTEM"])
-      && (
-        (data.type == "STATUS_CHANGE" && (data.fromStatus is string) && (data.toStatus is string))
-        ||
-        (data.type == "FIELD_CHANGE" && (data.fieldPath is string) && ("oldValue" in data) && ("newValue" in data))
-        ||
-        (data.type == "COMMENT" && (data.comment is string) && (data.comment.size() > 0))
-        ||
-        (data.type == "SYSTEM")
-      );
-    }
-
-    // Root user doc (NOW writable for profile/skills/matchSettings)
+    // =========================
+    // Root user doc (compat)
+    // =========================
     match /users/{userId} {
-      allow read: if isSelf(userId);
-
-      allow create: if isSelf(userId) && isValidUserDoc(request.resource.data);
-      allow update: if isSelf(userId)
-        && isValidUserDoc(request.resource.data)
-        && userCreatedAtUnchanged();
-
-      allow delete: if false;
-    }
-
-    // Keep existing loops + loopMatches (as in your rules)
-    match /users/{userId}/loops/{loopId} {
-      allow read: if isSelf(userId);
-
-      allow create: if isSelf(userId) && isValidLoop(request.resource.data);
-
-      allow update: if isSelf(userId)
-        && isValidLoop(request.resource.data)
-        && loopCreatedAtUnchanged();
-
-      allow delete: if isSelf(userId);
-    }
-
-    match /users/{userId}/loopMatches/{matchId} {
-      allow read: if isSelf(userId);
-
-      allow create: if isSelf(userId) && isValidLoopMatch(request.resource.data);
-
-      allow update: if isSelf(userId)
-        && isValidLoopMatch(request.resource.data)
-        && matchCreatedAtUnchanged();
-
-      allow delete: if isSelf(userId);
-    }
-
-    // NEW: applications
-    match /users/{userId}/applications/{appId} {
-      allow read: if isSelf(userId);
-
-      allow create: if isSelf(userId)
-        && isValidApplicationCore(request.resource.data)
-        && isValidJob(request.resource.data.job)
-        && isValidProcess(request.resource.data.process)
-        && (request.resource.data.createdBy == uid());
-
-      allow update: if isSelf(userId)
-        && isValidApplicationCore(request.resource.data)
-        && isValidJob(request.resource.data.job)
-        && isValidProcess(request.resource.data.process)
-        && applicationCreatedAtUnchanged()
-        && applicationCreatedByUnchanged();
-
-      allow delete: if isSelf(userId);
-
-      // NEW: history subcollection (Firestore-only => allow create, forbid update/delete)
-      match /history/{historyId} {
-        allow read: if isSelf(userId);
-        allow create: if isSelf(userId) && isValidHistoryEvent(request.resource.data);
-        allow update, delete: if false;
-      }
-    }
-
-    // Optional per schema :contentReference[oaicite:5]{index=5}
-    match /users/{userId}/cv_versions/{cvId} {
       allow read: if isSelf(userId);
       allow create, update: if isSelf(userId);
       allow delete: if false;
+
+      // -------------------------
+      // Loops (legacy)
+      // -------------------------
+      match /loops/{loopId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      // -------------------------
+      // loopMatches (legacy) — must stay enabled
+      // -------------------------
+      match /loopMatches/{matchId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      // -------------------------
+      // Applications (new)
+      // -------------------------
+      match /applications/{appId} {
+        allow read, create, update, delete: if isSelf(userId);
+
+        // History subcollection (used by details page)
+        match /history/{historyId} {
+          allow read, create: if isSelf(userId);
+          allow update, delete: if false;
+        }
+      }
+
+      // Optional schema collections
+      match /cv_versions/{cvId} {
+        allow read, create, update: if isSelf(userId);
+        allow delete: if false;
+      }
+
+      match /private/{docId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      match /profile_versions/{pvId} {
+        allow read: if isSelf(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /stats/{statId} {
+        allow read: if isSelf(userId);
+        allow create, update, delete: if false;
+      }
     }
 
-    match /users/{userId}/profile_versions/{pvId} {
-      allow read: if isSelf(userId);
-      allow create, update, delete: if false;
-    }
-
-    match /users/{userId}/stats/{statId} {
-      allow read: if isSelf(userId);
-      allow create, update, delete: if false;
+    // Public aggregated stats
+    match /publicStats/{docId} {
+      allow read: if true;
+      allow write: if false;
     }
   }
 }

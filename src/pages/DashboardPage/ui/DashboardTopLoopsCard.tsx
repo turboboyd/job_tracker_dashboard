@@ -6,10 +6,10 @@ import {
   AppRoutes,
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import { getBoardColumn, type BoardColumnKey, type StatusKey } from "src/entities/application/model/status";
 import { Button, Card } from "src/shared/ui";
 
-import { normalizeStatus } from "../model/dashboardTimeSeries";
+import { normalizeAppStatus } from "../model/dashboardTimeSeries";
 
 type LoopLike = { id: string; name: string };
 type MatchLike = { loopId?: string; status?: unknown };
@@ -17,19 +17,20 @@ type MatchLike = { loopId?: string; status?: unknown };
 type Row = {
   loopId: string;
   name: string;
-  applied: number;
+  active: number;
   interview: number;
   offer: number;
-  rejected: number;
+  hired: number;
   total: number;
 };
 
-function inc(row: Row, st: LoopMatchStatus) {
-  if (st === "applied") row.applied += 1;
-  if (st === "interview") row.interview += 1;
-  if (st === "offer") row.offer += 1;
-  if (st === "rejected") row.rejected += 1;
-  if (st !== "new" && st !== "saved") row.total += 1;
+function inc(row: Row, st: StatusKey) {
+  const col: BoardColumnKey = getBoardColumn(st);
+  if (col === "ACTIVE") row.active += 1;
+  if (col === "INTERVIEW") row.interview += 1;
+  if (col === "OFFER") row.offer += 1;
+  if (col === "HIRED") row.hired += 1;
+  if (col !== "ARCHIVED") row.total += 1;
 }
 
 export function DashboardTopLoopsCard({
@@ -48,10 +49,10 @@ export function DashboardTopLoopsCard({
       byId.set(l.id, {
         loopId: l.id,
         name: l.name,
-        applied: 0,
+        active: 0,
         interview: 0,
         offer: 0,
-        rejected: 0,
+        hired: 0,
         total: 0,
       });
     }
@@ -60,12 +61,12 @@ export function DashboardTopLoopsCard({
       if (!m.loopId) continue;
       const row = byId.get(m.loopId);
       if (!row) continue;
-      inc(row, normalizeStatus(m.status));
+      inc(row, normalizeAppStatus(m.status));
     }
 
     return Array.from(byId.values())
       .filter((r) => r.total > 0)
-      .sort((a, b) => b.interview - a.interview || b.total - a.total)
+      .sort((a, b) => b.interview - a.interview || b.offer - a.offer || b.total - a.total)
       .slice(0, 5);
   }, [loops, matches]);
 
@@ -109,8 +110,8 @@ export function DashboardTopLoopsCard({
                 </div>
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{t("status.interview", "Interview")}: {r.interview}</span>
-                <span>{t("status.offer", "Offer")}: {r.offer}</span>
+                <span>{t("board.column.INTERVIEW", "Interview")}: {r.interview}</span>
+                <span>{t("board.column.OFFER", "Offer")}: {r.offer}</span>
               </div>
             </div>
           ))

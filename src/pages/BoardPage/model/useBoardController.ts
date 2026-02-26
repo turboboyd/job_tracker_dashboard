@@ -1,8 +1,8 @@
 import React from "react";
 
+import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application/model/status";
 import { useAuthSelectors } from "src/entities/auth";
-import { LOOP_MATCH_STATUSES } from "src/entities/loop";
-import type { LoopMatch, LoopMatchStatus } from "src/entities/loopMatch";
+import type { LoopMatch } from "src/entities/loopMatch";
 
 import { groupMatchesByStatus } from "./grouping";
 import { sortByOrder } from "./order";
@@ -23,19 +23,19 @@ function findMatchById(matches: readonly LoopMatch[], matchId: string): LoopMatc
 
 function buildBoardColumns(
   matches: readonly LoopMatch[],
-  orderByStatus: Record<LoopMatchStatus, string[]>,
-): ReadonlyMap<LoopMatchStatus, readonly LoopMatch[]> {
+  orderByStatus: Record<BoardColumnKey, string[]>,
+): ReadonlyMap<BoardColumnKey, readonly LoopMatch[]> {
   const grouped = groupMatchesByStatus(matches);
 
 
-  for (const s of LOOP_MATCH_STATUSES) {
-    const status = s.value;
+  for (const s of BOARD_COLUMNS_LIST) {
+    const status = s.key;
     const list = grouped.get(status) ?? [];
     const ordered = sortByOrder(list, orderByStatus[status] ?? []);
     grouped.set(status, ordered);
   }
 
-  return grouped as ReadonlyMap<LoopMatchStatus, readonly LoopMatch[]>;
+  return grouped as ReadonlyMap<BoardColumnKey, readonly LoopMatch[]>;
 }
 
 export function useBoardController(): BoardVM {
@@ -66,7 +66,7 @@ export function useBoardController(): BoardVM {
   );
 
   const onDropToStatus = React.useCallback(
-    async (payload: BoardDragPayload, toStatus: LoopMatchStatus, toIndex: number) => {
+    async (payload: BoardDragPayload, toStatus: BoardColumnKey, toIndex: number) => {
       if (!userId) return;
       if (busy) return;
 
