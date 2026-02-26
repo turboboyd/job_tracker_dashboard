@@ -1,7 +1,7 @@
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import { STATUS_KEYS, isStatusKey, getBoardColumn, type StatusKey, type BoardColumnKey } from "src/entities/application/model/status";
 
 export type MatchTimestampsLike = {
-  status: LoopMatchStatus;
+  status: StatusKey;
   createdAt: unknown;
   updatedAt: unknown;
   loopId?: string | undefined;
@@ -11,7 +11,7 @@ export type Bucket = {
   label: string;
   startMs: number;
   endMs: number;
-  counts: Record<LoopMatchStatus, number>;
+  counts: Record<StatusKey, number>;
 };
 
 
@@ -66,22 +66,14 @@ export function medianDays(values: number[]): number | null {
   return xs.length % 2 === 1 ? xs[mid] : Math.round((xs[mid - 1] + xs[mid]) / 2);
 }
 
-export function normalizeStatus(s: unknown): LoopMatchStatus {
-  if (s === "new" || s === "saved" || s === "applied" || s === "interview" || s === "offer" || s === "rejected") {
-    return s;
-  }
-  return "new";
+export function normalizeAppStatus(s: unknown): StatusKey {
+  return isStatusKey(s) ? s : "SAVED";
 }
 
-function emptyCounts(): Record<LoopMatchStatus, number> {
-  return {
-    new: 0,
-    saved: 0,
-    applied: 0,
-    interview: 0,
-    offer: 0,
-    rejected: 0,
-  };
+function emptyCounts(): Record<StatusKey, number> {
+  const out = {} as Record<StatusKey, number>;
+  for (const k of STATUS_KEYS) out[k] = 0;
+  return out;
 }
 
 function startOfDayMs(ms: number): number {
@@ -138,7 +130,7 @@ export function buildDailyBuckets(matches: MatchTimestampsLike[], opts: { days: 
     const idx = Math.floor((startOfDayMs(ts) - start) / (24 * 60 * 60 * 1000));
     const b = buckets[idx];
     if (!b) continue;
-    const st = normalizeStatus(m.status);
+    const st = normalizeAppStatus(m.status);
     b.counts[st] += 1;
   }
 
@@ -169,7 +161,7 @@ export function buildWeeklyBuckets(matches: MatchTimestampsLike[], opts: { weeks
     const idx = Math.floor((startOfWeekMs(ts) - start) / (7 * 24 * 60 * 60 * 1000));
     const b = buckets[idx];
     if (!b) continue;
-    const st = normalizeStatus(m.status);
+    const st = normalizeAppStatus(m.status);
     b.counts[st] += 1;
   }
 
@@ -205,7 +197,7 @@ export function buildMonthlyBuckets(matches: MatchTimestampsLike[], opts: { mont
     const idx = (d.getFullYear() - startDate.getFullYear()) * 12 + (d.getMonth() - startDate.getMonth());
     const b = buckets[idx];
     if (!b) continue;
-    const st = normalizeStatus(m.status);
+    const st = normalizeAppStatus(m.status);
     b.counts[st] += 1;
   }
 
@@ -214,13 +206,27 @@ export function buildMonthlyBuckets(matches: MatchTimestampsLike[], opts: { mont
 
 export type PipelineLinePoint = { label: string; value: number };
 
+/**
+ * Для линии “Pipeline” используем суммы по колонкам доски,
+ * а не прямые ключи статусов.
+ */
 export function bucketToPipelineLine(buckets: Bucket[]): PipelineLinePoint[] {
-  return buckets.map((b) => ({
-    label: b.label,
-    value:
-      (b.counts.applied || 0) +
-      (b.counts.interview || 0) +
-      (b.counts.offer || 0) +
-      (b.counts.rejected || 0),
-  }));
+  const pipelineCols: ReadonlySet<BoardColumnKey> = new Set([
+    "ACTIVE",
+    "INTERVIEW",
+    "OFFER",
+    "HIRED",
+    "REJECTED",
+    "NO_RESPONSE"
+  ]);
+
+  return buckets.map((b) => {
+    let total = 0;
+    for (const k of STATUS_KEYS) {
+      const col = getBoardColumn(k);
+      if (pipelineCols.has(col)) total += b.counts[k] || 0;
+    }
+    return { label: b.label, value: total };
+  });
 }
+

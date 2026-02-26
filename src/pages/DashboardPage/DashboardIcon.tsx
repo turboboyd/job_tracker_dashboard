@@ -11,7 +11,9 @@ export type IconName =
   | "saved"
   | "interview"
   | "offer"
-  | "rejected";
+  | "hired"
+  | "rejected"
+  | "no_response";
 
 const ICONS: Record<IconName, string> = {
   user: "👤",
@@ -25,7 +27,9 @@ const ICONS: Record<IconName, string> = {
   saved: "🔄",
   interview: "✉️",
   offer: "🎉",
+  hired: "✅",
   rejected: "⚠️",
+  no_response: "⏳",
 };
 
 const COLOR: Record<IconName, string> = {
@@ -38,11 +42,13 @@ const COLOR: Record<IconName, string> = {
   // KPI (по смыслу/статусу)
   total: "text-foreground",
   new: "text-slate-700 dark:text-slate-200",
-  applied: "text-blue-600 dark:text-blue-400",
-  saved: "text-amber-600 dark:text-amber-400",
-  interview: "text-purple-600 dark:text-purple-400",
-  offer: "text-emerald-600 dark:text-emerald-400",
-  rejected: "text-red-600 dark:text-red-400",
+  applied: "text-status-info",
+  saved: "text-status-info",
+  interview: "text-status-purple",
+  offer: "text-status-warning",
+  hired: "text-status-success",
+  rejected: "text-status-danger",
+  no_response: "text-status-neutral",
 };
 
 export type DashboardIconProps = {

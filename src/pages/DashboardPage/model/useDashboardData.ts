@@ -2,10 +2,18 @@ import { skipToken } from "@reduxjs/toolkit/query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+  BOARD_COLUMN_KEYS,
+  getBoardColumn,
+  type BoardColumnKey,
+  normalizeStatusKey,
+  type StatusKey,
+} from "src/entities/application/model/status";
 import { useAuthSelectors } from "src/entities/auth";
 import { useGetLoopsQuery, type Loop } from "src/entities/loop";
-import type { LoopMatchStatus } from "src/entities/loopMatch";
-import { useGetAllMatchesQuery } from "src/entities/loopMatch";
+import { createApplicationsRepo } from "src/pages/ApplicationsPage/api/applicationsRepo";
+import type { ApplicationDoc } from "src/pages/ApplicationsPage/api/applicationsRepo";
+import { db } from "src/shared/config/firebase/firebase";
 
 import type { DashboardLoopsFilterValue } from "../ui";
 import type { RecentJob } from "../ui/DashboardRecentJobsCard";
@@ -21,23 +29,20 @@ type MatchLike = {
   notes?: string | null;
   status?: unknown;
   updatedAt?: unknown;
+  statusHistory?: Array<{ status: unknown; date?: unknown; changedAt?: unknown }>;
 };
 
 export type DashboardChartMatch = {
-  status: LoopMatchStatus;
+  status: StatusKey;
   createdAt: unknown;
   updatedAt: unknown;
   loopId: string | undefined;
+  statusHistory?: Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>;
 };
 
 export type DashboardPipelineSummary = {
   total: number;
-  new: number;
-  applied: number;
-  saved: number;
-  interview: number;
-  offer: number;
-  rejected: number;
+  byColumn: Record<BoardColumnKey, number>;
 };
 
 export type DashboardData = {
@@ -104,36 +109,16 @@ function toMillis(value: unknown): number {
   return 0;
 }
 
-function statusKey(value: unknown): string {
-  if (typeof value === "string" && value.trim().length > 0) {
-    return value.trim().toLowerCase();
-  }
-  return "unknown";
-}
-
-function normalizeStatus(value: unknown): LoopMatchStatus | null {
-  if (typeof value !== "string") return null;
-  const v = value.trim().toLowerCase();
-  if (
-    v === "new" ||
-    v === "saved" ||
-    v === "applied" ||
-    v === "interview" ||
-    v === "offer" ||
-    v === "rejected"
-  ) {
-    return v as LoopMatchStatus;
-  }
-  return null;
-}
-
-function buildSummary(statuses: string[]): {
+function buildSummary(cols: BoardColumnKey[]): {
   total: number;
-  byStatus: Record<string, number>;
+  byStatus: Record<BoardColumnKey, number>;
 } {
-  const byStatus: Record<string, number> = {};
+  const byStatus = Object.fromEntries(
+    BOARD_COLUMN_KEYS.map((k: BoardColumnKey) => [k, 0]),
+  ) as Record<BoardColumnKey, number>;
+
   let total = 0;
-  for (const st of statuses) {
+  for (const st of cols) {
     total += 1;
     byStatus[st] = (byStatus[st] ?? 0) + 1;
   }
@@ -142,26 +127,16 @@ function buildSummary(statuses: string[]): {
 
 function toPipelineSummary(
   total: number,
-  byStatus: Record<string, number>,
+  byStatus: Record<BoardColumnKey, number>,
 ): DashboardPipelineSummary {
-  const pick = (k: keyof Omit<DashboardPipelineSummary, "total">) =>
-    byStatus[k] ?? 0;
-  return {
-    total,
-    new: pick("new"),
-    applied: pick("applied"),
-    saved: pick("saved"),
-    interview: pick("interview"),
-    offer: pick("offer"),
-    rejected: pick("rejected"),
-  };
+  return { total, byColumn: byStatus };
 }
 
 export function useDashboardData(): DashboardData {
     const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
-  const { userId } = useAuthSelectors();
+  const { userId, isAuthReady } = useAuthSelectors();
 
-  const loopsQ = useGetLoopsQuery(userId ? undefined : skipToken);
+  const loopsQ = useGetLoopsQuery(userId && isAuthReady ? undefined : skipToken);
   const loops = loopsQ.data ?? [];
 
   const [loopsFilter, setLoopsFilter] = useState<DashboardLoopsFilterValue>(
@@ -181,24 +156,120 @@ export function useDashboardData(): DashboardData {
     }
   }, [loopsFilter]);
 
-  const matchesQ = useGetAllMatchesQuery(userId ? undefined : skipToken);
-  const matchesAll = useMemo(
-    () => ((matchesQ.data ?? []) as MatchLike[]),
-    [matchesQ.data],
-  );
+  const repo = useMemo(() => createApplicationsRepo(db), []);
 
-  const isLoading = matchesQ.isLoading;
-  const error = matchesQ.error ? t("loadError", "Failed to load matches") : null;
+  const [appsRows, setAppsRows] = useState<Array<{ id: string; data: ApplicationDoc }>>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [appsError, setAppsError] = useState<string | null>(null);
+  const [historyByAppId, setHistoryByAppId] = useState<Record<string, Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>>>({});
+
+  useEffect(() => {
+    if (!isAuthReady || !userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setAppsLoading(true);
+        setAppsError(null);
+        const rows = await repo.queryAllActiveApplications(userId, 500);
+        if (!cancelled) setAppsRows(rows);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        if (!cancelled) setAppsError(message);
+      } finally {
+        if (!cancelled) setAppsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, userId, repo]);
+
+  useEffect(() => {
+    if (!isAuthReady || !userId) return;
+    if (!appsRows.length) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const entries = await Promise.all(
+          appsRows.map(async (row) => {
+            try {
+              const events = await repo.getApplicationHistory(userId, row.id, 200);
+              const items: Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }> = [];
+
+              const statusRaw =
+                (row.data as { process?: { subStatus?: unknown; status?: unknown } })?.process?.subStatus ??
+                (row.data as { process?: { subStatus?: unknown; status?: unknown } })?.process?.status;
+              const initial: StatusKey = normalizeStatusKey(statusRaw) ?? "SAVED";
+              items.push({ status: initial, date: row.data.createdAt });
+
+              for (const ev of events) {
+                const d = ev.data as unknown as { type?: unknown; toStatus?: unknown; createdAt?: unknown };
+                if (d?.type === "STATUS_CHANGE" && d?.toStatus) {
+                  const st: StatusKey = normalizeStatusKey(d.toStatus) ?? "SAVED";
+                  items.push({ status: st, date: d.createdAt });
+                }
+              }
+
+              return [row.id, items] as const;
+            } catch {
+              return [row.id, [] as Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>] as const;
+            }
+          }),
+        );
+
+        if (cancelled) return;
+        const map: Record<string, Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>> = {};
+        for (const [id, arr] of entries) map[id] = arr;
+        setHistoryByAppId(map);
+      } catch {
+        if (!cancelled) setHistoryByAppId({});
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, userId, appsRows, repo]);
+
+
+  const matchesAll = useMemo<MatchLike[]>(() => {
+    return appsRows.map((r) => {
+      const a = r.data;
+      const statusRaw =
+        (a as { process?: { subStatus?: unknown; status?: unknown } })?.process
+          ?.subStatus ??
+        (a as { process?: { subStatus?: unknown; status?: unknown } })?.process
+          ?.status;
+      const status: StatusKey = normalizeStatusKey(statusRaw) ?? "SAVED";
+      return {
+        id: r.id,
+        loopId: undefined,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+        title: a.job?.roleTitle ?? null,
+        company: a.job?.companyName ?? null,
+        location: a.job?.locationText ?? null,
+        url: a.job?.vacancyUrl ?? null,
+        notes: a.notes?.currentNote ?? null,
+        status,
+        statusHistory: historyByAppId[r.id],
+      };
+    });
+  }, [appsRows, historyByAppId]);
+
+  const isLoading = appsLoading;
+  const error = appsError ? (appsError || t("loadError", "Failed to load applications")) : null;
 
   const matches = useMemo(() => {
-    if (loopsFilter.mode === "all") return matchesAll;
-    const set = new Set(loopsFilter.selectedLoopIds);
-    return matchesAll.filter((m) => m.loopId && set.has(m.loopId));
-  }, [matchesAll, loopsFilter]);
+    // Applications are not tied to loops. Keep the filter state for UI, but do not filter.
+    return matchesAll;
+  }, [matchesAll]);
 
   const summary = useMemo(() => {
-    const statuses = matches.map((m) => statusKey(m.status));
-    return buildSummary(statuses);
+    const cols = matches.map((m) => getBoardColumn(m.status as StatusKey));
+    return buildSummary(cols);
   }, [matches]);
 
   const hasMatches = summary.total > 0;
@@ -217,14 +288,14 @@ export function useDashboardData(): DashboardData {
 
   const chartMatches = useMemo<DashboardChartMatch[]>(() => {
     return matches.flatMap((m) => {
-      const st = normalizeStatus(m.status);
-      if (!st) return [];
+      const st: StatusKey = normalizeStatusKey(m.status) ?? "SAVED";
       return [
         {
           status: st,
           createdAt: m.createdAt,
           updatedAt: m.updatedAt,
           loopId: m.loopId,
+          statusHistory: (m as { statusHistory?: Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }> }).statusHistory,
         },
       ];
     });

@@ -1,19 +1,20 @@
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import type { BoardColumnKey } from "src/entities/application/model/status";
 
 /**
- * Normalized status counters used across the dashboard.
+ * Normalized board-column counters used across the dashboard.
  * Keep this in one place so UI components don't drift in typing.
  */
 export type DashboardSummary = {
   total: number;
-} & Record<LoopMatchStatus, number>;
+} & Record<BoardColumnKey, number>;
 
 export const EMPTY_DASHBOARD_SUMMARY: DashboardSummary = {
   total: 0,
-  new: 0,
-  saved: 0,
-  applied: 0,
-  interview: 0,
-  offer: 0,
-  rejected: 0,
+  ACTIVE: 0,
+  INTERVIEW: 0,
+  OFFER: 0,
+  HIRED: 0,
+  REJECTED: 0,
+  NO_RESPONSE: 0,
+  ARCHIVED: 0,
 };

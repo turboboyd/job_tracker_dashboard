@@ -1,13 +1,24 @@
-export type RangeKey = "7d" | "30d" | "90d" | "12m";
+export type SeriesKey =
+  | "ACTIVE"
+  | "INTERVIEW"
+  | "OFFER"
+  | "HIRED"
+  | "REJECTED"
+  | "NO_RESPONSE";
+
+export type VisibleMap = Record<SeriesKey, boolean>;
+
 export type ModeKey = "created" | "updated";
-export type SeriesKey = "applied" | "interview" | "offer" | "rejected";
+
+export type RangeKey = "7d" | "30d" | "90d" | "12m" | "custom";
 
 export type TrendsPoint = {
   date: string;
-  applied: number;
-  interview: number;
-  offer: number;
-  rejected: number;
+  ACTIVE: number;
+  INTERVIEW: number;
+  OFFER: number;
+  HIRED: number;
+  REJECTED: number;
+  NO_RESPONSE: number;
+  total: number;
 };
-
-export type VisibleMap = Record<SeriesKey, boolean>;

@@ -1,20 +1,20 @@
-import { LOOP_MATCH_STATUSES } from "src/entities/loop";
-import type { LoopMatch, LoopMatchStatus } from "src/entities/loopMatch";
+import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application/model/status";
+import type { LoopMatch } from "src/entities/loopMatch";
 
 import type { BoardVM } from "../../model/types";
 
-export type ColumnsState = Map<LoopMatchStatus, LoopMatch[]>;
+export type ColumnsState = Map<BoardColumnKey, LoopMatch[]>;
 
 export function cloneColumns(src: ColumnsState): ColumnsState {
-  const m = new Map<LoopMatchStatus, LoopMatch[]>();
+  const m = new Map<BoardColumnKey, LoopMatch[]>();
   for (const [k, v] of src.entries()) m.set(k, [...v]);
   return m;
 }
 
 export function buildColumnsFromVm(vm: BoardVM): ColumnsState {
-  const m = new Map<LoopMatchStatus, LoopMatch[]>();
-  for (const s of LOOP_MATCH_STATUSES) {
-    m.set(s.value, [...(vm.data.byStatus.get(s.value) ?? [])]);
+  const m = new Map<BoardColumnKey, LoopMatch[]>();
+  for (const c of BOARD_COLUMNS_LIST) {
+    m.set(c.key, [...(vm.data.byStatus.get(c.key) ?? [])]);
   }
   return m;
 }
@@ -22,7 +22,7 @@ export function buildColumnsFromVm(vm: BoardVM): ColumnsState {
 export function findContainerOfId(
   state: ColumnsState,
   matchId: string,
-): LoopMatchStatus | null {
+): BoardColumnKey | null {
   for (const [status, list] of state.entries()) {
     if (list.some((x) => x.id === matchId)) return status;
   }
@@ -51,9 +51,9 @@ export function insertIntoList(
 
 export function getLaneStatusFromOverId(
   overId: string,
-): LoopMatchStatus | null {
+): BoardColumnKey | null {
 
-  if (overId.startsWith("lane:")) return overId.slice(5) as LoopMatchStatus;
-  if (overId.startsWith("lane-tab:")) return overId.slice(9) as LoopMatchStatus;
+  if (overId.startsWith("lane:")) return overId.slice(5) as BoardColumnKey;
+  if (overId.startsWith("lane-tab:")) return overId.slice(9) as BoardColumnKey;
   return null;
 }

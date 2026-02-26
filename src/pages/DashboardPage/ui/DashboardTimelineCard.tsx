@@ -6,10 +6,10 @@ import {
   AppRoutes,
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import { getStageColorForStatus, STATUS_COLOR_HEX, type StatusKey } from "src/entities/application/model/status";
 import { Button, Card } from "src/shared/ui";
 
-import { parseMs, normalizeStatus, diffDays } from "../model/dashboardTimeSeries";
+import { parseMs, normalizeAppStatus, diffDays } from "../model/dashboardTimeSeries";
 
 type Props = {
   matches: {
@@ -24,14 +24,9 @@ type Props = {
   className?: string;
 };
 
-const STATUS_COLOR: Record<LoopMatchStatus, string> = {
-  new: "#111827",
-  saved: "#6B7280",
-  applied: "#3B82F6",
-  interview: "#8B5CF6",
-  offer: "#10B981",
-  rejected: "#EF4444",
-};
+function statusColorHex(st: StatusKey): string {
+  return STATUS_COLOR_HEX[getStageColorForStatus(st)];
+}
 
 export function DashboardTimelineCard({ matches, days = 14, className }: Props) {
   const { t, i18n } = useTranslation(undefined, { keyPrefix: "dashboard" });
@@ -42,7 +37,7 @@ export function DashboardTimelineCard({ matches, days = 14, className }: Props) 
     return matches
       .map((m) => {
         const when = parseMs(m.updatedAt) || parseMs(m.createdAt);
-        const st = normalizeStatus(m.status);
+        const st = normalizeAppStatus(m.status);
         return {
           id: m.id,
           title: m.title ?? null,
@@ -58,7 +53,7 @@ export function DashboardTimelineCard({ matches, days = 14, className }: Props) 
           id: string;
           title: string | null;
           company: string | null;
-          status: LoopMatchStatus;
+          status: StatusKey;
           when: number;
         } => x.when != null && diffDays(x.when, nowMs) <= days,
       )
@@ -82,7 +77,7 @@ export function DashboardTimelineCard({ matches, days = 14, className }: Props) 
           size="sm"
           variant="outline"
           shape="pill"
-          onClick={() => navigate(RoutePath[AppRoutes.MATCHES])}
+          onClick={() => navigate(RoutePath[AppRoutes.APPLICATIONS])}
         >
           {t("timeline.viewAll", "View all")}
         </Button>
@@ -99,7 +94,7 @@ export function DashboardTimelineCard({ matches, days = 14, className }: Props) 
               key={r.id}
               type="button"
               className="w-full rounded-lg border border-border bg-background p-3 text-left transition hover:bg-muted/40"
-              onClick={() => navigate(`${RoutePath[AppRoutes.MATCHES]}/${r.id}`)}
+              onClick={() => navigate(`${RoutePath[AppRoutes.APPLICATIONS]}/${r.id}`)}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -113,7 +108,7 @@ export function DashboardTimelineCard({ matches, days = 14, className }: Props) 
                 <div className="flex items-center gap-2">
                   <span
                     className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: STATUS_COLOR[r.status] }}
+                    style={{ backgroundColor: statusColorHex(r.status) }}
                   />
                   <span className="text-xs text-muted-foreground">
                     {t(`status.${r.status}`, r.status)}

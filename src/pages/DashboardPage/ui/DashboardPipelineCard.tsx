@@ -1,99 +1,65 @@
-import { useEffect, useMemo, useState } from "react";
+import type { TFunction } from "i18next";
+import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { DonutChart } from "src/shared/ui";
-import { Card } from "src/shared/ui/Card/Card";
+import {
+  BOARD_COLUMN_KEYS,
+  BOARD_COLUMNS_LIST,
+  type BoardColumnKey,
+  BOARD_COLUMN_COLOR_HEX,
+} from "src/entities/application/model/status";
+import { Card, DonutChart } from "src/shared/ui";
 
 type Summary = {
   total: number;
-  new: number;
-  applied: number;
-  saved: number;
-  interview: number;
-  offer: number;
-  rejected: number;
+  byColumn: Record<BoardColumnKey, number>;
 };
 
-type Props = {
-  summary: Summary;
-  size?: number;
-  stroke?: number;
-};
+const PIPELINE_COLS: BoardColumnKey[] = BOARD_COLUMN_KEYS.filter((c) => c !== "ARCHIVED");
+
+function colLabel(t: TFunction, col: BoardColumnKey): string {
+  const meta = BOARD_COLUMNS_LIST.find((c) => c.key === col);
+  return t(meta?.labelKey ?? `board.column.${col}`, { defaultValue: col });
+}
 
 export function DashboardPipelineCard({
   summary,
   size,
   stroke,
-}: Props) {
-   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
+}: {
+  summary: Summary;
+  size: number;
+  stroke: number;
+}) {
+  const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
 
-  const [vw, setVw] = useState<number>(() => {
-    if (typeof window === "undefined") return 1024;
-    return window.innerWidth;
-  });
-
-  useEffect(() => {
-    const onResize = () => setVw(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const computed = useMemo(() => {
-    if (vw <= 360) return { size: 200, stroke: 14 };
-    if (vw <= 640) return { size: 220, stroke: 15 };
-    return { size: 240, stroke: 16 };
-  }, [vw]);
-
-  const donutSize = size ?? computed.size;
-  const donutStroke = stroke ?? computed.stroke;
-
-
-  const inPipeline =
-    summary.new +
-    summary.applied +
-    summary.interview +
-    summary.offer +
-    summary.rejected;
+  const slices = React.useMemo(() => {
+    return PIPELINE_COLS.map((col) => {
+      return {
+        label: colLabel(t, col),
+        value: summary.byColumn[col] ?? 0,
+        color: BOARD_COLUMN_COLOR_HEX[col],
+        className: "",
+      };
+    });
+  }, [summary.byColumn, t]);
 
   return (
-    <Card padding="md" className="rounded-3xl p-4 sm:p-6">
-      <div className="flex justify-center">
+    <Card className="p-6">
+      <div className="text-sm font-semibold text-foreground">
+        {t("pipeline.title", "Pipeline")}
+      </div>
+      <div className="text-xs text-muted-foreground">
+        {t("pipeline.subtitle", "By stage")}
+      </div>
+
+      <div className="mt-5 flex items-center justify-center">
         <DonutChart
-          title={t("pipeline.title", "Applications pipeline")}
-          totalLabel={t("pipeline.totalLabel", "In pipeline")}
-          centerTop={`${inPipeline}`}
-          centerBottom={t("pipeline.centerBottom", "of {{total}} total", {
-            total: summary.total,
-          })}
-          size={donutSize}
-          stroke={donutStroke}
-          slices={[
-            {
-              label: t("status.new", "New"),
-              value: summary.new,
-              className: "stroke-sky-500",
-            },
-            {
-              label: t("status.applied", "Applied"),
-              value: summary.applied,
-              className: "stroke-blue-500",
-            },
-            {
-              label: t("status.interview", "Interview"),
-              value: summary.interview,
-              className: "stroke-purple-500",
-            },
-            {
-              label: t("status.offer", "Offer"),
-              value: summary.offer,
-              className: "stroke-emerald-500",
-            },
-            {
-              label: t("status.rejected", "Rejected"),
-              value: summary.rejected,
-              className: "stroke-red-500",
-            },
-          ]}
+          size={size}
+          stroke={stroke}
+          slices={slices}
+          centerTop={t("pipeline.total", "Total")}
+          centerBottom={String(summary.total)}
         />
       </div>
     </Card>

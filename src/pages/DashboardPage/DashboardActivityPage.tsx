@@ -25,9 +25,9 @@ export default function DashboardActivityPage() {
   const { loops, loopsFilter, setLoopsFilter, matches, recentJobs } =
     useDashboardData();
 
-  const goMatches = () => navigate(RoutePath[AppRoutes.MATCHES]);
+  const goMatches = () => navigate(RoutePath[AppRoutes.APPLICATIONS]);
   const openMatch = (id: string) =>
-    navigate(`${RoutePath[AppRoutes.MATCHES]}/${id}`);
+    navigate(`${RoutePath[AppRoutes.APPLICATIONS]}/${id}`);
 
   return (
     <div className="flex h-full flex-col">

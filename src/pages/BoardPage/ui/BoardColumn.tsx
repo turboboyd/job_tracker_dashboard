@@ -2,14 +2,15 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import type { LoopMatch, LoopMatchStatus } from "src/entities/loopMatch";
+import type { BoardColumnKey } from "src/entities/application/model/status";
+import type { LoopMatch } from "src/entities/loopMatch";
 import { Card } from "src/shared/ui";
 
 import { BoardLane } from "./BoardLane";
 import { BoardMatchCard } from "./BoardMatchCard";
 
 type Props = Readonly<{
-  status: LoopMatchStatus;
+  status: BoardColumnKey;
   title: string;
   matches: readonly LoopMatch[];
   loopIdToName: ReadonlyMap<string, string>;

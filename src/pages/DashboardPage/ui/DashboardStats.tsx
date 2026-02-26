@@ -1,21 +1,19 @@
 import { useTranslation } from "react-i18next";
 
+import type { BoardColumnKey } from "src/entities/application/model/status";
+import { BOARD_COLUMN_COLOR, STATUS_COLOR_DOT_CLASS } from "src/entities/application/model/status";
 import { KpiCard, CardButton, Button } from "src/shared/ui";
 import { Card } from "src/shared/ui/Card/Card";
 
 import { DashboardIcon } from "../DashboardIcon";
 
+
 type Summary = {
   total: number;
-  new: number;
-  applied: number;
-  saved: number;
-  interview: number;
-  offer: number;
-  rejected: number;
+  byColumn: Record<BoardColumnKey, number>;
 };
 
-type Status = "new" | "applied" | "interview" | "offer" | "rejected";
+type Status = BoardColumnKey;
 
 type Props = {
   isLoading: boolean;
@@ -26,6 +24,25 @@ type Props = {
   onAddFirstJob?: () => void;
 };
 
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-border bg-muted/30 p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-base font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function StatusTitle({ col, label }: { col: BoardColumnKey; label: string }) {
+  const color = BOARD_COLUMN_COLOR[col];
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className={"h-2 w-2 rounded-full " + STATUS_COLOR_DOT_CLASS[color]} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
 export function DashboardStats({
   isLoading,
   error,
@@ -33,7 +50,7 @@ export function DashboardStats({
   onGoJobs,
   onAddFirstJob,
 }: Props) {
-    const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
+  const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
 
   if (isLoading) {
     return (
@@ -46,9 +63,7 @@ export function DashboardStats({
   if (error) {
     return (
       <Card padding="md" className="rounded-3xl">
-        <div className="text-sm font-medium text-foreground">
-          Couldn’t load jobs
-        </div>
+        <div className="text-sm font-medium text-foreground">Couldn’t load jobs</div>
         <div className="mt-1 text-sm text-muted-foreground">{error}</div>
       </Card>
     );
@@ -75,12 +90,13 @@ export function DashboardStats({
           </Button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <MiniStat label={t("status.new", "New")} value={0} />
-          <MiniStat label={t("status.applied", "Applied")} value={0} />
-          <MiniStat label={t("status.interview", "Interview")} value={0} />
-          <MiniStat label={t("status.offer", "Offer")} value={0} />
-          <MiniStat label={t("status.rejected", "Rejected")} value={0} />
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-6">
+          <MiniStat label={t("board.column.ACTIVE", "Active")} value={0} />
+          <MiniStat label={t("board.column.INTERVIEW", "Interview")} value={0} />
+          <MiniStat label={t("board.column.OFFER", "Offer")} value={0} />
+          <MiniStat label={t("board.column.HIRED", "Hired")} value={0} />
+          <MiniStat label={t("board.column.REJECTED", "Rejected")} value={0} />
+          <MiniStat label={t("board.column.NO_RESPONSE", "No response")} value={0} />
         </div>
       </Card>
     );
@@ -88,60 +104,57 @@ export function DashboardStats({
 
   return (
     <div className="space-y-3">
-      <div className="text-lg font-semibold text-foreground">
-        {t("stats.title", "Statistics")}
-      </div>
+      <div className="text-lg font-semibold text-foreground">{t("stats.title", "Statistics")}</div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-        <CardButton onClick={() => onGoJobs?.("new")}>
+        <CardButton onClick={() => onGoJobs?.("ACTIVE")}>
           <KpiCard
-            title={t("status.new", "New")}
-            value={summary.new}
-            icon={<DashboardIcon name="new" />}
-          />
-        </CardButton>
-
-        <CardButton onClick={() => onGoJobs?.("applied")}>
-          <KpiCard
-            title={t("status.applied", "Applied")}
-            value={summary.applied}
+            title={<StatusTitle col="ACTIVE" label={t("board.column.ACTIVE", "Active")} />}
+            value={summary.byColumn.ACTIVE}
             icon={<DashboardIcon name="applied" />}
           />
         </CardButton>
 
-        <CardButton onClick={() => onGoJobs?.("interview")}>
+        <CardButton onClick={() => onGoJobs?.("INTERVIEW")}>
           <KpiCard
-            title={t("status.interview", "Interview")}
-            value={summary.interview}
+            title={<StatusTitle col="INTERVIEW" label={t("board.column.INTERVIEW", "Interview")} />}
+            value={summary.byColumn.INTERVIEW}
             icon={<DashboardIcon name="interview" />}
           />
         </CardButton>
 
-        <CardButton onClick={() => onGoJobs?.("offer")}>
+        <CardButton onClick={() => onGoJobs?.("OFFER")}>
           <KpiCard
-            title={t("status.offer", "Offer")}
-            value={summary.offer}
+            title={<StatusTitle col="OFFER" label={t("board.column.OFFER", "Offer")} />}
+            value={summary.byColumn.OFFER}
             icon={<DashboardIcon name="offer" />}
           />
         </CardButton>
 
-        <CardButton onClick={() => onGoJobs?.("rejected")}>
+        <CardButton onClick={() => onGoJobs?.("HIRED")}>
           <KpiCard
-            title={t("status.rejected", "Rejected")}
-            value={summary.rejected}
+            title={<StatusTitle col="HIRED" label={t("board.column.HIRED", "Hired")} />}
+            value={summary.byColumn.HIRED}
+            icon={<DashboardIcon name="hired" />}
+          />
+        </CardButton>
+
+        <CardButton onClick={() => onGoJobs?.("REJECTED")}>
+          <KpiCard
+            title={<StatusTitle col="REJECTED" label={t("board.column.REJECTED", "Rejected")} />}
+            value={summary.byColumn.REJECTED}
             icon={<DashboardIcon name="rejected" />}
           />
         </CardButton>
-      </div>
-    </div>
-  );
-}
 
-function MiniStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-border bg-background p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
+        <CardButton onClick={() => onGoJobs?.("NO_RESPONSE")}> 
+          <KpiCard
+            title={<StatusTitle col="NO_RESPONSE" label={t("board.column.NO_RESPONSE", "No response")} />}
+            value={summary.byColumn.NO_RESPONSE}
+            icon={<DashboardIcon name="no_response" />}
+          />
+        </CardButton>
+      </div>
     </div>
   );
 }

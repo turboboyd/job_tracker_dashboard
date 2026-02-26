@@ -1,14 +1,7 @@
-import { Button } from "src/shared/ui";
+import React from "react";
 
-import { LEGEND_COLOR, SERIES } from "./trends.constants";
+import { SERIES, SERIES_LABELS, LEGEND_COLOR } from "./trends.constants";
 import type { SeriesKey, VisibleMap } from "./trends.types";
-
-const LABELS: Record<SeriesKey, string> = {
-  applied: "Applied",
-  interview: "Interview",
-  offer: "Offer",
-  rejected: "Rejected",
-};
 
 export function TrendsLegend({
   visible,
@@ -18,40 +11,47 @@ export function TrendsLegend({
 }: {
   visible: VisibleMap;
   hoverKey: SeriesKey | null;
-  onToggle: (key: SeriesKey) => void;
-  onHover: (key: SeriesKey | null) => void;
+  onToggle: (k: SeriesKey) => void;
+  onHover: (k: SeriesKey | null) => void;
 }) {
   return (
-    <div className="mt-4 flex flex-wrap gap-3">
-      {SERIES.map((key) => (
-        <Button
-          key={key}
-          variant={visible[key] ? "outline" : "ghost"}
-          size="sm"
-          shape="pill"
-          shadow="none"
-          onMouseEnter={() => onHover(key)}
-          onMouseLeave={() => onHover(null)}
-          onClick={() => onToggle(key)}
-          className={[
-            "h-8 gap-2 px-3 text-xs transition",
-            visible[key]
-              ? "text-muted-foreground hover:text-foreground"
-              : "text-muted-foreground/60 hover:text-foreground",
-            hoverKey === key ? "ring-1 ring-foreground/10" : "",
-          ].join(" ")}
-          aria-pressed={visible[key]}
-        >
-          <span
-            className={[
-              "h-2.5 w-2.5 rounded-full",
-              visible[key] ? "opacity-100" : "opacity-40",
-            ].join(" ")}
-            style={{ backgroundColor: LEGEND_COLOR[key] }}
-          />
-          <span className="whitespace-nowrap">{LABELS[key]}</span>
-        </Button>
-      ))}
+    <div className="flex flex-wrap gap-2 text-xs">
+      {SERIES.map((k) => {
+        const isOn = visible[k];
+        const isHover = hoverKey === k;
+        const color = LEGEND_COLOR[k];
+        return (
+          <button
+            key={k}
+            type="button"
+            onClick={() => onToggle(k)}
+            onMouseEnter={() => onHover(k)}
+            onMouseLeave={() => onHover(null)}
+            className={
+              "flex items-center gap-2 rounded-full border px-3 py-1 transition-colors " +
+              (isOn ? "bg-transparent" : "bg-transparent text-foreground") +
+              (isHover ? " ring-2 ring-ring" : "")
+            }
+            // Design: no filled background for the whole pill.
+            // Active state is indicated by colored border + colored label + filled dot.
+            style={
+              isOn
+                ? { borderColor: color, color }
+                : { borderColor: "var(--border)" }
+            }
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-full border"
+              style={
+                isOn
+                  ? { backgroundColor: color, borderColor: color }
+                  : { backgroundColor: "transparent", borderColor: color }
+              }
+            />
+            {SERIES_LABELS[k]}
+          </button>
+        );
+      })}
     </div>
   );
 }
