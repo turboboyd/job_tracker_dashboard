@@ -14,7 +14,7 @@ export function ViewMetaBar(props: {
     <div className="flex items-center justify-between">
       <div className="text-xs text-muted-foreground">
         {view === "today"
-          ? t("applicationsPage.todayHint", "Sorted by priority.score")
+          ? ((t("applicationsPage.todayHint", { defaultValue: "Sorted by priority.score", returnObjects: false }) ?? "Sorted by priority.score") as string)
           : t(
               "applicationsPage.followupsHint",
               "Needs follow-up ordered by due date"
@@ -22,8 +22,8 @@ export function ViewMetaBar(props: {
       </div>
       <div className="text-xs text-muted-foreground">
         {isLoading
-          ? t("applicationsPage.pipeline.loading", "Loading…")
-          : t("applicationsPage.pipeline.count", "Count: {{count}}", { count })}
+          ? ((t("applicationsPage.pipeline.loading", { defaultValue: "Loading…", returnObjects: false }) ?? "Loading…") as string)
+          : ((t("applicationsPage.pipeline.count", { defaultValue: "Count: {{count}}", returnObjects: false, count  }) ?? "Count: {{count}}") as string)}
       </div>
     </div>
   );

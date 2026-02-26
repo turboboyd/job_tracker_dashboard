@@ -26,6 +26,11 @@
     "computedAt": "Berechnet",
     "confidence": "Sicherheit",
     "history": "Verlauf",
-    "noHistory": "Noch kein Verlauf."
+    "noHistory": "Noch kein Verlauf.",
+    "historyFilter": {
+      "all": "Alle",
+      "statuses": "Status",
+      "comments": "Kommentare"
+    }
   }
 }

@@ -31,7 +31,8 @@
       "rejected": "REJECTED",
       "loading": "Loading…",
       "count": "Count: {{count}}",
-      "empty": "No applications yet."
+      "empty": "No applications yet.",
+      "all": "All"
     },
     "statuses": {
       "saved": "Saved",

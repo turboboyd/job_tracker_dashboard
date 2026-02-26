@@ -31,7 +31,8 @@
       "rejected": "ABGELEHNT",
       "loading": "Laden…",
       "count": "Anzahl: {{count}}",
-      "empty": "Noch keine Bewerbungen."
+      "empty": "Noch keine Bewerbungen.",
+      "all": "Alle"
     },
     "statuses": {
       "saved": "Gespeichert",

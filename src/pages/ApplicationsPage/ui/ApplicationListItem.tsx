@@ -1,7 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { processStatusKey } from "../model/types";
+import { normalizeStatusKey, type StatusKey } from "src/entities/application/model/status";
+import { StatusDot, StatusLabel } from "src/entities/application/ui/StatusKit";
+
 import type { AppRow } from "../model/useApplicationsPage";
 
 export function ApplicationListItem(props: { row: AppRow }) {
@@ -25,7 +27,7 @@ export function ApplicationListItem(props: { row: AppRow }) {
         </div>
         {row.data.matching ? (
           <div className="mt-1 text-[11px] text-muted-foreground">
-            {t("applicationsPage.matching", "Match")}: {row.data.matching.score}
+            {((t("applicationsPage.matching", { defaultValue: "Match", returnObjects: false }) ?? "Match") as string)}: {row.data.matching.score}
             /100 • {row.data.matching.decision}
           </div>
         ) : null}
@@ -34,12 +36,20 @@ export function ApplicationListItem(props: { row: AppRow }) {
       <div className="flex items-center gap-sm shrink-0">
         {row.data.process.needsFollowUp ? (
           <span className="rounded-full border border-border bg-background px-2 py-1 text-[11px] font-medium text-foreground">
-            {t("applicationsPage.followUpBadge", "Follow-up")}
+            {((t("applicationsPage.followUpBadge", { defaultValue: "Follow-up", returnObjects: false }) ?? "Follow-up") as string)}
           </span>
         ) : null}
-        <div className="rounded-full border border-border bg-muted px-sm py-1 text-[11px] font-medium text-foreground">
-          {t(processStatusKey(row.data.process.status), row.data.process.status)}
-        </div>
+        {(() => {
+          const sk = normalizeStatusKey(row.data.process.status) as StatusKey | null;
+          return (
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background px-sm py-1 text-[11px] font-medium text-foreground">
+              {sk ? <StatusDot status={sk} /> : null}
+              <span className="text-foreground">
+                {sk ? <StatusLabel status={sk} fallback={String(row.data.process.status)} /> : String(row.data.process.status)}
+              </span>
+            </div>
+          );
+        })()}
       </div>
     </button>
   );

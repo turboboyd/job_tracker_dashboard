@@ -26,6 +26,11 @@
     "computedAt": "Computed",
     "confidence": "Confidence",
     "history": "History",
-    "noHistory": "No history yet."
+    "noHistory": "No history yet.",
+    "historyFilter": {
+      "all": "All",
+      "statuses": "Statuses",
+      "comments": "Comments"
+    }
   }
 }

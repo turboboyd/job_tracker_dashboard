@@ -12,12 +12,26 @@ export function ApplicationsListCard(props: { list: AppRow[]; view: ViewMode }) 
   const { t } = useTranslation();
   const { list, view } = props;
 
-  const emptyText =
-    view === "today"
-      ? t("applicationsPage.empty.today", "Nothing for today.")
-      : view === "followups"
-        ? t("applicationsPage.empty.followups", "No follow-ups due.")
-        : t("applicationsPage.empty.pipeline", "No applications yet.");
+  let emptyText: string;
+  if (view === "today") {
+    emptyText =
+      (t("applicationsPage.empty.today", {
+        defaultValue: "Nothing for today.",
+        returnObjects: false,
+      }) ?? "Nothing for today.") as string;
+  } else if (view === "followups") {
+    emptyText =
+      (t("applicationsPage.empty.followups", {
+        defaultValue: "No follow-ups due.",
+        returnObjects: false,
+      }) ?? "No follow-ups due.") as string;
+  } else {
+    emptyText =
+      (t("applicationsPage.empty.pipeline", {
+        defaultValue: "No applications yet.",
+        returnObjects: false,
+      }) ?? "No applications yet.") as string;
+  }
 
   return (
     <Card padding="md" shadow="sm" className="space-y-sm">

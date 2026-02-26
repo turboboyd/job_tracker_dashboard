@@ -4,10 +4,13 @@ import {
   type ApplicationDoc,
   type ProcessStatus,
   createApplication,
+  autoMarkGhosting,
   ensureUserDoc,
+  queryAllActiveApplications,
   queryFollowUpsDue,
   queryPipelineByStatus,
   queryTodayTopPriority,
+  getApplicationHistory,
 } from "src/features/applications/firestoreApplications";
 
 export type ApplicationsRepo = ReturnType<typeof createApplicationsRepo>;
@@ -31,11 +34,20 @@ export function createApplicationsRepo(db: Firestore) {
       limit: number
     ) => queryPipelineByStatus(db, userId, status, limit),
 
+    queryAllActiveApplications: (userId: string, limit: number) =>
+      queryAllActiveApplications(db, userId, limit),
+
     queryTodayTopPriority: (userId: string, limit: number) =>
       queryTodayTopPriority(db, userId, limit),
 
+    getApplicationHistory: (userId: string, appId: string, take: number) =>
+      getApplicationHistory(db, userId, appId, take),
+
     queryFollowUpsDue: (userId: string, limit: number) =>
       queryFollowUpsDue(db, userId, limit),
+
+    autoMarkGhosting: (userId: string, rows: Array<{ id: string; data: ApplicationDoc }>) =>
+      autoMarkGhosting(db, userId, rows, 30),
   };
 }
 

@@ -26,6 +26,11 @@
     "computedAt": "Посчитано",
     "confidence": "Уверенность",
     "history": "История",
-    "noHistory": "Истории пока нет."
+    "noHistory": "Истории пока нет.",
+    "historyFilter": {
+      "all": "Все",
+      "statuses": "Статусы",
+      "comments": "Комментарии"
+    }
   }
 }

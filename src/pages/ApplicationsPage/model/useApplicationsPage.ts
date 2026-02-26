@@ -6,7 +6,7 @@ import type {
   ProcessStatus,
 } from "../api/applicationsRepo";
 
-import type { ViewMode } from "./types";
+import type { PipelineFilterStatus, ViewMode } from "./types";
 import { EMPTY_CREATE_FORM, type CreateFormState } from "./types";
 
 export type AppRow = { id: string; data: ApplicationDoc };
@@ -19,7 +19,7 @@ export function useApplicationsPage(params: {
   const { userId, isAuthReady, repo } = params;
 
   const [view, setView] = useState<ViewMode>("pipeline");
-  const [activeStatus, setActiveStatus] = useState<ProcessStatus>("SAVED");
+  const [activeStatus, setActiveStatus] = useState<PipelineFilterStatus>("ALL");
 
   const [form, setForm] = useState<CreateFormState>(EMPTY_CREATE_FORM);
 
@@ -56,6 +56,7 @@ export function useApplicationsPage(params: {
     };
   }, [repo, isAuthReady, userId]);
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   const load = useCallback(async () => {
     if (!userId) return;
 
@@ -64,19 +65,51 @@ export function useApplicationsPage(params: {
 
     try {
       if (view === "pipeline") {
-        const rows = await repo.queryPipelineByStatus(userId, activeStatus, 50);
-        setList(rows);
+        // ✅ NEW: ALL shows all active applications (same base dataset as dashboard etc.)
+        if (activeStatus === "ALL") {
+          const rows = await repo.queryAllActiveApplications(userId, 500);
+          const changed = await repo.autoMarkGhosting(userId, rows);
+          if (changed > 0) {
+            const fresh = await repo.queryAllActiveApplications(userId, 500);
+            setList(fresh);
+          } else {
+            setList(rows);
+          }
+          return;
+        }
+
+        const rows = await repo.queryPipelineByStatus(userId, activeStatus as ProcessStatus, 50);
+        // Client-side automation: mark ghosting (NO_RESPONSE) after 30 days since appliedAt.
+        const changed = await repo.autoMarkGhosting(userId, rows);
+        if (changed > 0) {
+          const fresh = await repo.queryPipelineByStatus(userId, activeStatus as ProcessStatus, 50);
+          setList(fresh);
+        } else {
+          setList(rows);
+        }
         return;
       }
 
       if (view === "today") {
         const rows = await repo.queryTodayTopPriority(userId, 50);
-        setList(rows);
+        const changed = await repo.autoMarkGhosting(userId, rows);
+        if (changed > 0) {
+          const fresh = await repo.queryTodayTopPriority(userId, 50);
+          setList(fresh);
+        } else {
+          setList(rows);
+        }
         return;
       }
 
       const rows = await repo.queryFollowUpsDue(userId, 50);
-      setList(rows);
+      const changed = await repo.autoMarkGhosting(userId, rows);
+      if (changed > 0) {
+        const fresh = await repo.queryFollowUpsDue(userId, 50);
+        setList(fresh);
+      } else {
+        setList(rows);
+      }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
@@ -120,7 +153,8 @@ export function useApplicationsPage(params: {
 
       resetForm();
       setView("pipeline");
-      setActiveStatus("SAVED");
+      // ✅ After create keep user in ALL (so the new card is visible without confusion)
+      setActiveStatus("ALL");
 
       await load();
     } catch (e: unknown) {

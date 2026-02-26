@@ -28,13 +28,12 @@ export default function ApplicationsPage() {
     onCreate,
 
     list,
-    load,
     isLoadingList,
     error,
   } = useApplicationsPage({ userId, isAuthReady, repo });
 
   return (
-    <div className="mx-auto w-full max-w-5xl p-4">
+    <div className="w-full p-4">
       <ApplicationsPageHeader view={view} onChangeView={setView} />
 
       <div className="mt-4 space-y-4">

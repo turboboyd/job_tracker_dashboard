@@ -1,14 +1,12 @@
-import type { ProcessStatus } from "src/features/applications/firestoreApplications";
-
-import type { ViewMode } from "../model/types";
+import type { PipelineFilterStatus, ViewMode } from "../model/types";
 
 import { PipelineStatusTabs } from "./PipelineStatusTabs";
 import { ViewMetaBar } from "./ViewMetaBar";
 
 export function ApplicationsToolbar(props: {
   view: ViewMode;
-  activeStatus: ProcessStatus;
-  onChangeStatus: (s: ProcessStatus) => void;
+  activeStatus: PipelineFilterStatus;
+  onChangeStatus: (s: PipelineFilterStatus) => void;
   isLoading: boolean;
   count: number;
 }) {
