@@ -29,7 +29,7 @@ import type {
 } from "../model/types";
 
 
-type ApiError = { message: string };
+interface ApiError { message: string }
 
 function toMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -43,8 +43,8 @@ function isoNow(): string {
   return new Date().toISOString();
 }
 
-export type GetMatchesByLoopArgs = { loopId: string };
-export type GetMatchArgs = { matchId: string };
+export interface GetMatchesByLoopArgs { loopId: string }
+export interface GetMatchArgs { matchId: string }
 
 function normalizeUrl(input: string): string {
   const v = String(input ?? "").trim();
@@ -85,7 +85,7 @@ function statusKeyToProcessStatus(s: LoopMatch["status"]): ProcessStatus {
   }
 }
 
-type ToDateLike = { toDate: () => Date };
+interface ToDateLike { toDate: () => Date }
 
 function isToDateLike(x: unknown): x is ToDateLike {
   const r = x && typeof x === "object" ? (x as Record<string, unknown>) : null;
@@ -225,7 +225,7 @@ export const loopMatchesApi = baseApi.injectEndpoints({
 
             loopId: input.loopId,
             loopPlatform: String(input.platform ?? "").toLowerCase(),
-            loopMatchedAt: input.matchedAt ? new Date(input.matchedAt) : undefined,
+            ...(input.matchedAt ? { loopMatchedAt: new Date(input.matchedAt) } : {}),
             loopSource: "loop",
           });
 

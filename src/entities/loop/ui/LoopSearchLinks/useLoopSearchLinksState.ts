@@ -14,7 +14,7 @@ import {
 import type { ActiveLink, LoopForLinks } from "./types";
 
 function filtersEqual(a: CanonicalFilters, b: CanonicalFilters) {
-  const keys = Object.keys(DEFAULT_CANONICAL_FILTERS) as Array<keyof CanonicalFilters>;
+  const keys = Object.keys(DEFAULT_CANONICAL_FILTERS) as (keyof CanonicalFilters)[];
   for (const k of keys) {
     if (a[k] !== b[k]) return false;
   }

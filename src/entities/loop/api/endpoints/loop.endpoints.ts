@@ -1,6 +1,6 @@
 import type { Api, EndpointBuilder } from "@reduxjs/toolkit/query";
 
-import { baseApi } from "src/shared/api/rtk/baseApi";
+import type { baseApi } from "src/shared/api/rtk/baseApi";
 import { guardRtk } from "src/shared/api/rtk/guardRtk";
 import { requireUidFromState } from "src/shared/api/rtk/requireUid";
 

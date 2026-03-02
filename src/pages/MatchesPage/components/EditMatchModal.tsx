@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button, Modal, InputField, TextAreaField } from "src/shared/ui";
 
-type MatchLike = {
+interface MatchLike {
   id: string;
   title: string;
   company: string;
@@ -11,7 +11,7 @@ type MatchLike = {
   url: string;
   matchedAt?: string | null;
   description?: string | null;
-};
+}
 
 function toDateInputValue(iso?: string | null): string {
   if (!iso) return "";
@@ -98,7 +98,7 @@ export function EditMatchModal({
         if (!v) onClose();
       }}
       title={t("matches.modal.editTitle")}
-      description={loopName ? t("matches.modal.loop", { name: loopName }) : undefined}
+      {...(loopName ? { description: t("matches.modal.loop", { name: loopName }) } : {})}
       size="lg"
       showClose={false}
     >

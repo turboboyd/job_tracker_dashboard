@@ -1,4 +1,5 @@
-import { DotPatch } from "../types";
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
+import type { DotPatch } from "../types";
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   if (!v || typeof v !== "object") return false;
@@ -16,7 +17,7 @@ function deepClonePreserve<T>(value: T): T {
   }
   if (isPlainObject(value)) {
     const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) out[k] = deepClonePreserve(v as unknown);
+    for (const [k, v] of Object.entries(value)) out[k] = deepClonePreserve(v);
     return out as T;
   }
   return value;
@@ -40,11 +41,13 @@ export function applyDotPatch<T extends Record<string, unknown>>(
     let cur: Record<string, unknown> = out;
     for (let i = 0; i < parts.length - 1; i += 1) {
       const p = parts[i];
+      if (p === undefined) continue;
       const next = cur[p];
       if (!next || typeof next !== "object") cur[p] = {};
       cur = cur[p] as Record<string, unknown>;
     }
-    cur[parts[parts.length - 1]] = v;
+    const last = parts[parts.length - 1];
+    if (last !== undefined) cur[last] = v;
   }
   return out as T;
 }

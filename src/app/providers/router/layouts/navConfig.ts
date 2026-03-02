@@ -14,12 +14,12 @@ import {
 
 import { AppRoutes, RoutePath } from "../routeConfig/routeConfig";
 
-export type SidebarItem = {
+export interface SidebarItem {
   labelKey: string;
   labelDefault: string;
   path: string;
   Icon: LucideIcon;
-};
+}
 
 export const sidebarItems: SidebarItem[] = [
   {

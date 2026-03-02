@@ -7,14 +7,14 @@ import { LANGUAGES } from "./languages";
 
 export type LanguageLabelMode = "short" | "full";
 
-export type LanguageItem<L extends string> = {
+export interface LanguageItem<L extends string> {
   code: L;
   shortLabel: string;
   fullLabel: string;
   disabled?: boolean;
-};
+}
 
-export type LanguageSelectProps<L extends string> = {
+export interface LanguageSelectProps<L extends string> {
   labelMode?: LanguageLabelMode;
 
   /** Текущее значение (controlled) */
@@ -33,7 +33,7 @@ export type LanguageSelectProps<L extends string> = {
   shadow?: "none" | "sm" | "md";
 
   placeholder?: React.ReactNode;
-};
+}
 
 export function LanguageSelect({
   labelMode = "short",
@@ -48,12 +48,12 @@ export function LanguageSelect({
   shadow,
   placeholder,
 }: LanguageSelectProps<SupportedLng>) {
-  const options: Array<SelectOption<SupportedLng>> = useMemo(
+  const options: SelectOption<SupportedLng>[] = useMemo(
     () =>
       LANGUAGES.map((l) => ({
         value: l.code,
         label: labelMode === "short" ? l.shortLabel : l.fullLabel,
-        disabled: l.disabled,
+        ...(l.disabled !== undefined ? { disabled: l.disabled } : {}),
       })),
     [labelMode],
   );
@@ -64,7 +64,7 @@ export function LanguageSelect({
       onChange={onChange}
       options={options}
       disabled={disabled}
-      className={className}
+      className={className ?? ""}
       size={size}
       radius={radius}
       width={width}

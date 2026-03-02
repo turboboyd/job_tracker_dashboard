@@ -16,7 +16,7 @@ import { PlatformLinkCard } from "./components/PlatformLinkCard";
 import type { LoopForLinks } from "./types";
 import { useLoopSearchLinksState } from "./useLoopSearchLinksState";
 
-type Props = {
+interface Props {
   loop: Pick<
     Loop,
     | "id"
@@ -31,7 +31,7 @@ type Props = {
   userId: string | null;
   page: number;
   onPageChange: (page: number) => void;
-};
+}
 
 
 
@@ -68,7 +68,7 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
     radiusKm: loop.radiusKm ?? null,
     platforms: loop.platforms,
     remoteMode: loop.remoteMode,
-    filters: loop.filters, 
+    ...(loop.filters !== undefined ? { filters: loop.filters } : {}),
   };
 
   const {
@@ -276,7 +276,7 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
               variant="default"
               shape="lg"
               shadow="sm"
-              onClick={() => openAddModal(undefined)}
+              onClick={() => openAddModal()}
               disabled={!userId}
               className="w-full sm:w-auto"
             >
@@ -335,7 +335,7 @@ export function LoopSearchLinks({ loop, userId, page, onPageChange }: Props) {
           open={isAddMatchModalOpen}
           onOpenChange={setIsAddMatchModalOpen}
           loopId={loop.id}
-          defaultPlatform={defaultPlatform}
+          {...(defaultPlatform !== undefined ? { defaultPlatform } : {})}
         />
       </div>
     </div>

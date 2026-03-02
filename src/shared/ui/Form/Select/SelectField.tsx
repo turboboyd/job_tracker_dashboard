@@ -64,8 +64,8 @@ export function SelectField<T extends string>({
       <Select
         {...props}
         id={usedId}
-        intent={resolvedIntent}
-        state={state}
+        {...(resolvedIntent ? { intent: resolvedIntent } : {})}
+        {...(state !== undefined ? { state } : {})}
         aria-invalid={hasError ? true : undefined}
         aria-describedby={describedBy}
       />

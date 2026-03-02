@@ -1,7 +1,7 @@
 import type { SearchFilters, LoopPlatform } from "src/entities/loop/model";
 import { buildUrlByPlatform } from "src/entities/loop/model/";
 
-export type SearchLink = { platform: LoopPlatform; url: string };
+export interface SearchLink { platform: LoopPlatform; url: string }
 
 export function buildSearchLinks(
   platforms: LoopPlatform[],

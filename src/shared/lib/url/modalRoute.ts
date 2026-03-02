@@ -1,8 +1,8 @@
 import { deleteQueryParam, getQueryParam, setQueryParam } from "./queryParams";
 
-export type ModalRouteConfig = {
+export interface ModalRouteConfig {
   key?: string; // default: "modal"
-};
+}
 
 const DEFAULT_KEY = "modal";
 

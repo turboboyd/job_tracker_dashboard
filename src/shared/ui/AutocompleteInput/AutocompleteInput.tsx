@@ -2,14 +2,14 @@ import React, { useMemo, useRef, useState } from "react";
 
 import { Button } from "src/shared/ui";
 
-type Props = {
+interface Props {
   label?: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   suggestions: string[];
   disabled?: boolean;
-};
+}
 
 export function AutocompleteInput({
   label,

@@ -4,13 +4,13 @@ import type { CtaBlock } from "../hero/types";
 import type { StatusTone } from "../StatusPill";
 import { StatusPill } from "../StatusPill";
 
-type Props = {
+interface Props {
   title: string;
   text: string;
   pills: { label: string; tone: StatusTone }[];
   ctaPrimary: CtaBlock;
   ctaSecondary: CtaBlock;
-};
+}
 
 export function FooterNote({
   title,

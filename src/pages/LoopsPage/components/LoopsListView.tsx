@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function, @typescript-eslint/no-floating-promises */
 import { skipToken } from "@reduxjs/toolkit/query";
 import React, {
   useCallback,

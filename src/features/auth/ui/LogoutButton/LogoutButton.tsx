@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import { useAuthActions, useAuthSelectors } from "src/entities/auth";
 import { Button } from "src/shared/ui";
 
-export type LogoutButtonProps = {
+export interface LogoutButtonProps {
   className?: string;
-};
+}
 
 export const LogoutButton: React.FC<LogoutButtonProps> = ({ className }) => {
   const { t } = useTranslation();

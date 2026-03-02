@@ -9,7 +9,7 @@ export function TrendsTooltip({
   label,
 }: {
   active?: boolean;
-  payload?: Array<{ dataKey?: unknown; value?: unknown }>;
+  payload?: { dataKey?: unknown; value?: unknown }[];
   label?: string | number;
 }) {
   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });

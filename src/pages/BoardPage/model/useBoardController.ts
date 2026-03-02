@@ -11,7 +11,7 @@ import { useBoardMutations, fireAndForgetMutation } from "./useBoardMutations";
 import { useBoardOrderState } from "./useBoardOrderState";
 import { useBoardQueries } from "./useBoardQueries";
 
-function buildLoopIdToName(loops: ReadonlyArray<{ id: string; name: string }>): ReadonlyMap<string, string> {
+function buildLoopIdToName(loops: readonly { id: string; name: string }[]): ReadonlyMap<string, string> {
   const map = new Map<string, string>();
   for (const l of loops) map.set(l.id, l.name);
   return map;

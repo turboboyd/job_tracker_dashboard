@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -12,7 +13,7 @@ import {
   type LoopPlatform,
 } from "../../model";
 
-type Props = {
+interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 
@@ -20,7 +21,7 @@ type Props = {
   disabled?: boolean;
 
   onSave: (next: LoopPlatform[]) => Promise<void> | void;
-};
+}
 
 function uniquePlatforms(list: LoopPlatform[]) {
   const set = new Set<LoopPlatform>();

@@ -4,13 +4,13 @@ export type TypeMatch = LoopMatch;
 
 export type MatchesSort = "matchedAtDesc" | "matchedAtAsc" | "titleAsc" | "companyAsc";
 
-export type MatchesFiltersState = {
+export interface MatchesFiltersState {
   q: string;
   sort: MatchesSort;
   loopIds: string[];
   platforms: string[];
   statuses: LoopMatchStatus[];
-};
+}
 
 export const matchesFiltersDefaults: MatchesFiltersState = {
   q: "",
@@ -103,7 +103,7 @@ export function selectVisibleMatches(matches: TypeMatch[], filters: MatchesFilte
 
 export function deriveMatchesFilterChips(args: {
   filters: MatchesFiltersState;
-  loopOptions: Array<{ id: string; name: string }>;
+  loopOptions: { id: string; name: string }[];
 }) {
   const { filters, loopOptions } = args;
 

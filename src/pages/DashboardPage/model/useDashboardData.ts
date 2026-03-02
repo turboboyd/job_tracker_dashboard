@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { skipToken } from "@reduxjs/toolkit/query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -18,7 +19,7 @@ import { db } from "src/shared/config/firebase/firebase";
 import type { DashboardLoopsFilterValue } from "../ui";
 import type { RecentJob } from "../ui/DashboardRecentJobsCard";
 
-type MatchLike = {
+interface MatchLike {
   id: string;
   loopId?: string;
   createdAt?: unknown;
@@ -29,23 +30,23 @@ type MatchLike = {
   notes?: string | null;
   status?: unknown;
   updatedAt?: unknown;
-  statusHistory?: Array<{ status: unknown; date?: unknown; changedAt?: unknown }>;
-};
+  statusHistory?: { status: unknown; date?: unknown; changedAt?: unknown }[];
+}
 
-export type DashboardChartMatch = {
+export interface DashboardChartMatch {
   status: StatusKey;
   createdAt: unknown;
   updatedAt: unknown;
   loopId: string | undefined;
-  statusHistory?: Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>;
-};
+  statusHistory?: { status: StatusKey; date?: unknown; changedAt?: unknown }[];
+}
 
-export type DashboardPipelineSummary = {
+export interface DashboardPipelineSummary {
   total: number;
   byColumn: Record<BoardColumnKey, number>;
-};
+}
 
-export type DashboardData = {
+export interface DashboardData {
   userId: string | null;
   loops: Loop[];
 
@@ -66,7 +67,7 @@ export type DashboardData = {
   recent: RecentJob[];
 
   pipelineSummary: DashboardPipelineSummary;
-};
+}
 
 const LS_KEY = "dashboard:loops-filter:v1";
 
@@ -158,10 +159,10 @@ export function useDashboardData(): DashboardData {
 
   const repo = useMemo(() => createApplicationsRepo(db), []);
 
-  const [appsRows, setAppsRows] = useState<Array<{ id: string; data: ApplicationDoc }>>([]);
+  const [appsRows, setAppsRows] = useState<{ id: string; data: ApplicationDoc }[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const [appsError, setAppsError] = useState<string | null>(null);
-  const [historyByAppId, setHistoryByAppId] = useState<Record<string, Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>>>({});
+  const [historyByAppId, setHistoryByAppId] = useState<Record<string, { status: StatusKey; date?: unknown; changedAt?: unknown }[]>>({});
 
   useEffect(() => {
     if (!isAuthReady || !userId) return;
@@ -196,7 +197,7 @@ export function useDashboardData(): DashboardData {
           appsRows.map(async (row) => {
             try {
               const events = await repo.getApplicationHistory(userId, row.id, 200);
-              const items: Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }> = [];
+              const items: { status: StatusKey; date?: unknown; changedAt?: unknown }[] = [];
 
               const statusRaw =
                 (row.data as { process?: { subStatus?: unknown; status?: unknown } })?.process?.subStatus ??
@@ -214,13 +215,13 @@ export function useDashboardData(): DashboardData {
 
               return [row.id, items] as const;
             } catch {
-              return [row.id, [] as Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>] as const;
+              return [row.id, [] as { status: StatusKey; date?: unknown; changedAt?: unknown }[]] as const;
             }
           }),
         );
 
         if (cancelled) return;
-        const map: Record<string, Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }>> = {};
+        const map: Record<string, { status: StatusKey; date?: unknown; changedAt?: unknown }[]> = {};
         for (const [id, arr] of entries) map[id] = arr;
         setHistoryByAppId(map);
       } catch {
@@ -245,7 +246,6 @@ export function useDashboardData(): DashboardData {
       const status: StatusKey = normalizeStatusKey(statusRaw) ?? "SAVED";
       return {
         id: r.id,
-        loopId: undefined,
         createdAt: a.createdAt,
         updatedAt: a.updatedAt,
         title: a.job?.roleTitle ?? null,
@@ -254,7 +254,7 @@ export function useDashboardData(): DashboardData {
         url: a.job?.vacancyUrl ?? null,
         notes: a.notes?.currentNote ?? null,
         status,
-        statusHistory: historyByAppId[r.id],
+        statusHistory: historyByAppId[r.id] ?? [],
       };
     });
   }, [appsRows, historyByAppId]);
@@ -294,8 +294,11 @@ export function useDashboardData(): DashboardData {
           status: st,
           createdAt: m.createdAt,
           updatedAt: m.updatedAt,
+          // DashboardChartMatch requires the property to exist (it may be undefined).
           loopId: m.loopId,
-          statusHistory: (m as { statusHistory?: Array<{ status: StatusKey; date?: unknown; changedAt?: unknown }> }).statusHistory,
+          statusHistory:
+            (m as { statusHistory?: { status: StatusKey; date?: unknown; changedAt?: unknown }[] })
+              .statusHistory ?? [],
         },
       ];
     });

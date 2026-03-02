@@ -1,18 +1,19 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { useMemo } from "react";
 
 import { clamp } from "src/shared/lib/pagination/usePagination";
 import { Button } from "src/shared/ui";
 
-type Props = {
+interface Props {
   page: number;
   totalPages: number;
   onPageChange: (nextPage: number) => void;
   disabled?: boolean;
   siblingCount?: number;
-};
+}
 
 function buildPages(page: number, totalPages: number, siblingCount: number) {
-  const pages: Array<number | "..."> = [];
+  const pages: (number | "...")[] = [];
 
   const safePage = clamp(page, 1, totalPages);
   const left = Math.max(1, safePage - siblingCount);

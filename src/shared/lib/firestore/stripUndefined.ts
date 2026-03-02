@@ -1,28 +1,40 @@
-type PlainObject = Record<string, unknown>;
-
-function isPlainObject(v: unknown): v is PlainObject {
-  return !!v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date);
-}
-
 /**
- * Deeply removes keys with value `undefined`.
- * Keeps Firestore Timestamp-like objects (anything with a `toDate` method) intact.
+ * Removes `undefined` values from plain objects/arrays recursively.
+ *
+ * Important: with `exactOptionalPropertyTypes` enabled, prefer omitting optional keys
+ * instead of explicitly setting them to `undefined`. This helper makes it easier to
+ * produce Firestore-friendly payloads and avoid `{ key: undefined }`.
  */
-export function stripUndefined<T>(value: T): T {
+export const stripUndefined = <T>(value: T): T => {
+  // Arrays
   if (Array.isArray(value)) {
-    return value
+    const arr = value as unknown[];
+    const cleaned = arr
       .map((x) => stripUndefined(x))
-      .filter((x) => x !== undefined) as unknown as T;
+      .filter((x): x is Exclude<unknown, undefined> => x !== undefined);
+
+    return cleaned as unknown as T;
   }
 
-  if (isPlainObject(value) && !("toDate" in value)) {
-    const out: PlainObject = {};
-    for (const [k, v] of Object.entries(value)) {
-      if (v === undefined) continue;
-      out[k] = stripUndefined(v);
+  // Plain objects
+  if (isPlainObject(value)) {
+    const obj = value as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+
+    for (const [k, v] of Object.entries(obj)) {
+      const next = stripUndefined(v);
+      if (next !== undefined) out[k] = next;
     }
+
     return out as unknown as T;
   }
 
   return value;
-}
+};
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> => {
+  if (v === null || typeof v !== "object") return false;
+  if (Array.isArray(v)) return false;
+  if (v instanceof Date) return false;
+  return Object.getPrototypeOf(v) === Object.prototype;
+};

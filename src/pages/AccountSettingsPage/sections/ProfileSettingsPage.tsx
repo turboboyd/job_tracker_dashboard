@@ -21,16 +21,16 @@ function splitDisplayName(
 ): { firstName: string; lastName: string } {
   const clean = (name ?? "").trim().replace(/\s+/g, " ");
   if (!clean) return { firstName: "", lastName: "" };
-  const [firstName, ...rest] = clean.split(" ");
+  const [firstName = "", ...rest] = clean.split(" ");
   return { firstName, lastName: rest.join(" ") };
 }
 
-type PreferencesInitial = {
+interface PreferencesInitial {
   firstName: string;
   lastName: string;
   timeZone: string;
   dateFormat: DateFormat;
-};
+}
 
 function ProfileSettingsForm({
   uid,
@@ -45,7 +45,7 @@ function ProfileSettingsForm({
   canEditName: boolean;
   isFetching: boolean;
   initial: PreferencesInitial;
-  tzOptions: Array<{ value: string; label: string }>;
+  tzOptions: { value: string; label: string }[];
 }) {
 
 

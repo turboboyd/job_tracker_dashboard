@@ -35,7 +35,7 @@ export function removeFromList(
 ): { next: LoopMatch[]; item: LoopMatch | null } {
   const idx = list.findIndex((x) => x.id === id);
   if (idx === -1) return { next: list, item: null };
-  const item = list[idx];
+  const item = list[idx] ?? null;
   const next = [...list.slice(0, idx), ...list.slice(idx + 1)];
   return { next, item };
 }

@@ -13,9 +13,9 @@ import { mapFirebaseAuthError } from "../../lib/firebaseAuthErrors";
 import { AuthFormShell } from "../AuthFormShell";
 import { AuthSubmitButton } from "../AuthSubmitButton";
 
-export type RegisterFormProps = {
+export interface RegisterFormProps {
   onSuccess: (from: string) => void;
-};
+}
 
 const initialValues: RegisterValues = {
   email: "",

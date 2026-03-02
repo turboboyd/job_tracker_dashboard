@@ -1,8 +1,8 @@
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
 import { FOLLOW_UP_DAYS } from "../lib/constants";
 import { addDays, daysBetween } from "../lib/time";
-import { ApplicationDoc } from "../types";
+import type { ApplicationDoc } from "../types";
 
 /**
  * Follow-up system (client-side):
@@ -31,7 +31,6 @@ export function computeFollowUp(
   if (!active) {
     return {
       needsFollowUp: false,
-      followUpDueAt: undefined,
       followUpLevel: app.process.followUpLevel ?? 0,
     };
   }
@@ -52,7 +51,7 @@ export function computeFollowUp(
 
   return {
     needsFollowUp: needs,
-    followUpDueAt: needs ? dueAt : undefined,
+    ...(needs ? { followUpDueAt: dueAt } : {}),
     followUpLevel: app.process.followUpLevel ?? 0,
   };
 }

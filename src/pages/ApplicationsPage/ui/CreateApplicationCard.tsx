@@ -5,13 +5,13 @@ import { Button, FormField, Input, TextArea } from "src/shared/ui";
 
 import type { CreateFormState } from "../model/types";
 
-type Props = {
+interface Props {
   form: CreateFormState;
   onChange: <K extends keyof CreateFormState>(key: K, value: CreateFormState[K]) => void;
   onCreate: () => void;
   canSubmit: boolean;
   isCreating: boolean;
-};
+}
 
 export function CreateApplicationCard(props: Props) {
   const { t } = useTranslation();
@@ -20,11 +20,11 @@ export function CreateApplicationCard(props: Props) {
   return (
     <div className="rounded-2xl border p-4 shadow-sm">
       <div className="mb-3 text-lg font-semibold">
-        {((t("applicationsPage.create.title", { defaultValue: "New application", returnObjects: false }) ?? "New application") as string)}
+        {((t("applicationsPage.create.title", { defaultValue: "New application", returnObjects: false }) ?? "New application"))}
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <FormField label={((t("applicationsPage.create.company", { defaultValue: "Company", returnObjects: false }) ?? "Company") as string)} required>
+        <FormField label={((t("applicationsPage.create.company", { defaultValue: "Company", returnObjects: false }) ?? "Company"))} required>
           {(p) => (
             <Input
               id={p.id}
@@ -34,12 +34,12 @@ export function CreateApplicationCard(props: Props) {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 onChange("companyName", e.target.value)
               }
-              placeholder={((t("applicationsPage.create.companyPh", { defaultValue: "e.g. ACME GmbH", returnObjects: false }) ?? "e.g. ACME GmbH") as string)}
+              placeholder={((t("applicationsPage.create.companyPh", { defaultValue: "e.g. ACME GmbH", returnObjects: false }) ?? "e.g. ACME GmbH"))}
             />
           )}
         </FormField>
 
-        <FormField label={((t("applicationsPage.create.role", { defaultValue: "Role", returnObjects: false }) ?? "Role") as string)} required>
+        <FormField label={((t("applicationsPage.create.role", { defaultValue: "Role", returnObjects: false }) ?? "Role"))} required>
           {(p) => (
             <Input
               id={p.id}
@@ -58,7 +58,7 @@ export function CreateApplicationCard(props: Props) {
         </FormField>
 
         <div className="md:col-span-2">
-          <FormField label={((t("applicationsPage.create.url", { defaultValue: "Vacancy URL", returnObjects: false }) ?? "Vacancy URL") as string)}>
+          <FormField label={((t("applicationsPage.create.url", { defaultValue: "Vacancy URL", returnObjects: false }) ?? "Vacancy URL"))}>
             {(p) => (
               <Input
                 id={p.id}
@@ -68,13 +68,13 @@ export function CreateApplicationCard(props: Props) {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   onChange("vacancyUrl", e.target.value)
                 }
-                placeholder={((t("applicationsPage.create.urlPh", { defaultValue: "https://…", returnObjects: false }) ?? "https://…") as string)}
+                placeholder={((t("applicationsPage.create.urlPh", { defaultValue: "https://…", returnObjects: false }) ?? "https://…"))}
               />
             )}
           </FormField>
         </div>
 
-        <FormField label={((t("applicationsPage.create.source", { defaultValue: "Source", returnObjects: false }) ?? "Source") as string)}>
+        <FormField label={((t("applicationsPage.create.source", { defaultValue: "Source", returnObjects: false }) ?? "Source"))}>
           {(p) => (
             <Input
               id={p.id}
@@ -94,7 +94,7 @@ export function CreateApplicationCard(props: Props) {
 
         <div className="md:col-span-2">
           <FormField
-            label={((t("applicationsPage.create.desc", { defaultValue: "Description (optional)", returnObjects: false }) ?? "Description (optional)") as string)}
+            label={((t("applicationsPage.create.desc", { defaultValue: "Description (optional)", returnObjects: false }) ?? "Description (optional)"))}
           >
             {(p) => (
               <TextArea
@@ -118,8 +118,8 @@ export function CreateApplicationCard(props: Props) {
       <div className="mt-4 flex items-center justify-end gap-2">
         <Button onClick={onCreate} disabled={!canSubmit || isCreating}>
           {isCreating
-            ? ((t("applicationsPage.create.creating", { defaultValue: "Creating…", returnObjects: false }) ?? "Creating…") as string)
-            : ((t("applicationsPage.create.createBtn", { defaultValue: "Create", returnObjects: false }) ?? "Create") as string)}
+            ? ((t("applicationsPage.create.creating", { defaultValue: "Creating…", returnObjects: false }) ?? "Creating…"))
+            : ((t("applicationsPage.create.createBtn", { defaultValue: "Create", returnObjects: false }) ?? "Create"))}
         </Button>
       </div>
     </div>

@@ -9,12 +9,12 @@ import {
   type GoogleSignInButtonProps,
 } from "../GoogleSignInButton/GoogleSignInButton";
 
-export type AuthFormShellProps = {
+export interface AuthFormShellProps {
   children: React.ReactNode;
   googleButtonProps?: Omit<GoogleSignInButtonProps, "className">;
   topError?: string | null;
   className?: string;
-};
+}
 
 export const AuthFormShell: React.FC<AuthFormShellProps> = ({
   children,

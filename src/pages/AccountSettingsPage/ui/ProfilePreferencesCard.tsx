@@ -11,7 +11,7 @@ import { SectionHeader } from "src/shared/ui/PageHeaders/PageHeaders";
 
 import { PreferencesSection, type TimeZoneOption } from "./PreferencesSection";
 
-type ProfileProps = {
+interface ProfileProps {
   email: string;
   firstName: string;
   lastName: string;
@@ -26,7 +26,7 @@ type ProfileProps = {
   onResetName: () => void;
 
   timeZone: string;
-  timeZoneOptions: ReadonlyArray<TimeZoneOption>;
+  timeZoneOptions: readonly TimeZoneOption[];
   dateFormat: DateFormat;
   isPreferencesSaving: boolean;
   preferencesError: string | null;
@@ -36,7 +36,7 @@ type ProfileProps = {
   onDateFormatChange: (next: DateFormat) => void;
   onSavePreferences: () => void;
   onResetPreferences: () => void;
-};
+}
 
 function SectionShell({
   title,

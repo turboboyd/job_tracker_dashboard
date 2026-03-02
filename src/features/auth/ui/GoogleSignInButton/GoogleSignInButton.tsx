@@ -11,10 +11,10 @@ import {
   getAuthRedirectFrom,
 } from "../../lib/authRedirect";
 
-export type GoogleSignInButtonProps = {
+export interface GoogleSignInButtonProps {
   onSuccess?: (from: string) => void;
   className?: string;
-};
+}
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onSuccess,

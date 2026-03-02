@@ -2,13 +2,13 @@ import React from "react";
 
 import { classNames } from "src/shared/lib";
 
-export type MultiSelectOption<T extends string> = {
+export interface MultiSelectOption<T extends string> {
   value: T;
   label: React.ReactNode;
   disabled?: boolean;
-};
+}
 
-export type MultiSelectDropdownProps<T extends string> = {
+export interface MultiSelectDropdownProps<T extends string> {
   label?: React.ReactNode;
   hint?: React.ReactNode;
   error?: React.ReactNode;
@@ -17,7 +17,7 @@ export type MultiSelectDropdownProps<T extends string> = {
   value: T[];
   onChange: (next: T[]) => void;
 
-  options: Array<MultiSelectOption<T>>;
+  options: MultiSelectOption<T>[];
 
   placeholder?: string;
   clearLabel?: string;
@@ -27,7 +27,7 @@ export type MultiSelectDropdownProps<T extends string> = {
   disabled?: boolean;
 
   className?: string;
-};
+}
 
 function hasNode(v: React.ReactNode) {
   return v !== null && v !== undefined && v !== false && v !== "";
@@ -75,7 +75,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 }
 
 function SelectedChips<T extends string>(props: {
-  selectedOptions: Array<MultiSelectOption<T>>;
+  selectedOptions: MultiSelectOption<T>[];
   placeholder: string;
   onRemove: (v: T) => void;
 }) {
@@ -120,7 +120,7 @@ function DropdownPanel<T extends string>(props: {
   valueCount: number;
   clearLabel: string;
   onClear: () => void;
-  filteredOptions: Array<MultiSelectOption<T>>;
+  filteredOptions: MultiSelectOption<T>[];
   selectedSet: Set<T>;
   disabled: boolean;
   onToggle: (v: T) => void;
@@ -264,7 +264,7 @@ export function MultiSelectDropdown<T extends string>({
 
   const selectedOptions = React.useMemo(() => {
     const map = new Map(options.map((o) => [o.value, o] as const));
-    return value.map((v) => map.get(v)).filter(Boolean) as Array<MultiSelectOption<T>>;
+    return value.map((v) => map.get(v)).filter(Boolean) as MultiSelectOption<T>[];
   }, [options, value]);
 
   const filteredOptions = React.useMemo(() => {

@@ -6,7 +6,7 @@ import {
 } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
-type Slice = {
+interface Slice {
   label: string;
   value: number;
   /**
@@ -16,9 +16,9 @@ type Slice = {
   className: string;
   /** Optional direct stroke color (e.g. hex). */
   color?: string;
-};
+}
 
-type Props = {
+interface Props {
   title?: string;
   totalLabel?: string;
   centerTop: string;
@@ -33,7 +33,7 @@ type Props = {
   hitSlop?: number;
   padPx?: number;
   zOrderBySlices?: boolean;
-};
+}
 
 type Segment = Slice & {
   idx: number;
@@ -95,7 +95,7 @@ export function DonutChart({
 
     const offsets = rawDashes.reduce<number[]>((acc, dash, i) => {
       if (i === 0) return [0];
-      return [...acc, acc[i - 1] + rawDashes[i - 1]];
+      return [...acc, (acc[i - 1] ?? 0) + (rawDashes[i - 1] ?? 0)];
     }, []);
 
     return nonZero.map((s, arcIdx) => {
@@ -158,8 +158,12 @@ export function DonutChart({
         <motion.div
           className="relative shrink-0"
           style={{ width: outer, height: outer }}
-          initial={animateOnMount ? { opacity: 0, scale: 0.96 } : undefined}
-          animate={animateOnMount ? { opacity: 1, scale: 1 } : undefined}
+          {...(animateOnMount
+            ? {
+                initial: { opacity: 0, scale: 0.96 },
+                animate: { opacity: 1, scale: 1 },
+              }
+            : {})}
           transition={{ duration: 0.35, ease: [0.2, 0.8, 0.2, 1] }}
         >
           <svg width={outer} height={outer} viewBox={`0 0 ${outer} ${outer}`}>
@@ -240,16 +244,16 @@ export function DonutChart({
                         pointerEvents: "none",
                         transformOrigin: "50% 50%",
                       }}
-                      initial={
-                        animateOnMount
-                          ? {
+                      {...(animateOnMount
+                        ? {
+                            initial: {
                               strokeDasharray: initialDasharray,
                               opacity: 0.92,
                               strokeWidth: stroke,
                               scale: 1,
-                            }
-                          : undefined
-                      }
+                            },
+                          }
+                        : {})}
                       animate={{
                         strokeDasharray: targetDasharray,
                         opacity: segOpacity,
@@ -373,8 +377,12 @@ export function DonutChart({
 
                   <motion.span
                     className="text-sm text-muted-foreground leading-normal"
-                    initial={animateOnMount ? { opacity: 0, y: 2 } : undefined}
-                    animate={animateOnMount ? { opacity: 1, y: 0 } : undefined}
+                    {...(animateOnMount
+                      ? {
+                          initial: { opacity: 0, y: 2 },
+                          animate: { opacity: 1, y: 0 },
+                        }
+                      : {})}
                     transition={{ duration: 0.25, delay: idx * 0.04 }}
                   >
                     {s.value}
@@ -448,9 +456,8 @@ function withAlpha(color: string, alpha: number) {
   const a = Math.max(0, Math.min(1, alpha));
 
   // rgb()/rgba()
-  const rgbMatch = color
-    .replace(/\s+/g, "")
-    .match(/^rgba?\((\d+),(\d+),(\d+)(?:,([\d.]+))?\)$/i);
+  const rgbMatch = /^rgba?\((\d+),(\d+),(\d+)(?:,([\d.]+))?\)$/i.exec(color
+    .replace(/\s+/g, ""));
   if (rgbMatch) {
     const r = Number(rgbMatch[1]);
     const g = Number(rgbMatch[2]);
@@ -460,10 +467,12 @@ function withAlpha(color: string, alpha: number) {
 
   // #rgb / #rrggbb
   const hex = color.trim();
-  const hexMatch = hex.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  const hexMatch = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex);
   if (hexMatch) {
     const raw = hexMatch[1];
-    const full = raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
+    if (!raw) return color;
+    const full =
+      raw.length === 3 ? raw.split("").map((c) => c + c).join("") : raw;
     const r = parseInt(full.slice(0, 2), 16);
     const g = parseInt(full.slice(2, 4), 16);
     const b = parseInt(full.slice(4, 6), 16);

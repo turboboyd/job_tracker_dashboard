@@ -1,8 +1,8 @@
 import React from "react";
 
-export type AuthDividerProps = {
+export interface AuthDividerProps {
   text: string;
-};
+}
 
 export const AuthDivider: React.FC<AuthDividerProps> = ({ text }) => {
   return (

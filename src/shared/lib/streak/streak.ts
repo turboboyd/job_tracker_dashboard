@@ -1,6 +1,6 @@
-export type StreakEvent = {
+export interface StreakEvent {
   createdAt: string | number | Date;
-};
+}
 
 function toDayKey(d: Date): string {
   const y = d.getFullYear();

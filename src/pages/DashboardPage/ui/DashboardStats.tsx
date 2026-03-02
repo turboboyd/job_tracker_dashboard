@@ -8,21 +8,21 @@ import { Card } from "src/shared/ui/Card/Card";
 import { DashboardIcon } from "../DashboardIcon";
 
 
-type Summary = {
+interface Summary {
   total: number;
   byColumn: Record<BoardColumnKey, number>;
-};
+}
 
 type Status = BoardColumnKey;
 
-type Props = {
+interface Props {
   isLoading: boolean;
   error?: string | null;
   summary: Summary;
   onGoJobs?: (status?: Status) => void;
 
   onAddFirstJob?: () => void;
-};
+}
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (

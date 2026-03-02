@@ -12,9 +12,9 @@ import {
 } from "src/entities/application/model/status";
 import { Card, RadarChart, type RadarAxis, type RadarSeries } from "src/shared/ui";
 
-type MatchLike = {
+interface MatchLike {
   status: string;
-};
+}
 
 const PIPELINE_COLS: BoardColumnKey[] = BOARD_COLUMN_KEYS.filter((c) => c !== "ARCHIVED");
 

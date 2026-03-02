@@ -1,7 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
-
 import { classNames } from "src/shared/lib";
 
 export type TextAreaIntent = "default" | "error" | "success" | "warning";

@@ -299,7 +299,7 @@ function slugify(s: string) {
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
-    // eslint-disable-next-line sonarjs/slow-regex, sonarjs/anchor-precedence
+    // eslint-disable-next-line sonarjs/slow-regex
     .replace(/^-+|-+$/g, "");
 }
 

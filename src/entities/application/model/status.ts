@@ -107,14 +107,14 @@ export const BOARD_COLUMN_KEYS: readonly BoardColumnKey[] = [
   "ARCHIVED",
 ] as const;
 
-export type StatusMeta = {
+export interface StatusMeta {
   key: StatusKey;
   stage: Stage;
   labelKey: string;
   color: StatusColor;
   boardColumn: BoardColumnKey;
   order: number;
-};
+}
 
 const STATUS_BASE: Record<StatusKey, StatusMeta> = {
   // =========================
@@ -581,7 +581,7 @@ export function defaultStatusForBoardColumn(col: BoardColumnKey): StatusKey {
   const first = ALL_STATUSES
     .filter((s) => s.boardColumn === col)
     .sort((a, b) => a.order - b.order)[0];
-  return (first?.key ?? "SAVED") as StatusKey;
+  return (first?.key ?? "SAVED");
 }
 
 export function statusesForStage(stage: Stage): StatusMeta[] {
@@ -663,10 +663,10 @@ export function normalizeStatusKey(v: unknown): StatusKey | null {
  */
 export function normalizeAppStatus(app: unknown): { stage: Stage; subStatus: StatusKey; changed: boolean } {
   const obj = asRecord(app);
-  const process = asRecord(obj?.["process"]);
+  const process = asRecord(obj?.process);
 
-  const stageIn = process?.["stage"];
-  const subIn = process?.["subStatus"];
+  const stageIn = process?.stage;
+  const subIn = process?.subStatus;
 
   if (typeof stageIn === "string" && typeof subIn === "string" && isStatusKey(subIn)) {
     return {
@@ -676,7 +676,7 @@ export function normalizeAppStatus(app: unknown): { stage: Stage; subStatus: Sta
     };
   }
 
-  const legacy = legacyStatusToStatusKey(process?.["status"]);
+  const legacy = legacyStatusToStatusKey(process?.status);
   if (legacy) {
     return { stage: STATUS[legacy].stage, subStatus: legacy, changed: true };
   }
@@ -694,5 +694,6 @@ export function getRepresentativeStatusForColumn(col: BoardColumnKey): StatusKey
   const found = STATUS_KEYS.map((k) => STATUS[k])
     .filter((m) => m.boardColumn === col)
     .sort((a, b) => a.order - b.order)[0];
-  return found?.key ?? STATUS_KEYS[0];
+  // STATUS_KEYS is a constant non-empty list, but TS can't prove it.
+  return found?.key ?? STATUS_KEYS[0]!;
 }

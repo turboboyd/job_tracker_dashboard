@@ -6,14 +6,14 @@ import { getStatusMeta, type StatusKey } from "../../model/status";
 function humanizeKey(k: string): string {
   return k
     .split("_")
-    .map((p) => (p ? p[0].toUpperCase() + p.slice(1).toLowerCase() : p))
+    .map((p) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p))
     .join(" ");
 }
 
-export type StatusLabelProps = {
+export interface StatusLabelProps {
   status: StatusKey;
   fallback?: string;
-};
+}
 
 export function StatusLabel({ status, fallback }: StatusLabelProps) {
   const { t } = useTranslation();

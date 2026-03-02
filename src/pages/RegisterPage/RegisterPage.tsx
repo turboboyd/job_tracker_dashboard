@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AppRoutes, RoutePath } from "src/app/providers/router/routeConfig/routeConfig";
-import { useAuthSelectors } from "src/entities/auth";
-import { useAuthActions } from "src/entities/auth";
+import { useAuthSelectors , useAuthActions } from "src/entities/auth";
 import { AuthPageShell, RegisterForm } from "src/features/auth/ui";
 
 const RegisterPage: React.FC = () => {

@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { AuthRedirectLocationState, getAuthRedirectFrom } from "src/features/auth/lib/authRedirect";
+import type { AuthRedirectLocationState} from "src/features/auth/lib/authRedirect";
+import { getAuthRedirectFrom } from "src/features/auth/lib/authRedirect";
 
 
 

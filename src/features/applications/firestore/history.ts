@@ -1,8 +1,9 @@
-import { Firestore, Timestamp, doc, writeBatch } from "firebase/firestore";
+import type { Firestore, Timestamp, writeBatch } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 
 import { stripUndefinedDeep } from "./lib/sanitize";
 import { historyColRef, historyDocRef } from "./refs";
-import { HistoryEventDoc } from "./types";
+import type { HistoryEventDoc } from "./types";
 
 export function attachCreatedAt(events: HistoryEventDoc[], t: Timestamp) {
   return events.map((e) => ({ ...e, createdAt: e.createdAt ?? t }));

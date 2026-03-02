@@ -13,7 +13,7 @@ import { Button, Card, InlineError } from "src/shared/ui";
 import { Input } from "src/shared/ui/Form/Input";
 
 
-type CvRow = { id: string; data: CvVersionDoc; downloadUrl?: string };
+interface CvRow { id: string; data: CvVersionDoc; downloadUrl?: string }
 
 function errorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -118,7 +118,7 @@ export default function CvBuilderPage() {
         } catch {
           url = undefined;
         }
-        withUrls.push({ id: r.id, data: r.data, downloadUrl: url });
+        withUrls.push(url ? { id: r.id, data: r.data, downloadUrl: url } : { id: r.id, data: r.data });
       }
       setList(withUrls);
     } catch (e: unknown) {
@@ -139,10 +139,12 @@ export default function CvBuilderPage() {
     setIsUploading(true);
     setError(null);
     try {
+      const trimmedLabel = label.trim();
+      const trimmedNotes = notes.trim();
       await uploadCvVersion(db, storage, userId, {
         file,
-        label: label.trim() || undefined,
-        notes: notes.trim() || undefined,
+        ...(trimmedLabel ? { label: trimmedLabel } : {}),
+        ...(trimmedNotes ? { notes: trimmedNotes } : {}),
       });
       setFile(null);
       setLabel("");

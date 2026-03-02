@@ -5,9 +5,8 @@ import {
   useDeleteMatchMutation,
   useUpdateMatchMutation,
   useUpdateMatchStatusMutation,
-  type UpdateMatchInput,
 } from "src/entities/loopMatch";
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import type { LoopMatchStatus, UpdateMatchInput } from "src/entities/loopMatch";
 import { notify } from "src/shared/lib";
 import { getErrorMessage } from "src/shared/lib/errors";
 

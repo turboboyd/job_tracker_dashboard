@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-type SetPageOpts = {
+interface SetPageOpts {
   replace?: boolean;
-};
+}
 
 export function clampPage(n: number) {
   if (!Number.isFinite(n)) return 1;
@@ -21,7 +22,7 @@ export function updateURLParams(params: Record<string, string | null>, search: s
   return next ? `?${next}` : "";
 }
 
-export function usePageParam(key: string = "page") {
+export function usePageParam(key = "page") {
   const navigate = useNavigate();
   const location = useLocation();
 

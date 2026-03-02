@@ -3,7 +3,7 @@ import React from "react";
 
 import { Button, Card } from "src/shared/ui";
 
-type Props = {
+interface Props {
   title: string;
   description: string;
   href: string;
@@ -16,7 +16,7 @@ type Props = {
   onToggleFavorite: () => void;
 
   openLabel: string;
-};
+}
 
 export const ResourceCard: React.FC<Props> = ({
   title,

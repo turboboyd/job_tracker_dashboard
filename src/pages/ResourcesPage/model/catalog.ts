@@ -1,4 +1,4 @@
-import { ResourceItem } from "./types";
+import type { ResourceItem } from "./types";
 
 export const resourcesCatalog: ResourceItem[] = [
   {

@@ -2,7 +2,7 @@ import { PreviewCard } from "./PreviewCard";
 import { QuickStatsGrid } from "./QuickStatsGrid";
 import type { CtaBlock, PreviewModel, StatItem } from "./types";
 
-type Props = {
+interface Props {
   badgeText: string;
   title: string;
   titleMuted: string;
@@ -14,7 +14,7 @@ type Props = {
 
   quickStats: StatItem[];
   preview: PreviewModel;
-};
+}
 
 export function HeroSection({
   badgeText,

@@ -2,25 +2,25 @@ import React from "react";
 
 import { classNames } from "src/shared/lib";
 
-export type ChipOption<T extends string> = {
+export interface ChipOption<T extends string> {
   value: T;
   label: React.ReactNode;
   disabled?: boolean;
-};
+}
 
-export type MultiSelectChipsProps<T extends string> = {
+export interface MultiSelectChipsProps<T extends string> {
   label?: React.ReactNode;
   hint?: React.ReactNode;
   error?: React.ReactNode;
   value: T[];
   onChange: (next: T[]) => void;
-  options: Array<ChipOption<T>>;
+  options: ChipOption<T>[];
   allowClear?: boolean;
   clearLabel?: React.ReactNode;
   maxSelected?: number;
 
   className?: string;
-};
+}
 
 function hasNode(v: React.ReactNode) {
   return v !== null && v !== undefined && v !== false && v !== "";

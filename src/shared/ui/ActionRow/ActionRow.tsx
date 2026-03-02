@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { classNames } from "src/shared/lib";
 import { Button, Card } from "src/shared/ui";
 
-type Props = {
+interface Props {
   icon: React.ReactNode;
   title: string;
   onGo: () => void;
@@ -14,7 +14,7 @@ type Props = {
   className?: string;
   iconShake?: boolean;
   onGoHoverChange?: (hovered: boolean) => void;
-};
+}
 
 export function ActionRow({
   icon,

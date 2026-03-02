@@ -1,8 +1,8 @@
 import type { AuthState } from "./authTypes";
 
-export type StateWithAuth = {
+export interface StateWithAuth {
   auth: AuthState;
-};
+}
 
 export const selectAuth = (state: StateWithAuth) => state.auth;
 

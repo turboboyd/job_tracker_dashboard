@@ -7,10 +7,10 @@ import {
 } from "src/app/providers/router/routeConfig/routeConfig";
 import { LinkButton, Card } from "src/shared/ui";
 
-type Props = {
+interface Props {
   ctaPrimary: React.ReactNode;
   ctaSecondary: React.ReactNode;
-};
+}
 
 export const HowToStartBlock: React.FC<Props> = ({
   ctaPrimary,

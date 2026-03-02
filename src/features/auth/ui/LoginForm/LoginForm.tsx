@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import { Formik } from "formik";
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,15 +14,15 @@ import { mapFirebaseAuthError } from "../../lib/firebaseAuthErrors";
 import { AuthFormShell } from "../AuthFormShell";
 import { AuthSubmitButton } from "../AuthSubmitButton";
 
-export type LoginFormProps = {
+export interface LoginFormProps {
   onSuccess: (from: string) => void;
-};
+}
 
 const EMAIL_FIELD: keyof LoginValues = "email";
 
 const initialValues: LoginValues = { email: "", password: String() };
 
-const joinKey = (...parts: Array<string | number>) => parts.join(".");
+const joinKey = (...parts: (string | number)[]) => parts.join(".");
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { t } = useTranslation();
@@ -31,7 +32,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const schema = useMemo(() => createLoginSchema(t), [t]);
   const secretField = (
-    Object.keys(initialValues) as Array<keyof LoginValues>
+    Object.keys(initialValues) as (keyof LoginValues)[]
   ).find((k) => k !== EMAIL_FIELD);
 
   if (!secretField) {

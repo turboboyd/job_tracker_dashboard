@@ -1,22 +1,22 @@
-import React from "react";
+import type React from "react";
 
 import type { StatusTone } from "../StatusPill";
 
 export type CtaBlock = React.ReactNode;
 
-export type StatItem = {
+export interface StatItem {
   label: string;
   value: string;
   hint: string;
-};
+}
 
-export type FeatureItem = {
+export interface FeatureItem {
   title: string;
   text: string;
   points: string[];
-};
+}
 
-export type PreviewModel = {
+export interface PreviewModel {
   header: {
     title: string;
     subtitle: string;
@@ -39,4 +39,4 @@ export type PreviewModel = {
     pills: { label: string; tone: StatusTone }[];
     stats: { k: string; v: string }[];
   };
-};
+}

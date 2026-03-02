@@ -102,7 +102,7 @@ export function useBoardColumnsDnd(vm: BoardVM): UseBoardColumnsDndResult {
       setActiveId(id);
 
       const fromStatus: BoardColumnKey | undefined =
-        (findContainerOfId(columnsState, id) as BoardColumnKey | null) ??
+        (findContainerOfId(columnsState, id)) ??
         (activeMatch ? getBoardColumn(activeMatch.status) : undefined);
       const fromIndex = fromStatus
         ? columnsState.get(fromStatus)?.findIndex((x) => x.id === id) ?? 0
@@ -143,7 +143,7 @@ export function useBoardColumnsDnd(vm: BoardVM): UseBoardColumnsDndResult {
       const toStatus =
         (overSortable?.containerId as BoardColumnKey | undefined) ??
         (overLaneStatus ??
-          (findContainerOfId(next, overIdStr) as BoardColumnKey | null));
+          (findContainerOfId(next, overIdStr)));
 
       if (!toStatus) return prev;
 

@@ -1,7 +1,7 @@
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
 import { normalizeText } from "../lib/text";
-import {
+import type {
   ApplicationDoc,
   MatchingBlock,
   MatchingBreakdown,

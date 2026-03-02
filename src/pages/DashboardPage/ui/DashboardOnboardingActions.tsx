@@ -4,14 +4,14 @@ import { ActionRow } from "src/shared/ui";
 
 import { DashboardIcon } from "../DashboardIcon";
 
-type Props = {
+interface Props {
   hasJobs: boolean;
   onGoProfile: () => void;
   onGoQuestions: () => void;
   onGoLoop: () => void;
   onGoJobs: () => void;
   className?: string;
-};
+}
 
 export function DashboardOnboardingActions({
   hasJobs,

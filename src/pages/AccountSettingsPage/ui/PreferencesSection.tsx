@@ -9,14 +9,14 @@ import { SectionHeader } from "src/shared/ui/PageHeaders/PageHeaders";
 import { DateFormatField } from "./DateFormatField";
 import { TimeZoneField } from "./TimeZoneField";
 
-export type TimeZoneOption = { value: string; label: string };
+export interface TimeZoneOption { value: string; label: string }
 
-type Props = {
+interface Props {
   title: string;
   subtitle: string;
 
   timeZone: string;
-  timeZoneOptions: ReadonlyArray<TimeZoneOption>;
+  timeZoneOptions: readonly TimeZoneOption[];
   dateFormat: DateFormat;
 
   onTimeZoneChange: (next: string) => void;
@@ -30,7 +30,7 @@ type Props = {
 
   onReset: () => void;
   onSave: () => void;
-};
+}
 
 export function PreferencesSection({
   title,

@@ -14,13 +14,13 @@ export type PipelineFilterStatus = "ALL" | ProcessStatus;
 /**
  * Create form state for creating new application
  */
-export type CreateFormState = {
+export interface CreateFormState {
   companyName: string;
   roleTitle: string;
   vacancyUrl: string;
   source: string;
   rawDescription: string;
-};
+}
 
 export const EMPTY_CREATE_FORM: CreateFormState = {
   companyName: "",
@@ -33,7 +33,7 @@ export const EMPTY_CREATE_FORM: CreateFormState = {
 /**
  * Pipeline statuses order
  */
-export type PipelineStatusTab = { key: string; status: PipelineFilterStatus };
+export interface PipelineStatusTab { key: string; status: PipelineFilterStatus }
 
 /**
  * Tabs for pipeline view.

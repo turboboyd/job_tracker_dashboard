@@ -6,11 +6,11 @@ import { PageHeader, PageShell } from "src/shared/ui";
 
 import { SettingsSidebar } from "./SettingsSidebar";
 
-type Props = {
+interface Props {
   title?: string;
   subtitle?: string;
   content: React.ReactNode;
-};
+}
 
 let accountSettingsLocalesLoaded = false;
 

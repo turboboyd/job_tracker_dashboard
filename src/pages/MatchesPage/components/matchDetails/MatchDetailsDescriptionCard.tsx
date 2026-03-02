@@ -3,9 +3,9 @@ import { useTranslation } from "react-i18next";
 import type { LoopMatch } from "src/entities/loopMatch";
 import { Card } from "src/shared/ui";
 
-type Props = {
+interface Props {
   match: LoopMatch;
-};
+}
 
 export function MatchDetailsDescriptionCard({ match }: Props) {
   const { t } = useTranslation();

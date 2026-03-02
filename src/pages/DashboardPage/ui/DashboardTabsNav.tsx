@@ -6,12 +6,12 @@ import {
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
 
-type Tab = {
+interface Tab {
   to: string;
   labelKey: string;
   fallback: string;
   end?: boolean;
-};
+}
 
 const tabs: Tab[] = [
   {
@@ -42,7 +42,7 @@ export function DashboardTabsNav() {
         <NavLink
           key={tab.to}
           to={tab.to}
-          end={tab.end}
+          {...(tab.end !== undefined ? { end: tab.end } : {})}
           className={({ isActive }) =>
             [
               "rounded-full border px-3 py-1 text-xs font-medium transition",

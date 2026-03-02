@@ -12,7 +12,7 @@ export type ModeKey = "created" | "updated";
 
 export type RangeKey = "7d" | "30d" | "90d" | "12m" | "custom";
 
-export type TrendsPoint = {
+export interface TrendsPoint {
   date: string;
   ACTIVE: number;
   INTERVIEW: number;
@@ -21,4 +21,4 @@ export type TrendsPoint = {
   REJECTED: number;
   NO_RESPONSE: number;
   total: number;
-};
+}

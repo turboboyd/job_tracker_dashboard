@@ -71,7 +71,7 @@ export default (_env: unknown, argv: { mode?: BuildMode }): Configuration => {
 
     optimization: buildOptimization(),
 
-    devServer: isDev ? buildDevServer(options) : undefined,
+    ...(isDev ? { devServer: buildDevServer(options) } : {}),
 
     stats: "minimal",
   };

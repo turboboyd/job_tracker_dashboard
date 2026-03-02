@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 // src/features/cvVersions/firestoreCvVersions.ts
+import type {
+  Firestore} from "firebase/firestore";
 import {
-  Firestore,
   Timestamp,
   collection,
   doc,
@@ -10,9 +12,10 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { FirebaseStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import type { FirebaseStorage} from "firebase/storage";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
-export type CvVersionDoc = {
+export interface CvVersionDoc {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   label: string;
@@ -23,7 +26,7 @@ export type CvVersionDoc = {
   notes?: string;
   // Optional: you can compute later
   hashSha256?: string;
-};
+}
 
 function nowTs(): Timestamp {
   return Timestamp.now();
@@ -36,8 +39,8 @@ function cvVersionsCol(db: Firestore, userId: string) {
 export async function listCvVersions(
   db: Firestore,
   userId: string,
-  take: number = 50
-): Promise<Array<{ id: string; data: CvVersionDoc }>> {
+  take = 50
+): Promise<{ id: string; data: CvVersionDoc }[]> {
   const q = query(cvVersionsCol(db, userId), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.slice(0, take).map((d) => ({ id: d.id, data: d.data() as CvVersionDoc }));
@@ -64,6 +67,7 @@ export async function uploadCvVersion(
   await uploadBytes(storageRef, file);
 
   const docRef = doc(db, "users", userId, "cv_versions", cvId);
+  const notes = input.notes?.trim();
   const payload: CvVersionDoc = {
     createdAt: t,
     updatedAt: t,
@@ -72,7 +76,7 @@ export async function uploadCvVersion(
     fileName: file.name,
     sizeBytes: file.size,
     mimeType: file.type || "application/octet-stream",
-    notes: input.notes?.trim() || undefined,
+    ...(notes ? { notes } : {}),
   };
 
   await setDoc(docRef, payload);

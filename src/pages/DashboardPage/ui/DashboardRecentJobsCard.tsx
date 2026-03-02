@@ -1,23 +1,24 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "src/shared/ui";
 import { Card } from "src/shared/ui/Card/Card";
 
-export type RecentJob = {
+export interface RecentJob {
   id: string;
   title?: string | null;
   company?: string | null;
   status?: unknown;
   createdAt?: unknown;
-};
+}
 
-type Props = {
+interface Props {
   jobs: RecentJob[];
   onViewAll: () => void;
   onOpenJob?: (jobId: string) => void;
   className?: string;
-};
+}
 
 function toMillis(value: unknown): number | null {
   if (!value) return null;

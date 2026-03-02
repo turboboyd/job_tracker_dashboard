@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/unbound-method */
 import type { QueryReturnValue } from "@reduxjs/toolkit/query";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 
-import { RootState } from "src/app/store/rootReducer";
+import type { RootState } from "src/app/store/rootReducer";
 import { baseApi } from "src/shared/api/rtk/baseApi";
 import { guardRtk } from "src/shared/api/rtk/guardRtk";
 import type { ApiError } from "src/shared/api/rtk/rtkError";
 import { db } from "src/shared/config/firebase/firebase";
-import { SupportedLng } from "src/shared/config/i18n/i18n";
+import type { SupportedLng } from "src/shared/config/i18n/i18n";
 import { getDefaultTimeZone } from "src/shared/lib/date";
 
 export type DateFormat = "DD.MM.YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
@@ -17,7 +18,7 @@ export type DateFormat = "DD.MM.YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
  * - stage = big phase (columns in a board)
  * - subStatus = concrete step inside a stage
  */
-export type PipelineSubStatus = {
+export interface PipelineSubStatus {
   id: string;
   label: string;
   order: number;
@@ -27,29 +28,29 @@ export type PipelineSubStatus = {
    * Stored as string to avoid importing feature types into settings.
    */
   legacyStatus?: string;
-};
+}
 
-export type PipelineStage = {
+export interface PipelineStage {
   id: string;
   label: string;
   order: number;
   visible: boolean;
   defaultSubStatusId?: string;
   subStatuses: PipelineSubStatus[];
-};
+}
 
-export type PipelineConfig = {
+export interface PipelineConfig {
   version: number;
   defaultStageId: string;
   stages: PipelineStage[];
-};
+}
 
-export type UserSettings = {
+export interface UserSettings {
   timeZone: string;
   dateFormat: DateFormat;
   uiLanguage?: SupportedLng;
   pipeline?: PipelineConfig;
-};
+}
 
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   timeZone: "Europe/Berlin",
@@ -199,7 +200,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
 
 function normalizePipeline(p: Partial<PipelineConfig> | undefined | null): PipelineConfig {
   const base = DEFAULT_USER_SETTINGS.pipeline!;
-  const stagesRaw = Array.isArray(p?.stages) ? (p!.stages as PipelineStage[]) : base.stages;
+  const stagesRaw = Array.isArray(p?.stages) ? (p.stages) : base.stages;
 
   const isObject = (v: unknown): v is Record<string, unknown> =>
     typeof v === "object" && v !== null;
@@ -210,22 +211,25 @@ function normalizePipeline(p: Partial<PipelineConfig> | undefined | null): Pipel
     .filter((s): s is PipelineStage => hasString(s, "id"))
     .map((s) => {
       const subRaw = Array.isArray(s.subStatuses)
-        ? (s.subStatuses as PipelineSubStatus[])
+        ? (s.subStatuses)
         : [];
 
       const subStatuses: PipelineSubStatus[] = subRaw
         .filter((x): x is PipelineSubStatus => hasString(x, "id"))
-        .map((x) => ({
-          id: String(x.id),
-          label:
-            typeof x.label === "string" && x.label.trim()
-              ? x.label.trim()
-              : String(x.id),
-          order: typeof x.order === "number" ? x.order : 0,
-          visible: typeof x.visible === "boolean" ? x.visible : true,
-          legacyStatus:
-            typeof x.legacyStatus === "string" ? x.legacyStatus : undefined,
-        }))
+        .map((x) => {
+          const base: PipelineSubStatus = {
+            id: String(x.id),
+            label:
+              typeof x.label === "string" && x.label.trim()
+                ? x.label.trim()
+                : String(x.id),
+            order: typeof x.order === "number" ? x.order : 0,
+            visible: typeof x.visible === "boolean" ? x.visible : true,
+          };
+          return typeof x.legacyStatus === "string"
+            ? { ...base, legacyStatus: x.legacyStatus }
+            : base;
+        })
         .sort((a, b) => a.order - b.order);
 
       const requestedDefaultSub =
@@ -238,15 +242,16 @@ function normalizePipeline(p: Partial<PipelineConfig> | undefined | null): Pipel
           ? requestedDefaultSub
           : subStatuses[0]?.id;
 
-      return {
+      const base: PipelineStage = {
         id: String(s.id),
         label:
           typeof s.label === "string" && s.label.trim() ? s.label.trim() : String(s.id),
         order: typeof s.order === "number" ? s.order : 0,
         visible: typeof s.visible === "boolean" ? s.visible : true,
-        defaultSubStatusId,
         subStatuses,
       };
+
+      return defaultSubStatusId ? { ...base, defaultSubStatusId } : base;
     })
     .sort((a, b) => a.order - b.order);
 
@@ -284,7 +289,13 @@ function normalizeSettings(
   const uiLanguage = input?.uiLanguage;
   const pipeline = normalizePipeline(input?.pipeline);
 
-  return { timeZone, dateFormat, uiLanguage, pipeline };
+  // With `exactOptionalPropertyTypes`, avoid writing `undefined` for optional props.
+  return {
+    timeZone,
+    dateFormat,
+    ...(uiLanguage ? { uiLanguage } : {}),
+    pipeline,
+  };
 }
 
 const settingsDocRef = (uid: string) =>
@@ -293,9 +304,7 @@ const settingsDocRef = (uid: string) =>
 export const userSettingsApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getUserSettings: build.query<UserSettings, { uid: string }>({
-      queryFn: ({
-        uid,
-      }): Promise<QueryReturnValue<UserSettings, ApiError, undefined>> =>
+      queryFn: ({ uid }) =>
         guardRtk(async () => {
           const refDoc = settingsDocRef(uid);
           const snap = await getDoc(refDoc);
@@ -321,7 +330,7 @@ export const userSettingsApi = baseApi.injectEndpoints({
       async queryFn(
         { uid, patch },
         api,
-      ): Promise<QueryReturnValue<UserSettings, ApiError, undefined>> {
+      ) {
         return guardRtk(async () => {
           const refDoc = settingsDocRef(uid);
 

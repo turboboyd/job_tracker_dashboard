@@ -3,13 +3,13 @@ import React from "react";
 import type { StatusKey } from "src/entities/application/model/status";
 import { StatusMenu } from "src/entities/application/ui/StatusKit";
 
-type Props = {
+interface Props {
   label: string;
   value: StatusKey;
   disabled: boolean;
   onChange: (next: StatusKey) => void;
   className?: string;
-};
+}
 
 export function StatusSelect({ label, value, disabled, onChange, className }: Props) {
   return (

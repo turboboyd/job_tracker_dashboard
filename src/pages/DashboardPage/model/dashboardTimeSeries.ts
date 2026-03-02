@@ -1,18 +1,18 @@
 import { STATUS_KEYS, isStatusKey, getBoardColumn, type StatusKey, type BoardColumnKey } from "src/entities/application/model/status";
 
-export type MatchTimestampsLike = {
+export interface MatchTimestampsLike {
   status: StatusKey;
   createdAt: unknown;
   updatedAt: unknown;
   loopId?: string | undefined;
-};
+}
 
-export type Bucket = {
+export interface Bucket {
   label: string;
   startMs: number;
   endMs: number;
   counts: Record<StatusKey, number>;
-};
+}
 
 
 export function parseMs(v: unknown): number | null {
@@ -37,8 +37,8 @@ export function parseMs(v: unknown): number | null {
   return null;
 }
 
-type TimestampWithToMillis = { toMillis: () => unknown };
-type TimestampWithSeconds = { seconds: number; nanoseconds?: number };
+interface TimestampWithToMillis { toMillis: () => unknown }
+interface TimestampWithSeconds { seconds: number; nanoseconds?: number }
 
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null;
@@ -63,7 +63,12 @@ export function medianDays(values: number[]): number | null {
   const xs = values.filter((x) => Number.isFinite(x)).sort((a, b) => a - b);
   if (xs.length === 0) return null;
   const mid = Math.floor(xs.length / 2);
-  return xs.length % 2 === 1 ? xs[mid] : Math.round((xs[mid - 1] + xs[mid]) / 2);
+
+  if (xs.length % 2 === 1) return xs[mid] ?? null;
+  const a = xs[mid - 1];
+  const b = xs[mid];
+  if (a === undefined || b === undefined) return null;
+  return Math.round((a + b) / 2);
 }
 
 export function normalizeAppStatus(s: unknown): StatusKey {
@@ -204,7 +209,7 @@ export function buildMonthlyBuckets(matches: MatchTimestampsLike[], opts: { mont
   return buckets;
 }
 
-export type PipelineLinePoint = { label: string; value: number };
+export interface PipelineLinePoint { label: string; value: number }
 
 /**
  * Для линии “Pipeline” используем суммы по колонкам доски,

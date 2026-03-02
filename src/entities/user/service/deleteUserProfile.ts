@@ -6,7 +6,7 @@ import { userProfileDocRef } from "./userProfileRefs";
 
 export async function deleteUserProfile(uid: string): Promise<void> {
   const user = auth.currentUser;
-  if (!user || user.uid !== uid) {
+  if (user?.uid !== uid) {
     throw new Error("Not authenticated");
   }
 

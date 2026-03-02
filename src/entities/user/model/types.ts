@@ -1,7 +1,7 @@
 export type UserLanguage = "ru" | "de" | "en";
 export type UserDateFormat = "DD.MM.YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
 
-export type UserProfile = {
+export interface UserProfile {
   uid: string;
 
   displayName: string | null;
@@ -14,13 +14,13 @@ export type UserProfile = {
 
   createdAt: number;
   updatedAt: number;
-};
+}
 
-export type UpdateUserProfileInput = {
+export interface UpdateUserProfileInput {
   displayName?: string | null;
   photoFile?: File | null;
 
   language?: UserLanguage;
   timezone?: string;
   dateFormat?: UserDateFormat;
-};
+}

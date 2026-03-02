@@ -2,10 +2,10 @@ import type { TFunction } from "i18next";
 
 import { getErrorMessage } from "src/shared/lib";
 
-type FirebaseAuthError = {
+interface FirebaseAuthError {
   code?: string;
   message?: string;
-};
+}
 
 const commonAuthCodeToKey: Record<string, string> = {
   "auth/invalid-email": "auth.errors.invalidEmail",
@@ -25,7 +25,7 @@ function isFirebaseAuthError(e: unknown): e is FirebaseAuthError {
 }
 
 function extractAuthCodeFromMessage(message: string): string | null {
-  const m = message.match(/\((auth\/[a-zA-Z0-9-]+)\)/);
+  const m = /\((auth\/[a-zA-Z0-9-]+)\)/.exec(message);
   return m?.[1] ?? null;
 }
 
@@ -73,7 +73,7 @@ export function mapFirebaseAuthError(
   e: unknown,
   t: TFunction,
   extraCodeToKey: Record<string, string> = {},
-  fallbackKey: string = "auth.errors.generic",
+  fallbackKey = "auth.errors.generic",
 ): string {
   const merged = { ...commonAuthCodeToKey, ...extraCodeToKey };
 

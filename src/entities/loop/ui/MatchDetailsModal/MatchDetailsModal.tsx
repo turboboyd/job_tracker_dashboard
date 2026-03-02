@@ -7,14 +7,14 @@ import type { LoopPlatform } from "../../model";
 
 export type ActiveLink = { platform: LoopPlatform; url: string } | null;
 
-type Props = {
+interface Props {
   activeLink: ActiveLink;
 
   onAddMatch: (platform: LoopPlatform) => void;
   onClear?: () => void;
 
   disabled?: boolean;
-};
+}
 
 export function OutboundApplyBar({
   activeLink,

@@ -61,7 +61,8 @@ export function DashboardGoalsCard({ matches }: { matches: MatchTimestampsLike[]
     const values = buckets.map((b) => b.counts[PIPELINE_STATUS] ?? 0);
     let s = 0;
     for (let i = values.length - 1; i >= 0; i -= 1) {
-      if (values[i] > 0) s += 1;
+      const v = values[i] ?? 0;
+      if (v > 0) s += 1;
       else break;
     }
     return s;

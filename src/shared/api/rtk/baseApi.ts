@@ -1,6 +1,6 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 
-import { ApiError } from "./rtkError";
+import type { ApiError } from "./rtkError";
 
 export const baseApi = createApi({
   reducerPath: "api",

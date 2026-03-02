@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/deprecation */
 import React from "react";
 
 import {
@@ -31,10 +32,10 @@ export type InputPreset =
   | "table"
   | "auth";
 
-type PresetConfig = {
+interface PresetConfig {
   variants?: Partial<Pick<BaseInputProps, "size" | "paddingX" | "radius" | "shadow" | "intent" | "width">>;
   behavior?: Partial<Pick<InputControlProps, "clearable" | "loading" | "showPasswordToggle" | "leftSlot" | "type">>;
-};
+}
 
 const presetMap: Record<InputPreset, PresetConfig> = {
   default: {
@@ -153,9 +154,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         shadow={resolvedShadow}
         width={resolvedWidth}
         intent={resolvedIntent}
-        clearable={resolvedClearable}
-        loading={resolvedLoading}
-        showPasswordToggle={resolvedShowPasswordToggle}
+        {...(resolvedClearable !== undefined ? { clearable: resolvedClearable } : {})}
+        {...(resolvedLoading !== undefined ? { loading: resolvedLoading } : {})}
+        {...(resolvedShowPasswordToggle !== undefined
+          ? { showPasswordToggle: resolvedShowPasswordToggle }
+          : {})}
         leftSlot={resolvedLeftSlot}
         {...props}
       />

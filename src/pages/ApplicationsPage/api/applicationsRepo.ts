@@ -46,7 +46,7 @@ export function createApplicationsRepo(db: Firestore) {
     queryFollowUpsDue: (userId: string, limit: number) =>
       queryFollowUpsDue(db, userId, limit),
 
-    autoMarkGhosting: (userId: string, rows: Array<{ id: string; data: ApplicationDoc }>) =>
+    autoMarkGhosting: (userId: string, rows: { id: string; data: ApplicationDoc }[]) =>
       autoMarkGhosting(db, userId, rows, 30),
   };
 }

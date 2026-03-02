@@ -5,10 +5,10 @@ import type { LoopMatch } from "src/entities/loopMatch";
 import { formatMatchedAt, normalizePlatform } from "src/entities/loopMatch";
 import { Card } from "src/shared/ui";
 
-type Props = {
+interface Props {
   match: LoopMatch;
   loopName: string;
-};
+}
 
 export function MatchDetailsSummaryCard({ match, loopName }: Props) {
   const { t } = useTranslation();
