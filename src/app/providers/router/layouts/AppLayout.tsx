@@ -3,7 +3,6 @@ import { Outlet } from "react-router-dom";
 
 import { AppHeader, AppSidebar, useSidebar } from "src/app/widgets";
 import { useAuthSelectors } from "src/entities/auth";
-import { PageShell } from "src/shared/ui";
 
 export const AppLayout: React.FC = () => {
   const { isAuthenticated } = useAuthSelectors();
@@ -14,35 +13,27 @@ export const AppLayout: React.FC = () => {
     defaultDesktopOpen: true,
   });
 
-  const hasSidebar = isAuthenticated;
-  const shiftClass = hasSidebar && sidebar.isOpen ? "md:ml-64" : "md:ml-0";
+  if (isAuthenticated) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-background text-foreground">
+        {/* Permanent sidebar */}
+        <AppSidebar isOpen={sidebar.isOpen} onClose={sidebar.close} onToggle={sidebar.toggle} />
+
+        {/* Content area: flex column, fills remaining width */}
+        <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+          <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen min-h-0 bg-background text-foreground flex flex-col overflow-hidden">
-      <div className="shrink-0">
-        <AppHeader
-          sidebarOpen={sidebar.isOpen}
-          onToggleSidebar={sidebar.toggle}
-        />
-      </div>
-
-      {hasSidebar && (
-        <AppSidebar isOpen={sidebar.isOpen} onClose={sidebar.close} />
-      )}
-
-      {/* Main content scroll lives here */}
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <AppHeader />
       <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <div
-          className={[
-            shiftClass,
-            "min-h-full",
-            "transition-[margin] duration-300 ease-out",
-          ].join(" ")}
-        >
-          <PageShell paddingX="md" paddingY="sm" fullHeight layout="flexCol">
-            <Outlet />
-          </PageShell>
-        </div>
+        <Outlet />
       </main>
     </div>
   );

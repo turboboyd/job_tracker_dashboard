@@ -6,38 +6,17 @@ import {
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
 
-type Tab = {
-  to: string;
-  labelKey: string;
-  fallback: string;
-  end?: boolean;
-};
-
-const tabs: Tab[] = [
-  {
-    to: RoutePath[AppRoutes.DASHBOARD],
-    labelKey: "tabs.overview",
-    fallback: "Overview",
-    end: true,
-  },
-  {
-    to: RoutePath[AppRoutes.DASHBOARD_ANALYTICS],
-    labelKey: "tabs.analytics",
-    fallback: "Analytics",
-  },
-
-  {
-    to: RoutePath[AppRoutes.DASHBOARD_ACTIVITY],
-    labelKey: "tabs.activity",
-    fallback: "Activity",
-  },
+const tabs = [
+  { to: RoutePath[AppRoutes.DASHBOARD], labelKey: "tabs.overview", fallback: "Overview", end: true },
+  { to: RoutePath[AppRoutes.DASHBOARD_ANALYTICS], labelKey: "tabs.analytics", fallback: "Analytics" },
+  { to: RoutePath[AppRoutes.DASHBOARD_ACTIVITY], labelKey: "tabs.activity", fallback: "Activity" },
 ];
 
 export function DashboardTabsNav() {
-   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
+  const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-end gap-0.5">
       {tabs.map((tab) => (
         <NavLink
           key={tab.to}
@@ -45,10 +24,10 @@ export function DashboardTabsNav() {
           end={tab.end}
           className={({ isActive }) =>
             [
-              "rounded-full border px-3 py-1 text-xs font-medium transition",
+              "-mb-px px-3.5 py-2 text-[13px] transition-colors cursor-pointer select-none",
               isActive
-                ? "border-foreground/30 bg-muted text-foreground"
-                : "border-border text-muted-foreground hover:bg-muted/60",
+                ? "border-b-2 border-primary font-medium text-foreground"
+                : "border-b-2 border-transparent text-muted-foreground hover:text-foreground",
             ].join(" ")
           }
         >

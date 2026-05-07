@@ -2,9 +2,8 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useAuthSelectors } from "src/entities/auth";
-import { Button } from "src/shared/ui";
 
-import { CardText, Header } from "./components/Header";
+import { CardText } from "./components/Header";
 import { LoopDetailsView } from "./components/LoopDetailsView";
 import { LoopsListView } from "./components/LoopsListView";
 
@@ -24,25 +23,20 @@ export default function LoopsPage() {
 
   if (!userId) {
     return (
-      <div className="space-y-6">
-        <Header
-          title={
-            isDetails
-              ? t("loops.detailsTitle", "Loop")
-              : t("loops.listTitle", "My Loops")
-          }
-          subtitle={t("loops.signInSubtitle", "Sign in to continue.")}
-          right={
-            isDetails ? (
-              <Button variant="outline" shape="lg" onClick={goBack}>
-                {t("loops.back", "Back")}
-              </Button>
-            ) : null
-          }
-        />
-        <CardText>
-          {t("loops.signInBody", "Please sign in to view your loops.")}
-        </CardText>
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="shrink-0 border-b border-border bg-background px-7 py-5">
+          <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
+            {isDetails ? t("loops.detailsTitle", "Loop") : t("loops.listTitle", "My Loops")}
+          </h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {t("loops.signInSubtitle", "Sign in to continue.")}
+          </p>
+        </div>
+        <div className="flex-1 overflow-y-auto bg-background p-7">
+          <CardText>
+            {t("loops.signInBody", "Please sign in to view your loops.")}
+          </CardText>
+        </div>
       </div>
     );
   }

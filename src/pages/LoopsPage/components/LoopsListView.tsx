@@ -21,7 +21,7 @@ import {
   setLoopsListPage,
 } from "src/pages/LoopsPage/model/loopsUiSlice";
 import { getErrorMessage, clampPage} from "src/shared/lib";
-import { Button, Pagination, PageHeader } from "src/shared/ui";
+import { Button, Pagination } from "src/shared/ui";
 
 const PAGE_SIZE = 7;
 
@@ -312,11 +312,25 @@ export function LoopsListView({
   ]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t("loops.listTitle", "My Loops")}
-        subtitle={t("loops.listSubtitle", "Create a loop and track matches.")}
-        right={
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Page header */}
+      <div className="shrink-0 border-b border-border bg-background px-7 py-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
+              <span>Loopboard</span>
+              <span>/</span>
+              <span className="text-muted-foreground">{t("loops.listTitle", "Loops")}</span>
+            </div>
+            <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
+              {t("loops.listTitle", "My Loops")}
+            </h1>
+            {t("loops.listSubtitle") ? (
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {t("loops.listSubtitle", "Create a loop and track matches.")}
+              </p>
+            ) : null}
+          </div>
           <Button
             variant="default"
             shadow="sm"
@@ -325,11 +339,15 @@ export function LoopsListView({
           >
             {t("loops.newLoop", "New loop")}
           </Button>
-        }
-      />
+        </div>
+      </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
-        {content}
+      <div className="flex-1 overflow-y-auto bg-background">
+        <div className="p-7">
+          <div className="rounded-xl border border-border bg-card">
+            <div className="p-5">{content}</div>
+          </div>
+        </div>
       </div>
 
       <CreateLoopModal

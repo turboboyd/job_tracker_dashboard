@@ -8,7 +8,7 @@ import { StatusMenu } from "src/entities/application/ui/StatusKit";
 import type { LoopMatchStatus, UpdateMatchInput } from "src/entities/loopMatch";
 import { formatMatchedAt, normalizePlatform } from "src/entities/loopMatch";
 import { getErrorMessage } from "src/shared/lib";
-import { Button, Card, PageHeader, PageMessage } from "src/shared/ui";
+import { Button, Card, PageMessage } from "src/shared/ui";
 
 import { EditMatchModal } from "../MatchesPage/components/EditMatchModal";
 import { useMatchesDerived } from "../MatchesPage/model/useMatchesDerived";
@@ -91,27 +91,54 @@ export default function MatchDetailsPage() {
     return parts.join(" • ");
   })();
 
-  const header = (
-    <PageHeader
-      title={t("matches.details.title")}
-      subtitle={t("matches.details.subtitle")}
-      right={
-        <div className="flex items-center gap-sm">
-          <Link to={backTo}>
-            <Button variant="outline" size="sm" shape="pill">
-              {t("matches.details.backToFiltered")}
-            </Button>
-          </Link>
+  const pageHeader = (
+    <div className="shrink-0 border-b border-border bg-background px-7 py-5">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
+            <span>Loopboard</span>
+            <span>/</span>
+            <Link to={RoutePath[AppRoutes.MATCHES]} className="hover:text-foreground transition-colors">
+              {t("matches.list.title", "Matches")}
+            </Link>
+            <span>/</span>
+            <span className="text-muted-foreground">{match?.title ?? t("matches.details.title", "Match details")}</span>
+          </div>
+          <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
+            {match?.title ?? t("matches.details.title", "Match details")}
+          </h1>
+          {meta ? (
+            <p className="mt-1 text-[13px] text-muted-foreground">{meta}</p>
+          ) : null}
         </div>
-      }
-    />
+        <div className="flex items-center gap-2">
+          <Link
+            to={backTo}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            ← {t("matches.details.backToFiltered", "Back")}
+          </Link>
+          {match?.url ? (
+            <a
+              href={match.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {t("matches.details.openLink", "Open job")}
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 
   if (loading) {
     return (
-      <div className="w-full">
-        {header}
-        <div className="pt-lg">
+      <div className="flex h-full flex-col overflow-hidden">
+        {pageHeader}
+        <div className="flex-1 overflow-y-auto bg-background p-7">
           <PageMessage>{t("matches.common.loading")}</PageMessage>
         </div>
       </div>
@@ -120,9 +147,9 @@ export default function MatchDetailsPage() {
 
   if (mergedError) {
     return (
-      <div className="w-full">
-        {header}
-        <div className="pt-lg">
+      <div className="flex h-full flex-col overflow-hidden">
+        {pageHeader}
+        <div className="flex-1 overflow-y-auto bg-background p-7">
           <PageMessage>{getErrorMessage(mergedError)}</PageMessage>
         </div>
       </div>
@@ -131,9 +158,9 @@ export default function MatchDetailsPage() {
 
   if (!match) {
     return (
-      <div className="w-full">
-        {header}
-        <div className="pt-lg">
+      <div className="flex h-full flex-col overflow-hidden">
+        {pageHeader}
+        <div className="flex-1 overflow-y-auto bg-background p-7">
           <PageMessage>{t("matches.details.notFound")}</PageMessage>
         </div>
       </div>
@@ -141,10 +168,11 @@ export default function MatchDetailsPage() {
   }
 
   return (
-    <div className="w-full">
-      {header}
+    <div className="flex h-full flex-col overflow-hidden">
+      {pageHeader}
 
-      <div className="pt-lg">
+      <div className="flex-1 overflow-y-auto bg-background">
+      <div className="p-7">
         <div className="grid grid-cols-1 gap-lg lg:grid-cols-[1.2fr_0.8fr]">
             <div className="min-w-0 space-y-lg">
               <Card variant="default" padding="md" shadow="sm" className="w-full">
@@ -242,6 +270,7 @@ export default function MatchDetailsPage() {
               </Card>
             </div>
         </div>
+      </div>
       </div>
 
       <EditMatchModal

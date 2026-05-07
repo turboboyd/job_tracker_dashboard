@@ -84,19 +84,15 @@ const MainPage: React.FC = () => {
   );
 
   return (
-    // Scroll container (AppLayout uses overflow-hidden at higher levels)
     <div className="h-full min-h-0 overflow-y-auto bg-background text-foreground">
-      <div className="mx-auto max-w-container px-lg py-10 sm:py-14">
+      <div className="mx-auto max-w-[1200px] px-6">
         <HeroSection
-          badgeText={t(
-            "home.badge",
-            "Job Tracker Dashboard • less chaos, more results",
-          )}
+          badgeText={t("home.badge", "Loopboard · v2 · less chaos, more results")}
           title={t("home.title2", "Systematic job search")}
-          titleMuted={t("home.title2b", "instead of 100 tabs")}
+          titleMuted={t("home.title2b", "instead of 100 tabs.")}
           subtitle={t(
             "home.subtitle2",
-            "Build a loop (your search scenario) to open job searches across platforms, save the best matches, and move through stages from saved to offer.",
+            "One scenario → platform links → saved matches → statuses. Less noise, more control over your process.",
           )}
           ctaPrimary={ctaPrimary}
           ctaSecondary={ctaSecondary}
@@ -105,9 +101,7 @@ const MainPage: React.FC = () => {
           preview={previewModel}
         />
 
-        <div className="mt-10 sm:mt-12">
-          <FeaturesSection features={features} />
-        </div>
+        <FeaturesSection features={features} />
 
         <HowToStartBlock ctaPrimary={ctaPrimary} ctaSecondary={ctaSecondary} />
 
@@ -126,8 +120,6 @@ const MainPage: React.FC = () => {
           ctaSecondary={ctaSecondary}
         />
       </div>
-
-      <div className="mx-auto max-w-container px-lg pb-10 sm:pb-14"></div>
     </div>
   );
 };

@@ -5,141 +5,83 @@ import {
   AppRoutes,
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
-import { LinkButton, Card } from "src/shared/ui";
+import { LinkButton } from "src/shared/ui";
 
 type Props = {
   ctaPrimary: React.ReactNode;
   ctaSecondary: React.ReactNode;
 };
 
-export const HowToStartBlock: React.FC<Props> = ({
-  ctaPrimary,
-  ctaSecondary,
-}) => {
+export const HowToStartBlock: React.FC<Props> = ({ ctaPrimary, ctaSecondary }) => {
   const { t } = useTranslation();
 
   const steps = [
     {
       n: "01",
       title: t("home.start.s1.title", "Build your loop in 60 seconds"),
-      text: t(
-        "home.start.s1.text",
-        "Role, location, radius, work mode, keywords and exclusions. This becomes your saved search scenario.",
-      ),
+      text: t("home.start.s1.text", "Role, location, radius, work mode, keywords and exclusions. This becomes your saved search scenario."),
     },
     {
       n: "02",
       title: t("home.start.s2.title", "Open platforms with one scenario"),
-      text: t(
-        "home.start.s2.text",
-        "Hit Apply and get ready links to job boards with the same filters. Check fresh listings fast.",
-      ),
+      text: t("home.start.s2.text", "Hit Apply and get ready links to job boards with the same filters. Check fresh listings fast."),
     },
     {
       n: "03",
       title: t("home.start.s3.title", "Save matches and move statuses"),
-      text: t(
-        "home.start.s3.text",
-        "Like a job? Save it. Then: saved → applied → interview → offer / rejected — with notes and deadlines.",
-      ),
+      text: t("home.start.s3.text", "Like a job? Save it. Then: saved → applied → interview → offer / rejected — with notes and deadlines."),
     },
   ];
 
   return (
-    <section className="mt-10">
-      <div className="overflow-hidden rounded-3xl border border-border bg-card p-6 sm:p-10">
-        <header className="max-w-3xl">
-          <h2 className="text-base font-semibold text-foreground sm:text-lg">
-            {t("home.start.title", "How to start (and not burn out)")}
-          </h2>
+    <section className="mt-0 pb-14">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card p-12">
+        <div className="grid grid-cols-1 gap-16 lg:grid-cols-[1fr_1.6fr] lg:items-start">
+          {/* Left */}
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-[0.07em] text-subtle-foreground">
+              {t("home.start.title", "How to start")}
+            </div>
+            <h2 className="mt-2.5 text-[28px] font-semibold leading-[1.1] tracking-[-0.03em] text-foreground">
+              {t("home.start.sub", "One small step every day")}
+            </h2>
+            <p className="mt-4 text-[14px] leading-[1.6] text-muted-foreground">
+              {t("home.start.note", "Simple rule: one loop becomes your daily rhythm. Check sources → save matches → do the next step.")}
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+              {ctaPrimary}
+              <LinkButton to={RoutePath[AppRoutes.RESOURCES]} variant="outline" size="lg">
+                {t("home.start.resources", "Cheat sheets & guides")}
+              </LinkButton>
+            </div>
+          </div>
 
-          <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-            {t(
-              "home.start.sub",
-              "Three steps that move you forward: set up → apply → lock the next action.",
-            )}
-          </p>
-
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            {t(
-              "home.start.extra",
-              "Aim for consistency, not perfection: one loop, a small daily routine, and clear next steps.",
-            )}
-          </p>
-        </header>
-
-        <div className="mt-6 grid grid-cols-1 gap-lg md:grid-cols-3">
-          {steps.map((s) => (
-            <Card
-              key={s.n}
-              className={[
-                "group h-full p-6",
-                "border border-border bg-background",
-                "transition-all duration-normal ease-out",
-                "motion-safe:hover:-translate-y-0.5",
-                "motion-safe:hover:shadow-md",
-                "motion-safe:hover:bg-muted",
-              ].join(" ")}
-            >
-              <div className="flex h-full flex-col">
-                <div className="flex items-start justify-between gap-md">
-                  <div className="text-xs font-medium text-muted-foreground">
+          {/* Right: timeline */}
+          <div className="border-l border-border">
+            {steps.map((s, i) => (
+              <div
+                key={s.n}
+                className={[
+                  "relative pl-8",
+                  i < steps.length - 1 ? "border-b border-border pb-6" : "",
+                  i > 0 ? "pt-6" : "",
+                ].join(" ")}
+              >
+                {/* Timeline dot */}
+                <div className="absolute left-[-7px] top-0 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-border-strong bg-card">
+                  <div className="h-[5px] w-[5px] rounded-full bg-primary" />
+                </div>
+                <div className="flex items-baseline gap-3.5">
+                  <span className="font-mono text-[11px] tracking-[0.05em] text-subtle-foreground">
                     {s.n}
-                  </div>
-                  <span className="inline-flex items-center rounded-full border border-border bg-card px-sm py-0.5 text-[11px] text-muted-foreground">
-                    {t("home.start.stepLabel", "Step")}
                   </span>
+                  <h3 className="text-[17px] font-semibold tracking-[-0.02em]">{s.title}</h3>
                 </div>
-
-                <div className="mt-2 text-sm font-semibold text-foreground sm:text-base">
-                  <span className="break-words [hyphens:auto]">{s.title}</span>
-                </div>
-
-                <div className="mt-2 text-sm leading-6 text-muted-foreground">
-                  <span className="break-words [hyphens:auto]">{s.text}</span>
-                </div>
-
-                <div className="mt-auto pt-4">
-                  <div className="h-px w-full bg-border/70" />
-                  <div className="mt-3 text-xs text-muted-foreground">
-                    {t("home.start.micro", "Keep it simple. Keep it daily.")}
-                  </div>
-                </div>
+                <p className="mt-2 ml-[35px] text-[13.5px] leading-[1.6] text-muted-foreground">
+                  {s.text}
+                </p>
               </div>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-8 flex flex-col gap-lg lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-sm leading-6 text-muted-foreground lg:max-w-2xl">
-            {t(
-              "home.start.note",
-              "Simple rule: one loop becomes your daily rhythm. Check sources → save matches → do the next step.",
-            )}
-          </p>
-
-          <div className="flex flex-col gap-md sm:flex-row sm:flex-wrap sm:items-center">
-            <div className="w-full sm:w-auto">{ctaPrimary}</div>
-
-            <LinkButton
-              to={RoutePath[AppRoutes.RESOURCES]}
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto"
-            >
-              {t("home.start.resources", "Cheat sheets & guides")}
-            </LinkButton>
-
-            <LinkButton
-              to={RoutePath[AppRoutes.LOOPS]}
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto"
-            >
-              {t("home.start.createLoop", "Create your first loop")}
-            </LinkButton>
-
-            <div className="w-full sm:w-auto">{ctaSecondary}</div>
+            ))}
           </div>
         </div>
       </div>

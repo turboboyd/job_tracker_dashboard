@@ -36,6 +36,8 @@ module.exports = {
         "muted-foreground": "rgb(var(--muted-foreground))",
 
         border: "rgb(var(--border))",
+        "border-strong": "rgb(var(--border-strong))",
+        "subtle-foreground": "rgb(var(--subtle-foreground))",
         input: "rgb(var(--input))",
         ring: "rgb(var(--ring))",
 
