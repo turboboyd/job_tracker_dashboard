@@ -47,15 +47,15 @@ export function PipelineStatusTabs(props: {
           >
             {sk ? <StatusDot status={sk} /> : null}
             <span>{label}</span>
-            <span className={[
-              "text-[10.5px] px-1.5 py-px rounded-full border",
-              "font-variant-numeric tabular-nums",
-              isActive
-                ? "bg-muted border-border text-foreground"
-                : "bg-muted border-border text-subtle-foreground",
-            ].join(" ")}>
-              {isLoading ? "…" : count}
-            </span>
+            {isActive && (
+              <span className={[
+                "text-[10.5px] px-1.5 py-px rounded-full border",
+                "font-variant-numeric tabular-nums",
+                "bg-muted border-border text-foreground",
+              ].join(" ")}>
+                {isLoading ? "…" : count}
+              </span>
+            )}
           </button>
         );
       })}

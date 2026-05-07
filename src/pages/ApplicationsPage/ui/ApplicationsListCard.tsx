@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import type { ProcessStatus } from "../api/applicationsRepo";
 import type { ViewMode } from "../model/types";
 import type { AppRow } from "../model/useApplicationsPage";
 
@@ -60,7 +61,7 @@ function ListHeader() {
   return (
     <div
       className="grid items-center gap-3 border-b border-border bg-muted px-3 py-[6px]"
-      style={{ gridTemplateColumns: "32px 2.4fr 1.2fr 110px 110px 90px 30px" }}
+      style={{ gridTemplateColumns: "32px 2.4fr 1.2fr 120px 110px 90px 30px" }}
     >
       {cols.map((col, i) => (
         <span
@@ -76,10 +77,55 @@ function ListHeader() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function ApplicationsListCard(props: { list: AppRow[]; view: ViewMode }) {
+export function ApplicationsListCard(props: {
+  list: AppRow[];
+  view: ViewMode;
+  query?: string;
+  sortBy?: "newest" | "oldest" | "company" | "score";
+  onChangeStatus?: (appId: string, status: ProcessStatus) => void;
+}) {
   const { t } = useTranslation();
-  const { list, view } = props;
+  const { list, view, query = "", sortBy = "newest", onChangeStatus } = props;
   const [displayMode, setDisplayMode] = useState<DisplayMode>("list");
+
+  const filteredSorted = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    // Filter
+    let result = q
+      ? list.filter((row) => {
+          const { job } = row.data;
+          return (
+            job.companyName.toLowerCase().includes(q) ||
+            job.roleTitle.toLowerCase().includes(q) ||
+            (job.locationText ?? "").toLowerCase().includes(q)
+          );
+        })
+      : list;
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "oldest":
+          return (
+            (a.data.createdAt?.toDate?.()?.getTime() ?? 0) -
+            (b.data.createdAt?.toDate?.()?.getTime() ?? 0)
+          );
+        case "company":
+          return a.data.job.companyName.localeCompare(b.data.job.companyName);
+        case "score":
+          return (b.data.matching?.score ?? 0) - (a.data.matching?.score ?? 0);
+        case "newest":
+        default:
+          return (
+            (b.data.createdAt?.toDate?.()?.getTime() ?? 0) -
+            (a.data.createdAt?.toDate?.()?.getTime() ?? 0)
+          );
+      }
+    });
+
+    return result;
+  }, [list, query, sortBy]);
 
   let emptyText: string;
   if (view === "today") {
@@ -107,29 +153,33 @@ export function ApplicationsListCard(props: { list: AppRow[]; view: ViewMode }) 
       {/* Card toolbar: count + view toggle */}
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border">
         <span className="text-[12px] text-muted-foreground">
-          {list.length > 0
-            ? `${list.length} ${t("applicationsPage.items", { defaultValue: "applications" })}`
+          {filteredSorted.length > 0
+            ? `${filteredSorted.length} ${t("applicationsPage.items", { defaultValue: "applications" })}`
             : null}
         </span>
         <ViewToggle value={displayMode} onChange={setDisplayMode} />
       </div>
 
-      {list.length === 0 ? (
+      {filteredSorted.length === 0 ? (
         <div className="px-3 py-6 text-sm text-muted-foreground">
-          {emptyText}
+          {query ? "No applications match your search." : emptyText}
         </div>
       ) : displayMode === "list" ? (
         <div>
           <ListHeader />
           <div>
-            {list.map((row) => (
-              <ApplicationListItem key={row.id} row={row} />
+            {filteredSorted.map((row) => (
+              <ApplicationListItem
+                key={row.id}
+                row={row}
+                onChangeStatus={onChangeStatus}
+              />
             ))}
           </div>
         </div>
       ) : (
         <div className="grid gap-3 p-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
-          {list.map((row) => (
+          {filteredSorted.map((row) => (
             <ApplicationCardTile key={row.id} row={row} />
           ))}
         </div>

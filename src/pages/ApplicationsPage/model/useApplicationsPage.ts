@@ -133,6 +133,20 @@ export function useApplicationsPage(params: {
 
   const resetForm = useCallback(() => setForm(EMPTY_CREATE_FORM), []);
 
+  const onChangeStatus = useCallback(
+    async (appId: string, status: ProcessStatus) => {
+      if (!userId) return;
+      try {
+        await repo.changeStatus(userId, appId, status);
+        await load();
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+      }
+    },
+    [repo, userId, load]
+  );
+
   const onCreate = useCallback(async () => {
     if (!userId || !canSubmit) return;
 
@@ -182,6 +196,9 @@ export function useApplicationsPage(params: {
     // Data
     list,
     load,
+
+    // Actions
+    onChangeStatus,
 
     // UI states
     isEnsuringUser,

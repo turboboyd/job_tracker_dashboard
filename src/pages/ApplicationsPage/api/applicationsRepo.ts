@@ -3,6 +3,7 @@ import type { Firestore } from "firebase/firestore";
 import {
   type ApplicationDoc,
   type ProcessStatus,
+  changeStatus,
   createApplication,
   autoMarkGhosting,
   ensureUserDoc,
@@ -48,6 +49,9 @@ export function createApplicationsRepo(db: Firestore) {
 
     autoMarkGhosting: (userId: string, rows: Array<{ id: string; data: ApplicationDoc }>) =>
       autoMarkGhosting(db, userId, rows, 30),
+
+    changeStatus: (userId: string, appId: string, status: ProcessStatus) =>
+      changeStatus(db, userId, appId, status),
   };
 }
 
