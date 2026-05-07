@@ -61,6 +61,14 @@ export function AccountSettingsLayout({ title, subtitle, content }: Props) {
       label: t("accountSettings.sidebar.pipelineStatuses", "Pipeline"),
     },
     {
+      to: RoutePath[AppRoutes.SETTINGS_SECURITY],
+      label: t("accountSettings.sidebar.security", "Security"),
+    },
+    {
+      to: RoutePath[AppRoutes.SETTINGS_BILLING],
+      label: t("accountSettings.sidebar.billing", "Billing"),
+    },
+    {
       to: RoutePath[AppRoutes.SETTINGS_DANGER_ZONE],
       label: t("accountSettings.sidebar.dangerZone", "Danger zone"),
     },

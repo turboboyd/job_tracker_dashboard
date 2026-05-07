@@ -23,6 +23,8 @@ import {
   ProfileSettingsPage,
   NotificationsSettingsPage,
   PipelineStatusesSettingsPage,
+  SecuritySettingsPage,
+  BillingSettingsPage,
   DangerZoneSettingsPage,
   ProfileQuestionsPage
 } from "src/pages";
@@ -52,6 +54,8 @@ export enum AppRoutes {
   SETTINGS_PROFILE = "settings_profile",
   SETTINGS_NOTIFICATIONS = "settings_notifications",
   SETTINGS_PIPELINE_STATUSES = "settings_pipeline_statuses",
+  SETTINGS_SECURITY = "settings_security",
+  SETTINGS_BILLING = "settings_billing",
   SETTINGS_DANGER_ZONE = "settings_danger_zone",
 
   PROFILE_QUESTIONS = "profile_questions",
@@ -91,6 +95,8 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.SETTINGS_NOTIFICATIONS]: "/dashboard/settings/notifications",
   [AppRoutes.SETTINGS_PIPELINE_STATUSES]:
     "/dashboard/settings/pipeline-statuses",
+  [AppRoutes.SETTINGS_SECURITY]: "/dashboard/settings/security",
+  [AppRoutes.SETTINGS_BILLING]: "/dashboard/settings/billing",
   [AppRoutes.SETTINGS_DANGER_ZONE]: "/dashboard/settings/danger-zone",
 
   [AppRoutes.PROFILE_QUESTIONS]: "/dashboard/profile/questions",
@@ -159,6 +165,14 @@ export const privateRoutes: RouteItem[] = [
   {
     path: RoutePath[AppRoutes.SETTINGS_PIPELINE_STATUSES],
     element: <PipelineStatusesSettingsPage />,
+  },
+  {
+    path: RoutePath[AppRoutes.SETTINGS_SECURITY],
+    element: <SecuritySettingsPage />,
+  },
+  {
+    path: RoutePath[AppRoutes.SETTINGS_BILLING],
+    element: <BillingSettingsPage />,
   },
   {
     path: RoutePath[AppRoutes.SETTINGS_DANGER_ZONE],

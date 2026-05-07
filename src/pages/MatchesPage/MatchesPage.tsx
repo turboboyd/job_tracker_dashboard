@@ -120,21 +120,17 @@ export default function MatchesPage() {
 
       <div className="flex-1 min-h-0 overflow-y-auto bg-background">
         <div className="p-7">
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            {vm.pagedMatches.map((m, i) => (
-              <div
+          <div className="rounded-[14px] border border-border bg-card overflow-hidden">
+            {vm.pagedMatches.map((m) => (
+              <MatchCard
                 key={m.id}
-                className={i < vm.pagedMatches.length - 1 ? "border-b border-border" : ""}
-              >
-                <MatchCard
-                  match={m}
-                  loopName={vm.loopIdToName.get(m.loopId) ?? ""}
-                  busy={vm.busy}
-                  onUpdateStatus={vm.actions.onUpdateStatus}
-                  onDelete={vm.actions.onDelete}
-                  onEdit={vm.setEditingId}
-                />
-              </div>
+                match={m}
+                loopName={vm.loopIdToName.get(m.loopId) ?? ""}
+                busy={vm.busy}
+                onUpdateStatus={vm.actions.onUpdateStatus}
+                onDelete={vm.actions.onDelete}
+                onEdit={vm.setEditingId}
+              />
             ))}
           </div>
         </div>

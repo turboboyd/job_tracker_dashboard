@@ -125,6 +125,12 @@ export const NotificationsSettingsPage = lazy(
 export const PipelineStatusesSettingsPage = lazy(
   () => import("./AccountSettingsPage/sections/PipelineStatusesSettingsPage"),
 );
+export const SecuritySettingsPage = lazy(
+  () => import("./AccountSettingsPage/sections/SecuritySettingsPage"),
+);
+export const BillingSettingsPage = lazy(
+  () => import("./AccountSettingsPage/sections/BillingSettingsPage"),
+);
 export const DangerZoneSettingsPage = lazy(
   () => import("./AccountSettingsPage/sections/DangerZoneSettingsPage"),
 );

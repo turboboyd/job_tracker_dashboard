@@ -12,3 +12,6 @@ export { DashboardInsightsCard } from "./DashboardInsightsCard";
 export { DashboardTimelineCard } from "./DashboardTimelineCard";
 export { DashboardGoalsCard } from "./DashboardGoalsCard";
 export { DashboardStatusRadarCard } from "./DashboardStatusRadarCard";
+export { DashboardTrendsWidget } from "./DashboardTrendsWidget";
+export { DashboardGoalsWidget } from "./DashboardGoalsWidget";
+export { DashboardInsightsWidget } from "./DashboardInsightsWidget";

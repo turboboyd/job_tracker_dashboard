@@ -16,6 +16,9 @@ import {
   DashboardRecentJobsCard,
   DashboardStats,
   DashboardTabsNav,
+  DashboardTrendsWidget,
+  DashboardGoalsWidget,
+  DashboardInsightsWidget,
 } from "./ui";
 import { StatCard } from "./ui/StatCard";
 
@@ -137,23 +140,6 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Main grid */}
-          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2 xl:grid-cols-3">
-            <DashboardOnboardingActions
-              hasJobs={hasMatches}
-              onGoProfile={goProfile}
-              onGoQuestions={goQuestions}
-              onGoLoop={goLoop}
-              onGoJobs={goMatches}
-            />
-            <DashboardRecentJobsCard jobs={recent} onViewAll={goMatches} />
-            <DashboardPipelineCard
-              summary={pipelineSummary}
-              size={180}
-              stroke={16}
-            />
-          </div>
-
           <DashboardStats
             isLoading={isLoading}
             error={error}
@@ -166,6 +152,30 @@ export default function DashboardPage() {
               navigate(`${RoutePath[AppRoutes.APPLICATIONS]}?focus=add`)
             }
           />
+
+          {/* Row 2: Trends + Funnel */}
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <DashboardTrendsWidget />
+            <DashboardPipelineCard summary={pipelineSummary} size={180} stroke={16} />
+          </div>
+
+          {/* Row 3: Plan/Onboarding + Goals */}
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <DashboardOnboardingActions
+              hasJobs={hasMatches}
+              onGoProfile={goProfile}
+              onGoQuestions={goQuestions}
+              onGoLoop={goLoop}
+              onGoJobs={goMatches}
+            />
+            <DashboardGoalsWidget />
+          </div>
+
+          {/* Row 4: Recent jobs + Insights */}
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <DashboardRecentJobsCard jobs={recent} onViewAll={goMatches} />
+            <DashboardInsightsWidget />
+          </div>
         </div>
       </div>
     </div>

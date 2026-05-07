@@ -55,6 +55,91 @@ const STATUS_BUTTONS: ProcessStatus[] = [
   "NO_RESPONSE",
 ];
 
+// Stage progression bar steps (happy path)
+const STAGE_STEPS: { status: ProcessStatus; label: string }[] = [
+  { status: "SAVED", label: "Saved" },
+  { status: "APPLIED", label: "Applied" },
+  { status: "INTERVIEW_1", label: "Interview" },
+  { status: "TEST_TASK", label: "Test task" },
+  { status: "OFFER", label: "Offer" },
+];
+
+const TERMINAL_NEGATIVE: ProcessStatus[] = ["REJECTED", "NO_RESPONSE"];
+
+function StageBar({ current }: { current: ProcessStatus }) {
+  const isTerminalNeg = TERMINAL_NEGATIVE.includes(current);
+  const currentIdx = STAGE_STEPS.findIndex((s) => s.status === current);
+
+  return (
+    <div className="rounded-[14px] border border-border bg-card px-5 py-4">
+      <div className="flex items-center gap-0 overflow-x-auto">
+        {STAGE_STEPS.map((step, i) => {
+          const isActive = step.status === current;
+          const isPast = !isTerminalNeg && currentIdx > i;
+          const isLast = i === STAGE_STEPS.length - 1;
+
+          return (
+            <div key={step.status} className="flex flex-1 items-center min-w-0">
+              {/* Step */}
+              <div className="flex flex-col items-center gap-1 px-1">
+                <div
+                  className={[
+                    "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10.5px] font-semibold transition-colors",
+                    isActive
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : isPast
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border bg-muted text-muted-foreground",
+                  ].join(" ")}
+                >
+                  {isPast ? (
+                    <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  ) : (
+                    i + 1
+                  )}
+                </div>
+                <span
+                  className={[
+                    "text-[10.5px] whitespace-nowrap",
+                    isActive ? "font-semibold text-foreground" : "text-muted-foreground",
+                  ].join(" ")}
+                >
+                  {step.label}
+                </span>
+              </div>
+              {/* Connector */}
+              {!isLast && (
+                <div
+                  className={[
+                    "flex-1 h-px mx-1",
+                    isPast ? "bg-primary/40" : "bg-border",
+                  ].join(" ")}
+                />
+              )}
+            </div>
+          );
+        })}
+        {/* Terminal negative badge */}
+        {isTerminalNeg && (
+          <>
+            <div className="flex-1 h-px mx-1 bg-border" />
+            <div className="flex flex-col items-center gap-1 px-1">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-destructive/40 bg-destructive/10 text-[10.5px] font-semibold text-destructive">
+                ✕
+              </div>
+              <span className="text-[10.5px] whitespace-nowrap font-semibold text-destructive">
+                {current === "REJECTED" ? "Rejected" : "No response"}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function formatTs(ts: unknown): string {
   if (!ts) return "";
   try {
@@ -302,6 +387,8 @@ export default function ApplicationDetailsPage() {
         <div className="p-7 space-y-lg">
 
       {error ? <InlineError message={error} /> : null}
+
+      {app ? <StageBar current={app.process.status} /> : null}
 
       <Card padding="md" shadow="sm" className="space-y-md">
         <div className="text-base font-semibold">{(t("applicationDetails.actions", { defaultValue: "Actions", returnObjects: false }) ?? "Actions") as string}</div>
