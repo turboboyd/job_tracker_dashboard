@@ -102,16 +102,24 @@ export const AuthPageShell: React.FC<AuthPageShellProps> = ({
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
       {/* Form panel */}
-      <div className="flex w-full flex-col overflow-y-auto px-10 py-10 md:w-[min(48%,560px)] md:shrink-0">
+      <div className="flex w-full flex-col overflow-y-auto bg-background px-10 py-10 md:w-[min(48%,560px)] md:shrink-0">
+        {/* Logo (mobile only – brand panel hides on mobile) */}
+        <div className="mb-8 flex items-center gap-2 md:hidden">
+          <div className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-foreground text-[12px] font-bold tracking-tighter text-background">
+            L
+          </div>
+          <span className="text-[14px] font-semibold tracking-tight">Loopboard</span>
+        </div>
+
         <div className="flex flex-1 flex-col justify-center">
           <div className="mx-auto w-full max-w-[380px]">
-            <h1 className="text-[28px] font-semibold tracking-[-0.025em]">{title}</h1>
+            <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-foreground">{title}</h1>
             {subtitle && (
-              <p className="mt-1.5 mb-7 text-[14px] text-muted-foreground">{subtitle}</p>
+              <p className="mt-1.5 mb-7 text-[13.5px] text-muted-foreground">{subtitle}</p>
             )}
             <div className={className}>{children}</div>
             {footer && (
-              <div className="mt-8 space-y-2 text-center text-[11px] text-subtle-foreground">
+              <div className="mt-8 space-y-2 text-center text-[12px] text-subtle-foreground">
                 {footer}
               </div>
             )}

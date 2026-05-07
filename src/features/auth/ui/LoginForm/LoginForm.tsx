@@ -84,12 +84,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             <form onSubmit={f.handleSubmit} className="space-y-4">
               {commonError ? <InlineError message={commonError} /> : null}
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 <FormikInputField
                   formik={f}
                   name={EMAIL_FIELD}
                   label={t(joinKey("auth", EMAIL_FIELD))}
                   required
+                  preset="auth"
                   placeholder="you@example.com"
                   autoComplete="email"
                   inputMode="email"
@@ -102,7 +103,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
                   name={secretField}
                   label={t(secretLabelKey)}
                   required
-                  preset={secretPreset}
+                  preset={secretPreset === "password" ? "password" : "auth"}
                   placeholder="••••••••"
                   autoComplete={secretAutoComplete}
                   disabled={disabled}

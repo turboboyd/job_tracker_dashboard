@@ -75,10 +75,12 @@ function SidebarNavItem({
     : location.pathname === path || location.pathname.startsWith(path + "/");
 
   const cls = [
-    "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors duration-100 cursor-pointer select-none w-full",
+    "relative flex items-center gap-2.5 rounded-md py-1.5 pr-2.5 text-[13px] transition-colors duration-100 cursor-pointer select-none w-full overflow-hidden",
+    // left border accent
+    "border-l-2",
     isActive
-      ? "bg-muted text-foreground font-medium"
-      : "text-muted-foreground hover:bg-muted hover:text-foreground font-normal",
+      ? "border-primary bg-muted pl-[9px] text-foreground font-medium"
+      : "border-transparent pl-[9px] text-muted-foreground hover:bg-muted hover:text-foreground font-normal",
   ].join(" ");
 
   if (isLoops) {
@@ -185,19 +187,31 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose, onToggl
 
       {/* Footer */}
       <div className="shrink-0 border-t border-border px-3 py-3">
-        <div className="mb-2 text-[11px] text-subtle-foreground">Help</div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-0.5">
           <NavLink
             to={RoutePath[AppRoutes.SETTINGS_PROFILE]}
-            className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground"
+            className={({ isActive }) => [
+              "flex items-center gap-2 rounded-md border-l-2 py-1.5 pr-2.5 pl-[9px] text-[12.5px] transition-colors duration-100",
+              isActive
+                ? "border-primary bg-muted text-foreground font-medium"
+                : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+            ].join(" ")}
           >
             <Settings className="h-3.5 w-3.5 shrink-0 text-subtle-foreground" />
-            Settings
+            {t("common.nav.settings", "Settings")}
           </NavLink>
-          <a className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer">
+          <NavLink
+            to={RoutePath[AppRoutes.WHATS_NEW]}
+            className={({ isActive }) => [
+              "flex items-center gap-2 rounded-md border-l-2 py-1.5 pr-2.5 pl-[9px] text-[12.5px] transition-colors duration-100",
+              isActive
+                ? "border-primary bg-muted text-foreground font-medium"
+                : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
+            ].join(" ")}
+          >
             <ExternalLink className="h-3.5 w-3.5 shrink-0 text-subtle-foreground" />
             {t("common.whatsNew", "What's new")}
-          </a>
+          </NavLink>
         </div>
       </div>
     </aside>

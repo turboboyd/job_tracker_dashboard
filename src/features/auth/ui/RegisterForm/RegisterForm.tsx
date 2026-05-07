@@ -61,12 +61,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
 
           return (
             <form onSubmit={f.handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 <FormikInputField
                   formik={f}
                   name="email"
                   label={t("auth.email")}
                   required
+                  preset="auth"
                   placeholder="you@example.com"
                   autoComplete="email"
                   inputMode="email"
