@@ -242,42 +242,64 @@ export default function ApplicationDetailsPage() {
     }
   }
 
-  return (
-    <div className="space-y-lg">
-      <div className="flex items-start justify-between gap-md">
+  const pageHeader = (
+    <div className="shrink-0 border-b border-border bg-background px-7 py-5">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
+            <span>Loopboard</span>
+            <span>/</span>
             <button
               type="button"
-              className="hover:underline"
+              className="hover:text-foreground transition-colors"
               onClick={() => navigate(RoutePath[AppRoutes.APPLICATIONS])}
             >
-              {(t("applicationDetails.back", { defaultValue: "← Back to applications", returnObjects: false }) ?? "← Back to applications") as string}
+              {(t("applicationDetails.applications", { defaultValue: "Applications", returnObjects: false }) ?? "Applications") as string}
             </button>
+            <span>/</span>
+            <span className="text-muted-foreground">
+              {title || (t("applicationDetails.titleFallback", { defaultValue: "Application", returnObjects: false }) ?? "Application") as string}
+            </span>
           </div>
-          <div className="text-xl font-semibold text-foreground">
+          <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
             {title || (t("applicationDetails.titleFallback", { defaultValue: "Application", returnObjects: false }) ?? "Application") as string}
-          </div>
-          {app?.job.vacancyUrl ? (
-            <div className="text-sm text-muted-foreground break-all">
-              <a className="hover:underline" href={app.job.vacancyUrl} target="_blank" rel="noreferrer">
-                {app.job.vacancyUrl}
-              </a>
-            </div>
+          </h1>
+          {app ? (
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              {statusLabel(app.process.status)}
+              {app.priority ? ` · Priority: ${app.priority.score}` : ""}
+            </p>
           ) : null}
         </div>
-
-        <div className="flex items-center gap-sm">
-          <div className="rounded-full border border-border bg-muted px-3 py-1 text-[12px] font-medium text-foreground">
-            {app ? statusLabel(app.process.status) : "—"}
-          </div>
-          {app?.priority ? (
-            <div className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-foreground">
-              {(t("applicationDetails.priority", { defaultValue: "Priority", returnObjects: false }) ?? "Priority") as string}: {app.priority.score}
-            </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+            onClick={() => navigate(RoutePath[AppRoutes.APPLICATIONS])}
+          >
+            ← {(t("applicationDetails.back", { defaultValue: "Back", returnObjects: false }) ?? "Back") as string}
+          </button>
+          {app?.job.vacancyUrl ? (
+            <a
+              href={app.job.vacancyUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {(t("applicationDetails.openVacancy", { defaultValue: "Open vacancy", returnObjects: false }) ?? "Open vacancy") as string}
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            </a>
           ) : null}
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      {pageHeader}
+      <div className="flex-1 overflow-y-auto bg-background">
+        <div className="p-7 space-y-lg">
 
       {error ? <InlineError message={error} /> : null}
 
@@ -394,6 +416,8 @@ export default function ApplicationDetailsPage() {
           </div>
         )}
       </Card>
+        </div>
+      </div>
     </div>
   );
 }

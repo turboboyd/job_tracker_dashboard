@@ -13,9 +13,8 @@ import {
 } from "src/pages/LoopsPage/model/loopsUiSlice";
 import { getErrorMessage } from "src/shared/lib";
 import { updateURLParams } from "src/shared/lib/url/updateURLParams";
-import { Button } from "src/shared/ui";
 
-import { Header, CardText } from "./Header";
+import { CardText } from "./Header";
 
 export function LoopDetailsView({
   userId,
@@ -146,18 +145,47 @@ export function LoopDetailsView({
   ]);
 
   return (
-    <div className="space-y-6">
-      <Header
-        title={title}
-        subtitle={subtitle}
-        right={
-          <Button variant="outline" shape="lg" onClick={onBack}>
-            {t("loops.back", "Back")}
-          </Button>
-        }
-      />
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-border bg-background px-7 py-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
+              <span>Loopboard</span>
+              <span>/</span>
+              <button
+                type="button"
+                className="hover:text-foreground transition-colors"
+                onClick={onBack}
+              >
+                {t("loops.listTitle", "My Loops")}
+              </button>
+              <span>/</span>
+              <span className="text-muted-foreground">{title}</span>
+            </div>
+            <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="mt-1 text-[13px] text-muted-foreground">{subtitle}</p>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+              onClick={onBack}
+            >
+              ← {t("loops.back", "Back")}
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {content}
+      <div className="flex-1 overflow-y-auto bg-background">
+        <div className="p-7">
+          {content}
+        </div>
+      </div>
     </div>
   );
 }
