@@ -1,4 +1,4 @@
-import type { ProcessStatus } from "src/features/applications/firestoreApplications";
+import type { ApplicationDoc, ProcessStatus } from "src/features/applications";
 
 /**
  * View modes for Applications page
@@ -29,6 +29,11 @@ export const EMPTY_CREATE_FORM: CreateFormState = {
   source: "",
   rawDescription: "",
 };
+
+export interface AppRow {
+  data: ApplicationDoc;
+  id: string;
+}
 
 /**
  * Pipeline statuses order

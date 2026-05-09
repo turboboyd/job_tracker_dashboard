@@ -6,8 +6,8 @@ import {
   queryFollowUpsDue,
   queryPipelineByStatus,
   queryTodayTopPriority,
-} from "src/features/applications/firestoreApplications";
-import { db } from "src/shared/config/firebase/firebase";
+} from "src/features/applications";
+import { db } from "src/shared/config/firebase/firestore";
 
 
 import type { ViewMode } from "./types";

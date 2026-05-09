@@ -3,12 +3,15 @@
     "title": "Meine Bewerbungen",
     "subtitle": "Erstelle und verfolge deine Bewerbungen an einem Ort.",
     "views": {
-      "pipeline": "Pipeline",
+      "pipeline": "Bewerbungsstatus",
       "today": "Heute",
-      "followups": "Follow-ups"
+      "followups": "Nachfassen"
     },
     "create": {
       "title": "Neue Bewerbung",
+      "subtitle": "Trage das Wesentliche ein — der Rest später.",
+      "newBtn": "Neu",
+      "cancel": "Abbrechen",
       "preparing": "Vorbereitung…",
       "company": "Firma",
       "companyPh": "z. B. ACME GmbH",
@@ -19,16 +22,37 @@
       "source": "Quelle",
       "sourcePh": "LinkedIn / Indeed / Unternehmensseite",
       "desc": "Beschreibung (optional)",
-      "descPh": "Füge den Text der Stelle ein, um Matching zu verbessern…",
+      "descPh": "Füge den Text der Stelle ein, um die Passung genauer zu bewerten…",
       "createBtn": "Erstellen",
-      "creating": "Erstelle…"
+      "creating": "Erstelle…",
+      "contact": {
+        "title": "Ansprechpartner (optional)",
+        "hint": "Jetzt oder später auf der Bewerbungsseite hinzufügen.",
+        "firstName": "Vorname",
+        "firstNamePh": "Anna",
+        "lastName": "Nachname",
+        "lastNamePh": "Petrova",
+        "role": "Rolle",
+        "phone": "Telefon",
+        "phonePh": "+49 …",
+        "email": "E-Mail",
+        "emailPh": "name@firma.com"
+      },
+      "contactRole": {
+        "HR": "HR",
+        "RECRUITER": "Recruiter",
+        "TECH_INTERVIEWER": "Technischer Interviewer",
+        "HIRING_MANAGER": "Hiring Manager",
+        "REFERRAL": "Empfehlung",
+        "OTHER": "Sonstiges"
+      }
     },
     "pipeline": {
-      "saved": "GESPEICHERT",
-      "applied": "BEWORBEN",
-      "interview": "INTERVIEW",
-      "offer": "ANGEBOT",
-      "rejected": "ABGELEHNT",
+      "saved": "Gespeichert",
+      "applied": "Beworben",
+      "interview": "Interview",
+      "offer": "Angebot",
+      "rejected": "Abgelehnt",
       "loading": "Laden…",
       "count": "Anzahl: {{count}}",
       "empty": "Noch keine Bewerbungen.",
@@ -40,7 +64,7 @@
       "applied": "Beworben",
       "viewed": "Gesehen",
       "interview_1": "Interview",
-      "interview_2": "Interview 2",
+      "interview_2": "Zweites Interview",
       "test_task": "Testaufgabe",
       "offer": "Angebot",
       "rejected": "Abgelehnt",
@@ -50,11 +74,11 @@
     "empty": {
       "pipeline": "Noch keine Bewerbungen.",
       "today": "Heute gibt es nichts.",
-      "followups": "Keine fälligen Follow-ups."
+      "followups": "Keine fälligen Erinnerungen."
     },
-    "todayHint": "Sortiert nach priority.score",
-    "followupsHint": "Follow-up nötig, sortiert nach Fälligkeit",
-    "matching": "Match",
-    "followUpBadge": "Follow-up"
+    "todayHint": "Zuerst Bewerbungen mit hoher Priorität",
+    "followupsHint": "Bewerbungen, bei denen du nachfassen solltest",
+    "matching": "Passung",
+    "followUpBadge": "Nachfassen"
   }
 }
