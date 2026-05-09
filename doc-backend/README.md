@@ -43,7 +43,7 @@
 | Файл | Страница |
 |---|---|
 | `Мои заявки_backend.md` | `/dashboard/applications` — список и управление заявками |
-| *(скоро)* `Детали заявки_backend.md` | `/dashboard/applications/:id` — детальная карточка |
+| `Детали заявки_backend.md` | `/dashboard/applications/:id` — детальная карточка |
 | *(скоро)* `Доска_backend.md` | `/dashboard/board` — Kanban |
 | *(скоро)* `Мои циклы_backend.md` | `/dashboard/loops` — поисковые циклы |
 | *(скоро)* `Дашборд_backend.md` | `/dashboard` — обзор и аналитика |
