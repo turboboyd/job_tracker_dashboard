@@ -1,4 +1,4 @@
-import type { CanonicalFilters, SearchFilters } from "src/entities/loop/model";
+import type { CanonicalFilters, SearchFilters } from "../../model";
 
 export function mapCanonicalToSearchFilters(
   filters: CanonicalFilters

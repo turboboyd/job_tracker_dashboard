@@ -1,4 +1,4 @@
-import type { StatusKey } from "src/entities/application/model/status";
+import type { StatusKey } from "src/entities/application";
 import type { LoopPlatform } from "src/entities/loop/model";
 
 /**

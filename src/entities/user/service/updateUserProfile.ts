@@ -1,7 +1,7 @@
 import { updateProfile } from "firebase/auth";
 import { getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
-import { auth } from "src/shared/config/firebase/firebase";
+import { auth } from "src/shared/config/firebase/auth";
 
 import { makeDefaultProfile } from "../lib/defaultProfile";
 import { normalizeProfile } from "../lib/normalizeProfile";

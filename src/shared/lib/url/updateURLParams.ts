@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import type { Location, NavigateFunction } from "react-router-dom";
 
 type Updates = Record<string, string | number | boolean | null | undefined>;
@@ -19,7 +18,7 @@ export function updateURLParams(
   navigate: NavigateFunction,
   location: Location,
   updates: Updates,
-  options: Options = { replace: true }
+  options: Options = { replace: true },
 ) {
   const sp = new URLSearchParams(location.search);
 
@@ -38,11 +37,11 @@ export function updateURLParams(
   }
 
   const nextSearch = sp.toString();
-  navigate(
+  void navigate(
     {
       pathname: location.pathname,
       search: nextSearch ? `?${nextSearch}` : "",
     },
-    { replace: options.replace ?? true }
+    { replace: options.replace ?? true },
   );
 }

@@ -10,11 +10,63 @@
   :root {
     color-scheme: light;
   }
+
   html,
   body {
     height: 100%;
     margin: 0;
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
+  /* Smooth scrolling for in-page anchors */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better default focus ring */
+  :focus-visible {
+    outline: 2px solid rgb(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Trello-like mobile DnD stability (especially iOS Safari):
+     while dragging we lock the page and disable touch gestures that would steal the stream. */
+  body.dnd-dragging {
+    touch-action: none;
+    -webkit-overflow-scrolling: auto;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbars but keep scrollability (Trello-like). */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* iOS Safari momentum scrolling for nested scroll containers */
+  [data-board-lane-scroll="1"],
+  [data-board-columns-scroll="1"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent rubber-banding from leaking to the page when scrolling lanes/board */
+  [data-board-lane-scroll="1"] {
+    overscroll-behavior: contain;
+  }
+
+  /* Respect iOS safe areas (notches) without breaking desktop layouts */
+  .safe-px {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .safe-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

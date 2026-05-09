@@ -5,29 +5,30 @@
   --primary: 248 250 252;
   --primary-foreground: 15 23 42;
 
-  --secondary: 30 40% 96%;
-  --secondary-foreground: 30 30% 35%;
+  --secondary: 30 41 59;
+  --secondary-foreground: 226 232 240;
 
   --accent: 51 65 85;
   --accent-foreground: 248 250 252;
 
-  --warning: 11 70% 92%;
-  --warning-foreground: 11 70% 45%;
+  --card: 30 41 59;
+  --card-foreground: 248 250 252;
 
-  --warning: 146 90 60;
-  --warning-foreground: 254 243 199;
+  --popover: 15 23 42;
+  --popover-foreground: 248 250 252;
 
   --border: 51 65 85;
   --input: 51 65 85;
+  --ring: 148 163 184;
 
-  --success: 152 45% 90%;
-  --success-foreground: 152 55% 32%;
+  --success: 22 163 74;
+  --success-foreground: 240 253 244;
 
-  --warning: 248 50% 92%;
-  --warning-foreground: 248 55% 38%;
+  --warning: 217 119 6;
+  --warning-foreground: 255 251 235;
 
-  --info: 37 99 235;
-  --info-foreground: 224 231 255;
+  --info: 59 130 246;
+  --info-foreground: 239 246 255;
 
   --destructive: 239 68 68;
   --destructive-foreground: 248 250 252;
@@ -35,7 +36,7 @@
   --muted: 51 65 85;
   --muted-foreground: 203 213 225;
 
-    /* status colors (LIGHT) */
+  /* status colors (DARK) */
   --status-info: 37 99 235;     /* blue-500   ACTIVE */
   --status-purple: 124 58 237;   /* violet-500 INTERVIEW */
   --status-warning: 217 119 6;  /* amber-500  OFFER */

@@ -1,4 +1,4 @@
-import type { Loop } from "src/entities/loop/model";
+import type { Loop } from "../../model";
 
 export function provideLoopListTags(items?: Loop[]) {
   return items

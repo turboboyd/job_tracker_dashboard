@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import { loadTranslations } from "src/shared/config/i18n/loadTranslations";
+import { loadTranslations } from "src/shared/config/i18n";
 import { PageHeader, PageShell } from "src/shared/ui";
 
 import { SettingsSidebar } from "./SettingsSidebar";

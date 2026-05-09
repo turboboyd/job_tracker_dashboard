@@ -1,19 +1,19 @@
 {
-  "badge": "Jobsuche-Loop",
-  "goToDashboard": "Zum Dashboard",
+  "badge": "System für die Jobsuche",
+  "goToDashboard": "Zur Übersicht",
   "signIn": "Anmelden",
   "viewResources": "Ressourcen & Tipps",
   "createAccount": "Konto erstellen",
   "learnMore": "Mehr erfahren",
   "title2": "Systematische Jobsuche",
   "title2b": "statt 100 Tabs",
-  "subtitle2": "Ein Szenario → Plattform-Links → gespeicherte Matches → Pipeline",
+  "subtitle2": "Ein Szenario → Plattform-Links → gespeicherte Stellen → Bewerbungsstatus",
 
   "stats": {
     "organized": {
       "label": "Ordnung",
       "value": "Alles an einem Ort",
-      "hint": "Jobs, Status, Notizen, Links"
+      "hint": "Stellen, Status, Notizen, Links"
     },
     "speed": {
       "label": "Tempo",
@@ -30,20 +30,20 @@
   "features": {
     "track": {
       "title": "Bewerbungen ohne Chaos verfolgen",
-      "text": "Speichere Jobs, behalte Links, verfolge Status und Deadlines. Alles bleibt an einem Ort statt in Lesezeichen zu verschwinden.",
+      "text": "Speichere Stellen, behalte Links, verfolge Status und Fristen. Alles bleibt an einem Ort statt in Lesezeichen zu verschwinden.",
       "p1": "Status und Änderungshistorie",
       "p2": "Notizen und Gesprächslinks",
       "p3": "Schnelle Suche in deiner Liste"
     },
     "links": {
       "title": "Plattform-Suchlinks für dein Szenario",
-      "text": "Erstelle Filter einmal und erhalte fertige Links für verschiedene Plattformen. Loop aktualisieren → Suchen aktualisieren.",
+      "text": "Erstelle Filter einmal und erhalte fertige Links für verschiedene Plattformen. Suchlauf aktualisieren → Suchen aktualisieren.",
       "p1": "Ein Filtersatz für viele Seiten",
-      "p2": "Filter werden im Loop gespeichert",
+      "p2": "Filter werden im Suchlauf gespeichert",
       "p3": "Flexibel, erweiterbar"
     },
     "pipeline": {
-      "title": "Funnel + Prozesskontrolle",
+      "title": "Bewerbungsstatus und Prozesskontrolle",
       "text": "Sieh, wo Zeit verloren geht: wie viele Saves, Bewerbungen, Antworten, Interviews. Verbessere die Strategie mit echten Zahlen.",
       "p1": "Klare Struktur nach Phasen",
       "p2": "Fokus auf die nächste Aktion",
@@ -53,9 +53,9 @@
 
   "preview": {
     "title": "So sieht es im echten Leben aus",
-    "sub": "Szenario → Links → Matches → Status",
+    "sub": "Szenario → Links → Stellen → Status",
     "tag": "Demo",
-    "loop": "Loop",
+    "loop": "Suchlauf",
     "loopTitle": "Fachinformatiker AE • React • Frankfurt",
     "badge1": "Radius: 30 km",
     "badge2": "Modus: hybrid",
@@ -63,7 +63,7 @@
     "badge4": "Sprache: de/en",
     "links": "Plattform-Links",
     "open": "Öffnen",
-    "pipeline": "Pipeline",
+    "pipeline": "Bewerbungsstatus",
     "saved": "Gespeichert",
     "applied": "Beworben",
     "interview": "Interview"
@@ -82,12 +82,12 @@
     "sub": "Ein kleines System schlägt Motivation.",
     "stepLabel": "Schritt",
     "micro": "Einfach halten. Täglich bleiben.",
-    "note": "Starte mit einem Loop. Verbessere ihn nach 3 Tagen.",
+    "note": "Starte mit einem Suchlauf. Verbessere ihn nach 3 Tagen.",
     "extra": "Später kannst du jederzeit erweitern: mehr Plattformen, mehr Filter, mehr Stufen.",
     "resources": "Spickzettel & Guides",
-    "createLoop": "Ersten Loop erstellen",
+    "createLoop": "Ersten Suchlauf erstellen",
     "s1": {
-      "title": "Erstelle deinen Loop in 60 Sekunden",
+      "title": "Erstelle deinen Suchlauf in 60 Sekunden",
       "text": "Rolle, Ort, Format, Keywords wählen – fertig."
     },
     "s2": {
@@ -95,8 +95,8 @@
       "text": "Ein Klick pro Plattform – gleiche Filter überall."
     },
     "s3": {
-      "title": "Matches speichern und Status bewegen",
-      "text": "Behalte im Blick, was du gespeichert, wo du dich beworben und wo du Rückmeldung bekommen hast."
+      "title": "Stellen speichern und Status ändern",
+      "text": "Behalte im Blick, was du gespeichert hast, wo du dich beworben hast und wo du Rückmeldung bekommen hast."
     }
   },
 

@@ -1,6 +1,6 @@
 import { addDoc } from "firebase/firestore";
 
-import { userLoopsCol } from "src/shared/api/firestoreRefs";
+import { userLoopsCol } from "src/shared/api";
 
 import type { CreateLoopInput } from "../../loopApi.types";
 import { cleanLoopCreate } from "../../mappers/loopApi.mappers";

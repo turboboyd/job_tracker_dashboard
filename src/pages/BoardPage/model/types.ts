@@ -1,4 +1,4 @@
-import type { BoardColumnKey } from "src/entities/application/model/status";
+import type { BoardColumnKey } from "src/entities/application";
 import type { LoopMatch } from "src/entities/loopMatch";
 
 export const BOARD_DND_MIME = "application/x-match";

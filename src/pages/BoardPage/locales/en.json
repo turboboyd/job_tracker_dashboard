@@ -1,7 +1,19 @@
 {
   "dropHere": "Drop matches here.",
+  "delete": "Delete",
+  "deleteConfirm": "Delete this job from the board?",
   "empty": "No matches yet.",
   "loading": "Loading matches…",
+  "openLink": "Open link",
+  "column": {
+    "ACTIVE": "Active",
+    "INTERVIEW": "Interview",
+    "OFFER": "Offer",
+    "HIRED": "Hired",
+    "REJECTED": "Rejected",
+    "NO_RESPONSE": "No response",
+    "ARCHIVED": "Archived"
+  },
   "status.applied": "Applied",
   "status.interview": "Interview",
   "status.new": "New",

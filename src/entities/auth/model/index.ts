@@ -12,6 +12,7 @@ export {
   selectAuthLoading,
   selectAuthError,
   selectAuthErrorCode,
+  selectAuthErrorObject,
   type StateWithAuth,
 } from "./authSelectors";
 
@@ -25,7 +26,3 @@ export {
   signUpWithEmail,
   signOutThunk,
 } from "./authThunks";
-
-export { useAuthActions, useAuthSelectors } from "./hooks";
-
-export { useAuthRedirect } from "./useAuthRedirect/useAuthRedirect";

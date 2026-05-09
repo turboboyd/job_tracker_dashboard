@@ -1,4 +1,4 @@
-import { baseApi } from "src/shared/api/rtk/baseApi";
+import { baseApi } from "src/shared/api/rtk";
 
 import { buildLoopEndpoints } from "./endpoints/loop.endpoints";
 

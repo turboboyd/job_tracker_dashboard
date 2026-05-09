@@ -1,25 +1,54 @@
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-import type { LoopPlatform } from "src/entities/loop/model";
-import { PLATFORM_REGISTRY } from "src/entities/loop/model/platformRegistry";
+import { PLATFORM_REGISTRY } from "src/entities/loop/model";
 
-const knownPlatforms = new Set<string>(PLATFORM_REGISTRY.map((p) => p.id));
+const MATCH_META_SEPARATOR = " / ";
+const knownPlatforms = new Set<string>(
+  PLATFORM_REGISTRY.map((platform) => platform.id),
+);
 
-export function normalizePlatform(p: unknown): LoopPlatform | "" {
-  if (typeof p !== "string") return "";
-  const v = p.trim().toLowerCase();
-  if (!v) return "";
-  if (!knownPlatforms.has(v)) return "";
-  return v;
+export function normalizePlatform(platform: unknown): string {
+  if (typeof platform !== "string") return "";
+
+  const normalized = platform.trim().toLowerCase();
+  if (!normalized) return "";
+  if (!knownPlatforms.has(normalized)) return "";
+
+  return normalized;
+}
+
+export function formatPlatformLabel(platform: unknown): string {
+  const normalized = normalizePlatform(platform);
+  return normalized ? normalized.toUpperCase() : "";
 }
 
 export function formatMatchedAt(iso: string): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
 
-  const yyyy = String(d.getFullYear());
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+
+  const yyyy = String(date.getFullYear());
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
 
   return `${dd}.${mm}.${yyyy}`;
+}
+
+function toMetaPart(part: unknown): string {
+  if (typeof part === "string") {
+    return part.trim();
+  }
+
+  if (
+    typeof part === "number" ||
+    typeof part === "boolean" ||
+    typeof part === "bigint"
+  ) {
+    return String(part).trim();
+  }
+
+  return "";
+}
+
+export function buildMatchMeta(parts: readonly unknown[]): string {
+  return parts.map(toMetaPart).filter(Boolean).join(MATCH_META_SEPARATOR);
 }

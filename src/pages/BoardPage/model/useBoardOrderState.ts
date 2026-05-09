@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { BoardColumnKey } from "src/entities/application/model/status";
+import type { BoardColumnKey } from "src/entities/application";
 import type { LoopMatch } from "src/entities/loopMatch";
 
 import { createEmptyOrder, ensureIdsExist, loadOrder, saveOrder } from "./order";

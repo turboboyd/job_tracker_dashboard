@@ -2,7 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import type { LoopMatch } from "src/entities/loopMatch";
-import { formatMatchedAt, normalizePlatform } from "src/entities/loopMatch";
+import { formatMatchedAt, formatPlatformLabel } from "src/entities/loopMatch";
 import { Card } from "src/shared/ui";
 
 import { MetaRow } from "./MetaRow";
@@ -19,10 +19,7 @@ export function MatchDetailsMetaCard({ match, loopName }: Props) {
     return match.matchedAt ? formatMatchedAt(match.matchedAt) : "";
   }, [match.matchedAt]);
 
-  const platform = React.useMemo(() => {
-    const p = normalizePlatform(match.platform);
-    return p ? p.toUpperCase() : "";
-  }, [match.platform]);
+  const platform = React.useMemo(() => formatPlatformLabel(match.platform), [match.platform]);
 
   return (
     <Card variant="default" padding="md" shadow="sm" className="w-full">

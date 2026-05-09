@@ -1,10 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import {
-  AppRoutes,
-  RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
 
 interface Tab {
   to: string;
@@ -25,7 +22,11 @@ const tabs: Tab[] = [
     labelKey: "tabs.analytics",
     fallback: "Analytics",
   },
-
+  {
+    to: RoutePath[AppRoutes.DASHBOARD_CALENDAR],
+    labelKey: "tabs.calendar",
+    fallback: "Calendar",
+  },
   {
     to: RoutePath[AppRoutes.DASHBOARD_ACTIVITY],
     labelKey: "tabs.activity",
@@ -34,10 +35,10 @@ const tabs: Tab[] = [
 ];
 
 export function DashboardTabsNav() {
-   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
+  const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-0.5 border-b border-border -mb-px">
       {tabs.map((tab) => (
         <NavLink
           key={tab.to}
@@ -45,10 +46,11 @@ export function DashboardTabsNav() {
           {...(tab.end !== undefined ? { end: tab.end } : {})}
           className={({ isActive }) =>
             [
-              "rounded-full border px-3 py-1 text-xs font-medium transition",
+              "relative px-3 py-2 text-sm font-medium transition-colors duration-150",
+              "border-b-2 -mb-px",
               isActive
-                ? "border-foreground/30 bg-muted text-foreground"
-                : "border-border text-muted-foreground hover:bg-muted/60",
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
             ].join(" ")
           }
         >

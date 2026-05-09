@@ -1,4 +1,4 @@
-import { BOARD_COLUMNS_LIST, getBoardColumn, type BoardColumnKey } from "src/entities/application/model/status";
+import { BOARD_COLUMNS_LIST, getBoardColumn, type BoardColumnKey } from "src/entities/application";
 import type { LoopMatch } from "src/entities/loopMatch";
 
 

@@ -3,6 +3,15 @@
   "go": "Go",
   "done": "Done",
   "close": "Close",
+  "applicationReminder": {
+    "title": "Application reminder",
+    "untitled": "Untitled application",
+    "noCompany": "No company",
+    "nextStepTitle": "Next step",
+    "digestTitle": "Today's application plan",
+    "digestBody": "{{count}} planned application actions today",
+    "digestMore": "+{{count}} more"
+  },
   "nav": {
     "overview": "Overview",
     "myLoops": "My loops",

@@ -1,4 +1,4 @@
-import type { CanonicalFilters, RemoteMode } from "src/entities/loop/model";
+import type { CanonicalFilters, RemoteMode } from "../../model";
 
 export interface LoopLike {
   titles: string[];

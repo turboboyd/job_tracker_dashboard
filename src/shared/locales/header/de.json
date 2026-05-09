@@ -1,0 +1,22 @@
+{
+  "appName": "Job-Tracker",
+  "accountSettings": "Kontoeinstellungen",
+  "home": "Start",
+  "resources": "Ressourcen",
+  "about": "Über",
+  "dashboard": "Übersicht",
+  "jobs": "Stellen",
+  "notifications": {
+    "title": "Erinnerungen",
+    "overdue": "Überfällig",
+    "upcoming": "Anstehend",
+    "empty": "Alles im Griff — keine offenen Erinnerungen.",
+    "open": "Bewerbung öffnen",
+    "done": "Erledigt",
+    "snooze": "Verschieben",
+    "in1Hour": "In 1 Stunde",
+    "in3Hours": "In 3 Stunden",
+    "tomorrow9": "Morgen 09:00",
+    "doneComment": "Erinnerung erledigt"
+  }
+}

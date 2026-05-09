@@ -1,7 +1,44 @@
-import type { PLATFORM_REGISTRY } from "./platformRegistry";
-
 export type RemoteMode = "any" | "remote_only";
 export type ValidationResult = { ok: true } | { ok: false; message: string };
+export const LOOP_PLATFORM_VALUES = [
+  "linkedin",
+  "indeed",
+  "stepstone",
+  "xing",
+  "arbeitsagentur",
+  "jobvector",
+  "joblift",
+  "kimeta",
+  "meinestadt",
+  "stellenanzeigen",
+  "monster",
+  "jobware",
+  "gigajob",
+  "jooble",
+  "adzuna",
+  "glassdoor",
+  "germantechjobs",
+  "honeypot",
+  "instaffo",
+  "wellfound",
+  "getinit",
+  "wearedevelopers",
+  "devjobs",
+  "arbeitnow",
+  "remoteok",
+  "weworkremotely",
+  "remotive",
+  "azubide",
+  "ausbildungde",
+  "azubiyo",
+  "praktikuminfo",
+  "ihk",
+  "github",
+  "levels",
+  "other",
+] as const;
+
+export type LoopPlatform = (typeof LOOP_PLATFORM_VALUES)[number];
 
 export interface Loop {
   id: string;
@@ -53,11 +90,9 @@ export interface SearchFilters {
 export type PlatformGroupId = "germany" | "tech" | "remote" | "ausbildung";
 
 export interface PlatformMeta {
-  id: string;
+  id: LoopPlatform;
   label: string;
   group: "recommended" | PlatformGroupId;
   recommended: boolean;
   buildUrl: (f: SearchFilters) => string;
 }
-
-export type LoopPlatform = (typeof PLATFORM_REGISTRY)[number]["id"];

@@ -2,9 +2,10 @@
   "common": {
     "loading": "Laden…",
     "status": "Status",
-    "details": "Details",
+    "details": "Einzelheiten",
     "edit": "Bearbeiten",
     "delete": "Löschen",
+    "openLink": "Link öffnen",
     "cancel": "Abbrechen",
     "save": "Speichern"
   },
@@ -17,9 +18,9 @@
     "rejected": "Abgelehnt"
   },
   "list": {
-    "title": "Matches",
-    "subtitle": "Alle Matches über all deine Loops.",
-    "empty": "Noch keine Matches."
+    "title": "Treffer",
+    "subtitle": "Alle Treffer aus deinen Suchläufen.",
+    "empty": "Noch keine Treffer."
   },
   "filters": {
     "showing": "{{filtered}} von {{total}} angezeigt",
@@ -36,13 +37,13 @@
         "companyAsc": "Firma A→Z"
       }
     },
-    "loops": { "label": "Loops", "all": "Alle Loops", "loading": "Laden…" },
+    "loops": { "label": "Suchläufe", "all": "Alle Suchläufe", "loading": "Laden…" },
     "platforms": { "label": "Plattformen", "all": "Alle Plattformen" },
     "statuses": { "label": "Status", "all": "Alle Status" },
     "chips": {
       "search": "Suche: {{q}}",
       "sort": "Sortieren: {{value}}",
-      "loops": "Loops: {{value}}",
+      "loops": "Suchläufe: {{value}}",
       "platforms": "Plattformen: {{value}}",
       "statuses": "Status: {{value}}"
     },
@@ -52,8 +53,8 @@
     }
   },
   "modal": {
-    "editTitle": "Match bearbeiten",
-    "loop": "Loop: {{name}}",
+    "editTitle": "Treffer bearbeiten",
+    "loop": "Suchlauf: {{name}}",
     "fields": {
       "title": "Titel",
       "company": "Firma",
@@ -64,22 +65,30 @@
     }
   },
   "details": {
-    "title": "Match",
-    "subtitle": "Vollständige Match-Details.",
+    "untitled": "Treffer",
+    "title": "Treffer",
+    "subtitle": "Vollständige Angaben zum Treffer.",
     "back": "Zurück",
     "backToFiltered": "Zurück zur Filterung",
-    "allMatches": "Alle Matches",
-    "notFound": "Match nicht gefunden.",
+    "allMatches": "Alle Treffer",
+    "notFound": "Treffer nicht gefunden.",
     "openLink": "Link öffnen",
     "descriptionTitle": "Beschreibung",
     "noDescription": "Keine Beschreibung.",
     "actionsTitle": "Aktionen",
-    "metaTitle": "Details",
+    "metaTitle": "Einzelheiten",
     "fields": {
-      "loop": "Loop",
+      "loop": "Suchlauf",
       "location": "Ort",
       "platform": "Plattform",
       "matchedAt": "Datum"
     }
+  },
+  "fields": {
+    "loop": "Suchlauf",
+    "location": "Ort",
+    "platform": "Plattform",
+    "matchedAt": "Datum",
+    "description": "Beschreibung"
   }
 }

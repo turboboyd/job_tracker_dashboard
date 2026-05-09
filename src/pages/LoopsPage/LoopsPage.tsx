@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { useAuthSelectors } from "src/entities/auth";
+import { useAuthSelectors } from "src/features/auth/model";
 import { Button } from "src/shared/ui";
 
 import { CardText, Header } from "./components/Header";

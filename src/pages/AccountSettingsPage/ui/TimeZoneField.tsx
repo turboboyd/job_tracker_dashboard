@@ -1,10 +1,9 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { FormField } from "src/shared/ui/Form/FormField/FormField";
-import { Select } from "src/shared/ui/Form/Select/Select";
+import { FormField, Select } from "src/shared/ui";
 
-import type { TimeZoneOption } from "./PreferencesSection";
+import type { TimeZoneOption } from "./preferences.types";
 
 interface Props {
   value: string;

@@ -1,6 +1,6 @@
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-import { storage } from "src/shared/config/firebase/firebase";
+import { storage } from "src/shared/config/firebase/storage";
 
 export async function uploadAvatar(uid: string, file: File): Promise<string> {
   const path = `avatars/${uid}/${Date.now()}_${file.name}`;

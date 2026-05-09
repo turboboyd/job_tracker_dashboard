@@ -30,8 +30,12 @@ export function BoardMatchCard({ match, loopName, busy, onDelete, index }: Props
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.25 : 1,
+    // Prevent "snap back"/jitter while dragging (especially noticeable on Safari).
+    transition: isDragging ? undefined : transition,
+    opacity: isDragging ? 0.35 : 1,
+    // iOS Safari: prevent callout/selection while long-pressing.
+    WebkitTouchCallout: "none",
+    WebkitUserSelect: "none",
   };
 
   return (
@@ -40,7 +44,12 @@ export function BoardMatchCard({ match, loopName, busy, onDelete, index }: Props
       style={style}
       // Mobile: keep vertical scroll usable while still allowing drag after long-press.
       className={classNames(
-        "select-none touch-pan-y touch-manipulation md:touch-none",
+        // IMPORTANT for iOS Safari:
+        // - while dragging, disable browser scrolling/gesture handling on the draggable
+        //   element (otherwise pointer events can get "lost" and the drag feels broken).
+        // - when not dragging, allow normal vertical scrolling inside lanes.
+        "select-none touch-manipulation",
+        isDragging ? "touch-none pointer-events-none" : "touch-pan-y",
         isDragging && "z-10",
       )}
       {...attributes}

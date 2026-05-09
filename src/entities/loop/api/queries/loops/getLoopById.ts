@@ -1,6 +1,6 @@
 import { getDoc } from "firebase/firestore";
 
-import { userLoopDoc } from "src/shared/api/firestoreRefs";
+import { userLoopDoc } from "src/shared/api";
 
 import type { Loop } from "../../../model";
 import { mapLoopSnap } from "../../mappers/loopApi.mappers";

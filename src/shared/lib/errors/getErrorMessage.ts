@@ -1,50 +1,87 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, sonarjs/no-duplicate-string */
-function isNonEmptyString(v: unknown): v is string {
-  return typeof v === "string" && v.trim().length > 0;
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
-function pickFirstString(...candidates: unknown[]): string | null {
-  for (const c of candidates) {
-    if (isNonEmptyString(c)) return c;
+function pickFirstString(...candidates: readonly unknown[]): string | null {
+  for (const candidate of candidates) {
+    if (isNonEmptyString(candidate)) {
+      return candidate;
+    }
   }
+
   return null;
 }
 
 function messageFromErrorsArray(errors: unknown): string | null {
-  if (!Array.isArray(errors) || errors.length === 0) return null;
+  if (!Array.isArray(errors) || errors.length === 0) {
+    return null;
+  }
 
-  const first = errors[0];
-  if (isNonEmptyString(first)) return first;
+  const [firstError] = errors as readonly unknown[];
 
-  const firstObj = asRecord(first);
-  if (!firstObj) return null;
-  return pickFirstString(firstObj.message, firstObj.error, firstObj.detail);
+  if (isNonEmptyString(firstError)) {
+    return firstError;
+  }
+
+  const firstErrorRecord = asRecord(firstError);
+  if (!firstErrorRecord) {
+    return null;
+  }
+
+  return pickFirstString(
+    firstErrorRecord.message,
+    firstErrorRecord.error,
+    firstErrorRecord.detail,
+  );
 }
 
-export function getErrorMessage(err: unknown): string {
-  if (!err) return "Unknown error";
-  if (isNonEmptyString(err)) return err;
-  if (err instanceof Error) return err.message;
+export function getErrorMessage(error: unknown, fallback = "Unknown error"): string {
+  if (!error) {
+    return fallback;
+  }
 
-  const rec = asRecord(err);
-  if (!rec) return "Unknown error";
+  if (isNonEmptyString(error)) {
+    return error;
+  }
 
-  const data = asRecord(rec.data);
+  if (error instanceof Error) {
+    return error.message;
+  }
 
-  const fromData = data
-    ? pickFirstString(data.message, data.error, data.detail, data.title)
+  const errorRecord = asRecord(error);
+  if (!errorRecord) {
+    return fallback;
+  }
+
+  const dataRecord = asRecord(errorRecord.data);
+  const dataMessage = dataRecord
+    ? pickFirstString(
+        dataRecord.message,
+        dataRecord.error,
+        dataRecord.detail,
+        dataRecord.title,
+      )
     : null;
-  if (fromData) return fromData;
 
-  const direct = pickFirstString(rec.error, rec.message);
-  if (direct) return direct;
+  if (dataMessage) {
+    return dataMessage;
+  }
 
-  const fromArray = messageFromErrorsArray(data?.errors);
-  if (fromArray) return fromArray;
+  const directMessage = pickFirstString(errorRecord.error, errorRecord.message);
+  if (directMessage) {
+    return directMessage;
+  }
 
-  return "Unknown error";
+  const arrayMessage = messageFromErrorsArray(dataRecord?.errors);
+  if (arrayMessage) {
+    return arrayMessage;
+  }
+
+  return fallback;
 }

@@ -1,15 +1,14 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { DateFormat } from "src/entities/userSettings/api/userSettingsApi";
-import { Button } from "src/shared/ui/Button/Button";
-import { Card } from "src/shared/ui/Card/Card";
-import { SectionHeader } from "src/shared/ui/PageHeaders/PageHeaders";
+import type { DateFormat } from "src/entities/userSettings";
+import { Button, Card, SectionHeader } from "src/shared/ui";
 
 import { DateFormatField } from "./DateFormatField";
+import type { TimeZoneOption } from "./preferences.types";
 import { TimeZoneField } from "./TimeZoneField";
 
-export interface TimeZoneOption { value: string; label: string }
+export type { TimeZoneOption } from "./preferences.types";
 
 interface Props {
   title: string;

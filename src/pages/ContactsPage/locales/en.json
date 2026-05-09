@@ -1,0 +1,14 @@
+{
+  "contacts": {
+    "title": "Contacts",
+    "subtitle": "Recruiters, HR managers and hiring managers you've connected with.",
+    "searchPlaceholder": "Search by name, company, email…",
+    "addContact": "New contact",
+    "noContacts": "No contacts yet",
+    "noContactsHint": "Add recruiters, HR managers or hiring managers you've spoken with.",
+    "editContact": "Edit contact",
+    "createContact": "New contact",
+    "archiveContact": "Archive",
+    "unlink": "Unlink"
+  }
+}

@@ -12,6 +12,13 @@ export type ModeKey = "created" | "updated";
 
 export type RangeKey = "7d" | "30d" | "90d" | "12m" | "custom";
 
+export interface CustomRangeValue {
+  from: Date;
+  to: Date;
+}
+
+export type CustomRange = CustomRangeValue | null;
+
 export interface TrendsPoint {
   date: string;
   ACTIVE: number;

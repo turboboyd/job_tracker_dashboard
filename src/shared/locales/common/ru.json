@@ -3,10 +3,19 @@
   "go": "Перейти",
   "done": "Готово",
   "close": "Закрыть",
+  "applicationReminder": {
+    "title": "Напоминание по заявке",
+    "untitled": "Заявка без названия",
+    "noCompany": "Без компании",
+    "nextStepTitle": "Следующий шаг",
+    "digestTitle": "План заявок на сегодня",
+    "digestBody": "Сегодня запланировано действий: {{count}}",
+    "digestMore": "Ещё {{count}}"
+  },
   "nav": {
     "overview": "Обзор",
-    "myLoops": "Мои циклы",
-    "board": "Доска",
+    "myLoops": "Мои поисковые циклы",
+    "board": "Доска заявок",
     "allMatches": "Все совпадения",
     "myApplications": "Мои заявки",
     "questions": "Вопросы",

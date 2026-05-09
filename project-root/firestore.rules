@@ -5,6 +5,12 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function uid() { return request.auth.uid; }
     function isSelf(userId) { return signedIn() && uid() == userId; }
+    function ownsApplication(userId) {
+      return request.resource.data.createdBy == userId;
+    }
+    function ownedExistingApplication(userId) {
+      return resource.data.createdBy == userId && ownsApplication(userId);
+    }
 
     // =========================
     // Root user doc (compat)
@@ -28,11 +34,25 @@ service cloud.firestore {
         allow read, create, update, delete: if isSelf(userId);
       }
 
+      // Notification outbox. Client may enqueue its own pending reminders;
+      // trusted backend workers use Admin SDK to send and update them.
+      match /notificationOutbox/{notificationId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.userId == userId
+          && request.resource.data.channel in ["email", "google_calendar"]
+          && request.resource.data.status == "pending";
+        allow update, delete: if false;
+      }
+
       // -------------------------
       // Applications (new)
       // -------------------------
       match /applications/{appId} {
-        allow read, create, update, delete: if isSelf(userId);
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId) && ownsApplication(userId);
+        allow update: if isSelf(userId) && ownedExistingApplication(userId);
+        allow delete: if false;
 
         // History subcollection (used by details page)
         match /history/{historyId} {
@@ -45,6 +65,35 @@ service cloud.firestore {
       match /cv_versions/{cvId} {
         allow read, create, update: if isSelf(userId);
         allow delete: if false;
+      }
+
+      // -------------------------
+      // CRM — Contacts
+      // -------------------------
+      match /contacts/{contactId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.createdBy == userId
+          && request.resource.data.archived == false;
+        allow update: if isSelf(userId)
+          && resource.data.createdBy == userId;
+        // Hard delete blocked — use archive flag instead
+        allow delete: if false;
+      }
+
+      // -------------------------
+      // CRM — Interactions (call/email/meeting log)
+      // -------------------------
+      match /interactions/{interactionId} {
+        allow read: if isSelf(userId);
+        allow create: if isSelf(userId)
+          && request.resource.data.createdBy == userId
+          && request.resource.data.type in ["CALL", "EMAIL", "MESSAGE", "MEETING", "OTHER"]
+          && request.resource.data.direction in ["INBOUND", "OUTBOUND"];
+        allow update: if isSelf(userId)
+          && resource.data.createdBy == userId;
+        allow delete: if isSelf(userId)
+          && resource.data.createdBy == userId;
       }
 
       match /private/{docId} {
@@ -66,6 +115,11 @@ service cloud.firestore {
     match /publicStats/{docId} {
       allow read: if true;
       allow write: if false;
+    }
+
+    // Backend-only OAuth token storage. Admin SDK bypasses rules.
+    match /googleCalendarConnections/{userId} {
+      allow read, write: if false;
     }
   }
 }

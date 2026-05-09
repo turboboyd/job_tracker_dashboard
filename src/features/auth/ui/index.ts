@@ -1,10 +1,8 @@
-export { LoginForm } from "./LoginForm/LoginForm";
-export { RegisterForm } from "./RegisterForm/RegisterForm";
-export { LogoutButton } from "./LogoutButton/LogoutButton";
-export { GoogleSignInButton } from "./GoogleSignInButton/GoogleSignInButton";
-export { EmailPasswordAuthForm } from "./EmailPasswordAuthForm/EmailPasswordAuthForm";
-export { AuthDivider } from "./AuthDivider";
-
-////
-export { AuthFormShell, type AuthFormShellProps } from "./AuthFormShell";
+export { LoginForm, type LoginFormProps } from "./LoginForm/LoginForm";
+export { RegisterForm, type RegisterFormProps } from "./RegisterForm/RegisterForm";
+export { LogoutButton, type LogoutButtonProps } from "./LogoutButton/LogoutButton";
 export { AuthPageShell, type AuthPageShellProps } from "./AuthPageShell";
+export {
+  AuthPageFooterLinks,
+  type AuthPageFooterLinksProps,
+} from "./AuthPageFooterLinks";

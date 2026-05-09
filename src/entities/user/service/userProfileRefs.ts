@@ -1,6 +1,6 @@
 import { doc } from "firebase/firestore";
 
-import { db } from "src/shared/config/firebase/firebase";
+import { db } from "src/shared/config/firebase/firestore";
 
 export const userProfilesCollection = "userProfiles" as const;
 

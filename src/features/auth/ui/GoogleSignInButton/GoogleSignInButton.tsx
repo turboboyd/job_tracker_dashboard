@@ -2,14 +2,13 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
-import { useAuthActions, useAuthSelectors } from "src/entities/auth";
-import { Button } from "src/shared/ui";
-import { GoogleIcon } from "src/shared/ui/icons/GoogleIcon";
+import { Button, GoogleIcon } from "src/shared/ui";
 
 import {
   type AuthRedirectLocationState,
   getAuthRedirectFrom,
 } from "../../lib/authRedirect";
+import { useAuthActions, useAuthSelectors } from "../../model";
 
 export interface GoogleSignInButtonProps {
   onSuccess?: (from: string) => void;
@@ -28,7 +27,6 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
   const onClick = async () => {
     clearAuthError();
-
 
     try {
       await signInWithGoogle();

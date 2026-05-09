@@ -1,14 +1,13 @@
 import React from "react";
 
-import { useAuthSelectors } from "src/entities/auth";
 import {
   useDeleteMatchMutation,
   useUpdateMatchMutation,
   useUpdateMatchStatusMutation,
 } from "src/entities/loopMatch";
 import type { LoopMatchStatus, UpdateMatchInput } from "src/entities/loopMatch";
-import { notify } from "src/shared/lib";
-import { getErrorMessage } from "src/shared/lib/errors";
+import { useAuthSelectors } from "src/features/auth/model";
+import { getErrorMessage, notify } from "src/shared/lib";
 
 /**
  * All match mutations.

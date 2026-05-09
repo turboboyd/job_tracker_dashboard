@@ -1,5 +1,5 @@
-import type { SearchFilters, LoopPlatform } from "src/entities/loop/model";
-import { buildUrlByPlatform } from "src/entities/loop/model/";
+import type { LoopPlatform, SearchFilters } from "../../model";
+import { buildUrlByPlatform } from "../../model";
 
 export interface SearchLink { platform: LoopPlatform; url: string }
 

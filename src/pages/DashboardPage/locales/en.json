@@ -5,12 +5,28 @@
   "tabs": {
     "overview": "Overview",
     "analytics": "Analytics",
+    "calendar": "Calendar",
     "optimization": "Optimization",
     "activity": "Activity"
   },
   "common": {
     "go": "Go",
-    "done": "Done"
+    "done": "Done",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "noValue": "-"
+  },
+  "board": {
+    "column": {
+      "ACTIVE": "Active",
+      "INTERVIEW": "Interview",
+      "OFFER": "Offer",
+      "HIRED": "Hired",
+      "REJECTED": "Rejected",
+      "NO_RESPONSE": "No response",
+      "ARCHIVED": "Archived"
+    }
   },
   "onboarding": {
     "setupProfile": "Setup profile",
@@ -35,7 +51,11 @@
     "7d": "7d",
     "30d": "30d",
     "90d": "90d",
-    "12m": "12m"
+    "12m": "12m",
+    "custom": "Custom",
+    "customTitle": "Custom period",
+    "from": "From",
+    "to": "To"
   },
   "status": {
     "new": "New",
@@ -48,6 +68,8 @@
   },
   "pipeline": {
     "title": "Applications pipeline",
+    "chartTitle": "Applications",
+    "total": "Total",
     "totalLabel": "In pipeline",
     "centerBottom": "of {{total}} total",
     "profileCta": {
@@ -87,12 +109,43 @@
       "yearsAgo": "{{count}}y ago"
     }
   },
+  "plan": {
+    "title": "Application plan",
+    "count": "{{count}} planned",
+    "empty": "No planned application actions yet.",
+    "emptyFilter": "No actions in this view.",
+    "filter": {
+      "all": "All",
+      "overdue": "Overdue",
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    }
+  },
+  "calendar": {
+    "week": "Week",
+    "today": "Today",
+    "dayAgenda": "Day plan",
+    "exportDay": "Export day",
+    "reason": "Reason",
+    "applicationLink": "Application link",
+    "overdue": "Overdue",
+    "emptyDay": "No actions planned for this day.",
+    "emptyOverdue": "No overdue actions.",
+    "summary": {
+      "day": "Selected day",
+      "week": "This week",
+      "overdue": "Overdue"
+    }
+  },
   "stats": {
     "title": "Statistics",
     "empty": {
       "title": "Add your first job",
       "subtitle": "Once you add matches, you'll see your pipeline statistics here.",
       "cta": "Add job"
+    },
+    "error": {
+      "title": "Could not load jobs"
     }
   },
   "trends": {
@@ -142,6 +195,7 @@
     "kpi": {
       "appliedToInterview": "Applied → Interview",
       "interviewToOffer": "Interview → Offer",
+      "offerToHired": "Offer → Hired",
       "medianToInterview": "Median to Interview",
       "medianToOffer": "Median to Offer",
       "stale": "Needs attention"

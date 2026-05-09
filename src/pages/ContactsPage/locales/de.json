@@ -1,0 +1,14 @@
+{
+  "contacts": {
+    "title": "Kontakte",
+    "subtitle": "Recruiter, HR-Manager und Hiring Manager, mit denen Sie in Kontakt stehen.",
+    "searchPlaceholder": "Nach Name, Unternehmen, E-Mail suchen…",
+    "addContact": "Neuer Kontakt",
+    "noContacts": "Noch keine Kontakte",
+    "noContactsHint": "Fügen Sie Recruiter oder HR-Manager hinzu, mit denen Sie gesprochen haben.",
+    "editContact": "Kontakt bearbeiten",
+    "createContact": "Neuer Kontakt",
+    "archiveContact": "Archivieren",
+    "unlink": "Verknüpfung aufheben"
+  }
+}

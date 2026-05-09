@@ -8,7 +8,7 @@ import {
   startAfter,
 } from "firebase/firestore";
 
-import { userLoopDoc, userLoopsCol } from "src/shared/api/firestoreRefs";
+import { userLoopDoc, userLoopsCol } from "src/shared/api";
 
 import type { Loop } from "../../../model";
 import { mapLoopDoc } from "../../mappers/loopApi.mappers";

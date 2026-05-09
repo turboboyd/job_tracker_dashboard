@@ -5,9 +5,12 @@ export {
 } from "./api/userSettingsApi";
 
 export type {
+  ApplicationReminderNotificationSettings,
   DateFormat,
+  NotificationSettings,
+  UiLanguage,
   UserSettings,
   PipelineConfig,
   PipelineStage,
   PipelineSubStatus,
-} from "./api/userSettingsApi";
+} from "./model/types";

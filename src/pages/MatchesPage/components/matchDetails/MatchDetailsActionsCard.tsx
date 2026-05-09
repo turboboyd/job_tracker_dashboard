@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 
 import type { LoopMatch, LoopMatchStatus } from "src/entities/loopMatch";
-import { Button, Card } from "src/shared/ui";
+import { Button } from "src/shared/ui";
 
+import { MatchDetailsPanel } from "./MatchDetailsPanel";
 import { StatusSelect } from "./StatusSelect";
 
 interface Props {
@@ -23,11 +24,7 @@ export function MatchDetailsActionsCard({
   const { t } = useTranslation();
 
   return (
-    <Card variant="default" padding="md" shadow="sm" className="w-full">
-      <div className="text-base font-semibold text-foreground">
-        {t("matches.details.actionsTitle")}
-      </div>
-
+    <MatchDetailsPanel title={t("matches.details.actionsTitle")}>
       <div className="mt-md flex flex-col gap-md">
         <StatusSelect
           value={match.status}
@@ -58,6 +55,6 @@ export function MatchDetailsActionsCard({
           </Button>
         </div>
       </div>
-    </Card>
+    </MatchDetailsPanel>
   );
 }

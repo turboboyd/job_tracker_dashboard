@@ -1,39 +1,17 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 
 import type { SupportedLng } from "src/shared/config/i18n/i18n";
-import { Select, type SelectOption } from "src/shared/ui/Form/Select/Select";
+
+import { Select, type SelectOption } from "../../Form/Select/Select";
 
 import { LANGUAGES } from "./languages";
+import type { LanguageSelectProps } from "./languageSelect.types";
 
-export type LanguageLabelMode = "short" | "full";
-
-export interface LanguageItem<L extends string> {
-  code: L;
-  shortLabel: string;
-  fullLabel: string;
-  disabled?: boolean;
-}
-
-export interface LanguageSelectProps<L extends string> {
-  labelMode?: LanguageLabelMode;
-
-  /** Текущее значение (controlled) */
-  value: L;
-
-  /** onChange для controlled компонента */
-  onChange: (next: L) => void;
-
-  disabled?: boolean;
-  className?: string;
-
-  size?: "sm" | "md" | "lg";
-  radius?: "md" | "lg" | "xl";
-  width?: "full" | "auto";
-  intent?: "default" | "error" | "success" | "warning";
-  shadow?: "none" | "sm" | "md";
-
-  placeholder?: React.ReactNode;
-}
+export type {
+  LanguageItem,
+  LanguageLabelMode,
+  LanguageSelectProps,
+} from "./languageSelect.types";
 
 export function LanguageSelect({
   labelMode = "short",
@@ -50,10 +28,10 @@ export function LanguageSelect({
 }: LanguageSelectProps<SupportedLng>) {
   const options: SelectOption<SupportedLng>[] = useMemo(
     () =>
-      LANGUAGES.map((l) => ({
-        value: l.code,
-        label: labelMode === "short" ? l.shortLabel : l.fullLabel,
-        ...(l.disabled !== undefined ? { disabled: l.disabled } : {}),
+      LANGUAGES.map((language) => ({
+        value: language.code,
+        label: labelMode === "short" ? language.shortLabel : language.fullLabel,
+        ...(language.disabled !== undefined ? { disabled: language.disabled } : {}),
       })),
     [labelMode],
   );

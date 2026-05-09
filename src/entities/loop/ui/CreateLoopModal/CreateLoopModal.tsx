@@ -1,58 +1,25 @@
 import React, { useMemo, useState } from "react";
 
 import { getErrorMessage } from "src/shared/lib";
-import { Button, Input, Modal } from "src/shared/ui";
+import { Modal } from "src/shared/ui";
 
 import { useCreateLoopMutation } from "../../api/loopApi";
+
+import { CreateLoopFormFields } from "./createLoopModal.form";
 import {
-  DEFAULT_CANONICAL_FILTERS,
-  RECOMMENDED_PLATFORMS,
-  normalizeRoleToTitles,
-} from "../../model";
-
-interface Props {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  onCreated: (loopId: string) => void;
-}
-
-interface CreateLoopForm {
-  name: string;
-  role: string;
-  location: string;
-}
-
-function validate(form: CreateLoopForm): string | null {
-  const name = form.name.trim();
-  const role = form.role.trim();
-  const location = form.location.trim();
-
-  if (!name) return "Name is required";
-  if (name.length < 2) return "Name is too short";
-  if (name.length > 60) return "Name is too long";
-
-  if (!role) return "Position / Role is required";
-  if (role.length < 2) return "Role is too short";
-  if (role.length > 120) return "Role is too long";
-
-  if (!location) return "City / Location is required";
-  if (location.length > 80) return "Location is too long";
-
-  return null;
-}
+  buildCreateLoopInput,
+  createInitialLoopForm,
+  validateCreateLoopForm,
+} from "./createLoopModal.helpers";
+import type { CreateLoopForm, CreateLoopModalProps } from "./createLoopModal.types";
 
 export function CreateLoopModal({
   open,
   onOpenChange,
   onCreated,
-}: Props) {
+}: CreateLoopModalProps) {
   const [createLoop, st] = useCreateLoopMutation();
-
-  const initial = useMemo<CreateLoopForm>(
-    () => ({ name: "My Loop", role: "", location: "Berlin" }),
-    [],
-  );
-
+  const initial = useMemo<CreateLoopForm>(() => createInitialLoopForm(), []);
   const [form, setForm] = useState<CreateLoopForm>(initial);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,32 +35,14 @@ export function CreateLoopModal({
   async function onCreate() {
     setError(null);
 
-    const validationError = validate(form);
+    const validationError = validateCreateLoopForm(form);
     if (validationError) {
       setError(validationError);
       return;
     }
 
-    const name = form.name.trim();
-    const role = form.role.trim();
-    const location = form.location.trim();
-
     try {
-      const res = await createLoop({
-        name,
-        titles: normalizeRoleToTitles(role),
-        location,
-        radiusKm: 30,
-        remoteMode: "any",
-        platforms: RECOMMENDED_PLATFORMS,
-        filters: {
-          ...DEFAULT_CANONICAL_FILTERS,
-          role,
-          location,
-          radiusKm: 30,
-          workMode: "any",
-        },
-      }).unwrap();
+      const res = await createLoop(buildCreateLoopInput(form)).unwrap();
 
       onOpenChange(false);
       onCreated(res.id);
@@ -115,64 +64,13 @@ export function CreateLoopModal({
         </div>
       ) : null}
 
-      <div className="space-y-3">
-        <div>
-          <div className="mb-1 text-sm text-muted-foreground">Loop name</div>
-          <Input
-            value={form.name}
-            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            placeholder="My Loop"
-            disabled={disabled}
-          />
-        </div>
-
-        <div>
-          <div className="mb-1 text-sm text-muted-foreground">
-            Position / Role
-          </div>
-          <Input
-            value={form.role}
-            onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
-            placeholder="e.g. Fachinformatiker Anwendungsentwicklung"
-            disabled={disabled}
-          />
-        </div>
-
-        <div>
-          <div className="mb-1 text-sm text-muted-foreground">
-            City / Location
-          </div>
-          <Input
-            value={form.location}
-            onChange={(e) =>
-              setForm((p) => ({ ...p, location: e.target.value }))
-            }
-            placeholder="Berlin"
-            disabled={disabled}
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            shadow="sm"
-            shape="lg"
-            disabled={disabled}
-            onClick={onCreate}
-          >
-            {disabled ? "Creating..." : "Create"}
-          </Button>
-
-          <Button
-            variant="outline"
-            shape="lg"
-            disabled={disabled}
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-        </div>
-      </div>
+      <CreateLoopFormFields
+        disabled={disabled}
+        form={form}
+        onCancel={() => onOpenChange(false)}
+        onCreate={onCreate}
+        onFormChange={setForm}
+      />
     </Modal>
   );
 }

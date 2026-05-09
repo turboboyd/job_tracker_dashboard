@@ -1,18 +1,15 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import {
-  AppRoutes,
-  RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
-import { useAuthSelectors , useAuthActions } from "src/entities/auth";
-import { AuthPageShell, LoginForm } from "src/features/auth";
 import {
   type AuthRedirectLocationState,
   getAuthRedirectFrom,
-} from "src/features/auth/lib/authRedirect";
+} from "src/features/auth/lib";
+import { useAuthActions, useAuthSelectors } from "src/features/auth/model";
+import { AuthPageFooterLinks } from "src/features/auth/ui/AuthPageFooterLinks";
+import { AuthPageShell } from "src/features/auth/ui/AuthPageShell";
+import { LoginForm } from "src/features/auth/ui/LoginForm";
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -26,42 +23,27 @@ const LoginPage: React.FC = () => {
     location.state as AuthRedirectLocationState | null,
   );
 
+  const redirectToTarget = useCallback((target?: string) => {
+    void navigate(target ?? from, { replace: true });
+  }, [from, navigate]);
+
   useEffect(() => {
     clearAuthError();
   }, [clearAuthError]);
 
   useEffect(() => {
     if (isAuthReady && isAuthenticated) {
-      navigate(from, { replace: true });
+      redirectToTarget();
     }
-  }, [isAuthReady, isAuthenticated, navigate, from]);
+  }, [isAuthReady, isAuthenticated, redirectToTarget]);
 
   return (
     <AuthPageShell
       title={t("auth.loginTitle")}
       subtitle={t("auth.loginSubtitle")}
-      footer={
-        <>
-          <div>
-            {t("auth.noAccount")}{" "}
-            <Link
-              to={RoutePath[AppRoutes.REGISTER]}
-              className="text-foreground hover:underline"
-            >
-              {t("auth.createAccount")}
-            </Link>
-          </div>
-          <div>
-            <Link to={RoutePath[AppRoutes.MAIN]} className="hover:underline">
-              {t("common.backToHome")}
-            </Link>
-          </div>
-        </>
-      }
+      footer={<AuthPageFooterLinks mode="login" />}
     >
-      <LoginForm
-        onSuccess={(target) => navigate(target || from, { replace: true })}
-      />
+      <LoginForm onSuccess={redirectToTarget} />
     </AuthPageShell>
   );
 };

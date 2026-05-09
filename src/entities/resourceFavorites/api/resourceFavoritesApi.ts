@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { QueryReturnValue } from "@reduxjs/toolkit/query";
 import {
   doc,
@@ -8,11 +7,9 @@ import {
   setDoc,
 } from "firebase/firestore";
 
-import { baseApi } from "src/shared/api/rtk/baseApi";
-import { guardRtk } from "src/shared/api/rtk/guardRtk";
-import type { ApiError } from "src/shared/api/rtk/rtkError";
-import { db } from "src/shared/config/firebase/firebase";
-import { toMillisOptional } from "src/shared/lib/firestore/toMillis";
+import { baseApi, guardRtk, type ApiError, type RtkMeta } from "src/shared/api";
+import { db } from "src/shared/config/firebase/firestore";
+import { toMillisOptional } from "src/shared/lib";
 
 export interface ResourceFavorites {
   ids: string[];
@@ -81,7 +78,7 @@ export const resourceFavoritesApi = baseApi.injectEndpoints({
       { uid: string; resourceId: string }
     >({
       queryFn: ({ uid, resourceId }): Promise<
-        QueryReturnValue<ResourceFavorites, ApiError, {}>
+        QueryReturnValue<ResourceFavorites, ApiError, RtkMeta>
       > =>
         guardRtk(async () => {
           const id = resourceId.trim();

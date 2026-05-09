@@ -17,7 +17,7 @@ const paddingMap: Record<CardPadding, string> = {
   none: "",
   sm: "p-md",
   md: "p-lg",
-  lg: "p-lg sm:p-[24px]",
+  lg: "p-lg sm:p-6",
 };
 
 const shadowMap: Record<CardShadow, string> = {
@@ -29,8 +29,8 @@ const shadowMap: Record<CardShadow, string> = {
 
 const variantMap: Record<CardVariant, string> = {
   default: "bg-card text-card-foreground border border-border",
-  subtle: "bg-background text-foreground border border-border",
-  inset: "bg-muted text-foreground border border-border",
+  subtle:  "bg-background text-foreground border border-border",
+  inset:   "bg-muted/60 text-foreground border border-border/60",
 };
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -49,18 +49,17 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={classNames(
-          "rounded-lg",
+          "rounded-xl",
           variantMap[variant],
           paddingMap[padding],
           shadowMap[shadow],
           interactive &&
             classNames(
-              "transition-all duration-normal ease-ease-out",
-              "transition-shadow duration-normal ease-ease-out",
+              "cursor-pointer",
+              "transition-all duration-150 ease-ease-out",
               "motion-safe:hover:-translate-y-0.5",
               "motion-safe:hover:shadow-md",
-              "motion-safe:hover:bg-muted/40",
-              "motion-safe:hover:border-ring/30"
+              "motion-safe:hover:border-ring/40"
             ),
           className
         )}

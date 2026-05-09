@@ -1,8 +1,11 @@
-/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { useMemo } from "react";
 
-import { clamp } from "src/shared/lib/pagination/usePagination";
-import { Button } from "src/shared/ui";
+import { Button } from "../Button/Button";
+
+import {
+  buildPaginationViewModel,
+  isPaginationEllipsis,
+} from "./pagination.helpers";
 
 interface Props {
   page: number;
@@ -12,37 +15,6 @@ interface Props {
   siblingCount?: number;
 }
 
-function buildPages(page: number, totalPages: number, siblingCount: number) {
-  const pages: (number | "...")[] = [];
-
-  const safePage = clamp(page, 1, totalPages);
-  const left = Math.max(1, safePage - siblingCount);
-  const right = Math.min(totalPages, safePage + siblingCount);
-
-  const showLeftDots = left > 2;
-  const showRightDots = right < totalPages - 1;
-
-  pages.push(1);
-
-  if (showLeftDots) pages.push("...");
-  else {
-    for (let p = 2; p < left; p++) pages.push(p);
-  }
-
-  for (let p = Math.max(2, left); p <= Math.min(totalPages - 1, right); p++) {
-    pages.push(p);
-  }
-
-  if (showRightDots) pages.push("...");
-  else {
-    for (let p = right + 1; p < totalPages; p++) pages.push(p);
-  }
-
-  if (totalPages > 1) pages.push(totalPages);
-
-  return pages.filter((x, i, arr) => i === 0 || x !== arr[i - 1]);
-}
-
 export function Pagination({
   page,
   totalPages,
@@ -50,12 +22,20 @@ export function Pagination({
   disabled,
   siblingCount = 1,
 }: Props) {
-  const pages = useMemo(
-    () => buildPages(page, totalPages, siblingCount),
-    [page, totalPages, siblingCount]
+  const vm = useMemo(
+    () =>
+      buildPaginationViewModel({
+        page,
+        siblingCount,
+        totalPages,
+        ...(disabled !== undefined ? { disabled } : {}),
+      }),
+    [disabled, page, siblingCount, totalPages],
   );
 
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1) {
+    return null;
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -64,7 +44,7 @@ export function Pagination({
         size="sm"
         shape="pill"
         onClick={() => onPageChange(1)}
-        disabled={disabled || page <= 1}
+        disabled={vm.isDisabled || !vm.canGoFirst}
       >
         First
       </Button>
@@ -73,34 +53,34 @@ export function Pagination({
         variant="outline"
         size="sm"
         shape="pill"
-        onClick={() => onPageChange(page - 1)}
-        disabled={disabled || page <= 1}
+        onClick={() => onPageChange(vm.safePage - 1)}
+        disabled={vm.isDisabled || !vm.canGoPrev}
       >
         Prev
       </Button>
 
       <div className="flex flex-wrap items-center gap-1">
-        {pages.map((p, idx) =>
-          p === "..." ? (
+        {vm.items.map((item, index) =>
+          isPaginationEllipsis(item) ? (
             <span
-              key={`dots-${idx}`}
+              key={`dots-${index}`}
               className="px-2 text-xs text-muted-foreground"
             >
-              …
+              ...
             </span>
           ) : (
             <Button
-              key={p}
-              variant={p === page ? "default" : "outline"}
+              key={item}
+              variant={item === vm.safePage ? "default" : "outline"}
               size="sm"
               shape="pill"
-              onClick={() => onPageChange(p)}
-              disabled={disabled}
+              onClick={() => onPageChange(item)}
+              disabled={vm.isDisabled}
               className="shrink-0 min-w-9 justify-center"
             >
-              {p}
+              {item}
             </Button>
-          )
+          ),
         )}
       </div>
 
@@ -108,8 +88,8 @@ export function Pagination({
         variant="outline"
         size="sm"
         shape="pill"
-        onClick={() => onPageChange(page + 1)}
-        disabled={disabled || page >= totalPages}
+        onClick={() => onPageChange(vm.safePage + 1)}
+        disabled={vm.isDisabled || !vm.canGoNext}
       >
         Next
       </Button>
@@ -118,8 +98,8 @@ export function Pagination({
         variant="outline"
         size="sm"
         shape="pill"
-        onClick={() => onPageChange(totalPages)}
-        disabled={disabled || page >= totalPages}
+        onClick={() => onPageChange(vm.safeTotalPages)}
+        disabled={vm.isDisabled || !vm.canGoLast}
       >
         Last
       </Button>
