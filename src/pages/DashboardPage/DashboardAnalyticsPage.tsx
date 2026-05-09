@@ -15,6 +15,79 @@ import type { ModeKey, RangeKey } from "./ui/trends/trends.types";
 
 type CustomRange = { from: Date; to: Date } | null;
 
+// ─── Type alias for MatchLike items from matchesAll ───────────────────────────
+
+type MatchLike = {
+  id: string;
+  loopId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  title?: string | null;
+  company?: string | null;
+  location?: string | null;
+  url?: string | null;
+  notes?: string | null;
+  status?: unknown;
+  statusHistory?: Array<{ status: unknown; date?: unknown; changedAt?: unknown }>;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function median(arr: number[]): number {
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+function getISOWeek(d: Date): string {
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const dayOfYear = Math.floor(
+    (d.getTime() - new Date(d.getFullYear(), 0, 0).getTime()) / 86400000,
+  );
+  const weekNum = Math.ceil((dayOfYear + jan4.getDay()) / 7);
+  return `${d.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+}
+
+function weekStartLabel(weekKey: string): string {
+  const [year, wStr] = weekKey.split("-W");
+  const week = parseInt(wStr);
+  const jan1 = new Date(parseInt(year), 0, 1);
+  const dayOffset = (week - 1) * 7 - jan1.getDay() + 1;
+  const d = new Date(parseInt(year), 0, 1 + dayOffset);
+  return d
+    .toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
+    .replace(".", "");
+}
+
+function bucketByPeriod(
+  items: MatchLike[],
+  fromMs: number,
+  toMs: number,
+  buckets: number,
+): Array<{ applied: number; replied: number; hired: number }> {
+  const step = (toMs - fromMs) / buckets;
+  const result = Array.from({ length: buckets }, () => ({
+    applied: 0,
+    replied: 0,
+    hired: 0,
+  }));
+  for (const m of items) {
+    if ((m.status as string) === "SAVED") continue;
+    const ms = toMillis(m.createdAt) ?? 0;
+    if (ms < fromMs || ms > toMs) continue;
+    const idx = Math.min(Math.floor((ms - fromMs) / step), buckets - 1);
+    result[idx].applied++;
+    const s = m.status as string;
+    if (
+      ["INTERVIEW_1", "INTERVIEW_2", "TEST_TASK", "OFFER", "HIRED"].includes(s)
+    )
+      result[idx].replied++;
+    if (s === "HIRED") result[idx].hired++;
+  }
+  return result;
+}
+
 function clampDayStart(ms: number): number {
   const d = new Date(ms);
   d.setHours(0, 0, 0, 0);
@@ -91,7 +164,13 @@ function BarChart({
                 </span>
               </div>
             </div>
-            <span className="absolute bottom-0 text-[9px] text-muted-foreground" style={{ left: `${(i / (data.length - 1)) * 100}%`, transform: "translateX(-50%)" }}>
+            <span
+              className="absolute bottom-0 text-[9px] text-muted-foreground"
+              style={{
+                left: `${(i / (data.length - 1)) * 100}%`,
+                transform: "translateX(-50%)",
+              }}
+            >
               {labels[i]}
             </span>
           </div>
@@ -134,13 +213,19 @@ function Card({
 type TimeRange = "7d" | "30d" | "90d" | "all";
 
 const RANGES: { key: TimeRange; label: string }[] = [
-  { key: "7d",  label: "7д"  },
+  { key: "7d", label: "7д" },
   { key: "30d", label: "30д" },
   { key: "90d", label: "90д" },
   { key: "all", label: "Всё" },
 ];
 
-function RangeToggle({ value, onChange }: { value: TimeRange; onChange: (v: TimeRange) => void }) {
+function RangeToggle({
+  value,
+  onChange,
+}: {
+  value: TimeRange;
+  onChange: (v: TimeRange) => void;
+}) {
   return (
     <div className="inline-flex gap-0 rounded-[7px] border border-border bg-muted/50 p-0.5">
       {RANGES.map(({ key, label }) => (
@@ -168,7 +253,7 @@ export function DashboardAnalyticsPage() {
   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
   const [loopsModalOpen, setLoopsModalOpen] = useState(false);
   const [nowMs] = useState(() => Date.now());
-  const [timeRange, setTimeRange] = useState<TimeRange>("90d");
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [range, setRange] = useState<RangeKey>("7d");
   const [mode, setMode] = useState<ModeKey>("created");
   const [customRange, setCustomRange] = useState<CustomRange>(null);
@@ -176,19 +261,228 @@ export function DashboardAnalyticsPage() {
   const { loops, loopsFilter, setLoopsFilter, chartMatches, pipelineSummary, matchesAll } =
     useDashboardData();
 
-  // ── Filter by time range ────────────────────────────────────────────────────
+  // ── Time range bounds ───────────────────────────────────────────────────────
+
+  const rangeDays =
+    timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : timeRange === "90d" ? 90 : 3650;
+  const fromMs = timeRange === "all" ? nowMs - 3650 * 86400000 : nowMs - rangeDays * 86400000;
+  const toMs = nowMs;
+
+  // ── rangeMatches — matches within selected time window ──────────────────────
+
+  const rangeMatches = useMemo(
+    () =>
+      (matchesAll as MatchLike[]).filter((m) => {
+        const ms = toMillis(m.createdAt) ?? 0;
+        return ms >= fromMs && ms <= toMs;
+      }),
+    [matchesAll, fromMs, toMs],
+  );
+
+  // ── KPI — real ──────────────────────────────────────────────────────────────
+
+  const totalApplied = rangeMatches.filter((m) => (m.status as string) !== "SAVED").length;
+
+  const hrScreenCount =
+    (pipelineSummary.byColumn["INTERVIEW"] ?? 0) +
+    (pipelineSummary.byColumn["OFFER"] ?? 0) +
+    (pipelineSummary.byColumn["HIRED"] ?? 0);
+
+  const offerCount =
+    (pipelineSummary.byColumn["OFFER"] ?? 0) + (pipelineSummary.byColumn["HIRED"] ?? 0);
+
+  const replyRate =
+    pipelineSummary.total > 0
+      ? Math.round((hrScreenCount / pipelineSummary.total) * 100)
+      : 0;
+  const interviewRate =
+    pipelineSummary.total > 0
+      ? Math.round((offerCount / pipelineSummary.total) * 100)
+      : 0;
+
+  // ── Median cycle time ───────────────────────────────────────────────────────
+
+  const cycleDays = useMemo(() => {
+    const durations: number[] = [];
+    for (const m of matchesAll as MatchLike[]) {
+      const s = m.status as string;
+      if (!["REJECTED", "HIRED", "NO_RESPONSE"].includes(s)) continue;
+      const created = toMillis(m.createdAt) ?? 0;
+      const updated = toMillis(m.updatedAt) ?? 0;
+      if (created && updated && updated > created) {
+        durations.push((updated - created) / 86400000);
+      }
+    }
+    return Math.round(median(durations)) || 0;
+  }, [matchesAll]);
+
+  // ── Sparklines (10 buckets over selected time range) ───────────────────────
+
+  const sparkBuckets = useMemo(
+    () => bucketByPeriod(matchesAll as MatchLike[], fromMs, toMs, 10),
+    [matchesAll, fromMs, toMs],
+  );
+  const sparkApplied = sparkBuckets.map((b) => b.applied);
+  const sparkReply = sparkBuckets.map((b) =>
+    b.applied > 0 ? Math.round((b.replied / b.applied) * 100) : 0,
+  );
+
+  // ── KPI cards ──────────────────────────────────────────────────────────────
+
+  const kpis = [
+    {
+      l: "Заявок отправлено",
+      v: totalApplied > 0 ? String(totalApplied) : "—",
+      d: null as string | null,
+      trend: sparkApplied.some((x) => x > 0) ? sparkApplied : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      color: "#10b981",
+    },
+    {
+      l: "Ответили компании",
+      v: replyRate > 0 ? `${replyRate}%` : "—",
+      d: null as string | null,
+      trend: sparkReply.some((x) => x > 0) ? sparkReply : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      color: "#6366f1",
+    },
+    {
+      l: "Дошли до оффера",
+      v: interviewRate > 0 ? `${interviewRate}%` : "—",
+      d: null as string | null,
+      // TODO(backend-migration): needs historical aggregation from GET /api/v1/analytics/kpi
+      trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      color: "#f59e0b",
+    },
+    {
+      l: "Среднее время цикла",
+      v: cycleDays > 0 ? `${cycleDays}д` : "—",
+      d: null as string | null,
+      // TODO(backend-migration): needs per-period median from GET /api/v1/analytics/kpi
+      trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      color: "#10b981",
+    },
+  ];
+
+  // ── Funnel (real from pipelineSummary.byColumn) ────────────────────────────
+
+  const fTotal = pipelineSummary.total;
+  const fHr = hrScreenCount;
+  const fOffer = offerCount;
+  const fHired = pipelineSummary.byColumn["HIRED"] ?? 0;
+
+  const funnelSteps = [
+    {
+      l: "Отклики",
+      v: fTotal,
+      w: 100,
+      c: "var(--primary)",
+    },
+    {
+      l: "HR-скрин",
+      v: fHr,
+      w: fTotal > 0 ? (fHr / fTotal) * 100 : 0,
+      c: "var(--primary)",
+    },
+    {
+      l: "Оффер",
+      v: fOffer,
+      w: fTotal > 0 ? (fOffer / fTotal) * 100 : 0,
+      c: "#f59e0b",
+    },
+    {
+      l: "Принят",
+      v: fHired,
+      w: fTotal > 0 ? (fHired / fTotal) * 100 : 0,
+      c: "#10b981",
+    },
+  ];
+
+  // ── Weekly activity chart (real, bucketed by ISO week) ─────────────────────
+
+  const weeklyChartData = useMemo(() => {
+    const weekCount =
+      timeRange === "7d" ? 2 : timeRange === "30d" ? 5 : timeRange === "90d" ? 13 : 26;
+    const map = new Map<string, number>();
+    for (const m of matchesAll as MatchLike[]) {
+      if ((m.status as string) === "SAVED") continue;
+      const ms = toMillis(m.createdAt) ?? 0;
+      if (ms < fromMs) continue;
+      const key = getISOWeek(new Date(ms));
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    const rawKeys: string[] = [];
+    for (let i = weekCount - 1; i >= 0; i--) {
+      const d = new Date(nowMs - i * 7 * 86400000);
+      rawKeys.push(getISOWeek(d));
+    }
+    const deduped = [...new Set(rawKeys)].slice(-weekCount);
+    return {
+      data: deduped.map((k) => map.get(k) ?? 0),
+      labels: deduped.map(weekStartLabel),
+    };
+  }, [matchesAll, fromMs, nowMs, timeRange]);
+
+  // ── Loss breakdown (real where possible) ──────────────────────────────────
+
+  const lossBreakdown = useMemo(() => {
+    const noResp = pipelineSummary.byColumn["NO_RESPONSE"] ?? 0;
+    const rejTotal = pipelineSummary.byColumn["REJECTED"] ?? 0;
+    let afterHr = 0;
+    let afterTech = 0;
+    for (const m of matchesAll as MatchLike[]) {
+      if ((m.status as string) !== "REJECTED") continue;
+      const hist = m.statusHistory ?? [];
+      const maxStage = hist.reduce((best, h) => {
+        const s = h.status as string;
+        const rank = [
+          "SAVED",
+          "ACTIVE",
+          "INTERVIEW_1",
+          "INTERVIEW_2",
+          "TEST_TASK",
+          "OFFER",
+          "HIRED",
+        ].indexOf(s);
+        return rank > best ? rank : best;
+      }, 0);
+      if (maxStage >= 4) afterTech++;
+      else if (maxStage >= 2) afterHr++;
+    }
+    const rows = [
+      { l: "Нет ответа > 14д", v: noResp },
+      { l: "Отказ после HR", v: afterHr },
+      { l: "Отказ после тех.", v: afterTech },
+      { l: "Другой отказ", v: Math.max(0, rejTotal - afterHr - afterTech) },
+    ];
+    const tot = rows.reduce((s, x) => s + x.v, 0);
+    return rows.map((r) => ({
+      ...r,
+      p: tot > 0 ? Math.round((r.v / tot) * 100) : 0,
+    }));
+  }, [matchesAll, pipelineSummary]);
+
+  const topLoss = [...lossBreakdown].sort((a, b) => b.v - a.v)[0];
+  const insightText =
+    topLoss && topLoss.v > 0
+      ? `Чаще всего теряешь заявки из-за «${topLoss.l}» — ${topLoss.p}% от всех потерь.`
+      : "Недостаточно данных для анализа.";
+
+  // ── Sources: no platform field in Firebase — placeholder ──────────────────
+  // TODO(backend-migration): platform field not tracked in current Firebase schema
+  // Needs GET /api/v1/analytics/sources — see doc-backend/Аналитика_backend.md
+
+  // ── filteredMatches for DashboardTrendsCard ────────────────────────────────
 
   const filteredMatches = useMemo(() => {
-    let fromMs = 0;
-    let toMs = nowMs;
+    let filterFromMs = 0;
+    let filterToMs = nowMs;
 
     if (range === "custom" && customRange) {
-      fromMs = clampDayStart(customRange.from.getTime());
-      toMs = clampDayStart(customRange.to.getTime()) + 24 * 60 * 60 * 1000 - 1;
+      filterFromMs = clampDayStart(customRange.from.getTime());
+      filterToMs = clampDayStart(customRange.to.getTime()) + 24 * 60 * 60 * 1000 - 1;
     } else {
       const days = presetDays(range as Exclude<RangeKey, "custom">);
-      fromMs = nowMs - days * 24 * 60 * 60 * 1000;
-      toMs = nowMs;
+      filterFromMs = nowMs - days * 24 * 60 * 60 * 1000;
+      filterToMs = nowMs;
     }
 
     return chartMatches.filter((m) => {
@@ -196,100 +490,9 @@ export function DashboardAnalyticsPage() {
         mode === "updated"
           ? toMillis(m.updatedAt) || toMillis(m.createdAt)
           : toMillis(m.createdAt);
-      return ts ? ts >= fromMs && ts <= toMs : false;
+      return ts ? ts >= filterFromMs && ts <= filterToMs : false;
     });
   }, [chartMatches, range, mode, customRange, nowMs]);
-
-  // ── Compute KPIs from real data ─────────────────────────────────────────────
-
-  const rangeDays = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : timeRange === "90d" ? 90 : 3650;
-  const fromMs = timeRange === "all" ? 0 : nowMs - rangeDays * 86400000;
-
-  const rangeMatches = useMemo(
-    () => matchesAll.filter((m) => (toMillis(m.createdAt) ?? 0) >= fromMs),
-    [matchesAll, fromMs],
-  );
-
-  const totalApplied = useMemo(
-    () => rangeMatches.filter((m) => m.status !== "SAVED").length,
-    [rangeMatches],
-  );
-
-  const totalInterview = useMemo(
-    () => rangeMatches.filter((m) => ["INTERVIEW_1", "INTERVIEW_2", "TEST_TASK", "OFFER", "HIRED"].includes(m.status as string)).length,
-    [rangeMatches],
-  );
-
-  const replyRate = totalApplied > 0 ? Math.round((totalInterview / totalApplied) * 100) : 0;
-  const interviewRate = totalApplied > 0 ? Math.round((totalInterview / totalApplied) * 100) : 0;
-
-  // ── Funnel steps from pipeline summary ─────────────────────────────────────
-
-  const applied     = pipelineSummary?.total ?? totalApplied;
-  const interviewed = Math.max(1, Math.round(applied * 0.58));
-  const technical   = Math.max(1, Math.round(applied * 0.39));
-  const final       = Math.max(1, Math.round(applied * 0.22));
-  const offers      = pipelineSummary?.byColumn?.["OFFER"] ?? 0;
-
-  const funnelSteps = [
-    { l: "Отклики",       v: applied,     w: 100,                                c: "var(--primary)" },
-    { l: "HR-скрин",      v: interviewed, w: applied > 0 ? (interviewed / applied) * 100 : 0, c: "var(--primary)" },
-    { l: "Технический",   v: technical,   w: applied > 0 ? (technical  / applied) * 100 : 0, c: "var(--primary)" },
-    { l: "Финал",         v: final,       w: applied > 0 ? (final      / applied) * 100 : 0, c: "var(--primary)" },
-    { l: "Оффер",         v: offers,      w: applied > 0 ? (offers     / applied) * 100 : 0, c: "#10b981" },
-  ];
-
-  // ── Sources (static placeholder — needs backend tracking) ─────────────────
-
-  const sources = [
-    { l: "LinkedIn",        v: 14, p: 39, c: "#0a66c2" },
-    { l: "Сайты компаний",  v: 9,  p: 25, c: "hsl(var(--primary))" },
-    { l: "AngelList",       v: 6,  p: 17, c: "#f97316" },
-    { l: "Реферал",         v: 5,  p: 14, c: "#10b981" },
-    { l: "Hacker News",     v: 2,  p: 5,  c: "#da6f26" },
-  ];
-
-  // ── Weekly activity (placeholder — needs backend aggregation) ─────────────
-
-  const weeklyData   = [4, 7, 5, 9, 6, 11, 8, 14, 10, 15, 12, 18];
-  const weekLabels   = ["W1","W2","W3","W4","W5","W6","W7","W8","W9","W10","W11","W12"];
-
-  // ── KPI sparklines ─────────────────────────────────────────────────────────
-
-  const kpis = [
-    {
-      l: "Заявок отправлено",
-      v: String(totalApplied || "—"),
-      d: "+18%",
-      trend: [3, 5, 4, 7, 6, 8, 12, 9, 11, 15],
-      color: "#10b981",
-      pos: true,
-    },
-    {
-      l: "Отклик от компаний",
-      v: replyRate ? `${replyRate}%` : "—",
-      d: "+12%",
-      trend: [40, 42, 45, 48, 50, 52, 55, 55, 57, 58],
-      color: "#10b981",
-      pos: true,
-    },
-    {
-      l: "Дошли до интервью",
-      v: interviewRate ? `${interviewRate}%` : "—",
-      d: "+5%",
-      trend: [15, 17, 18, 19, 20, 21, 22, 22, 23, 24],
-      color: "#10b981",
-      pos: true,
-    },
-    {
-      l: "Среднее время цикла",
-      v: "19д",
-      d: "−3д",
-      trend: [28, 26, 25, 24, 23, 22, 21, 20, 20, 19],
-      color: "#10b981",
-      pos: true,
-    },
-  ];
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -353,22 +556,22 @@ export function DashboardAnalyticsPage() {
                   <span className="text-[28px] font-semibold tracking-[-0.025em] tabular-nums text-foreground">
                     {k.v}
                   </span>
-                  <span
-                    className="text-[12px] font-medium"
-                    style={{ color: k.pos ? "#10b981" : "#dc2626" }}
-                  >
-                    {k.d}
-                  </span>
+                  {k.d !== null && (
+                    <span className="text-[12px] font-medium text-emerald-500">{k.d}</span>
+                  )}
                 </div>
-                {/* TODO(backend-migration): sparkline data from GET /api/v1/analytics/kpi?range=... */}
+                {/* TODO(backend-migration): precise sparklines from GET /api/v1/analytics/kpi?range=... */}
                 <Sparkline data={k.trend} color={k.color} />
               </Card>
             ))}
           </div>
 
           {/* ── Funnel + Sources ── */}
-          <div className="grid gap-3.5" style={{ gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr)" }}>
-            {/* Funnel */}
+          <div
+            className="grid gap-3.5"
+            style={{ gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr)" }}
+          >
+            {/* Funnel — real from pipelineSummary */}
             <Card>
               <div className="flex items-baseline justify-between mb-4">
                 <SLabel>Воронка по этапам</SLabel>
@@ -376,7 +579,6 @@ export function DashboardAnalyticsPage() {
                   {timeRange === "all" ? "За всё время" : `За последние ${rangeDays} дней`}
                 </span>
               </div>
-              {/* TODO(backend-migration): funnel data from GET /api/v1/analytics/funnel?range=... */}
               <div className="flex flex-col gap-3.5">
                 {funnelSteps.map((s, i) => {
                   const next = funnelSteps[i + 1];
@@ -408,72 +610,63 @@ export function DashboardAnalyticsPage() {
               </div>
             </Card>
 
-            {/* Sources */}
+            {/* Sources — placeholder, no platform field in Firebase */}
             <Card>
               <SLabel>Источники заявок</SLabel>
-              {/* TODO(backend-migration): source data from GET /api/v1/analytics/sources?range=... */}
-              <div className="flex flex-col gap-3.5 mt-4">
-                {sources.map((s) => (
-                  <div key={s.l}>
-                    <div className="flex items-baseline justify-between text-[12.5px] mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2 w-2 shrink-0 rounded-[2px]"
-                          style={{ background: s.c }}
-                        />
-                        <span className="font-medium">{s.l}</span>
-                      </div>
-                      <span className="text-muted-foreground tabular-nums">
-                        {s.v} · {s.p}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${s.p}%`, background: s.c }}
-                      />
-                    </div>
-                  </div>
-                ))}
+              {/* TODO(backend-migration): platform field not tracked in current Firebase schema
+                  Needs GET /api/v1/analytics/sources — see doc-backend/Аналитика_backend.md */}
+              <div className="flex flex-col items-center justify-center h-[160px] gap-2 text-center">
+                <ArrowUpRight className="h-6 w-6 text-muted-foreground/40" />
+                <p className="text-[13px] text-muted-foreground leading-snug">
+                  Данные появятся после подключения бэкенда
+                </p>
+                <p className="text-[11px] text-muted-foreground/60">
+                  Поле <code className="font-mono">platform</code> не отслеживается в Firebase
+                </p>
               </div>
             </Card>
           </div>
 
           {/* ── Weekly activity + Loss breakdown ── */}
-          <div className="grid gap-3.5" style={{ gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr)" }}>
-            {/* Weekly bars */}
+          <div
+            className="grid gap-3.5"
+            style={{ gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr)" }}
+          >
+            {/* Weekly bars — real from matchesAll grouped by ISO week */}
             <Card>
               <SLabel>Активность по неделям</SLabel>
-              {/* TODO(backend-migration): weekly aggregation from GET /api/v1/analytics/weekly?range=... */}
               <div className="mt-6 pr-1.5">
-                <BarChart data={weeklyData} labels={weekLabels} height={180} />
+                <BarChart
+                  data={weeklyChartData.data}
+                  labels={weeklyChartData.labels}
+                  height={180}
+                />
               </div>
               <div className="flex flex-wrap gap-4 mt-4 pt-3.5 border-t border-border text-[11.5px] text-muted-foreground">
                 <span>
                   <strong className="text-foreground font-medium">
-                    {weeklyData.reduce((a, b) => a + b, 0)}
+                    {weeklyChartData.data.reduce((a, b) => a + b, 0)}
                   </strong>{" "}
-                  действий за квартал
+                  заявок за период
                 </span>
-                <span>· пик — на 12-й неделе</span>
-                <span>
-                  · медиана —{" "}
-                  {Math.round(weeklyData.reduce((a, b) => a + b, 0) / weeklyData.length)} в неделю
-                </span>
+                {weeklyChartData.data.some((x) => x > 0) && (
+                  <span>
+                    · медиана —{" "}
+                    {Math.round(
+                      weeklyChartData.data.reduce((a, b) => a + b, 0) /
+                        Math.max(weeklyChartData.data.filter((x) => x > 0).length, 1),
+                    )}{" "}
+                    в неделю
+                  </span>
+                )}
               </div>
             </Card>
 
-            {/* Loss breakdown */}
+            {/* Loss breakdown — real from statusHistory + pipelineSummary */}
             <Card>
               <SLabel>Где теряются заявки</SLabel>
-              {/* TODO(backend-migration): dropout reasons from GET /api/v1/analytics/dropout?range=... */}
               <div className="flex flex-col mt-3.5">
-                {[
-                  { l: "После HR-скрина",      v: 7, p: 33 },
-                  { l: "После технического",    v: 6, p: 43 },
-                  { l: "Без ответа > 14д",      v: 5, p: 14 },
-                  { l: "Самоотозвано",          v: 3, p: 8  },
-                ].map((s) => (
+                {lossBreakdown.map((s) => (
                   <div
                     key={s.l}
                     className="flex items-baseline justify-between py-2.5 border-b border-border last:border-b-0"
@@ -486,8 +679,7 @@ export function DashboardAnalyticsPage() {
                 ))}
               </div>
               <div className="mt-3.5 rounded-[8px] border border-border bg-muted/50 p-3 text-[12px] leading-[1.6] text-muted-foreground">
-                <strong className="text-foreground font-medium">Инсайт:</strong> ты теряешь 43%
-                после технического. Самые частые причины — system design.
+                <strong className="text-foreground font-medium">Инсайт:</strong> {insightText}
               </div>
             </Card>
           </div>
