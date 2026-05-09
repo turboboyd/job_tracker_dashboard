@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
+  quality:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,20 +29,12 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Run lint
-        run: npm run lint --if-present
-
-      - name: Run typecheck
-        run: npm run typecheck --if-present
-
-      - name: Run tests
-        run: npm test --if-present
+      - name: Run quality gate
+        run: npm run check
 
   deploy:
-    needs: lint
+    needs: quality
     runs-on: ubuntu-latest
-
-
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
     env:
@@ -72,7 +64,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy 🚀
+      - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@4.1.0
         with:
           branch: gh-pages
