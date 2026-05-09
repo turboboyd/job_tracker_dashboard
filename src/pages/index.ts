@@ -254,3 +254,7 @@ export const InboxPage = lazyPage(
     de: await import("./InboxPage/locales/de.json"),
   }),
 );
+
+export const CalendarPage = lazy(
+  () => import("./CalendarPage/CalendarPage"),
+);

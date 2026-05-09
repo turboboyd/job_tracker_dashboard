@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Repeat2,
   KanbanSquare,
+  CalendarDays,
   Sparkles,
   FileText,
   ClipboardCheck,
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
   { labelKey: "common.nav.board", labelDefault: "Board", path: RoutePath[AppRoutes.BOARD], Icon: KanbanSquare },
   { labelKey: "common.nav.myLoops", labelDefault: "Loops", path: RoutePath[AppRoutes.LOOPS], Icon: Repeat2, isLoops: true },
   { labelKey: "common.nav.allMatches", labelDefault: "Matches", path: RoutePath[AppRoutes.MATCHES], Icon: Sparkles },
+  { labelKey: "common.nav.calendar", labelDefault: "Calendar", path: RoutePath[AppRoutes.CALENDAR], Icon: CalendarDays },
 ];
 
 const SECONDARY_ITEMS = [

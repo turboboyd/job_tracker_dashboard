@@ -20,6 +20,7 @@ import {
   CvCheckerPage,
   CvBuilderPage,
   InboxPage,
+  CalendarPage,
   ProfileSettingsPage,
   NotificationsSettingsPage,
   PipelineStatusesSettingsPage,
@@ -65,6 +66,7 @@ export enum AppRoutes {
   MATCHES = "matches",
   NOT_FOUND = "not_found",
   BOARD = "board",
+  CALENDAR = "calendar",
 }
 
 export const RoutePath: Record<AppRoutes, string> = {
@@ -102,6 +104,7 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.PROFILE_QUESTIONS]: "/dashboard/profile/questions",
 
   [AppRoutes.BOARD]: "/dashboard/board",
+  [AppRoutes.CALENDAR]: "/dashboard/calendar",
   [AppRoutes.LOOPS]: "/dashboard/loops",
   [AppRoutes.LOOP_DETAILS]: "/dashboard/loops/:loopId",
   [AppRoutes.MATCHES]: "/dashboard/matches",
@@ -149,6 +152,7 @@ export const privateRoutes: RouteItem[] = [
   },
 
   { path: RoutePath[AppRoutes.BOARD], element: <BoardPage /> },
+  { path: RoutePath[AppRoutes.CALENDAR], element: <CalendarPage /> },
 
   { path: RoutePath[AppRoutes.LOOPS], element: <LoopsPage /> },
   { path: RoutePath[AppRoutes.LOOP_DETAILS], element: <LoopsPage /> },

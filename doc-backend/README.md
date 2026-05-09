@@ -46,6 +46,7 @@
 | `Детали заявки_backend.md` | `/dashboard/applications/:id` — детальная карточка |
 | `Доска_backend.md` | `/dashboard/board` — Kanban |
 | `Аналитика_backend.md` | `/dashboard/analytics` — KPI, воронка, источники, недельная активность |
+| `Календарь_backend.md` | `/dashboard/calendar` — события, iCal, Google Calendar sync |
 | *(скоро)* `Мои циклы_backend.md` | `/dashboard/loops` — поисковые циклы |
 | *(скоро)* `Дашборд_backend.md` | `/dashboard` — обзор |
 | *(скоро)* `Матчинг_backend.md` | AI matching engine |
