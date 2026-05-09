@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useAuthSelectors } from "src/features/auth/model";
 import {
   AppRoutes,
   RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
-import { useAuthSelectors } from "src/entities/auth";
+} from "src/shared/config/routes";
 import { LinkButton } from "src/shared/ui";
 
 import {

@@ -3,12 +3,15 @@
     "title": "Мои заявки",
     "subtitle": "Создавай и отслеживай отклики в одном месте.",
     "views": {
-      "pipeline": "Пайплайн",
+      "pipeline": "Воронка",
       "today": "Сегодня",
-      "followups": "Фоллоу-апы"
+      "followups": "Напоминания"
     },
     "create": {
       "title": "Новая заявка",
+      "subtitle": "Заполни главное — остальное можно добавить позже.",
+      "newBtn": "Заявка",
+      "cancel": "Отмена",
       "preparing": "Подготовка…",
       "company": "Компания",
       "companyPh": "например, ACME GmbH",
@@ -19,15 +22,36 @@
       "source": "Источник",
       "sourcePh": "LinkedIn / Indeed / сайт компании",
       "desc": "Описание (необязательно)",
-      "descPh": "Вставь текст вакансии, чтобы улучшить matching…",
+      "descPh": "Вставь текст вакансии, чтобы точнее оценить совпадение…",
       "createBtn": "Создать",
-      "creating": "Создаю…"
+      "creating": "Создаю…",
+      "contact": {
+        "title": "Контактное лицо (необязательно)",
+        "hint": "Можно добавить сейчас или позже на странице заявки.",
+        "firstName": "Имя",
+        "firstNamePh": "Анна",
+        "lastName": "Фамилия",
+        "lastNamePh": "Петрова",
+        "role": "Роль",
+        "phone": "Телефон",
+        "phonePh": "+49 …",
+        "email": "Email",
+        "emailPh": "name@company.com"
+      },
+      "contactRole": {
+        "HR": "HR",
+        "RECRUITER": "Рекрутер",
+        "TECH_INTERVIEWER": "Интервьюер",
+        "HIRING_MANAGER": "Hiring Manager",
+        "REFERRAL": "Реферал",
+        "OTHER": "Другое"
+      }
     },
     "pipeline": {
       "saved": "Сохранено",
       "applied": "Отправлено",
       "interview": "Интервью",
-      "offer": "Оффер",
+      "offer": "Предложение",
       "rejected": "Отказ",
       "loading": "Загрузка…",
       "count": "Количество: {{count}}",
@@ -40,9 +64,9 @@
       "applied": "Отправлено",
       "viewed": "Просмотрено",
       "interview_1": "Интервью",
-      "interview_2": "Интервью 2",
-      "test_task": "Тестовое",
-      "offer": "Оффер",
+      "interview_2": "Второе интервью",
+      "test_task": "Тестовое задание",
+      "offer": "Предложение",
       "rejected": "Отказ",
       "no_response": "Без ответа",
       "unknown": "Неизвестно"
@@ -50,11 +74,11 @@
     "empty": {
       "pipeline": "Пока заявок нет.",
       "today": "На сегодня ничего нет.",
-      "followups": "Фоллоу-апов пока нет."
+      "followups": "Напоминаний пока нет."
     },
-    "todayHint": "Сортировка по priority.score",
-    "followupsHint": "Нужен follow-up, сортировка по сроку",
-    "matching": "Матч",
-    "followUpBadge": "Follow-up"
+    "todayHint": "Сначала заявки с самым высоким приоритетом",
+    "followupsHint": "Заявки, по которым пора напомнить о себе",
+    "matching": "Совпадение",
+    "followUpBadge": "Напомнить"
   }
 }

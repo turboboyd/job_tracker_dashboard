@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { Trash2 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import {
-  MatchDetailsModal,
-  formatMatchedAt,
-  normalizePlatform,
-  type LoopMatch,
-} from "src/entities/loopMatch";
+import { MatchDetailsModal, type LoopMatch } from "src/entities/loopMatch";
 import { classNames } from "src/shared/lib";
 import { Card } from "src/shared/ui";
+
+import {
+  buildBoardMatchCardViewModel,
+  canOpenBoardMatchCard,
+  getBoardMatchCursorClass,
+} from "./BoardMatchCardView.helpers";
 
 export type BoardMatchCardViewProps = Readonly<{
   match: LoopMatch;
@@ -29,63 +29,33 @@ export function BoardMatchCardView({
 }: BoardMatchCardViewProps) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
+  const view = React.useMemo(
+    () => buildBoardMatchCardViewModel(match, loopName),
+    [match, loopName],
+  );
+  const cursorClass = getBoardMatchCursorClass({ busy, overlay });
 
   const onQuickDelete = React.useCallback(
-    (e: React.SyntheticEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
+    (event: React.SyntheticEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
       if (busy || overlay) return;
 
-      const ok = window.confirm(
+      const confirmed = window.confirm(
         t("board.deleteConfirm", "Delete this job from the board?"),
       );
-      if (!ok) return;
+      if (!confirmed) return;
 
-      Promise.resolve(onDelete(match.id)).catch(() => {});
+      Promise.resolve(onDelete(match.id)).catch(() => undefined);
     },
     [busy, overlay, onDelete, match.id, t],
   );
 
-  const title = React.useMemo(
-    () => String(match.title ?? "").trim() || "—",
-    [match.title],
-  );
-  const company = React.useMemo(
-    () => String(match.company ?? "").trim() || "—",
-    [match.company],
-  );
-  const matchedAt = React.useMemo(
-    () => formatMatchedAt(match.matchedAt),
-    [match.matchedAt],
-  );
-
-  const platform = React.useMemo(() => {
-    const p = normalizePlatform(match.platform);
-    return p ? p.toUpperCase() : "";
-  }, [match.platform]);
-
-  const meta = React.useMemo(() => {
-    const parts = [match.location, platform, matchedAt, loopName]
-      .map((v) => String(v ?? "").trim())
-      .filter(Boolean);
-    return parts.join(" • ");
-  }, [match.location, matchedAt, loopName, platform]);
-
-  const url = React.useMemo(() => String(match.url ?? "").trim(), [match.url]);
-  const hasUrl = Boolean(url);
-
   const onOpen = React.useCallback(() => {
-    if (!busy && !overlay) setOpen(true);
+    if (canOpenBoardMatchCard({ busy, overlay })) {
+      setOpen(true);
+    }
   }, [busy, overlay]);
-  let cursorClass: string;
-
-  if (overlay) {
-    cursorClass = "cursor-grabbing";
-  } else if (busy) {
-    cursorClass = "opacity-60 cursor-not-allowed";
-  } else {
-    cursorClass = "cursor-pointer md:cursor-grab";
-  }
 
   return (
     <>
@@ -93,8 +63,8 @@ export function BoardMatchCardView({
         role="button"
         tabIndex={0}
         onClick={onOpen}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") onOpen();
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") onOpen();
         }}
         className={classNames(
           "rounded-xl outline-none",
@@ -129,9 +99,9 @@ export function BoardMatchCardView({
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               )}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
               }}
               onClick={onQuickDelete}
             >
@@ -141,25 +111,25 @@ export function BoardMatchCardView({
 
           <div className="min-w-0">
             <div className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-sm">
-              <span className="font-semibold text-foreground">{title}</span>
-              <span className="ml-2 text-muted-foreground">{company}</span>
+              <span className="font-semibold text-foreground">{view.title}</span>
+              <span className="ml-2 text-muted-foreground">{view.company}</span>
             </div>
 
-            {meta ? (
+            {view.meta ? (
               <div className="mt-1 text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
-                {meta}
+                {view.meta}
               </div>
             ) : null}
           </div>
 
-          {hasUrl ? (
+          {view.hasUrl ? (
             <div className="pt-2">
               <a
-                href={url}
+                href={view.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-primary underline hover:no-underline"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
               >
                 {t("board.openLink", "Open link")}
               </a>
@@ -176,7 +146,7 @@ export function BoardMatchCardView({
           loopName={loopName}
           busy={busy}
           onDelete={(id) => {
-            Promise.resolve(onDelete(id)).catch(() => {});
+            Promise.resolve(onDelete(id)).catch(() => undefined);
           }}
         />
       ) : null}

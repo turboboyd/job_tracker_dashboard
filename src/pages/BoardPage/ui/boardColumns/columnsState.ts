@@ -1,4 +1,4 @@
-import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application/model/status";
+import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application";
 import type { LoopMatch } from "src/entities/loopMatch";
 
 import type { BoardVM } from "../../model/types";
@@ -14,7 +14,17 @@ export function cloneColumns(src: ColumnsState): ColumnsState {
 export function buildColumnsFromVm(vm: BoardVM): ColumnsState {
   const m = new Map<BoardColumnKey, LoopMatch[]>();
   for (const c of BOARD_COLUMNS_LIST) {
-    m.set(c.key, [...(vm.data.byStatus.get(c.key) ?? [])]);
+    // "HIRED" is not displayed in the board UI.
+    // We keep the data visible by merging it into ARCHIVED.
+    if (c.key === "HIRED") continue;
+
+    const base = [...(vm.data.byStatus.get(c.key) ?? [])];
+    if (c.key === "ARCHIVED") {
+      const hired = vm.data.byStatus.get("HIRED") ?? [];
+      m.set(c.key, [...base, ...hired]);
+    } else {
+      m.set(c.key, base);
+    }
   }
   return m;
 }

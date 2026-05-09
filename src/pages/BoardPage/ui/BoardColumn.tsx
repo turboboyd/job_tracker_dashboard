@@ -2,7 +2,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import type { BoardColumnKey } from "src/entities/application/model/status";
+import type { BoardColumnKey } from "src/entities/application";
 import type { LoopMatch } from "src/entities/loopMatch";
 import { Card } from "src/shared/ui";
 
@@ -31,7 +31,17 @@ export function BoardColumn({
   const itemIds = React.useMemo(() => matches.map((m) => m.id), [matches]);
 
   return (
-    <div className="w-[calc(100vw-2rem)] md:w-[320px] shrink-0 h-full min-h-0 flex flex-col">
+    <div
+      className={
+        [
+          // Trello-like column width across breakpoints
+          "w-[280px] sm:w-[300px] md:w-[320px] lg:w-[340px]",
+          "shrink-0",
+          "h-full min-h-0",
+          "flex flex-col",
+        ].join(" ")
+      }
+    >
       <Card
         variant="subtle"
         padding="md"

@@ -1,22 +1,22 @@
 {
   "cvBuilder": {
-    "title": "CV Builder",
-    "subtitle": "Lade CV-Versionen hoch und verknüpfe sie mit Bewerbungen.",
+    "title": "Lebenslauf-Builder",
+    "subtitle": "Lade Lebenslauf-Versionen hoch und verknüpfe sie mit Bewerbungen.",
     "upload": {
-      "title": "CV hochladen",
+      "title": "Lebenslauf hochladen",
       "file": "Datei",
-      "label": "Label",
-      "labelPh": "z. B. Frontend CV v3",
+      "label": "Bezeichnung",
+      "labelPh": "z. B. Lebenslauf Frontend v3",
       "notes": "Notizen",
       "notesPh": "Optional…",
       "upload": "Hochladen",
       "uploading": "Wird hochgeladen…"
     },
     "list": {
-      "title": "CV-Versionen",
+      "title": "Lebenslauf-Versionen",
       "refresh": "Aktualisieren",
       "loading": "Laden…",
-      "empty": "Noch keine CV-Versionen.",
+      "empty": "Noch keine Lebenslauf-Versionen.",
       "open": "Öffnen"
     }
   }

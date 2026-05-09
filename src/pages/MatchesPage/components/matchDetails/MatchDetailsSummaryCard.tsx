@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
 
-import { StatusPill } from "src/entities/application/ui/StatusKit";
+import { StatusPill } from "src/entities/application";
 import type { LoopMatch } from "src/entities/loopMatch";
-import { formatMatchedAt, normalizePlatform } from "src/entities/loopMatch";
+import { buildMatchMeta, formatMatchedAt, formatPlatformLabel } from "src/entities/loopMatch";
 import { Card } from "src/shared/ui";
 
 interface Props {
@@ -14,17 +14,9 @@ export function MatchDetailsSummaryCard({ match, loopName }: Props) {
   const { t } = useTranslation();
 
   const matchedAt = match.matchedAt ? formatMatchedAt(match.matchedAt) : "";
-  const platform = (() => {
-    const p = normalizePlatform(match.platform);
-    return p ? p.toUpperCase() : "";
-  })();
+  const platform = formatPlatformLabel(match.platform);
 
-  const meta = (() => {
-    const parts = [match.location, platform, matchedAt, loopName]
-      .map((v) => String(v ?? "").trim())
-      .filter(Boolean);
-    return parts.join(" • ");
-  })();
+  const meta = buildMatchMeta([match.location, platform, matchedAt, loopName]);
 
   return (
     <Card variant="default" padding="md" shadow="sm" className="w-full">

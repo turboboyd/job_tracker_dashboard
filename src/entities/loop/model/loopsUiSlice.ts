@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { clampPage } from "src/shared/lib";
+import { clampPage } from "src/shared/lib/url";
 
 export interface LoopsUiState {
   listPage: number;

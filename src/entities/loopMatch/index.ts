@@ -29,4 +29,4 @@ export type {
 
 export { MatchCard } from "./ui/matchCard/MatchCard";
 export { MatchDetailsModal } from "./ui/matchCard/MatchDetailsModal";
-export { formatMatchedAt, normalizePlatform } from "./ui/matchCard/matchFormat";
+export { buildMatchMeta, formatMatchedAt, formatPlatformLabel, normalizePlatform } from "./ui/matchCard/matchFormat";

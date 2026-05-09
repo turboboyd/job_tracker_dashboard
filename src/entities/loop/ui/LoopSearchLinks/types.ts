@@ -2,7 +2,7 @@ import type {
   CanonicalFilters,
   RemoteMode,
   LoopPlatform,
-} from "src/entities/loop/model";
+} from "../../model";
 
 export interface LoopForLinks {
   id: string;

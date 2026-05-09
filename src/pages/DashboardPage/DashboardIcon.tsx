@@ -1,5 +1,18 @@
-/* eslint-disable sonarjs/no-duplicate-string */
-import React from "react";
+import {
+  Bookmark,
+  CheckCircle2,
+  CircleHelp,
+  FileText,
+  Hourglass,
+  MessageSquare,
+  Plus,
+  Repeat2,
+  Send,
+  Trophy,
+  User,
+  XCircle,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export type IconName =
   | "user"
@@ -16,40 +29,38 @@ export type IconName =
   | "rejected"
   | "no_response";
 
-const ICONS: Record<IconName, string> = {
-  user: "👤",
-  question: "❓",
-  loop: "🔁",
-  add: "➕",
-
-  total: "🔗",
-  new: "🆕",
-  applied: "📄",
-  saved: "🔄",
-  interview: "✉️",
-  offer: "🎉",
-  hired: "✅",
-  rejected: "⚠️",
-  no_response: "⏳",
+const ICONS: Record<IconName, LucideIcon> = {
+  add: Plus,
+  applied: Send,
+  hired: CheckCircle2,
+  interview: MessageSquare,
+  loop: Repeat2,
+  new: FileText,
+  no_response: Hourglass,
+  offer: Trophy,
+  question: CircleHelp,
+  rejected: XCircle,
+  saved: Bookmark,
+  total: FileText,
+  user: User,
 };
 
-const COLOR: Record<IconName, string> = {
-  // Action rows
-  user: "text-foreground",
-  question: "text-foreground",
-  loop: "text-foreground",
-  add: "text-foreground",
+const TEXT_FOREGROUND = "text-foreground";
 
-  // KPI (по смыслу/статусу)
-  total: "text-foreground",
-  new: "text-slate-700 dark:text-slate-200",
+const COLOR: Record<IconName, string> = {
+  add: TEXT_FOREGROUND,
   applied: "text-status-info",
-  saved: "text-status-info",
-  interview: "text-status-purple",
-  offer: "text-status-warning",
   hired: "text-status-success",
-  rejected: "text-status-danger",
+  interview: "text-status-purple",
+  loop: TEXT_FOREGROUND,
+  new: "text-slate-700 dark:text-slate-200",
   no_response: "text-status-neutral",
+  offer: "text-status-warning",
+  question: TEXT_FOREGROUND,
+  rejected: "text-status-danger",
+  saved: "text-status-info",
+  total: TEXT_FOREGROUND,
+  user: TEXT_FOREGROUND,
 };
 
 export interface DashboardIconProps {
@@ -65,18 +76,15 @@ export function DashboardIcon({
   className,
   title,
 }: DashboardIconProps) {
+  const Icon = ICONS[name];
+
   return (
-    <span
+    <Icon
       aria-hidden={title ? undefined : true}
-      title={title}
-      style={{ fontSize: size }}
-      className={[
-        "leading-none",
-        COLOR[name],
-        className ?? "",
-      ].join(" ").trim()}
-    >
-      {ICONS[name]}
-    </span>
+      aria-label={title}
+      className={["shrink-0", COLOR[name], className ?? ""].join(" ").trim()}
+      size={size}
+      strokeWidth={2}
+    />
   );
 }

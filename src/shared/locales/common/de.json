@@ -3,11 +3,20 @@
   "go": "Los",
   "done": "Fertig",
   "close": "Schließen",
+  "applicationReminder": {
+    "title": "Bewerbungserinnerung",
+    "untitled": "Bewerbung ohne Titel",
+    "noCompany": "Kein Unternehmen",
+    "nextStepTitle": "Nächster Schritt",
+    "digestTitle": "Heutiger Bewerbungsplan",
+    "digestBody": "Heute geplante Aktionen: {{count}}",
+    "digestMore": "+{{count}} weitere"
+  },
   "nav": {
     "overview": "Übersicht",
-    "myLoops": "Meine Zyklen",
-    "board": "Board",
-    "allMatches": "Alle Übereinstimmungen",
+    "myLoops": "Meine Suchläufe",
+    "board": "Bewerbungsboard",
+    "allMatches": "Alle Treffer",
     "myApplications": "Meine Bewerbungen",
     "questions": "Fragen",
     "cvChecker": "Lebenslauf-Prüfung",

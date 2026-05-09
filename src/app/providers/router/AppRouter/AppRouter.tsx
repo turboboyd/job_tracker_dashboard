@@ -15,7 +15,7 @@ export const AppRouter: React.FC = () => {
     <React.Suspense
       fallback={
         <div className="h-screen w-full grid place-items-center text-sm text-muted-foreground">
-          Loading…
+          Loading...
         </div>
       }
     >

@@ -1,72 +1,18 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/prefer-nullish-coalescing */
 import { DEFAULT_CANONICAL_FILTERS, type CanonicalFilters } from "../../model";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-const RADIUS_VALUES = [5, 10, 20, 30, 50, 100] as const;
-const POSTED_WITHIN_VALUES = [1, 3, 7, 14, 30] as const;
-
-const WORK_MODE_VALUES = ["any", "onsite", "hybrid", "remote", "remote_only"] as const;
-const SENIORITY_VALUES = ["intern", "junior", "mid", "senior", "lead"] as const;
-const EMPLOYMENT_TYPE_VALUES = [
-  "full_time",
-  "part_time",
-  "contract",
-  "internship",
-  "ausbildung",
-] as const;
-
-const LANGUAGE_VALUES = ["any", "de", "en"] as const;
-
-type WorkMode = (typeof WORK_MODE_VALUES)[number];
-type Seniority = (typeof SENIORITY_VALUES)[number];
-type EmploymentType = (typeof EMPLOYMENT_TYPE_VALUES)[number];
-type PostedWithin = (typeof POSTED_WITHIN_VALUES)[number];
-type RadiusKm = (typeof RADIUS_VALUES)[number];
-type Language = (typeof LANGUAGE_VALUES)[number];
-
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
-
-function asNumber(v: unknown): number | null {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim().length > 0) {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
-
-function oneOf<T extends readonly string[]>(
-  v: unknown,
-  allowed: T,
-): T[number] | null {
-  const s = asString(v);
-  if (!s) return null;
-  return (allowed as readonly string[]).includes(s) ? (s as T[number]) : null;
-}
-
-function oneOfNumber<T extends readonly number[]>(
-  v: unknown,
-  allowed: T,
-): T[number] | null {
-  const n = asNumber(v);
-  if (n === null) return null;
-  return (allowed as readonly number[]).includes(n) ? (n as T[number]) : null;
-}
-
-function asBool(v: unknown): boolean | null {
-  if (typeof v === "boolean") return v;
-  const s = asString(v);
-  if (!s) return null;
-  const norm = s.trim().toLowerCase();
-  if (norm === "true" || norm === "1" || norm === "yes") return true;
-  if (norm === "false" || norm === "0" || norm === "no") return false;
-  return null;
-}
+import {
+  EMPLOYMENT_TYPE_VALUES,
+  LANGUAGE_VALUES,
+  POSTED_WITHIN_VALUES,
+  RADIUS_VALUES,
+  SENIORITY_VALUES,
+  WORK_MODE_VALUES,
+  isRecord,
+  readBool,
+  readOneOf,
+  readOneOfNumber,
+  readString,
+} from "./serializeCanonicalFilters.parsers";
 
 /**
  * Serializes canonical filters to a URL-safe query string.
@@ -102,35 +48,54 @@ export function parseCanonicalFilters(input: unknown): CanonicalFilters {
 
   if (!isRecord(input)) return out;
 
-  // Support both short keys and more explicit keys (legacy / debug friendliness)
-  const role = asString(input.role) ?? asString(input.position);
-  const loc = asString(input.loc) ?? asString(input.location) ?? asString(input.city);
+  const role = readString(input, ["role", "position"]);
+  const loc = readString(input, ["loc", "location", "city"]);
 
-  const radius =
-    oneOfNumber(input.r ?? input.radiusKm ?? input.radius, RADIUS_VALUES) ??
-    DEFAULT_CANONICAL_FILTERS.radiusKm;
+  const radius = readOneOfNumber(
+    input,
+    ["r", "radiusKm", "radius"],
+    RADIUS_VALUES,
+    DEFAULT_CANONICAL_FILTERS.radiusKm,
+  );
+  const wm = readOneOf(
+    input,
+    ["wm", "workMode"],
+    WORK_MODE_VALUES,
+    DEFAULT_CANONICAL_FILTERS.workMode,
+  );
+  const sen = readOneOf(
+    input,
+    ["sen", "seniority"],
+    SENIORITY_VALUES,
+    DEFAULT_CANONICAL_FILTERS.seniority,
+  );
+  const emp = readOneOf(
+    input,
+    ["emp", "employmentType"],
+    EMPLOYMENT_TYPE_VALUES,
+    DEFAULT_CANONICAL_FILTERS.employmentType,
+  );
+  const pw = readOneOfNumber(
+    input,
+    ["pw", "postedWithin"],
+    POSTED_WITHIN_VALUES,
+    DEFAULT_CANONICAL_FILTERS.postedWithin,
+  );
 
-  const wm =
-    (oneOf(input.wm ?? input.workMode, WORK_MODE_VALUES)) ??
-    DEFAULT_CANONICAL_FILTERS.workMode;
+  const inc = readString(input, ["inc", "includeKeywords"]);
+  const exc = readString(input, ["exc", "excludeKeywords"]);
 
-  const sen =
-    (oneOf(input.sen ?? input.seniority, SENIORITY_VALUES)) ??
-    DEFAULT_CANONICAL_FILTERS.seniority;
-
-  const emp =
-    (oneOf(input.emp ?? input.employmentType, EMPLOYMENT_TYPE_VALUES)) ?? DEFAULT_CANONICAL_FILTERS.employmentType;
-
-  const pw =
-    (oneOfNumber(input.pw ?? input.postedWithin, POSTED_WITHIN_VALUES)) ?? DEFAULT_CANONICAL_FILTERS.postedWithin;
-
-  const inc = asString(input.inc ?? input.includeKeywords) ?? "";
-  const exc = asString(input.exc ?? input.excludeKeywords) ?? "";
-
-  const ag = asBool(input.ag ?? input.excludeAgencies);
-  const lang =
-    (oneOf(input.lang ?? input.language, LANGUAGE_VALUES)) ??
-    DEFAULT_CANONICAL_FILTERS.language;
+  const ag = readBool(
+    input,
+    ["ag", "excludeAgencies"],
+    DEFAULT_CANONICAL_FILTERS.excludeAgencies,
+  );
+  const lang = readOneOf(
+    input,
+    ["lang", "language"],
+    LANGUAGE_VALUES,
+    DEFAULT_CANONICAL_FILTERS.language,
+  );
 
   if (role) out.role = role;
   if (loc) out.location = loc;
@@ -144,9 +109,7 @@ export function parseCanonicalFilters(input: unknown): CanonicalFilters {
   out.includeKeywords = inc;
   out.excludeKeywords = exc;
 
-  out.excludeAgencies =
-    ag === null ? DEFAULT_CANONICAL_FILTERS.excludeAgencies : ag;
-
+  out.excludeAgencies = ag;
   out.language = lang;
 
   return out;

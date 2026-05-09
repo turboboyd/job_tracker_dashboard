@@ -1,8 +1,8 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import type { DateFormat } from "src/entities/userSettings/api/userSettingsApi";
-import { FormField } from "src/shared/ui/Form/FormField/FormField";
+import type { DateFormat } from "src/entities/userSettings";
+import { FormField } from "src/shared/ui";
 
 interface Props {
   value: DateFormat;

@@ -1,13 +1,15 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import "src/shared/config/i18n/i18n";
+
+import { initAuthListener } from "src/entities/auth/model";
+import "src/shared/config/i18n";
+import "src/app/init/registerApplicationGateway";
 
 import { App } from "./app/App";
 import { StoreProvider } from "./app/providers/StoreProvider/StoreProvider";
 import { ThemeProvider } from "./app/providers/ThemeProvider";
 import { store } from "./app/store/store";
-import { initAuthListener } from "./entities/auth";
 
 import "./styles/globals.css";
 

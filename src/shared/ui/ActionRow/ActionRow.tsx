@@ -1,8 +1,9 @@
-import { motion } from "framer-motion";
 import React, { useState } from "react";
 
 import { classNames } from "src/shared/lib";
-import { Button, Card } from "src/shared/ui";
+
+import { Button } from "../Button/Button";
+import { Card } from "../Card/Card";
 
 interface Props {
   icon: React.ReactNode;
@@ -29,8 +30,15 @@ export function ActionRow({
 }: Props) {
   const [localHover, setLocalHover] = useState(false);
   const hovered = onGoHoverChange ? false : localHover;
-
   const shouldShake = iconShake || hovered;
+
+  const setGoHover = (nextHovered: boolean) => {
+    if (onGoHoverChange) {
+      onGoHoverChange(nextHovered);
+      return;
+    }
+    setLocalHover(nextHovered);
+  };
 
   return (
     <Card
@@ -38,71 +46,47 @@ export function ActionRow({
       padding="none"
       interactive
       className={classNames(
-        "rounded-xl px-md py-sm",
-        "flex items-center justify-between gap-md",
+        "px-4 py-3",
+        "flex items-center justify-between gap-3",
+        done && "opacity-60",
         className
       )}
     >
-      <div className="flex min-w-0 items-center gap-sm">
-        <motion.div
-          className="shrink-0 text-foreground"
-          animate={
-            shouldShake
-              ? {
-                  rotate: [0, -12, 12, -10, 10, -6, 6, 0],
-                  x: [0, -1, 1, -1, 1, 0],
-                }
-              : { rotate: 0, x: 0 }
-          }
-          transition={
-            shouldShake
-              ? {
-                  duration: 0.55,
-                  ease: "easeInOut",
-                  repeat: Infinity,
-                  repeatDelay: 0.25,
-                }
-              : { duration: 0.15 }
-          }
-          style={{ transformOrigin: "50% 50%" }}
+      <div className="flex min-w-0 items-center gap-3">
+        <div
+          className="shrink-0 text-primary transition-transform duration-150 ease-in-out"
+          style={{
+            transform: shouldShake ? "rotate(-8deg) translateX(-1px)" : "none",
+            transformOrigin: "50% 50%",
+          }}
         >
           {icon}
-        </motion.div>
-
+        </div>
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-foreground leading-normal">
+          <div className={classNames(
+            "truncate text-sm font-medium leading-normal",
+            done ? "text-muted-foreground line-through" : "text-foreground"
+          )}>
             {title}
           </div>
         </div>
       </div>
 
       <Button
-        variant="link"
+        variant={done ? "ghost" : "link"}
+        size="sm"
         onClick={onGo}
         disabled={done}
         className={classNames(
-          "px-0",
-          "transition-colors duration-fast ease-ease-out",
-          done ? "text-muted-foreground" : "text-primary"
+          "shrink-0 px-0 text-xs",
+          done ? "text-muted-foreground cursor-default" : "text-primary hover:text-primary/80"
         )}
-        onMouseEnter={() => {
-          if (onGoHoverChange) onGoHoverChange(true);
-          else setLocalHover(true);
-        }}
-        onMouseLeave={() => {
-          if (onGoHoverChange) onGoHoverChange(false);
-          else setLocalHover(false);
-        }}
-        onFocus={() => {
-          if (onGoHoverChange) onGoHoverChange(true);
-          else setLocalHover(true);
-        }}
-        onBlur={() => {
-          if (onGoHoverChange) onGoHoverChange(false);
-          else setLocalHover(false);
-        }}
+        onMouseEnter={() => setGoHover(true)}
+        onMouseLeave={() => setGoHover(false)}
+        onFocus={() => setGoHover(true)}
+        onBlur={() => setGoHover(false)}
       >
-        {done ? (doneText ?? "Done") : (goText ?? "Go")}
+        {done ? (doneText ?? "Done") : (goText ?? "Go →")}
       </Button>
     </Card>
   );

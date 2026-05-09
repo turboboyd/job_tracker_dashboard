@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -37,12 +36,12 @@ export function usePageParam(key = "page") {
     const p = clampPage(nextPage);
     const nextSearch = updateURLParams({ [key]: String(p) }, location.search);
 
-    navigate(
+    void navigate(
       {
         pathname: location.pathname,
         search: nextSearch,
       },
-      { replace: Boolean(opts.replace) }
+      { replace: Boolean(opts.replace) },
     );
   };
 

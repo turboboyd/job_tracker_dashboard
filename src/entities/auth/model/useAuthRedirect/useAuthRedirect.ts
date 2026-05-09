@@ -1,12 +1,8 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import type { AuthRedirectLocationState} from "src/features/auth/lib/authRedirect";
-import { getAuthRedirectFrom } from "src/features/auth/lib/authRedirect";
-
-
-
+import type { AuthRedirectLocationState } from "src/shared/lib";
+import { getAuthRedirectFrom } from "src/shared/lib";
 
 export function useAuthRedirect(defaultPath = "/") {
   const location = useLocation();
@@ -19,9 +15,9 @@ export function useAuthRedirect(defaultPath = "/") {
     );
   }, [location.state, defaultPath]);
 
-  function redirect(to?: string) {
-    navigate(to ?? from, { replace: true });
-  }
+  const redirect = useCallback((to?: string) => {
+    void navigate(to ?? from, { replace: true });
+  }, [from, navigate]);
 
   return { from, redirect };
 }

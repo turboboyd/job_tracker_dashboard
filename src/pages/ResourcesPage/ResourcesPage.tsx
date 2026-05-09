@@ -1,34 +1,15 @@
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import { loadTranslations } from "src/shared/config/i18n/loadTranslations";
-import { Button, Card } from "src/shared/ui";
-
 import { useResourcesPage } from "./model/useResourcesPage";
-import { ResourceCard } from "./ui/ResourceCard";
+import { ensureResourcesLocalesLoaded } from "./resourcesLocales";
+import {
+  ResourcesEmptyState,
+  ResourcesFavoritesError,
+  ResourcesList,
+} from "./ResourcesPage.sections";
 import { ResourcesFiltersCard } from "./ui/ResourcesFiltersCard";
 import { ResourcesHeader } from "./ui/ResourcesHeader";
-
-let resourcesLocalesLoaded = false;
-
-async function ensureResourcesLocalesLoaded() {
-  if (resourcesLocalesLoaded) return;
-
-  const [en, ru, de] = await Promise.all([
-    import("./locales/en.json"),
-    import("./locales/ru.json"),
-    import("./locales/de.json"),
-  ]);
-
-  loadTranslations("resources", {
-    en: en.default,
-    ru: ru.default,
-    de: de.default,
-    uk: {},
-  });
-
-  resourcesLocalesLoaded = true;
-}
 
 const ResourcesPage: React.FC = () => {
   const {
@@ -99,24 +80,14 @@ const ResourcesPage: React.FC = () => {
       />
 
       {isPrivate && favIsError ? (
-        <Card padding="md" shadow="sm">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-sm text-destructive">
-              {t("resources.errors.loadFailed", {
-                defaultValue:
-                  "Could not load favorites. Check Firestore rules/permissions.",
-              })}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              shadow="none"
-              onClick={() => refetchFavorites()}
-            >
-              {t("resources.actions.retry", { defaultValue: "Retry" })}
-            </Button>
-          </div>
-        </Card>
+        <ResourcesFavoritesError
+          message={t("resources.errors.loadFailed", {
+            defaultValue:
+              "Could not load favorites. Check Firestore rules/permissions.",
+          })}
+          onRetry={refetchFavorites}
+          retryLabel={t("resources.actions.retry", { defaultValue: "Retry" })}
+        />
       ) : null}
 
       <ResourcesFiltersCard
@@ -132,46 +103,29 @@ const ResourcesPage: React.FC = () => {
         categoryOptions={categoryOptions}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((r) => {
-          const isFav = isFavorite(r.id);
-          const pending = isPending(r.id);
-
-          return (
-            <ResourceCard
-              key={r.id}
-              title={r.title}
-              description={r.description}
-              href={r.href}
-              tags={r.tags}
-              showFavorite={isPrivate}
-              isFav={isFav}
-              isPending={!uid || pending}
-              ariaLabel={
-                isFav
-                  ? t("resources.actions.unsave", {
-                      defaultValue: "Remove from favorites",
-                    })
-                  : t("resources.actions.save", {
-                      defaultValue: "Save to favorites",
-                    })
-              }
-              onToggleFavorite={() => onToggleFavorite(r.id)}
-              openLabel={t("resources.actions.open", { defaultValue: "Open" })}
-            />
-          );
+      <ResourcesList
+        filtered={filtered}
+        isFavorite={isFavorite}
+        isPending={isPending}
+        isPrivate={isPrivate}
+        onToggleFavorite={onToggleFavorite}
+        openLabel={t("resources.actions.open", { defaultValue: "Open" })}
+        saveLabel={t("resources.actions.save", {
+          defaultValue: "Save to favorites",
         })}
-      </div>
+        uid={uid}
+        unsaveLabel={t("resources.actions.unsave", {
+          defaultValue: "Remove from favorites",
+        })}
+      />
 
       {filtered.length === 0 ? (
-        <Card padding="md" shadow="sm">
-          <div className="text-sm text-muted-foreground">
-            {t("resources.empty", {
-              defaultValue:
-                "Try another keyword or switch the category filter.",
-            })}
-          </div>
-        </Card>
+        <ResourcesEmptyState
+          message={t("resources.empty", {
+            defaultValue:
+              "Try another keyword or switch the category filter.",
+          })}
+        />
       ) : null}
     </div>
   );

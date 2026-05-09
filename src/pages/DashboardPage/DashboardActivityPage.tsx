@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import {
   AppRoutes,
   RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
+} from "src/shared/config/routes";
 import { Button } from "src/shared/ui";
 
 import { useDashboardData } from "./model/useDashboardData";

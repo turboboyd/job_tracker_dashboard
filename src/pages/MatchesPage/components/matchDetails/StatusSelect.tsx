@@ -1,7 +1,6 @@
 import React from "react";
 
-import type { StatusKey } from "src/entities/application/model/status";
-import { StatusMenu } from "src/entities/application/ui/StatusKit";
+import { StatusMenu, type StatusKey } from "src/entities/application";
 
 interface Props {
   label: string;

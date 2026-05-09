@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-base-to-string */
 import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
-import { classNames } from "src/shared/lib";
+import { classNames } from "src/shared/lib/classNames";
 
 export type SelectIntent = "default" | "error" | "success" | "warning";
 export type SelectStateLegacy = "default" | "error";
@@ -22,7 +21,7 @@ const selectVariants = cva(
 
     // colors (your tokens)
     "bg-input text-foreground",
-    "border border-input",
+    "border border-border",
 
     // typography / spacing baseline
     "leading-normal",
@@ -32,14 +31,13 @@ const selectVariants = cva(
     "focus-visible:ring-2 focus-visible:ring-ring",
     "focus-visible:ring-offset-2 focus-visible:ring-offset-background",
 
-    // “adult” feel: smooth shadow + subtle lift on hover
+    // mature feel: smooth shadow + subtle lift on hover
     "shadow-sm",
     "transition-colors transition-shadow duration-normal ease-ease-out",
     "hover:shadow-md",
     "active:shadow-sm",
 
     // subtle border/brightness changes on hover
-    "hover:border-border",
     "bg-clip-padding",
   ].join(" "),
   {
@@ -98,6 +96,12 @@ export type SelectProps<T extends string> = Omit<
     placeholderOption?: React.ReactNode;
   };
 
+function toOptionText(content: React.ReactNode): string {
+  if (typeof content === "string") return content;
+  if (typeof content === "number") return String(content);
+  return "";
+}
+
 export function Select<T extends string>({
   value,
   onChange,
@@ -134,15 +138,13 @@ export function Select<T extends string>({
     >
       {placeholderOption !== undefined ? (
         <option value="" disabled>
-          {typeof placeholderOption === "string"
-            ? placeholderOption
-            : String(placeholderOption)}
+          {toOptionText(placeholderOption)}
         </option>
       ) : null}
 
       {options.map((o) => (
-        <option key={String(o.value)} value={o.value} disabled={o.disabled}>
-          {typeof o.label === "string" ? o.label : String(o.label)}
+        <option key={o.value} value={o.value} disabled={o.disabled}>
+          {toOptionText(o.label)}
         </option>
       ))}
     </select>

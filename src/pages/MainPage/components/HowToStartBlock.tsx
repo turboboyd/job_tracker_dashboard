@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   AppRoutes,
   RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
+} from "src/shared/config/routes";
 import { LinkButton, Card } from "src/shared/ui";
 
 interface Props {

@@ -1,4 +1,6 @@
-import type { LoopPlatform, ValidationResult } from "src/entities/loop/model/";
+import type { LoopPlatform } from "../types";
+
+import type { ValidationResult } from "./validators";
 
 function ok(): ValidationResult {
   return { ok: true };

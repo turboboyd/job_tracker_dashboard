@@ -1,0 +1,22 @@
+{
+  "appName": "Job Tracker",
+  "accountSettings": "Account settings",
+  "home": "Home",
+  "resources": "Resources",
+  "about": "About",
+  "dashboard": "Dashboard",
+  "jobs": "Jobs",
+  "notifications": {
+    "title": "Reminders",
+    "overdue": "Overdue",
+    "upcoming": "Upcoming",
+    "empty": "All caught up — no pending reminders.",
+    "open": "Open application",
+    "done": "Done",
+    "snooze": "Snooze",
+    "in1Hour": "In 1 hour",
+    "in3Hours": "In 3 hours",
+    "tomorrow9": "Tomorrow 09:00",
+    "doneComment": "Reminder completed"
+  }
+}

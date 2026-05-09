@@ -1,4 +1,4 @@
-import { Card } from "src/shared/ui/Card/Card";
+import { Card } from "src/shared/ui";
 
 import { AccountSettingsLayout } from "../ui/AccountSettingsLayout";
 

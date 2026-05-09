@@ -5,42 +5,21 @@ import {
   type StatusKey,
   getBoardColumn,
   type BoardColumnKey,
-} from "src/entities/application/model/status";
-import { buildDailyBuckets, type Bucket } from "src/pages/DashboardPage/model/dashboardTimeSeries";
+} from "src/entities/application";
 
+import { buildDailyBuckets, type Bucket } from "../../model/dashboardTimeSeries";
+
+import { clampDayStart, isoDay, rangeDays, type CustomRangeMs } from "./trends.helpers";
 import type { ModeKey, RangeKey, TrendsPoint } from "./trends.types";
-
-type CustomRange = { fromMs: number; toMs: number } | null;
 
 // Keep hooks pure: take a stable "now" snapshot at module init for preset ranges.
 const NOW_MS = Date.now();
-
-function rangeDays(range: Exclude<RangeKey, "custom">): number {
-  if (range === "12m") return 365;
-  if (range === "90d") return 90;
-  if (range === "30d") return 30;
-  return 7;
-}
-
-function clampDayStart(ms: number): number {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
-function isoDay(ts: number): string {
-  const d = new Date(ts);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
-}
 
 export function useTrendsBuckets(
   matches: { status: StatusKey; createdAt: number; updatedAt: number }[],
   range: RangeKey,
   mode: ModeKey,
-  customRange: CustomRange,
+  customRange: CustomRangeMs,
 ) {
   return useMemo(() => {
     const byUpdatedAt = mode === "updated";

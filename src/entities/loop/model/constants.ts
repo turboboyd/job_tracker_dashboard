@@ -1,4 +1,4 @@
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import type { StatusKey } from "src/entities/application";
 
 import { ALL_PLATFORMS, PLATFORM_REGISTRY } from "./platformRegistry";
 import type { LoopPlatform } from "./types";
@@ -8,14 +8,14 @@ export const LOOP_PLATFORMS: { value: LoopPlatform; label: string }[] =
 
 export const LOOP_MATCH_STATUSES = [
   // NOTE: These labels are for loop/match UI only.
-  // Values MUST be StatusKey from src/entities/application/model/status.ts
+  // Values MUST be StatusKey from src/entities/application/status model.
   { value: "SAVED", label: "New" },
   { value: "REVIEWED", label: "Saved" },
   { value: "APPLIED", label: "Applied" },
   { value: "HR_CALL_SCHEDULED", label: "Interview" },
   { value: "OFFER_RECEIVED", label: "Offer" },
   { value: "REJECTED_PRE_INTERVIEW", label: "Rejected" },
-] as const satisfies readonly { value: LoopMatchStatus; label: string }[];
+] as const satisfies readonly { value: StatusKey; label: string }[];
 
 const LOOP_PLATFORM_SET: ReadonlySet<string> = new Set(ALL_PLATFORMS);
 export function isLoopPlatform(v: unknown): v is LoopPlatform {
@@ -23,8 +23,8 @@ export function isLoopPlatform(v: unknown): v is LoopPlatform {
 }
 
 const LOOP_MATCH_STATUS_SET: ReadonlySet<string> = new Set(
-  LOOP_MATCH_STATUSES.map((s) => s.value)
+  LOOP_MATCH_STATUSES.map((s) => s.value),
 );
-export function isLoopMatchStatus(v: unknown): v is LoopMatchStatus {
+export function isLoopMatchStatus(v: unknown): v is StatusKey {
   return typeof v === "string" && LOOP_MATCH_STATUS_SET.has(v);
 }

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 
-import { Button } from "src/shared/ui";
+import { Button } from "../Button/Button";
 
 interface Props {
   label?: string;

@@ -1,19 +1,15 @@
 import { SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
-import {
-  AppRoutes,
-  RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
 import { Button } from "src/shared/ui";
 
-import { useDashboardData } from "./model/useDashboardData";
+import { useDashboardPageController } from "./model/useDashboardPageController";
 import {
+  DashboardFollowUpsCard,
   DashboardLoopsFilterModal,
   DashboardOnboardingActions,
   DashboardPipelineCard,
+  DashboardPlanCard,
   DashboardRecentJobsCard,
   DashboardStats,
   DashboardTabsNav,
@@ -21,34 +17,22 @@ import {
 
 export default function DashboardPage() {
   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
-  const navigate = useNavigate();
-  const [loopsModalOpen, setLoopsModalOpen] = useState(false);
-
   const {
-    loops,
-    loopsFilter,
-    setLoopsFilter,
-    isLoading,
-    error,
-    hasMatches,
-    recent,
-    pipelineSummary,
-  } = useDashboardData();
-
-  const goProfile = () => navigate(RoutePath[AppRoutes.SETTINGS_PROFILE]);
-  const goQuestions = () => navigate(RoutePath[AppRoutes.PROFILE_QUESTIONS]);
-  const goLoop = () => navigate(RoutePath[AppRoutes.LOOPS]);
-  const goMatches = () => navigate(RoutePath[AppRoutes.APPLICATIONS]);
-
-  // Чтобы не сортировать/маппить на каждый рендер
-  const loopsForModal = useMemo(
-    () =>
-      loops
-        .slice()
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((l) => ({ id: l.id, name: l.name })),
-    [loops],
-  );
+    loopsModalOpen,
+    setLoopsModalOpen,
+    loopsForModal,
+    dashboard: {
+      loopsFilter,
+      setLoopsFilter,
+      isLoading,
+      error,
+      hasMatches,
+      planItems,
+      recent,
+      pipelineSummary,
+    },
+    actions,
+  } = useDashboardPageController();
 
   return (
     <div className="flex h-full flex-col">
@@ -93,33 +77,40 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
               <DashboardOnboardingActions
                 hasJobs={hasMatches}
-                onGoProfile={goProfile}
-                onGoQuestions={goQuestions}
-                onGoLoop={goLoop}
-                onGoJobs={goMatches}
+                onGoProfile={actions.goProfile}
+                onGoQuestions={actions.goQuestions}
+                onGoLoop={actions.goLoop}
+                onGoJobs={actions.goMatches}
               />
 
-              <DashboardRecentJobsCard jobs={recent} onViewAll={goMatches} />
+              <DashboardRecentJobsCard
+                jobs={recent}
+                onOpenJob={actions.goApplicationDetails}
+                onViewAll={actions.goMatches}
+              />
               <DashboardPipelineCard
                 summary={pipelineSummary}
                 size={240}
                 stroke={16}
               />
             </div>
+
+            <DashboardPlanCard
+              error={error}
+              isLoading={isLoading}
+              items={planItems}
+              onOpenApplication={actions.goApplicationDetails}
+            />
+
+            <DashboardFollowUpsCard />
           </div>
 
           <DashboardStats
             isLoading={isLoading}
             error={error}
             summary={pipelineSummary}
-            onGoJobs={(status) => {
-              // Applications page is the canonical pipeline list.
-              if (!status) return navigate(RoutePath[AppRoutes.APPLICATIONS]);
-              return navigate(`${RoutePath[AppRoutes.APPLICATIONS]}?col=${status}`);
-            }}
-            onAddFirstJob={() =>
-              navigate(`${RoutePath[AppRoutes.APPLICATIONS]}?focus=add`)
-            }
+            onGoJobs={actions.goApplicationsByStatus}
+            onAddFirstJob={actions.focusAddApplication}
           />
         </div>
       </div>

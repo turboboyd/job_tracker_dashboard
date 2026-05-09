@@ -1,50 +1,53 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-import {
-  getDocs,
-  query,
-  type DocumentData,
-} from "firebase/firestore";
+import { getDocs, query } from "firebase/firestore";
 
-import { userApplicationsCol } from "src/shared/api/firestoreRefs";
-
-
+import { userApplicationsCol } from "src/shared/api";
 
 export interface MatchStats {
   total: number;
   byStatus: Record<string, number>;
 }
 
+const UNKNOWN_STATUS = "unknown";
+
 function inc(map: Record<string, number>, key: string) {
   map[key] = (map[key] ?? 0) + 1;
 }
 
-export async function getUserMatchStats(uid: string): Promise<MatchStats> {
-  // Unified source: users/{uid}/applications, filtered by loopLinkage.loopId presence
-  const q = query(userApplicationsCol(uid));
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-  const snap = await getDocs(q);
+function readNonEmptyString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function readLoopId(data: unknown): string | null {
+  if (!isRecord(data) || !isRecord(data.loopLinkage)) return null;
+  return readNonEmptyString(data.loopLinkage.loopId);
+}
+
+function readProcessStatus(data: unknown): string {
+  if (!isRecord(data) || !isRecord(data.process)) return UNKNOWN_STATUS;
+  return readNonEmptyString(data.process.status) ?? UNKNOWN_STATUS;
+}
+
+export async function getUserMatchStats(uid: string): Promise<MatchStats> {
+  const applicationsQuery = query(userApplicationsCol(uid));
+  const snapshot = await getDocs(applicationsQuery);
 
   const byStatus: Record<string, number> = {};
   let total = 0;
 
-  snap.forEach((doc) => {
-    const data = doc.data();
+  snapshot.forEach((documentSnapshot) => {
+    const data: unknown = documentSnapshot.data();
 
-    // count only items that belong to some loop
-    const loopId = data?.loopLinkage?.loopId;
-    if (typeof loopId !== "string" || loopId.trim().length === 0) return;
+    if (readLoopId(data) === null) return;
 
     total += 1;
-
-    // Статусы не фиксируем: берём то, что реально лежит в базе
-    // Legacy status for UI: derived from applications.process.status
-    const statusRaw = data?.process?.status;
-    const status =
-      typeof statusRaw === "string" && statusRaw.trim().length > 0
-        ? statusRaw.trim()
-        : "unknown";
-
-    inc(byStatus, status);
+    inc(byStatus, readProcessStatus(data));
   });
 
   return { total, byStatus };

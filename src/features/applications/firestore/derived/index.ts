@@ -1,6 +1,8 @@
 import type { Timestamp } from "firebase/firestore";
 
-import type { ApplicationDoc, DotPatch, MatchingBlock, PriorityBlock, UserDoc } from "../types";
+import type { ApplicationDoc, UserDoc } from "../documents.types";
+import type { MatchingBlock, PriorityBlock } from "../domain.types";
+import type { DotPatch } from "../patch.types";
 
 import { computeRoleFingerprint, withRoleFingerprint } from "./fingerprint";
 import { computeFollowUp } from "./followUp";

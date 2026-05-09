@@ -1,6 +1,6 @@
 import { deleteDoc } from "firebase/firestore";
 
-import { userLoopDoc } from "src/shared/api/firestoreRefs";
+import { userLoopDoc } from "src/shared/api";
 
 export interface DeleteLoopInput {
   loopId: string;
