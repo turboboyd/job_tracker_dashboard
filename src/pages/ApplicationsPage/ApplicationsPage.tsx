@@ -153,8 +153,8 @@ export default function ApplicationsPage() {
             </div>
           </div>
 
-          {/* View mode switcher */}
-          <div className="flex items-center gap-1 mt-3 mb-0">
+          {/* View mode switcher — underline tab style */}
+          <div className="flex items-center gap-0.5 mt-3 mb-0">
             {VIEW_MODES.map((vm) => {
               const isActive = view === vm.key;
               return (
@@ -163,10 +163,11 @@ export default function ApplicationsPage() {
                   type="button"
                   onClick={() => setView(vm.key)}
                   className={[
-                    "rounded-[6px] px-3 py-1.5 text-[12.5px] font-medium transition-colors select-none",
+                    "-mb-px px-3.5 py-2 text-[13px] transition-colors cursor-pointer select-none",
+                    "inline-flex items-center gap-1.5 whitespace-nowrap",
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "border-b-2 border-primary font-medium text-foreground"
+                      : "border-b-2 border-transparent text-muted-foreground hover:text-foreground",
                   ].join(" ")}
                 >
                   {vm.label}

@@ -15,6 +15,9 @@ import authRu from "src/shared/locales/auth/ru.json";
 import commonDe from "src/shared/locales/common/de.json";
 import commonEn from "src/shared/locales/common/en.json";
 import commonRu from "src/shared/locales/common/ru.json";
+import appPageDe from "src/pages/ApplicationsPage/locales/de.json";
+import appPageEn from "src/pages/ApplicationsPage/locales/en.json";
+import appPageRu from "src/pages/ApplicationsPage/locales/ru.json";
 
 
 export const supportedLngs = ["en", "ru", "de", "uk"] as const;
@@ -30,6 +33,7 @@ i18n
           common: commonEn,
           auth: authEn,
           header: headerEn,
+          ...appPageEn,
         },
       },
       ru: {
@@ -37,6 +41,7 @@ i18n
           common: commonRu,
           auth: authRu,
           header: headerRu,
+          ...appPageRu,
         },
       },
       de: {
@@ -44,6 +49,7 @@ i18n
           common: commonDe,
           auth: authDe,
           header: headerDe,
+          ...appPageDe,
         },
       },
       // Ukrainian is supported as a language option, but not all bundles have translations yet.
