@@ -6,6 +6,15 @@ import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/applicatio
 
 import type { BoardVM } from "../model/types";
 
+const COLUMN_COLORS: Record<string, string> = {
+  ACTIVE:      "var(--color-accent-2, #f97316)",
+  INTERVIEW:   "#7c3aed",
+  OFFER:       "#d97706",
+  HIRED:       "#059669",
+  REJECTED:    "#dc2626",
+  NO_RESPONSE: "#94a3b8",
+};
+
 import { BoardColumn } from "./BoardColumn";
 import { useBoardColumnsDnd } from "./boardColumns/useBoardColumnsDnd";
 import { BoardMatchCardOverlay } from "./BoardMatchCard";
@@ -152,13 +161,11 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
             [
               "flex-1 min-h-0",
               "overflow-x-auto overflow-y-hidden",
-              // Mobile: Trello-like paging between columns
-              "md:overflow-x-auto",
               "snap-x snap-mandatory md:snap-none",
             ].join(" ")
           }
         >
-          <div className="h-full min-h-0 flex items-stretch gap-md min-w-max px-md md:px-0">
+          <div className="h-full min-h-0 flex items-stretch gap-3.5 min-w-max px-7 py-[18px]">
             {statuses.map(({ status, title }) => {
               const matches = columnsState.get(status) ?? [];
               return (
@@ -170,6 +177,7 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
                   <BoardColumn
                     status={status}
                     title={title}
+                    color={COLUMN_COLORS[status] ?? "#94a3b8"}
                     matches={matches}
                     loopIdToName={vm.data.loopIdToName}
                     busy={vm.busy}

@@ -22,13 +22,11 @@ export function BoardLane({ status, children }: Props) {
       ref={setNodeRef}
       className={classNames(
         "flex-1 min-h-0",
-        // Important: when a lane is empty, the content height may collapse and the drop-zone becomes
-        // too small to hit. Keep a reasonable minimum height so dropping into empty columns works.
+        // Keep min height so empty columns remain droppable
         "min-h-[180px]",
-        "rounded-xl border border-border bg-muted/40",
-        "p-sm md:p-md",
+        "rounded-[7px]",
         "overflow-y-auto overflow-x-hidden",
-        isOver && "bg-muted ring-2 ring-primary/40",
+        isOver && "bg-muted/60 ring-1 ring-primary/30",
       )}
     >
       {children}

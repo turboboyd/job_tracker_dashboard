@@ -44,7 +44,7 @@
 |---|---|
 | `Мои заявки_backend.md` | `/dashboard/applications` — список и управление заявками |
 | `Детали заявки_backend.md` | `/dashboard/applications/:id` — детальная карточка |
-| *(скоро)* `Доска_backend.md` | `/dashboard/board` — Kanban |
+| `Доска_backend.md` | `/dashboard/board` — Kanban |
 | *(скоро)* `Мои циклы_backend.md` | `/dashboard/loops` — поисковые циклы |
 | *(скоро)* `Дашборд_backend.md` | `/dashboard` — обзор и аналитика |
 | *(скоро)* `Матчинг_backend.md` | AI matching engine |
