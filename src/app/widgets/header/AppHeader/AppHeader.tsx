@@ -1,16 +1,16 @@
-import { Menu, X } from "lucide-react";
+import { LogIn, Menu, UserPlus, X } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import {
-  AppRoutes,
-  RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
-import { UserMenu } from "src/app/widgets";
-import { useAuthSelectors } from "src/entities/auth";
-import { Button, ThemeToggle } from "src/shared/ui";
-import { LanguageSelectConnected } from "src/shared/ui/molecules/LanguageSelect/LanguageSelectConnected";
+import { useAuthSelectors } from "src/features/auth/model";
+import { LanguageSelectConnected } from "src/features/i18n";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
+import { Button } from "src/shared/ui/Button";
+import { ThemeToggle } from "src/shared/ui/molecules/ThemeToggle";
+
+import { NotificationsBell } from "../NotificationsBell/NotificationsBell";
+import { UserMenu } from "../UserMenu/UserMenu";
 
 interface AppHeaderProps {
   sidebarOpen?: boolean;
@@ -34,12 +34,15 @@ const authNavItems: NavItem[] = [
 
 function linkClass(isActive: boolean) {
   return [
-    "text-sm transition-colors",
+    "text-sm font-medium transition-colors",
     isActive
       ? "text-foreground"
       : "text-muted-foreground hover:text-foreground",
   ].join(" ");
 }
+
+const guestActionClass =
+  "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3";
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   sidebarOpen,
@@ -50,19 +53,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   const navItems = isAuthenticated ? authNavItems : guestNavItems;
 
-  // ✅ Minimal fix:
-  // Move ONLY the left group (close button + dashboard link/title) to the right
-  // when the desktop sidebar is open, so it doesn't get hidden on zoom.
-  // We do NOT touch overall header layout/overflow/sticky to keep scrolling exactly as before.
   const leftShiftClass =
     isAuthenticated && sidebarOpen ? "md:translate-x-64" : "md:translate-x-0";
 
   return (
-    <header className="h-16 bg-card shadow-[var(--shadow-sm)]">
-      <div className="mx-auto flex h-full max-w-container items-center justify-between pl-12 pr-4">
+    <header className="h-16 bg-card border-b border-border">
+      <div className="mx-auto flex h-full max-w-container items-center justify-between gap-3 px-3 sm:px-4">
+        {/* Left group */}
         <div
           className={[
-            "flex items-center gap-3",
+            "flex items-center gap-2",
             "transition-transform duration-300 ease-out",
             leftShiftClass,
           ].join(" ")}
@@ -83,10 +83,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           )}
 
           {!isAuthenticated && (
-            <div className="text-sm font-semibold">{t("header.appName")}</div>
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm">
+                <span className="text-primary-foreground text-xs font-bold leading-none select-none">J</span>
+              </div>
+              <span className="text-sm font-semibold text-foreground tracking-tight">
+                {t("header.appName")}
+              </span>
+            </div>
           )}
 
-          <nav className="hidden md:flex items-center gap-4">
+          <nav className="hidden md:flex items-center gap-5 ml-1">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -99,28 +106,38 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </nav>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Right group */}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {isAuthenticated ? (
-            <UserMenu
-              settingsPath={`${RoutePath[AppRoutes.SETTINGS_PROFILE]}`}
-            />
+            <>
+              <NotificationsBell />
+              <UserMenu
+                settingsPath={`${RoutePath[AppRoutes.SETTINGS_PROFILE]}`}
+              />
+            </>
           ) : (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
               <NavLink
                 to={RoutePath[AppRoutes.LOGIN]}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className={guestActionClass}
               >
-                {t("auth.signIn")}
+                <LogIn className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{t("auth.signIn")}</span>
               </NavLink>
               <NavLink
                 to={RoutePath[AppRoutes.REGISTER]}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className={[guestActionClass, "bg-primary text-primary-foreground hover:bg-primary/90"].join(" ")}
               >
-                {t("auth.createAccount")}
+                <UserPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{t("auth.createAccount")}</span>
               </NavLink>
             </div>
           )}
-          <LanguageSelectConnected labelMode="short" />
+          <LanguageSelectConnected
+            labelMode="short"
+            width="auto"
+            className="h-9 w-[4.75rem] text-xs"
+          />
           <ThemeToggle />
         </div>
       </div>

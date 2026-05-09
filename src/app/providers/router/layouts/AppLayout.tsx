@@ -1,9 +1,10 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 
+import { ApplicationReminderEngine } from "src/app/init/ApplicationReminderEngine";
 import { AppHeader, AppSidebar, useSidebar } from "src/app/widgets";
-import { useAuthSelectors } from "src/entities/auth";
-import { PageShell } from "src/shared/ui";
+import { useAuthSelectors } from "src/features/auth/model";
+import { PageShell } from "src/shared/ui/PageShell";
 
 export const AppLayout: React.FC = () => {
   const { isAuthenticated } = useAuthSelectors();
@@ -29,6 +30,8 @@ export const AppLayout: React.FC = () => {
       {hasSidebar && (
         <AppSidebar isOpen={sidebar.isOpen} onClose={sidebar.close} />
       )}
+
+      {isAuthenticated ? <ApplicationReminderEngine /> : null}
 
       {/* Main content scroll lives here */}
       <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">

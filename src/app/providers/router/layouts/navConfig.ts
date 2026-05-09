@@ -10,9 +10,10 @@ import {
   FileEdit,
   Mail,
   BookOpen,
+  Users,
 } from "lucide-react";
 
-import { AppRoutes, RoutePath } from "../routeConfig/routeConfig";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
 
 export interface SidebarItem {
   labelKey: string;
@@ -52,7 +53,12 @@ export const sidebarItems: SidebarItem[] = [
     path: RoutePath[AppRoutes.APPLICATIONS],
     Icon: FileText,
   },
-
+  {
+    labelKey: "common.nav.contacts",
+    labelDefault: "Contacts",
+    path: RoutePath[AppRoutes.CONTACTS],
+    Icon: Users,
+  },
   {
     labelKey: "common.nav.resources",
     labelDefault: "Resources",
