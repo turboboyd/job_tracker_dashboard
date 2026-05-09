@@ -9,10 +9,10 @@ export function PipelineStatusTabs(props: {
   activeStatus: PipelineFilterStatus;
   onChange: (status: PipelineFilterStatus) => void;
   isLoading: boolean;
-  count: number;
+  statusCounts: Record<string, number>;
 }) {
   const { t } = useTranslation();
-  const { activeStatus, onChange, isLoading, count } = props;
+  const { activeStatus, onChange, isLoading, statusCounts } = props;
 
   return (
     <div className="flex items-end gap-0.5 overflow-x-auto">
@@ -47,15 +47,14 @@ export function PipelineStatusTabs(props: {
           >
             {sk ? <StatusDot status={sk} /> : null}
             <span>{label}</span>
-            {isActive && (
-              <span className={[
-                "text-[10.5px] px-1.5 py-px rounded-full border",
-                "font-variant-numeric tabular-nums",
-                "bg-muted border-border text-foreground",
-              ].join(" ")}>
-                {isLoading ? "…" : count}
-              </span>
-            )}
+            <span className={[
+              "text-[10.5px] px-1.5 py-px rounded-full border",
+              "font-variant-numeric tabular-nums",
+              "bg-muted border-border",
+              isActive ? "text-foreground" : "text-muted-foreground/70",
+            ].join(" ")}>
+              {isLoading && s.status === "ALL" ? "…" : (statusCounts[s.status] ?? 0)}
+            </span>
           </button>
         );
       })}

@@ -40,7 +40,12 @@ function MatchBar({ score }: { score: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[11.5px] tabular-nums text-muted-foreground">{score}</span>
+      <span
+        title="AI match score: ≥85 strong, ≥70 good, <70 weak"
+        className="text-[11.5px] tabular-nums text-muted-foreground"
+      >
+        {score}
+      </span>
     </div>
   );
 }

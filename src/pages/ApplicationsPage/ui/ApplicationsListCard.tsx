@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { ProcessStatus } from "../api/applicationsRepo";
@@ -48,14 +48,14 @@ function ViewToggle({
 // ─── Table header ─────────────────────────────────────────────────────────────
 
 function ListHeader() {
-  const cols = [
-    "",
-    "Должность · Компания",
-    "Локация",
-    "Статус",
-    "Цикл",
-    "Матч",
-    "",
+  const cols: { label: string; title?: string }[] = [
+    { label: "" },
+    { label: "Должность · Компания" },
+    { label: "Локация" },
+    { label: "Статус" },
+    { label: "Цикл" },
+    { label: "Матч", title: "AI match score: ≥85 strong, ≥70 good, <70 weak" },
+    { label: "" },
   ];
 
   return (
@@ -66,9 +66,10 @@ function ListHeader() {
       {cols.map((col, i) => (
         <span
           key={i}
+          title={col.title}
           className="truncate text-[11px] font-medium uppercase tracking-[0.06em] text-subtle-foreground"
         >
-          {col}
+          {col.label}
         </span>
       ))}
     </div>
@@ -87,9 +88,21 @@ export function ApplicationsListCard(props: {
   onChangeStatus?: (appId: string, status: ProcessStatus) => void;
   displayMode?: DisplayMode;
   onDisplayModeChange?: (v: DisplayMode) => void;
+  selectedCompanies?: string[];
+  onFilteredCount?: (count: number) => void;
 }) {
   const { t } = useTranslation();
-  const { list, view, query = "", sortBy = "newest", onChangeStatus, displayMode: displayModeProp, onDisplayModeChange } = props;
+  const {
+    list,
+    view,
+    query = "",
+    sortBy = "newest",
+    onChangeStatus,
+    displayMode: displayModeProp,
+    onDisplayModeChange,
+    selectedCompanies,
+    onFilteredCount,
+  } = props;
   const [displayModeInternal, setDisplayModeInternal] = useState<DisplayMode>("list");
   const displayMode = displayModeProp ?? displayModeInternal;
   const setDisplayMode = onDisplayModeChange ?? setDisplayModeInternal;
@@ -97,7 +110,7 @@ export function ApplicationsListCard(props: {
   const filteredSorted = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    // Filter
+    // Filter by search query
     let result = q
       ? list.filter((row) => {
           const { job } = row.data;
@@ -108,6 +121,13 @@ export function ApplicationsListCard(props: {
           );
         })
       : list;
+
+    // Filter by selected companies
+    if (selectedCompanies && selectedCompanies.length > 0) {
+      result = result.filter((row) =>
+        selectedCompanies.includes(row.data.job.companyName)
+      );
+    }
 
     // Sort
     result = [...result].sort((a, b) => {
@@ -131,7 +151,12 @@ export function ApplicationsListCard(props: {
     });
 
     return result;
-  }, [list, query, sortBy]);
+  }, [list, query, sortBy, selectedCompanies]);
+
+  // Report filtered count to parent
+  useEffect(() => {
+    onFilteredCount?.(filteredSorted.length);
+  }, [filteredSorted.length, onFilteredCount]);
 
   let emptyText: string;
   if (view === "today") {

@@ -27,12 +27,36 @@ export function useApplicationsPage(params: {
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(false);
 
-  const [list, setList] = useState<AppRow[]>([]);
+  const [allList, setAllList] = useState<AppRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = useMemo(() => {
     return form.companyName.trim().length > 0 && form.roleTitle.trim().length > 0;
   }, [form.companyName, form.roleTitle]);
+
+  // Compute per-status counts from the full allList (pipeline view)
+  const statusCounts = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {
+      ALL: allList.length,
+      SAVED: 0,
+      APPLIED: 0,
+      INTERVIEW_1: 0,
+      OFFER: 0,
+      REJECTED: 0,
+      NO_RESPONSE: 0,
+    };
+    for (const row of allList) {
+      const s = row.data.process.status;
+      if (s in counts) counts[s] = (counts[s] ?? 0) + 1;
+    }
+    return counts;
+  }, [allList]);
+
+  // list = allList filtered client-side by activeStatus (pipeline view only)
+  const list = useMemo<AppRow[]>(() => {
+    if (view !== "pipeline" || activeStatus === "ALL") return allList;
+    return allList.filter((row) => row.data.process.status === activeStatus);
+  }, [allList, view, activeStatus]);
 
   // Ensure user document exists.
   useEffect(() => {
@@ -65,27 +89,14 @@ export function useApplicationsPage(params: {
 
     try {
       if (view === "pipeline") {
-        // ✅ NEW: ALL shows all active applications (same base dataset as dashboard etc.)
-        if (activeStatus === "ALL") {
-          const rows = await repo.queryAllActiveApplications(userId, 500);
-          const changed = await repo.autoMarkGhosting(userId, rows);
-          if (changed > 0) {
-            const fresh = await repo.queryAllActiveApplications(userId, 500);
-            setList(fresh);
-          } else {
-            setList(rows);
-          }
-          return;
-        }
-
-        const rows = await repo.queryPipelineByStatus(userId, activeStatus as ProcessStatus, 50);
-        // Client-side automation: mark ghosting (NO_RESPONSE) after 30 days since appliedAt.
+        // TODO(backend-migration): always load ALL; filter client-side for per-status counts
+        const rows = await repo.queryAllActiveApplications(userId, 500);
         const changed = await repo.autoMarkGhosting(userId, rows);
         if (changed > 0) {
-          const fresh = await repo.queryPipelineByStatus(userId, activeStatus as ProcessStatus, 50);
-          setList(fresh);
+          const fresh = await repo.queryAllActiveApplications(userId, 500);
+          setAllList(fresh);
         } else {
-          setList(rows);
+          setAllList(rows);
         }
         return;
       }
@@ -95,20 +106,21 @@ export function useApplicationsPage(params: {
         const changed = await repo.autoMarkGhosting(userId, rows);
         if (changed > 0) {
           const fresh = await repo.queryTodayTopPriority(userId, 50);
-          setList(fresh);
+          setAllList(fresh);
         } else {
-          setList(rows);
+          setAllList(rows);
         }
         return;
       }
 
+      // view === "followups"
       const rows = await repo.queryFollowUpsDue(userId, 50);
       const changed = await repo.autoMarkGhosting(userId, rows);
       if (changed > 0) {
         const fresh = await repo.queryFollowUpsDue(userId, 50);
-        setList(fresh);
+        setAllList(fresh);
       } else {
-        setList(rows);
+        setAllList(rows);
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
@@ -116,7 +128,7 @@ export function useApplicationsPage(params: {
     } finally {
       setIsLoadingList(false);
     }
-  }, [repo, activeStatus, userId, view]);
+  }, [repo, userId, view]);
 
   // Reload list when auth/view/status changes.
   useEffect(() => {
@@ -194,7 +206,9 @@ export function useApplicationsPage(params: {
     onCreate,
 
     // Data
+    allList,
     list,
+    statusCounts,
     load,
 
     // Actions

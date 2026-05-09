@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, Search } from "lucide-react";
+import { ChevronDown, Filter, Plus, Search } from "lucide-react";
 import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -32,6 +32,14 @@ export default function ApplicationsPage() {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
 
+  // Company filter state
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Filtered count (surfaced from ApplicationsListCard)
+  const [filteredCount, setFilteredCount] = useState(0);
+
   const {
     view,
     setView,
@@ -44,7 +52,9 @@ export default function ApplicationsPage() {
     isCreating,
     onCreate,
 
+    allList,
     list,
+    statusCounts,
     isLoadingList,
     error,
 
@@ -63,6 +73,30 @@ export default function ApplicationsPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isSortOpen]);
 
+  // Close filter panel on outside click
+  useEffect(() => {
+    if (!filterOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [filterOpen]);
+
+  // Unique companies sorted alphabetically from allList
+  const companyOptions = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const row of allList) {
+      const name = row.data.job.companyName;
+      countMap.set(name, (countMap.get(name) ?? 0) + 1);
+    }
+    return Array.from(countMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
+  }, [allList]);
+
   const currentSortLabel =
     SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Sort";
 
@@ -71,6 +105,12 @@ export default function ApplicationsPage() {
     { key: "today" as const, label: t("applicationsPage.view.today", "Today") },
     { key: "followups" as const, label: t("applicationsPage.view.followups", "Follow-ups") },
   ];
+
+  function toggleCompany(name: string) {
+    setSelectedCompanies((prev) =>
+      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
+    );
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -105,6 +145,66 @@ export default function ApplicationsPage() {
                   placeholder={t("applicationsPage.searchPlaceholder", "Search company or role…")}
                   className="rounded-[8px] border border-border bg-muted/50 px-3 py-1.5 pl-8 text-[13px] w-[220px] focus:border-primary focus:outline-none"
                 />
+              </div>
+
+              {/* Filters button */}
+              <div ref={filterRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <Filter className="h-3.5 w-3.5 text-subtle-foreground" />
+                  Фильтры
+                  {selectedCompanies.length > 0 && (
+                    <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                      {selectedCompanies.length}
+                    </span>
+                  )}
+                </button>
+
+                {filterOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-2 w-[260px] rounded-[12px] border border-border bg-background shadow-lg">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                      <span className="text-[12px] font-semibold text-foreground">Компании</span>
+                      {selectedCompanies.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCompanies([])}
+                          className="text-[11.5px] text-primary hover:underline"
+                        >
+                          Сбросить
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-[260px] overflow-y-auto px-2 pb-3">
+                      {companyOptions.length === 0 ? (
+                        <p className="px-2 py-2 text-[12px] text-muted-foreground">Нет данных</p>
+                      ) : (
+                        companyOptions.map(({ name, count }) => {
+                          const checked = selectedCompanies.includes(name);
+                          return (
+                            <label
+                              key={name}
+                              className="flex cursor-pointer items-center gap-2 rounded-[7px] px-2 py-1.5 hover:bg-muted"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleCompany(name)}
+                                className="h-3.5 w-3.5 rounded accent-primary"
+                              />
+                              <span className="flex-1 truncate text-[12.5px] text-foreground">
+                                {name}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground/70">{count}</span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Sort dropdown */}
@@ -181,7 +281,7 @@ export default function ApplicationsPage() {
             activeStatus={activeStatus}
             onChangeStatus={setActiveStatus}
             isLoading={isLoadingList}
-            count={list.length}
+            statusCounts={statusCounts}
           />
         </div>
       </div>
@@ -189,7 +289,7 @@ export default function ApplicationsPage() {
       {/* Meta bar: between header and list */}
       <div className="flex items-center justify-between gap-3 px-7 py-3 border-b border-border bg-background shrink-0">
         <span className="text-[13px] text-muted-foreground">
-          Показано <span className="font-semibold tabular-nums text-foreground">{list.length}</span> из {list.length}
+          Показано <span className="font-semibold tabular-nums text-foreground">{filteredCount}</span> из {list.length}
         </span>
         <ViewToggle value={displayMode} onChange={setDisplayMode} />
       </div>
@@ -211,6 +311,8 @@ export default function ApplicationsPage() {
             onChangeStatus={onChangeStatus}
             displayMode={displayMode}
             onDisplayModeChange={setDisplayMode}
+            selectedCompanies={selectedCompanies}
+            onFilteredCount={setFilteredCount}
           />
         </div>
       </div>

@@ -8,9 +8,9 @@ export function ApplicationsToolbar(props: {
   activeStatus: PipelineFilterStatus;
   onChangeStatus: (s: PipelineFilterStatus) => void;
   isLoading: boolean;
-  count: number;
+  statusCounts: Record<string, number>;
 }) {
-  const { view, activeStatus, onChangeStatus, isLoading, count } = props;
+  const { view, activeStatus, onChangeStatus, isLoading, statusCounts } = props;
 
   if (view === "pipeline") {
     return (
@@ -18,10 +18,10 @@ export function ApplicationsToolbar(props: {
         activeStatus={activeStatus}
         onChange={onChangeStatus}
         isLoading={isLoading}
-        count={count}
+        statusCounts={statusCounts}
       />
     );
   }
 
-  return <ViewMetaBar view={view} isLoading={isLoading} count={count} />;
+  return <ViewMetaBar view={view} isLoading={isLoading} count={statusCounts["ALL"] ?? 0} />;
 }
