@@ -1,19 +1,19 @@
 import { useMemo, useReducer } from "react";
 
-export type UsePaginationOptions = {
+export interface UsePaginationOptions {
   totalItems: number;
   pageSize: number;
   initialPage?: number;
   resetKey?: string | number;
-};
+}
 
 export function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-type State = {
+interface State {
   requestedPage: number;
-};
+}
 
 type Action =
   | { type: "SET_PAGE"; page: number }

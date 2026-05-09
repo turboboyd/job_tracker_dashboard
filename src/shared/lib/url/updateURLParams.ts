@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import type { Location, NavigateFunction } from "react-router-dom";
 
 type Updates = Record<string, string | number | boolean | null | undefined>;
 
-type Options = {
+interface Options {
   replace?: boolean;
-};
+}
 
 /**
  * Small helper for manipulating query params without manually building strings.

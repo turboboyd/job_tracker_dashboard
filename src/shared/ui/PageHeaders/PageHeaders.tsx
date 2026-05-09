@@ -1,10 +1,10 @@
 import React from "react";
 
-type HeaderProps = {
+interface HeaderProps {
   title: string;
   subtitle?: string;
   right?: React.ReactNode;
-};
+}
 
 export function PageHeader({ title, subtitle, right }: HeaderProps) {
   return (

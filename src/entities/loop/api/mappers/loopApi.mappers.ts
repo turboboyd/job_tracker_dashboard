@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import {
   serverTimestamp,
   type DocumentSnapshot,
@@ -19,7 +20,7 @@ import type { CreateLoopInput, UpdateLoopInput } from "../loopApi.types";
 // shared utils
 // --------------------
 
-export type ApiError = { message: string };
+export interface ApiError { message: string }
 function trimStr(v: unknown): string {
   return String(v ?? "").trim();
 }
@@ -53,7 +54,7 @@ function makeTimestamps(): { iso: string; server: FieldValue } {
 // Firestore payloads
 // --------------------
 
-export type LoopFirestoreCreate = {
+export interface LoopFirestoreCreate {
   name: string;
 
   titles: string[];
@@ -69,7 +70,7 @@ export type LoopFirestoreCreate = {
 
   createdAtTs: FieldValue;
   updatedAtTs: FieldValue;
-};
+}
 
 export type LoopFirestorePatch = Partial<
   Omit<LoopFirestoreCreate, "createdAtTs" | "updatedAtTs">
@@ -102,7 +103,7 @@ export function mapLoopDoc(d: QueryDocumentSnapshot): Loop {
     platforms: Array.isArray(rest.platforms)
       ? rest.platforms.filter(isLoopPlatform)
       : [],
-    filters: normalizedFilters,
+    ...(normalizedFilters !== undefined ? { filters: normalizedFilters } : {}),
     createdAtTs: null,
     updatedAtTs: null,
   };
@@ -130,7 +131,7 @@ export function mapLoopSnap(s: DocumentSnapshot): Loop | null {
     platforms: Array.isArray(rest.platforms)
       ? rest.platforms.filter(isLoopPlatform)
       : [],
-    filters: normalizedFilters,
+    ...(normalizedFilters !== undefined ? { filters: normalizedFilters } : {}),
     createdAtTs: null,
     updatedAtTs: null,
   };
@@ -152,7 +153,7 @@ export function cleanLoopCreate(input: CreateLoopInput): LoopFirestoreCreate {
     remoteMode: input.remoteMode,
     platforms: input.platforms,
 
-    filters: input.filters ?? undefined,
+    ...(input.filters !== undefined ? { filters: input.filters } : {}),
 
     createdAt: iso,
     updatedAt: iso,
@@ -178,7 +179,10 @@ export function cleanLoopPatch(input: UpdateLoopInput): LoopFirestorePatch {
   if (typeof input.remoteMode === "string") patch.remoteMode = input.remoteMode;
   if (Array.isArray(input.platforms)) patch.platforms = input.platforms;
 
-  if ("filters" in input) patch.filters = input.filters ?? undefined;
+  if ("filters" in input) {
+    if (input.filters !== undefined) patch.filters = input.filters;
+    else delete (patch as { filters?: unknown }).filters;
+  }
 
   return patch;
 }

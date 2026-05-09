@@ -8,7 +8,7 @@ import {
   statusesForStage,
 } from "../../model/status";
 
-type Props = {
+interface Props {
   value: StatusKey;
   onChange: (v: StatusKey) => void;
   disabled?: boolean;
@@ -18,7 +18,7 @@ type Props = {
 
   /** Показывать все статусы (по умолчанию да) */
   showAllIfNoStage?: boolean;
-};
+}
 
 export function StatusSelect({
   value,

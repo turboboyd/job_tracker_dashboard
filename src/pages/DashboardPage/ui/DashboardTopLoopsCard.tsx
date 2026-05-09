@@ -11,10 +11,10 @@ import { Button, Card } from "src/shared/ui";
 
 import { normalizeAppStatus } from "../model/dashboardTimeSeries";
 
-type LoopLike = { id: string; name: string };
-type MatchLike = { loopId?: string; status?: unknown };
+interface LoopLike { id: string; name: string }
+interface MatchLike { loopId?: string; status?: unknown }
 
-type Row = {
+interface Row {
   loopId: string;
   name: string;
   active: number;
@@ -22,7 +22,7 @@ type Row = {
   offer: number;
   hired: number;
   total: number;
-};
+}
 
 function inc(row: Row, st: StatusKey) {
   const col: BoardColumnKey = getBoardColumn(st);

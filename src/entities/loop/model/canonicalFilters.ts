@@ -1,4 +1,4 @@
-import { CanonicalFilters } from "./types";
+import type { CanonicalFilters } from "./types";
 
 export const DEFAULT_CANONICAL_FILTERS: CanonicalFilters = {
   role: "",

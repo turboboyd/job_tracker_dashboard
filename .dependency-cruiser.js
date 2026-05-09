@@ -63,7 +63,8 @@ module.exports = {
       from: { path: "^src/(app|pages|widgets)/" },
       to: {
         path: "^src/features/[^/]+/.+",
-        pathNot: "^src/features/[^/]+/index\\.(ts|tsx)$",
+        pathNot:
+          "^src/features/[^/]+/(index|model/index|lib/index|ui/[^/]+/index)\\.(ts|tsx)$",
       },
     },
 
@@ -74,7 +75,8 @@ module.exports = {
       from: { path: "^src/(app|pages|widgets|features)/" },
       to: {
         path: "^src/entities/[^/]+/.+",
-        pathNot: "^src/entities/[^/]+/index\\.(ts|tsx)$",
+        pathNot:
+          "^src/entities/[^/]+/(index|model/index|lib/index|validation/index)\\.(ts|tsx)$",
       },
     },
 

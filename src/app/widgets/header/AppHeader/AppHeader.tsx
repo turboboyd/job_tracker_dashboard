@@ -12,15 +12,15 @@ import { useAuthSelectors } from "src/entities/auth";
 import { Button, ThemeToggle } from "src/shared/ui";
 import { LanguageSelectConnected } from "src/shared/ui/molecules/LanguageSelect/LanguageSelectConnected";
 
-type AppHeaderProps = {
+interface AppHeaderProps {
   sidebarOpen?: boolean;
   onToggleSidebar?: () => void;
-};
+}
 
-type NavItem = {
+interface NavItem {
   label: string;
   path: string;
-};
+}
 
 const guestNavItems: NavItem[] = [
   { label: "header.home", path: "/" },

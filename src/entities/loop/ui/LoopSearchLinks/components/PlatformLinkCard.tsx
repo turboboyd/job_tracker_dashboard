@@ -5,7 +5,7 @@ import { Button } from "src/shared/ui";
 import type { LoopPlatform } from "../../../model";
 import { PLATFORM_LABEL_BY_ID } from "../../../model/platformRegistry";
 
-type Props = {
+interface Props {
   platform: LoopPlatform;
   url: string;
   isActive: boolean;
@@ -14,7 +14,7 @@ type Props = {
   onAdd: () => void;
 
   addDisabled?: boolean;
-};
+}
 
 export function PlatformLinkCard({
   platform,

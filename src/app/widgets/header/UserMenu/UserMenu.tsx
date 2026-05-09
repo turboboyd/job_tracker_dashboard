@@ -10,9 +10,9 @@ import { useAuthSelectors } from "src/entities/auth";
 import { LogoutButton } from "src/features/auth";
 import { Button } from "src/shared/ui";
 
-type UserMenuProps = {
+interface UserMenuProps {
   settingsPath?: string;
-};
+}
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   settingsPath = `${RoutePath[AppRoutes.SETTINGS_PROFILE]}`,

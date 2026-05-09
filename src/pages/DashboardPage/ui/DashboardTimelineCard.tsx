@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +12,7 @@ import { Button, Card } from "src/shared/ui";
 
 import { parseMs, normalizeAppStatus, diffDays } from "../model/dashboardTimeSeries";
 
-type Props = {
+interface Props {
   matches: {
     id: string;
     status?: unknown;
@@ -22,7 +23,7 @@ type Props = {
   }[];
   days?: number;
   className?: string;
-};
+}
 
 function statusColorHex(st: StatusKey): string {
   return STATUS_COLOR_HEX[getStageColorForStatus(st)];

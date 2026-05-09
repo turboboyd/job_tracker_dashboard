@@ -39,7 +39,7 @@ function p(
   label: string,
   group: PlatformMeta["group"],
   buildUrl: PlatformMeta["buildUrl"],
-  recommended: boolean = false
+  recommended = false
 ): PlatformMeta {
   return { id, label, group, buildUrl, recommended };
 }
@@ -127,10 +127,12 @@ export function buildUrlByPlatform(
   platform: LoopPlatform,
   filters: SearchFilters
 ): string {
-  return PLATFORM_BY_ID[platform].buildUrl(filters);
+  const meta = PLATFORM_BY_ID[platform];
+  if (!meta) return "";
+  return meta.buildUrl(filters);
 }
 
-export const GROUPS: Array<{ id: PlatformMeta["group"]; title: string }> = [
+export const GROUPS: { id: PlatformMeta["group"]; title: string }[] = [
   { id: "recommended", title: "Recommended" },
   { id: "germany", title: "Germany" },
   { id: "tech", title: "Tech" },

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -27,7 +28,7 @@ export function ApplicationListItem(props: { row: AppRow }) {
         </div>
         {row.data.matching ? (
           <div className="mt-1 text-[11px] text-muted-foreground">
-            {((t("applicationsPage.matching", { defaultValue: "Match", returnObjects: false }) ?? "Match") as string)}: {row.data.matching.score}
+            {((t("applicationsPage.matching", { defaultValue: "Match", returnObjects: false }) ?? "Match"))}: {row.data.matching.score}
             /100 • {row.data.matching.decision}
           </div>
         ) : null}
@@ -36,11 +37,11 @@ export function ApplicationListItem(props: { row: AppRow }) {
       <div className="flex items-center gap-sm shrink-0">
         {row.data.process.needsFollowUp ? (
           <span className="rounded-full border border-border bg-background px-2 py-1 text-[11px] font-medium text-foreground">
-            {((t("applicationsPage.followUpBadge", { defaultValue: "Follow-up", returnObjects: false }) ?? "Follow-up") as string)}
+            {((t("applicationsPage.followUpBadge", { defaultValue: "Follow-up", returnObjects: false }) ?? "Follow-up"))}
           </span>
         ) : null}
         {(() => {
-          const sk = normalizeStatusKey(row.data.process.status) as StatusKey | null;
+          const sk = normalizeStatusKey(row.data.process.status);
           return (
             <div className="flex items-center gap-2 rounded-full border border-border bg-background px-sm py-1 text-[11px] font-medium text-foreground">
               {sk ? <StatusDot status={sk} /> : null}

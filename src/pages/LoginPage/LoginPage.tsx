@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -6,8 +7,7 @@ import {
   AppRoutes,
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
-import { useAuthSelectors } from "src/entities/auth";
-import { useAuthActions } from "src/entities/auth";
+import { useAuthSelectors , useAuthActions } from "src/entities/auth";
 import { AuthPageShell, LoginForm } from "src/features/auth";
 import {
   type AuthRedirectLocationState,

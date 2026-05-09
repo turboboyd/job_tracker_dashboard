@@ -12,18 +12,18 @@ import { Card } from "src/shared/ui";
 
 import { diffDays, medianDays, parseMs } from "../model/dashboardTimeSeries";
 
-type HistoryItem = {
+interface HistoryItem {
   status: StatusKey;
   changedAt?: unknown;
   date?: unknown;
-};
+}
 
-type MatchLike = {
+interface MatchLike {
   status: StatusKey;
   createdAt: unknown;
   updatedAt: unknown;
   statusHistory?: HistoryItem[];
-};
+}
 
 const PIPELINE_COLS: BoardColumnKey[] = BOARD_COLUMN_KEYS.filter(
   (c) => c !== "ARCHIVED",
@@ -96,8 +96,10 @@ export function DashboardInsightsCard({
       ) {
         activeToInterviewCount++;
 
-        const a = getHistoryDate(sorted[firstActiveIndex]);
-        const b = getHistoryDate(sorted[firstInterviewIndex]);
+        const hA = sorted[firstActiveIndex];
+        const hB = sorted[firstInterviewIndex];
+        const a = hA ? getHistoryDate(hA) : null;
+        const b = hB ? getHistoryDate(hB) : null;
         if (a && b) interviewDurations.push(diffDays(a, b));
       }
 
@@ -108,8 +110,10 @@ export function DashboardInsightsCard({
       ) {
         interviewToOfferCount++;
 
-        const a = getHistoryDate(sorted[firstInterviewIndex]);
-        const b = getHistoryDate(sorted[firstOfferIndex]);
+        const hA = sorted[firstInterviewIndex];
+        const hB = sorted[firstOfferIndex];
+        const a = hA ? getHistoryDate(hA) : null;
+        const b = hB ? getHistoryDate(hB) : null;
         if (a && b) offerDurations.push(diffDays(a, b));
       }
 
@@ -122,6 +126,7 @@ export function DashboardInsightsCard({
       }
 
       const last = sorted[sorted.length - 1];
+      if (!last) continue;
       const lastCol = getBoardColumn(last.status);
       const lastDate = getHistoryDate(last);
 

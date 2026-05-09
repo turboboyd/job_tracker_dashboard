@@ -2,13 +2,13 @@ import React from "react";
 
 import { Card } from "src/shared/ui";
 
-export type AuthPageShellProps = {
+export interface AuthPageShellProps {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
-};
+}
 
 export const AuthPageShell: React.FC<AuthPageShellProps> = ({
   title,

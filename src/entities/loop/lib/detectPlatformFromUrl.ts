@@ -7,7 +7,7 @@ import type { LoopPlatform } from "../model";
  * due to a long chain of if/else statements. The table-driven approach below is
  * easier to maintain and keeps complexity low.
  */
-const HOST_RULES: Array<{ needle: string; platform: LoopPlatform }> = [
+const HOST_RULES: { needle: string; platform: LoopPlatform }[] = [
   { needle: "linkedin.com", platform: "linkedin" },
   { needle: "indeed.", platform: "indeed" },
   { needle: "glassdoor.", platform: "glassdoor" },

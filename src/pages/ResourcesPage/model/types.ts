@@ -8,10 +8,10 @@ export type ResourceCategory =
 
 export type ViewMode = "all" | "favorites";
 
-export type ResourceItem = {
+export interface ResourceItem {
   id: string;
   href: string;
   category: Exclude<ResourceCategory, "all">;
   i18nKey: string;
   tagKeys: string[];
-};
+}

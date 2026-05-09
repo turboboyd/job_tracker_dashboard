@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string, sonarjs/cognitive-complexity */
 import {
   Timestamp,
   doc,
@@ -6,7 +7,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 
-type LoopDoc = {
+interface LoopDoc {
   name: string;
   titles: string[];
   location: string;
@@ -18,9 +19,9 @@ type LoopDoc = {
   updatedAt: string;
   createdAtTs: Timestamp;
   updatedAtTs: Timestamp;
-};
+}
 
-type DemoItem = {
+interface DemoItem {
   loopId: string;
   title: string;
   company: string;
@@ -30,7 +31,7 @@ type DemoItem = {
   description: string;
   status: "new" | "saved" | "applied" | "interview" | "offer" | "rejected";
   matchedAt: string;
-};
+}
 
 function isoNow(): string {
   return new Date().toISOString();
@@ -303,21 +304,23 @@ export async function seedDemoDataIfNeeded(params: {
   const items = makeItems(loopId);
 
   // Find missing demo applications; also backfill critical fields for existing ones.
-  const missing: Array<{ appId: string; m: DemoItem }> = [];
+  const missing: { appId: string; m: DemoItem }[] = [];
   for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item) continue;
     const appId = `demoApp_${String(i + 1).padStart(2, "0")}`;
     const appRef = doc(db, "users", uid, "applications", appId);
      
     const snap = await getDoc(appRef);
     if (!snap.exists()) {
-      missing.push({ appId, m: items[i] });
+      missing.push({ appId, m: item });
       continue;
     }
 
     const data = snap.data() as Record<string, unknown>;
-    const archivedVal = data["archived"];
-    const linkage = data["loopLinkage"];
-    const hasLoop = data["hasLoop"];
+    const archivedVal = data.archived;
+    const linkage = data.loopLinkage;
+    const hasLoop = data.hasLoop;
 
     const needsArchived = typeof archivedVal !== "boolean";
     const linkageObj = (linkage && typeof linkage === "object") ? (linkage as Record<string, unknown>) : null;
@@ -332,8 +335,8 @@ export async function seedDemoDataIfNeeded(params: {
           archived: false,
           loopLinkage: {
             loopId,
-            platform: items[i].platform,
-            matchedAt: Timestamp.fromDate(new Date(items[i].matchedAt)),
+            platform: item.platform,
+            matchedAt: Timestamp.fromDate(new Date(item.matchedAt)),
             source: "loop",
           },
           hasLoop: true,

@@ -10,17 +10,17 @@ import {
   normalizeRoleToTitles,
 } from "../../model";
 
-type Props = {
+interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCreated: (loopId: string) => void;
-};
+}
 
-type CreateLoopForm = {
+interface CreateLoopForm {
   name: string;
   role: string;
   location: string;
-};
+}
 
 function validate(form: CreateLoopForm): string | null {
   const name = form.name.trim();

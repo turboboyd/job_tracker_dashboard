@@ -3,7 +3,6 @@ module.exports = {
   darkMode: "class",
   content: [
     "./src/**/*.{ts,tsx,js,jsx}",
-    "./node_modules/@tremor/**/*.{js,ts,jsx,tsx}",
     "./public/index.html",
   ],
   theme: {

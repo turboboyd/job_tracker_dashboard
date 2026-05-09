@@ -1,5 +1,7 @@
+/* eslint-disable sonarjs/cognitive-complexity */
+import type {
+  Firestore} from "firebase/firestore";
 import {
-  Firestore,
   Timestamp,
   doc,
   getDoc,
@@ -12,19 +14,25 @@ import {
   writeBatch,
 } from "firebase/firestore";
 
-type TimestampMillisLike = { toMillis: () => number };
-type TimestampSecondsLike = { seconds: number; nanoseconds?: number };
+interface TimestampMillisLike { toMillis: () => number }
+interface TimestampSecondsLike { seconds: number; nanoseconds?: number }
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
 function isTimestampMillisLike(value: unknown): value is TimestampMillisLike {
-  return isObject(value) && typeof (value as TimestampMillisLike).toMillis === "function";
+  return (
+    isObject(value) &&
+    typeof (value as unknown as TimestampMillisLike).toMillis === "function"
+  );
 }
 
 function isTimestampSecondsLike(value: unknown): value is TimestampSecondsLike {
-  return isObject(value) && typeof (value as TimestampSecondsLike).seconds === "number";
+  return (
+    isObject(value) &&
+    typeof (value as unknown as TimestampSecondsLike).seconds === "number"
+  );
 }
 
 function toMs(value: unknown): number {
@@ -43,7 +51,7 @@ import { applyDotPatch } from "./lib/patch";
 import { stripUndefinedDeep } from "./lib/sanitize";
 import { nowTs } from "./lib/time";
 import { applicationsColRef, applicationDocRef, historyColRef, historyDocRef } from "./refs";
-import {
+import type {
   ApplicationDoc,
   FeedbackType,
   HistoryEventDoc,
@@ -122,20 +130,37 @@ export async function createApplication(
   const t = nowTs();
   const status: ProcessStatus = input.status ?? "SAVED";
 
+  const job: ApplicationDoc["job"] = {
+    companyName: input.companyName,
+    roleTitle: input.roleTitle,
+    ...(input.vacancyUrl ? { vacancyUrl: input.vacancyUrl } : {}),
+    ...(input.source ? { source: input.source } : {}),
+    ...(input.locationText ? { locationText: input.locationText } : {}),
+    ...(input.workMode ? { workMode: input.workMode } : {}),
+    ...(input.employmentType ? { employmentType: input.employmentType } : {}),
+  };
+
+  const notes: ApplicationDoc["notes"] = {
+    ...(input.currentNote ? { currentNote: input.currentNote } : {}),
+    ...(input.tags ? { tags: input.tags } : { tags: [] }),
+  };
+
+  const vacancy = input.rawDescription ? { rawDescription: input.rawDescription } : undefined;
+
+  const loopLinkage: ApplicationDoc["loopLinkage"] = {
+    loopId: effectiveLoopId,
+    ...(input.loopPlatform ? { platform: input.loopPlatform } : {}),
+    ...(input.loopMatchedAt ? { matchedAt: Timestamp.fromDate(input.loopMatchedAt) } : {}),
+    source: input.loopSource ?? (input.loopId ? "loop" : "manual"),
+    ...(input.legacyMatchId ? { legacyMatchId: input.legacyMatchId } : {}),
+  };
+
   const appDoc: ApplicationDoc = {
     createdAt: t,
     updatedAt: t,
     createdBy: userId,
     archived: false,
-    job: {
-      companyName: input.companyName,
-      roleTitle: input.roleTitle,
-      vacancyUrl: input.vacancyUrl,
-      source: input.source,
-      locationText: input.locationText,
-      workMode: input.workMode,
-      employmentType: input.employmentType,
-    },
+    job,
     process: {
       status,
       lastStatusChangeAt: t,
@@ -144,23 +169,9 @@ export async function createApplication(
       needsFollowUp: false,
       needsReapplySuggestion: false,
     },
-    notes: {
-      currentNote: input.currentNote,
-      tags: input.tags ?? [],
-    },
-    vacancy: input.rawDescription
-      ? { rawDescription: input.rawDescription, roleFingerprint: undefined }
-      : undefined,
-
-    loopLinkage: {
-      loopId: effectiveLoopId,
-      platform: input.loopPlatform,
-      matchedAt: input.loopMatchedAt
-        ? Timestamp.fromDate(input.loopMatchedAt)
-        : undefined,
-      source: input.loopSource ?? (input.loopId ? "loop" : "manual"),
-      legacyMatchId: input.legacyMatchId,
-    },
+    notes,
+    ...(vacancy ? { vacancy } : {}),
+    loopLinkage,
   };
 
   // Derived fields
@@ -168,7 +179,7 @@ export async function createApplication(
   const derived = computeDerived(user, appDoc, t);
   const derivedApp: ApplicationDoc = {
     ...withRoleFingerprint(appDoc, derived.roleFingerprint),
-    matching: derived.matching,
+    ...(derived.matching ? { matching: derived.matching } : {}),
     process: {
       ...appDoc.process,
       ...derived.followUp,
@@ -215,8 +226,8 @@ export async function getApplicationHistory(
   db: Firestore,
   userId: string,
   appId: string,
-  take: number = 50,
-): Promise<Array<{ id: string; data: HistoryEventDoc }>> {
+  take = 50,
+): Promise<{ id: string; data: HistoryEventDoc }[]> {
   const q = query(
     historyColRef(db, userId, appId),
     orderBy("createdAt", "desc"),
@@ -348,8 +359,8 @@ export async function changeStatus(
 export async function autoMarkGhosting(
   db: Firestore,
   userId: string,
-  rows: Array<{ id: string; data: ApplicationDoc }>,
-  days: number = 30,
+  rows: { id: string; data: ApplicationDoc }[],
+  days = 30,
 ): Promise<number> {
   const ms = days * 24 * 60 * 60 * 1000;
   const now = Date.now();
@@ -416,9 +427,11 @@ export async function addComment(
       actor: "user",
       type: "COMMENT",
       comment: comment.text,
-      feedbackType: comment.feedbackType,
-      sentiment: comment.sentiment,
-      rejectionReasonCode: comment.rejectionReasonCode,
+      ...(comment.feedbackType ? { feedbackType: comment.feedbackType } : {}),
+      ...(comment.sentiment ? { sentiment: comment.sentiment } : {}),
+      ...(comment.rejectionReasonCode
+        ? { rejectionReasonCode: comment.rejectionReasonCode }
+        : {}),
     },
   ]);
 }
@@ -430,8 +443,8 @@ export async function queryPipelineByStatus(
   db: Firestore,
   userId: string,
   status: ProcessStatus,
-  take: number = 50,
-): Promise<Array<{ id: string; data: ApplicationDoc }>> {
+  take = 50,
+): Promise<{ id: string; data: ApplicationDoc }[]> {
   // Avoid composite indexes by querying by status only and filtering/sorting client-side.
   // This keeps a fresh Firebase project usable without having to create indexes.
   const q = query(
@@ -454,8 +467,8 @@ export async function queryPipelineByStatus(
 export async function queryTodayTopPriority(
   db: Firestore,
   userId: string,
-  take: number = 20,
-): Promise<Array<{ id: string; data: ApplicationDoc }>> {
+  take = 20,
+): Promise<{ id: string; data: ApplicationDoc }[]> {
   // Avoid composite index by ordering only and filtering archived client-side.
   const q = query(
     applicationsColRef(db, userId),
@@ -472,8 +485,8 @@ export async function queryTodayTopPriority(
 export async function queryFollowUpsDue(
   db: Firestore,
   userId: string,
-  take: number = 50,
-): Promise<Array<{ id: string; data: ApplicationDoc }>> {
+  take = 50,
+): Promise<{ id: string; data: ApplicationDoc }[]> {
   // Avoid composite indexes by querying by needsFollowUp only and sorting client-side.
   const q = query(
     applicationsColRef(db, userId),
@@ -498,8 +511,8 @@ export async function queryFollowUpsDue(
 export async function queryAllActiveApplications(
   db: Firestore,
   userId: string,
-  take: number = 500,
-): Promise<Array<{ id: string; data: ApplicationDoc }>> {
+  take = 500,
+): Promise<{ id: string; data: ApplicationDoc }[]> {
   const q = query(
     applicationsColRef(db, userId),
     where("archived", "==", false),

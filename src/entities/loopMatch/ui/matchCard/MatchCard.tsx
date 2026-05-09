@@ -9,14 +9,14 @@ import type { LoopMatch, LoopMatchStatus } from "../../model/types";
 
 import { formatMatchedAt, normalizePlatform } from "./matchFormat";
 
-type MatchCardProps = {
+interface MatchCardProps {
   match: LoopMatch;
   loopName: string;
   busy: boolean;
   onUpdateStatus: (matchId: LoopMatch["id"], status: LoopMatchStatus) => void;
   onDelete: (matchId: LoopMatch["id"]) => void;
   onEdit?: (matchId: LoopMatch["id"]) => void;
-};
+}
 
 export function MatchCard({
   match,
@@ -72,7 +72,7 @@ export function MatchCard({
           <StatusMenu
               value={match.status}
               disabled={busy}
-              onChange={(s) => onUpdateStatus(match.id, s as LoopMatchStatus)}
+              onChange={(s) => onUpdateStatus(match.id, s)}
               size="sm"
             />
         </label>
@@ -105,9 +105,9 @@ export function MatchCard({
   );
 }
 
-type StatusPillProps = {
+interface StatusPillProps {
   value: LoopMatchStatus;
-};
+}
 
 function StatusPill({ value }: StatusPillProps) {
   return <StatusBadge status={value} />;

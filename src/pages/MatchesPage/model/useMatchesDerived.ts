@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import React from "react";
 
 import type { LoopMatchStatus } from "src/entities/loopMatch";
@@ -12,16 +13,16 @@ function normalizeToken(v: unknown): string {
     .trim();
 }
 
-type MatchLike = {
+interface MatchLike {
   platform?: unknown;
   status?: unknown;
   loopId: string;
-};
+}
 
-type LoopLike = {
+interface LoopLike {
   id: string;
   name: string;
-};
+}
 
 export function useMatchesDerived(matches: MatchLike[], loops: LoopLike[]) {
   const loopIdToName = React.useMemo(() => {

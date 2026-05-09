@@ -2,11 +2,11 @@ import React from "react";
 
 import { Card } from "src/shared/ui";
 
-type Props = {
+interface Props {
   title: React.ReactNode;
   value: number | string;
   icon?: React.ReactNode;
-};
+}
 
 export function KpiCard({ title, value, icon }: Props) {
   return (

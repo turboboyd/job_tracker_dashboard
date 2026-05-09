@@ -10,10 +10,10 @@ import {
 } from "src/entities/application/model/status";
 import { Card, DonutChart } from "src/shared/ui";
 
-type Summary = {
+interface Summary {
   total: number;
   byColumn: Record<BoardColumnKey, number>;
-};
+}
 
 const PIPELINE_COLS: BoardColumnKey[] = BOARD_COLUMN_KEYS.filter((c) => c !== "ARCHIVED");
 

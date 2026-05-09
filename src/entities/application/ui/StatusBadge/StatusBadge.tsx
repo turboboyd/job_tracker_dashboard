@@ -3,14 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import { getStatusMeta, getStageColorForStatus, STATUS_COLOR_CLASS, type StatusKey } from "../../model/status";
 
-function clsx(...xs: Array<string | false | null | undefined>) {
+function clsx(...xs: (string | false | null | undefined)[]) {
   return xs.filter(Boolean).join(" ");
 }
 
-type Props = {
+interface Props {
   status: StatusKey;
   className?: string;
-};
+}
 
 export function StatusBadge({ status, className }: Props) {
   const { t } = useTranslation();

@@ -23,8 +23,8 @@ function stableFiltersKey(filters: unknown): string {
       return val.map(sortDeep);
     }
 
-    if (seen.has(val as object)) return "[Circular]";
-    seen.add(val as object);
+    if (seen.has(val)) return "[Circular]";
+    seen.add(val);
 
     const obj = val as Record<string, unknown>;
     const keys = Object.keys(obj).sort((a, b) =>

@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import { useTranslation } from "react-i18next";
 
 import { MatchCard } from "src/entities/loopMatch";

@@ -2,7 +2,7 @@ import React from "react";
 
 import { Button, PageHeader } from "src/shared/ui";
 
-type Props = {
+interface Props {
   title: string;
   subtitle: string;
   isPrivate: boolean;
@@ -12,7 +12,7 @@ type Props = {
   suggestLabel: string;
   allLabel: string;
   favoritesLabel: string;
-};
+}
 
 export const ResourcesHeader: React.FC<Props> = ({
   title,

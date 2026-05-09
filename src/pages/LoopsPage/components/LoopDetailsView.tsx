@@ -127,7 +127,7 @@ export function LoopDetailsView({
           radiusKm: loop.radiusKm,
           platforms: loop.platforms,
           remoteMode: loop.remoteMode,
-          filters: loop.filters,
+          ...(loop.filters ? { filters: loop.filters } : {}),
         }}
       />
     );

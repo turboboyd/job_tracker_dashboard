@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import {
   GoogleAuthProvider,
@@ -26,7 +27,7 @@ function toAuthError(e: unknown): AuthError {
   if (typeof e === "object" && e !== null) {
     const err = e as { code?: string; message?: string };
     return {
-      code: err.code,
+      ...(typeof err.code === "string" ? { code: err.code } : {}),
       message: typeof err.message === "string" && err.message.trim().length > 0
         ? err.message
         : "Authentication error",

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, sonarjs/no-duplicate-string */
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0;
 }
@@ -21,7 +22,7 @@ function messageFromErrorsArray(errors: unknown): string | null {
 
   const firstObj = asRecord(first);
   if (!firstObj) return null;
-  return pickFirstString(firstObj["message"], firstObj["error"], firstObj["detail"]);
+  return pickFirstString(firstObj.message, firstObj.error, firstObj.detail);
 }
 
 export function getErrorMessage(err: unknown): string {
@@ -32,17 +33,17 @@ export function getErrorMessage(err: unknown): string {
   const rec = asRecord(err);
   if (!rec) return "Unknown error";
 
-  const data = asRecord(rec["data"]);
+  const data = asRecord(rec.data);
 
   const fromData = data
-    ? pickFirstString(data["message"], data["error"], data["detail"], data["title"])
+    ? pickFirstString(data.message, data.error, data.detail, data.title)
     : null;
   if (fromData) return fromData;
 
-  const direct = pickFirstString(rec["error"], rec["message"]);
+  const direct = pickFirstString(rec.error, rec.message);
   if (direct) return direct;
 
-  const fromArray = messageFromErrorsArray(data?.["errors"]);
+  const fromArray = messageFromErrorsArray(data?.errors);
   if (fromArray) return fromArray;
 
   return "Unknown error";

@@ -64,7 +64,7 @@ export function MatchDetailsModal({
       open={open}
       onOpenChange={onOpenChange}
       title={title}
-      description={meta || undefined}
+      {...(meta ? { description: meta } : {})}
       size="md"
     >
       <div className="flex flex-col gap-lg">

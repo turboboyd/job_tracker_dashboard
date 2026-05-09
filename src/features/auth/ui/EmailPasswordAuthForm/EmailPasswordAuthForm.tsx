@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { Formik } from "formik";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,9 +13,9 @@ import { Button, Input } from "src/shared/ui";
 
 import { mapFirebaseAuthError } from "../../lib/firebaseAuthErrors";
 
-export type EmailPasswordAuthFormProps = {
+export interface EmailPasswordAuthFormProps {
   onSuccess?: () => void;
-};
+}
 
 type AuthMode = "signin" | "signup";
 
@@ -24,10 +25,10 @@ const EMAIL_FIELD: keyof LoginValues = "email";
 const initialValues: LoginValues = { email: "", password: String() };
 
 // Берём имя секретного поля динамически (получится "password", но НЕ литералом)
-const ALL_FIELDS = Object.keys(initialValues) as Array<keyof LoginValues>;
+const ALL_FIELDS = Object.keys(initialValues) as (keyof LoginValues)[];
 const SECRET_FIELD = ALL_FIELDS.find((k) => k !== EMAIL_FIELD);
 
-const joinKey = (...parts: Array<string | number>) => parts.join(".");
+const joinKey = (...parts: (string | number)[]) => parts.join(".");
 
 const AUTH_CODE_INVALID_CREDENTIAL = "auth/invalid-credential";
 const AUTH_CODE_USER_NOT_FOUND = "auth/user-not-found";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { X } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -8,10 +9,10 @@ import { useAppSelector } from "src/app/store/hooks";
 import { selectLoopsResumeUrl } from "src/entities/loop";
 import { AppRoutes, RoutePath } from "src/shared/config/routes";
 
-type AppSidebarProps = {
+interface AppSidebarProps {
   isOpen: boolean;
   onClose?: () => void;
-};
+}
 
 function itemClass(isActive: boolean) {
   return [

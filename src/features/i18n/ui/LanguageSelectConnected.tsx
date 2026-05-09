@@ -11,7 +11,7 @@ import {
   type LanguageLabelMode,
 } from "src/shared/ui/molecules/LanguageSelect/LanguageSelect";
 
-export type LanguageSelectConnectedProps = {
+export interface LanguageSelectConnectedProps {
   labelMode?: LanguageLabelMode;
   value?: SupportedLng;
   onChanged?: (next: SupportedLng) => void;
@@ -25,11 +25,11 @@ export type LanguageSelectConnectedProps = {
   shadow?: "none" | "sm" | "md";
 
   placeholder?: React.ReactNode;
-};
+}
 
 function normalizeToSupported<L extends string>(
   input: string,
-  supported: ReadonlyArray<LanguageItem<L>>,
+  supported: readonly LanguageItem<L>[],
   fallback: L,
 ): L {
   const two = input.slice(0, 2).toLowerCase();
@@ -62,7 +62,7 @@ export function LanguageSelectConnected({
   const [updateUserSettings] = useUpdateUserSettingsMutation();
   const [isPersisting, setIsPersisting] = useState(false);
 
-  const fallback = (languages[0]?.code ?? "en") as SupportedLng;
+  const fallback = (languages[0]?.code ?? "en");
 
   const current = useMemo(() => {
     if (value) return value;
@@ -89,7 +89,7 @@ export function LanguageSelectConnected({
     onChanged?.(next);
   }
 
-  const isDisabled = disabled || isPersisting;
+  const isDisabled = (disabled ?? false) || isPersisting;
 
   return (
     <LanguageSelect
@@ -97,12 +97,12 @@ export function LanguageSelectConnected({
       value={current}
       onChange={handleChange}
       disabled={isDisabled}
-      className={className}
-      size={size}
-      radius={radius}
-      width={width}
-      intent={intent}
-      shadow={shadow}
+      {...(className ? { className } : {})}
+      {...(size ? { size } : {})}
+      {...(radius ? { radius } : {})}
+      {...(width ? { width } : {})}
+      {...(intent ? { intent } : {})}
+      {...(shadow ? { shadow } : {})}
       placeholder={placeholder}
     />
   );

@@ -57,7 +57,7 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
   );
 
   const [activeStatus, setActiveStatus] = React.useState<BoardColumnKey>(
-    (statuses[0]?.status ?? "ACTIVE") as BoardColumnKey,
+    (statuses[0]?.status ?? "ACTIVE"),
   );
 
   const scrollerRef = React.useRef<HTMLDivElement | null>(null);

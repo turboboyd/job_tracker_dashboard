@@ -4,10 +4,10 @@ import type {
   QuerySnapshot,
 } from "firebase/firestore";
 
-export type PageResult<T> = {
+export interface PageResult<T> {
   items: T[];
   nextCursor: string | null;
-};
+}
 
 
 export function snapToPage<T>(

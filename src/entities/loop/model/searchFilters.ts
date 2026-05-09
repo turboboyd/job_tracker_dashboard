@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/slow-regex */
 
-import { SearchFilters } from "./types";
+import type { SearchFilters } from "./types";
 
 export const DEFAULT_FILTERS: SearchFilters = {
   role: "",

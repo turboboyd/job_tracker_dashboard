@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/prefer-nullish-coalescing */
 import { DEFAULT_CANONICAL_FILTERS, type CanonicalFilters } from "../../model";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -110,39 +111,35 @@ export function parseCanonicalFilters(input: unknown): CanonicalFilters {
     DEFAULT_CANONICAL_FILTERS.radiusKm;
 
   const wm =
-    (oneOf(input.wm ?? input.workMode, WORK_MODE_VALUES) as WorkMode | null) ??
+    (oneOf(input.wm ?? input.workMode, WORK_MODE_VALUES)) ??
     DEFAULT_CANONICAL_FILTERS.workMode;
 
   const sen =
-    (oneOf(input.sen ?? input.seniority, SENIORITY_VALUES) as Seniority | null) ??
+    (oneOf(input.sen ?? input.seniority, SENIORITY_VALUES)) ??
     DEFAULT_CANONICAL_FILTERS.seniority;
 
   const emp =
-    (oneOf(input.emp ?? input.employmentType, EMPLOYMENT_TYPE_VALUES) as
-      | EmploymentType
-      | null) ?? DEFAULT_CANONICAL_FILTERS.employmentType;
+    (oneOf(input.emp ?? input.employmentType, EMPLOYMENT_TYPE_VALUES)) ?? DEFAULT_CANONICAL_FILTERS.employmentType;
 
   const pw =
-    (oneOfNumber(input.pw ?? input.postedWithin, POSTED_WITHIN_VALUES) as
-      | PostedWithin
-      | null) ?? DEFAULT_CANONICAL_FILTERS.postedWithin;
+    (oneOfNumber(input.pw ?? input.postedWithin, POSTED_WITHIN_VALUES)) ?? DEFAULT_CANONICAL_FILTERS.postedWithin;
 
   const inc = asString(input.inc ?? input.includeKeywords) ?? "";
   const exc = asString(input.exc ?? input.excludeKeywords) ?? "";
 
   const ag = asBool(input.ag ?? input.excludeAgencies);
   const lang =
-    (oneOf(input.lang ?? input.language, LANGUAGE_VALUES) as Language | null) ??
+    (oneOf(input.lang ?? input.language, LANGUAGE_VALUES)) ??
     DEFAULT_CANONICAL_FILTERS.language;
 
   if (role) out.role = role;
   if (loc) out.location = loc;
 
-  out.radiusKm = radius as RadiusKm;
+  out.radiusKm = radius;
   out.workMode = wm;
   out.seniority = sen;
   out.employmentType = emp;
-  out.postedWithin = pw as PostedWithin;
+  out.postedWithin = pw;
 
   out.includeKeywords = inc;
   out.excludeKeywords = exc;

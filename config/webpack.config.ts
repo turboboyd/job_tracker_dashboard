@@ -71,7 +71,18 @@ export default (_env: unknown, argv: { mode?: BuildMode }): Configuration => {
 
     optimization: buildOptimization(),
 
-    devServer: isDev ? buildDevServer(options) : undefined,
+    performance: isProd
+      ? {
+          // Calibrated after route/chunk optimization: keep warnings meaningful.
+          hints: "warning",
+          maxAssetSize: 350 * 1024,
+          maxEntrypointSize: 500 * 1024,
+          assetFilter: (assetFilename) =>
+            assetFilename.endsWith(".js") || assetFilename.endsWith(".css"),
+        }
+      : false,
+
+    ...(isDev ? { devServer: buildDevServer(options) } : {}),
 
     stats: "minimal",
   };

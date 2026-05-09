@@ -8,18 +8,18 @@ export type DashboardLoopsFilterValue =
   | { mode: "all" }
   | { mode: "selected"; selectedLoopIds: string[] };
 
-export type DashboardLoopOption = {
+export interface DashboardLoopOption {
   id: string;
   name: string;
-};
+}
 
-type Props = {
+interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   loops: DashboardLoopOption[];
   value: DashboardLoopsFilterValue;
   onChange: (next: DashboardLoopsFilterValue) => void;
-};
+}
 
 function uniq(ids: string[]): string[] {
   return Array.from(new Set(ids));

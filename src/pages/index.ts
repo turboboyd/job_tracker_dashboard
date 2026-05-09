@@ -1,13 +1,14 @@
-import React, { lazy } from "react";
+import type React from "react";
+import { lazy } from "react";
 
 import { loadTranslations } from "src/shared/config/i18n/loadTranslations";
 
-type PageModule = { default: React.ComponentType };
+interface PageModule { default: React.ComponentType }
 
-type LocaleBundle = {
+interface LocaleBundle {
   [key: string]: string | LocaleBundle;
-};
-type LocaleModule = { default: LocaleBundle };
+}
+interface LocaleModule { default: LocaleBundle }
 function lazyPage(
   componentImport: () => Promise<PageModule>,
   bundleName: string,

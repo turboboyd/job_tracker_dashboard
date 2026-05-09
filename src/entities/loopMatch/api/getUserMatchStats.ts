@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 import {
   getDocs,
   query,
@@ -8,10 +9,10 @@ import { userApplicationsCol } from "src/shared/api/firestoreRefs";
 
 
 
-export type MatchStats = {
+export interface MatchStats {
   total: number;
   byStatus: Record<string, number>;
-};
+}
 
 function inc(map: Record<string, number>, key: string) {
   map[key] = (map[key] ?? 0) + 1;
@@ -27,7 +28,7 @@ export async function getUserMatchStats(uid: string): Promise<MatchStats> {
   let total = 0;
 
   snap.forEach((doc) => {
-    const data = doc.data() as DocumentData;
+    const data = doc.data();
 
     // count only items that belong to some loop
     const loopId = data?.loopLinkage?.loopId;

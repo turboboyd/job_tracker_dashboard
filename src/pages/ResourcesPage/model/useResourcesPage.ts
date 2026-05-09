@@ -10,30 +10,29 @@ import {
 
 import { resourcesCatalog } from "./catalog";
 import { CATEGORY_ORDER, categoryLabelKey } from "./constants";
-import { ResourceCategory, ViewMode } from "./types";
+import type { ResourceCategory, ViewMode } from "./types";
 
-export type CategoryOption = { key: ResourceCategory; label: string };
+export interface CategoryOption { key: ResourceCategory; label: string }
 
-export type LocalizedResource = {
+export interface LocalizedResource {
   id: string;
   title: string;
   description: string;
   href: string;
   category: Exclude<ResourceCategory, "all">;
   tags: string[];
-};
+}
 
 export const useResourcesPage = () => {
   const { t } = useTranslation(undefined, { keyPrefix: "resources" });
 
   const tr = useCallback(
-    (key: string, fallback?: string, options?: Record<string, unknown>) =>
-      t(
-        key,
-        typeof fallback === "string"
-          ? { defaultValue: fallback, ...(options ?? {}) }
-          : undefined,
-      ),
+    (key: string, fallback?: string, options?: Record<string, unknown>) => {
+      if (typeof fallback === "string") {
+        return t(key, { defaultValue: fallback, ...(options ?? {}) });
+      }
+      return t(key);
+    },
     [t],
   );
 

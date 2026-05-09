@@ -18,21 +18,21 @@ export function ViewModeSwitch(props: {
         variant={value === "pipeline" ? "default" : "outline"}
         onClick={() => onChange("pipeline")}
       >
-        {((t("applicationsPage.views.pipeline", { defaultValue: "Pipeline", returnObjects: false }) ?? "Pipeline") as string)}
+        {((t("applicationsPage.views.pipeline", { defaultValue: "Pipeline", returnObjects: false }) ?? "Pipeline"))}
       </Button>
       <Button
         size="sm"
         variant={value === "today" ? "default" : "outline"}
         onClick={() => onChange("today")}
       >
-        {((t("applicationsPage.views.today", { defaultValue: "Today", returnObjects: false }) ?? "Today") as string)}
+        {((t("applicationsPage.views.today", { defaultValue: "Today", returnObjects: false }) ?? "Today"))}
       </Button>
       <Button
         size="sm"
         variant={value === "followups" ? "default" : "outline"}
         onClick={() => onChange("followups")}
       >
-        {((t("applicationsPage.views.followups", { defaultValue: "Follow-ups", returnObjects: false }) ?? "Follow-ups") as string)}
+        {((t("applicationsPage.views.followups", { defaultValue: "Follow-ups", returnObjects: false }) ?? "Follow-ups"))}
       </Button>
     </div>
   );

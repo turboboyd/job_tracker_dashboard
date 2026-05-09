@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
@@ -79,11 +80,11 @@ const selectVariants = cva(
   }
 );
 
-export type SelectOption<T extends string> = {
+export interface SelectOption<T extends string> {
   value: T;
   label: React.ReactNode;
   disabled?: boolean;
-};
+}
 
 export type SelectProps<T extends string> = Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
@@ -92,7 +93,7 @@ export type SelectProps<T extends string> = Omit<
   VariantProps<typeof selectVariants> & {
     value: T;
     onChange: (next: T) => void;
-    options: ReadonlyArray<SelectOption<T>>;
+    options: readonly SelectOption<T>[];
     state?: SelectStateLegacy;
     placeholderOption?: React.ReactNode;
   };

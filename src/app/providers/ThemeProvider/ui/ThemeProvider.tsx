@@ -1,4 +1,5 @@
-import React, { ReactNode, useEffect, useMemo, useState } from "react";
+import type { ReactNode} from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import {
   LOCAL_STORAGE_THEME_KEY,

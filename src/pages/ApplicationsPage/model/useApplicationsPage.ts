@@ -1,15 +1,15 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
   ApplicationDoc,
   ApplicationsRepo,
-  ProcessStatus,
 } from "../api/applicationsRepo";
 
-import type { PipelineFilterStatus, ViewMode } from "./types";
-import { EMPTY_CREATE_FORM, type CreateFormState } from "./types";
+import { EMPTY_CREATE_FORM } from "./types";
+import type { PipelineFilterStatus, ViewMode, CreateFormState } from "./types";
 
-export type AppRow = { id: string; data: ApplicationDoc };
+export interface AppRow { id: string; data: ApplicationDoc }
 
 export function useApplicationsPage(params: {
   userId: string | null;
@@ -78,11 +78,11 @@ export function useApplicationsPage(params: {
           return;
         }
 
-        const rows = await repo.queryPipelineByStatus(userId, activeStatus as ProcessStatus, 50);
+        const rows = await repo.queryPipelineByStatus(userId, activeStatus, 50);
         // Client-side automation: mark ghosting (NO_RESPONSE) after 30 days since appliedAt.
         const changed = await repo.autoMarkGhosting(userId, rows);
         if (changed > 0) {
-          const fresh = await repo.queryPipelineByStatus(userId, activeStatus as ProcessStatus, 50);
+          const fresh = await repo.queryPipelineByStatus(userId, activeStatus, 50);
           setList(fresh);
         } else {
           setList(rows);
@@ -143,12 +143,14 @@ export function useApplicationsPage(params: {
       await repo.createApplication(userId, {
         companyName: form.companyName.trim(),
         roleTitle: form.roleTitle.trim(),
-        vacancyUrl: form.vacancyUrl.trim().length ? form.vacancyUrl.trim() : undefined,
-        source: form.source.trim().length ? form.source.trim() : undefined,
+        ...(form.vacancyUrl.trim().length
+          ? { vacancyUrl: form.vacancyUrl.trim() }
+          : {}),
+        ...(form.source.trim().length ? { source: form.source.trim() } : {}),
         status: "SAVED",
-        rawDescription: form.rawDescription.trim().length
-          ? form.rawDescription.trim()
-          : undefined,
+        ...(form.rawDescription.trim().length
+          ? { rawDescription: form.rawDescription.trim() }
+          : {}),
       });
 
       resetForm();

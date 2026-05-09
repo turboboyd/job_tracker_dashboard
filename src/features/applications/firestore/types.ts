@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
 /**
  * Enums from schema
@@ -71,21 +71,21 @@ export type RejectionReasonCode =
   | "INTERNAL_CANDIDATE"
   | "OTHER";
 
-export type UserSkill = {
+export interface UserSkill {
   key: string;
   label: string;
   level: number; // 0..5
   years?: number;
   lastUsedAt?: Timestamp;
-  evidence?: Array<{
+  evidence?: {
     type: "PROJECT" | "COURSE" | "LINK";
     title: string;
     url?: string;
     from?: string;
-  }>;
-};
+  }[];
+}
 
-export type UserDoc = {
+export interface UserDoc {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   profile: {
@@ -115,20 +115,20 @@ export type UserDoc = {
     };
     skillSynonymsVersion: number;
   };
-};
+}
 
-export type MatchingBreakdown = {
+export interface MatchingBreakdown {
   skills: number;
   experience: number;
   language: number;
   location: number;
   domain: number;
   salary: number;
-};
+}
 
 export type MatchingDecision = "match" | "maybe" | "skip";
 
-export type MatchingBlock = {
+export interface MatchingBlock {
   decision: MatchingDecision;
   score: number; // 0..100
   breakdown: MatchingBreakdown;
@@ -137,15 +137,15 @@ export type MatchingBlock = {
   gapsTop: string[];
   computedAt: Timestamp;
   confidence: number; // 0..1
-};
+}
 
-export type PriorityBlock = {
+export interface PriorityBlock {
   score: number; // 0..100
   reasons: string[];
   computedAt: Timestamp;
-};
+}
 
-export type ApplicationDoc = {
+export interface ApplicationDoc {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string;
@@ -232,9 +232,9 @@ export type ApplicationDoc = {
   matching?: MatchingBlock;
   priority?: PriorityBlock;
   cvLinkage?: { cvVersionId?: string; profileVersionId?: string };
-};
+}
 
-export type HistoryEventDoc = {
+export interface HistoryEventDoc {
   createdAt?: Timestamp; // filled on commit
   actor: HistoryActor;
   type: HistoryType;
@@ -253,6 +253,6 @@ export type HistoryEventDoc = {
   feedbackType?: FeedbackType;
   sentiment?: Sentiment;
   rejectionReasonCode?: RejectionReasonCode;
-};
+}
 
 export type DotPatch = Record<string, unknown>;

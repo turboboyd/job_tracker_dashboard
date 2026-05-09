@@ -7,7 +7,7 @@ import { Button } from "src/shared/ui";
 
 type ModalSize = "sm" | "md" | "lg";
 
-type ModalProps = {
+interface ModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 
@@ -16,7 +16,7 @@ type ModalProps = {
   children: React.ReactNode;
   size?: ModalSize;
   showClose?: boolean;
-};
+}
 
 const sizeMap: Record<ModalSize, string> = {
   sm: "max-w-[420px]",

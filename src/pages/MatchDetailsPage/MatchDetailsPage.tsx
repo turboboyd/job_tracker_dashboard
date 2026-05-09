@@ -19,7 +19,13 @@ import { useMatchesQueries } from "../MatchesPage/model/useMatchesQueries";
 export default function MatchDetailsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
+type MatchDetailsLocationState = {
+  from?: { pathname?: string; search?: string };
+};
+
+const location = useLocation() as ReturnType<typeof useLocation> & {
+  state?: MatchDetailsLocationState;
+};
   const params = useParams();
   const matchId = String(params.matchId ?? "");
 
@@ -282,7 +288,7 @@ function StatusSelect({
       <StatusMenu
         value={value}
         disabled={disabled}
-        onChange={(s) => onChange(s as LoopMatchStatus)}
+        onChange={(s) => onChange(s)}
         size="sm"
       />
     </label>

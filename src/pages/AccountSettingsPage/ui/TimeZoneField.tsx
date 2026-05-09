@@ -6,11 +6,11 @@ import { Select } from "src/shared/ui/Form/Select/Select";
 
 import type { TimeZoneOption } from "./PreferencesSection";
 
-type Props = {
+interface Props {
   value: string;
-  options: ReadonlyArray<TimeZoneOption>;
+  options: readonly TimeZoneOption[];
   onChange: (next: string) => void;
-};
+}
 
 export function TimeZoneField({ value, options, onChange }: Props) {
   const { t } = useTranslation();
@@ -21,7 +21,7 @@ export function TimeZoneField({ value, options, onChange }: Props) {
       required
     >
       <Select
-        value={value as string}
+        value={value}
         onChange={(v) => onChange(v)}
         options={options.map((o) => ({ value: o.value, label: o.label }))}
       />

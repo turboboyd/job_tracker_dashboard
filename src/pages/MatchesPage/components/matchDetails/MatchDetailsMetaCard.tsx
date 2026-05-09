@@ -7,10 +7,10 @@ import { Card } from "src/shared/ui";
 
 import { MetaRow } from "./MetaRow";
 
-type Props = {
+interface Props {
   match: LoopMatch;
   loopName: string;
-};
+}
 
 export function MatchDetailsMetaCard({ match, loopName }: Props) {
   const { t } = useTranslation();

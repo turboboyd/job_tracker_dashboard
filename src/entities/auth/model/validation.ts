@@ -1,16 +1,16 @@
 import type { TFunction } from "i18next";
 import * as Yup from "yup";
 
-export type LoginValues = {
+export interface LoginValues {
   email: string;
   password: string;
-};
+}
 
-export type RegisterValues = {
+export interface RegisterValues {
   email: string;
   password: string;
   confirmPassword: string;
-};
+}
 
 export function createLoginSchema(t: TFunction): Yup.ObjectSchema<LoginValues> {
   return Yup.object({

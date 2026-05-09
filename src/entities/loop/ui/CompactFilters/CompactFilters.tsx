@@ -10,9 +10,9 @@ const POSTED_WITHIN_OPTIONS: CanonicalFilters["postedWithin"][] = [
   1, 3, 7, 14, 30,
 ];
 
-type Option<T> = { value: T; label: string };
+interface Option<T> { value: T; label: string }
 
-type Props = {
+interface Props {
   value: CanonicalFilters;
   onChange: (next: CanonicalFilters) => void;
 
@@ -20,7 +20,7 @@ type Props = {
   onReset: () => void;
 
   disabled?: boolean;
-};
+}
 
 function parseKeywordLine(v: string) {
   return v.replace(/\s+/g, " ").trim();
@@ -36,7 +36,7 @@ export function CompactFilters({
   const { t } = useTranslation();
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  const workModeOptions: Array<Option<CanonicalFilters["workMode"]>> = useMemo(
+  const workModeOptions: Option<CanonicalFilters["workMode"]>[] = useMemo(
     () => [
       { value: "any", label: t("loops.workMode.any", "Any") },
       { value: "onsite", label: t("loops.workMode.onsite", "On-site") },
@@ -50,7 +50,7 @@ export function CompactFilters({
     [t]
   );
 
-  const seniorityOptions: Array<Option<CanonicalFilters["seniority"]>> = useMemo(
+  const seniorityOptions: Option<CanonicalFilters["seniority"]>[] = useMemo(
     () => [
       { value: "intern", label: t("loops.seniority.intern", "Intern") },
       { value: "junior", label: t("loops.seniority.junior", "Junior") },
@@ -61,7 +61,7 @@ export function CompactFilters({
     [t]
   );
 
-  const employmentOptions: Array<Option<CanonicalFilters["employmentType"]>> =
+  const employmentOptions: Option<CanonicalFilters["employmentType"]>[] =
     useMemo(
       () => [
         {
@@ -85,7 +85,7 @@ export function CompactFilters({
       [t]
     );
 
-  const languageOptions: Array<Option<CanonicalFilters["language"]>> = useMemo(
+  const languageOptions: Option<CanonicalFilters["language"]>[] = useMemo(
     () => [
       { value: "any", label: t("loops.language.any", "Any") },
       { value: "de", label: t("loops.language.de", "DE") },

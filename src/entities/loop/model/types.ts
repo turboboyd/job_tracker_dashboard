@@ -1,9 +1,9 @@
-import { PLATFORM_REGISTRY } from "./platformRegistry";
+import type { PLATFORM_REGISTRY } from "./platformRegistry";
 
 export type RemoteMode = "any" | "remote_only";
 export type ValidationResult = { ok: true } | { ok: false; message: string };
 
-export type Loop = {
+export interface Loop {
   id: string;
   name: string;
   titles: string[];
@@ -14,9 +14,9 @@ export type Loop = {
   platforms: LoopPlatform[];
   createdAtTs?: number | null;
   updatedAtTs?: number | null;
-};
+}
 
-export type CanonicalFilters = {
+export interface CanonicalFilters {
   role: string;
 
   location: string;
@@ -40,24 +40,24 @@ export type CanonicalFilters = {
 
   excludeAgencies: boolean;
   language: "any" | "de" | "en";
-};
+}
 
 export type WorkMode = "any" | "remote_only";
 
-export type SearchFilters = {
+export interface SearchFilters {
   role: string;
   location: string;
   radiusKm: number;
   workMode: WorkMode;
-};
+}
 export type PlatformGroupId = "germany" | "tech" | "remote" | "ausbildung";
 
-export type PlatformMeta = {
+export interface PlatformMeta {
   id: string;
   label: string;
   group: "recommended" | PlatformGroupId;
   recommended: boolean;
   buildUrl: (f: SearchFilters) => string;
-};
+}
 
 export type LoopPlatform = (typeof PLATFORM_REGISTRY)[number]["id"];

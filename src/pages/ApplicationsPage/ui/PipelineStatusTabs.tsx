@@ -22,16 +22,16 @@ export function PipelineStatusTabs(props: {
           const fallback = (t(processStatusKey(s.status), {
             defaultValue: String(s.status),
             returnObjects: false,
-          }) ?? String(s.status)) as string;
+          }) ?? String(s.status));
 
           const label =
             ((t(`applicationsPage.pipeline.${s.key}`, {
               defaultValue: fallback,
               returnObjects: false,
-            }) ?? fallback) as string);
+            }) ?? fallback));
 
           const sk: StatusKey | null =
-            s.status === "ALL" ? null : (normalizeStatusKey(s.status) as StatusKey | null);
+            s.status === "ALL" ? null : (normalizeStatusKey(s.status));
 
           return (
             <Button
@@ -53,12 +53,12 @@ export function PipelineStatusTabs(props: {
             ? ((t("applicationsPage.pipeline.loading", {
                 defaultValue: "Loading…",
                 returnObjects: false,
-              }) ?? "Loading…") as string)
+              }) ?? "Loading…"))
             : ((t("applicationsPage.pipeline.count", {
                 defaultValue: "Count: {{count}}",
                 count,
                 returnObjects: false,
-              }) ?? `Count: ${count}`) as string)}
+              }) ?? `Count: ${count}`))}
         </div>
       </div>
     </div>

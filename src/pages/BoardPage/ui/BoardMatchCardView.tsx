@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { Trash2 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";

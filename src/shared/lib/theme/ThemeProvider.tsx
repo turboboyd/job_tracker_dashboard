@@ -8,11 +8,11 @@ import React, {
 
 export type ThemeMode = "light" | "dark";
 
-export type ThemeContextValue = {
+export interface ThemeContextValue {
   theme: ThemeMode;
   setTheme: (next: ThemeMode) => void;
   toggleTheme: () => void;
-};
+}
 
 const STORAGE_KEY = "job-tracker.theme";
 
@@ -45,9 +45,9 @@ function applyThemeToDom(theme: ThemeMode) {
   root.classList.add(theme === "dark" ? "theme-dark" : "theme-light");
 }
 
-export type ThemeProviderProps = {
+export interface ThemeProviderProps {
   children: React.ReactNode;
-};
+}
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => readInitialTheme());

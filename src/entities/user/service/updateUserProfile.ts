@@ -12,7 +12,7 @@ import { userProfileDocRef } from "./userProfileRefs";
 
 export async function updateUserProfile(uid: string, data: UpdateUserProfileInput): Promise<UserProfile> {
   const user = auth.currentUser;
-  if (!user || user.uid !== uid) {
+  if (user?.uid !== uid) {
     throw new Error("Not authenticated");
   }
 

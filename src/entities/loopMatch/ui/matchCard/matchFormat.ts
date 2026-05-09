@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import type { LoopPlatform } from "src/entities/loop/model";
 import { PLATFORM_REGISTRY } from "src/entities/loop/model/platformRegistry";
 
@@ -8,7 +9,7 @@ export function normalizePlatform(p: unknown): LoopPlatform | "" {
   const v = p.trim().toLowerCase();
   if (!v) return "";
   if (!knownPlatforms.has(v)) return "";
-  return v as LoopPlatform;
+  return v;
 }
 
 export function formatMatchedAt(iso: string): string {

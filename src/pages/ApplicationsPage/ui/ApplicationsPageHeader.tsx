@@ -15,7 +15,7 @@ export function ApplicationsPageHeader(props: {
     <div className="flex items-start justify-between gap-md">
       <div>
         <div className="text-xl font-semibold text-foreground">
-          {((t("applicationsPage.title", { defaultValue: "My applications", returnObjects: false }) ?? "My applications") as string)}
+          {((t("applicationsPage.title", { defaultValue: "My applications", returnObjects: false }) ?? "My applications"))}
         </div>
         <div className="text-sm text-muted-foreground">
           {t(

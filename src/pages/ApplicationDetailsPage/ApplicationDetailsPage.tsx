@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
@@ -93,7 +94,7 @@ export default function ApplicationDetailsPage() {
   const { userId, isAuthReady } = useAuthSelectors();
 
   const [app, setApp] = useState<ApplicationDoc | null>(null);
-  const [history, setHistory] = useState<Array<{ id: string; data: HistoryEventDoc }>>([]);
+  const [history, setHistory] = useState<{ id: string; data: HistoryEventDoc }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +113,7 @@ export default function ApplicationDetailsPage() {
 
   return (
         <div className="text-sm text-muted-foreground">
-          {(t("applicationDetails.loading", { defaultValue: "Loading…", returnObjects: false }) ?? "Loading…") as string}
+          {(t("applicationDetails.loading", { defaultValue: "Loading…", returnObjects: false }) ?? "Loading…")}
         </div>
       );
     }
@@ -120,21 +121,21 @@ export default function ApplicationDetailsPage() {
     if (!app) {
       return (
         <div className="text-sm text-muted-foreground">
-          {(t("applicationDetails.notFound", { defaultValue: "Not found", returnObjects: false }) ?? "Not found") as string}
+          {(t("applicationDetails.notFound", { defaultValue: "Not found", returnObjects: false }) ?? "Not found")}
         </div>
       );
     }
 
     const followUpYesNo = app.process.needsFollowUp
-      ? (t("applicationDetails.yes", { defaultValue: "Yes", returnObjects: false }) ?? "Yes") as string
-      : (t("applicationDetails.no", { defaultValue: "No", returnObjects: false }) ?? "No") as string;
+      ? (t("applicationDetails.yes", { defaultValue: "Yes", returnObjects: false }) ?? "Yes")
+      : (t("applicationDetails.no", { defaultValue: "No", returnObjects: false }) ?? "No");
     const followUpDue = app.process.followUpDueAt
       ? `(${formatTs(app.process.followUpDueAt)})`
       : "";
 
     const reapplyYesNo = app.process.needsReapplySuggestion
-      ? (t("applicationDetails.yes", { defaultValue: "Yes", returnObjects: false }) ?? "Yes") as string
-      : (t("applicationDetails.no", { defaultValue: "No", returnObjects: false }) ?? "No") as string;
+      ? (t("applicationDetails.yes", { defaultValue: "Yes", returnObjects: false }) ?? "Yes")
+      : (t("applicationDetails.no", { defaultValue: "No", returnObjects: false }) ?? "No");
     const reapplyAt = app.process.reapplyEligibleAt
       ? `(${formatTs(app.process.reapplyEligibleAt)})`
       : "";
@@ -143,35 +144,35 @@ export default function ApplicationDetailsPage() {
       <div className="space-y-2 text-sm">
         <div>
           <span className="text-muted-foreground">
-            {(t("applicationDetails.company", { defaultValue: "Company", returnObjects: false }) ?? "Company") as string}:
+            {(t("applicationDetails.company", { defaultValue: "Company", returnObjects: false }) ?? "Company")}:
           </span>{" "}
           {app.job.companyName}
         </div>
         <div>
-          <span className="text-muted-foreground">{(t("applicationDetails.role", { defaultValue: "Role", returnObjects: false }) ?? "Role") as string}:</span>{" "}
+          <span className="text-muted-foreground">{(t("applicationDetails.role", { defaultValue: "Role", returnObjects: false }) ?? "Role")}:</span>{" "}
           {app.job.roleTitle}
         </div>
         <div>
           <span className="text-muted-foreground">
-            {(t("applicationDetails.source", { defaultValue: "Source", returnObjects: false }) ?? "Source") as string}:
+            {(t("applicationDetails.source", { defaultValue: "Source", returnObjects: false }) ?? "Source")}:
           </span>{" "}
           {app.job.source || "—"}
         </div>
         <div>
           <span className="text-muted-foreground">
-            {(t("applicationDetails.status", { defaultValue: "Status", returnObjects: false }) ?? "Status") as string}:
+            {(t("applicationDetails.status", { defaultValue: "Status", returnObjects: false }) ?? "Status")}:
           </span>{" "}
           {statusLabel(app.process.status)}
         </div>
         <div>
           <span className="text-muted-foreground">
-            {(t("applicationDetails.followup", { defaultValue: "Follow-up", returnObjects: false }) ?? "Follow-up") as string}:
+            {(t("applicationDetails.followup", { defaultValue: "Follow-up", returnObjects: false }) ?? "Follow-up")}:
           </span>{" "}
           {followUpYesNo} {followUpDue}
         </div>
         <div>
           <span className="text-muted-foreground">
-            {(t("applicationDetails.reapply", { defaultValue: "Re-apply", returnObjects: false }) ?? "Re-apply") as string}:
+            {(t("applicationDetails.reapply", { defaultValue: "Re-apply", returnObjects: false }) ?? "Re-apply")}:
           </span>{" "}
           {reapplyYesNo} {reapplyAt}
         </div>
@@ -252,11 +253,11 @@ export default function ApplicationDetailsPage() {
               className="hover:underline"
               onClick={() => navigate(RoutePath[AppRoutes.APPLICATIONS])}
             >
-              {(t("applicationDetails.back", { defaultValue: "← Back to applications", returnObjects: false }) ?? "← Back to applications") as string}
+              {(t("applicationDetails.back", { defaultValue: "← Back to applications", returnObjects: false }) ?? "← Back to applications")}
             </button>
           </div>
           <div className="text-xl font-semibold text-foreground">
-            {title || (t("applicationDetails.titleFallback", { defaultValue: "Application", returnObjects: false }) ?? "Application") as string}
+            {title || (t("applicationDetails.titleFallback", { defaultValue: "Application", returnObjects: false }) ?? "Application")}
           </div>
           {app?.job.vacancyUrl ? (
             <div className="text-sm text-muted-foreground break-all">
@@ -273,7 +274,7 @@ export default function ApplicationDetailsPage() {
           </div>
           {app?.priority ? (
             <div className="rounded-full border border-border bg-background px-3 py-1 text-[12px] font-medium text-foreground">
-              {(t("applicationDetails.priority", { defaultValue: "Priority", returnObjects: false }) ?? "Priority") as string}: {app.priority.score}
+              {(t("applicationDetails.priority", { defaultValue: "Priority", returnObjects: false }) ?? "Priority")}: {app.priority.score}
             </div>
           ) : null}
         </div>
@@ -282,7 +283,7 @@ export default function ApplicationDetailsPage() {
       {error ? <InlineError message={error} /> : null}
 
       <Card padding="md" shadow="sm" className="space-y-md">
-        <div className="text-base font-semibold">{(t("applicationDetails.actions", { defaultValue: "Actions", returnObjects: false }) ?? "Actions") as string}</div>
+        <div className="text-base font-semibold">{(t("applicationDetails.actions", { defaultValue: "Actions", returnObjects: false }) ?? "Actions")}</div>
         <div className="flex flex-wrap gap-sm">
           {STATUS_BUTTONS.map((s) => (
             <Button
@@ -298,16 +299,16 @@ export default function ApplicationDetailsPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-semibold">{(t("applicationDetails.comment", { defaultValue: "Add comment", returnObjects: false }) ?? "Add comment") as string}</div>
+          <div className="text-sm font-semibold">{(t("applicationDetails.comment", { defaultValue: "Add comment", returnObjects: false }) ?? "Add comment")}</div>
           <div className="flex gap-sm">
             <Input
               preset="default"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              placeholder={(t("applicationDetails.commentPh", { defaultValue: "Write a short note…", returnObjects: false }) ?? "Write a short note…") as string}
+              placeholder={(t("applicationDetails.commentPh", { defaultValue: "Write a short note…", returnObjects: false }) ?? "Write a short note…")}
             />
             <Button disabled={!commentText.trim() || isMutating} onClick={onAddComment}>
-              {(t("applicationDetails.add", { defaultValue: "Add", returnObjects: false }) ?? "Add") as string}
+              {(t("applicationDetails.add", { defaultValue: "Add", returnObjects: false }) ?? "Add")}
             </Button>
           </div>
         </div>
@@ -315,31 +316,31 @@ export default function ApplicationDetailsPage() {
 
       <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         <Card padding="md" shadow="sm" className="space-y-sm">
-          <div className="text-base font-semibold">{(t("applicationDetails.summary", { defaultValue: "Summary", returnObjects: false }) ?? "Summary") as string}</div>
+          <div className="text-base font-semibold">{(t("applicationDetails.summary", { defaultValue: "Summary", returnObjects: false }) ?? "Summary")}</div>
           {summaryNode}
         </Card>
 
         <Card padding="md" shadow="sm" className="space-y-sm">
-          <div className="text-base font-semibold">{(t("applicationDetails.matching", { defaultValue: "Matching", returnObjects: false }) ?? "Matching") as string}</div>
+          <div className="text-base font-semibold">{(t("applicationDetails.matching", { defaultValue: "Matching", returnObjects: false }) ?? "Matching")}</div>
           {!app?.matching ? (
-            <div className="text-sm text-muted-foreground">{(t("applicationDetails.noMatching", { defaultValue: "No matching data yet. Add description or skills.", returnObjects: false }) ?? "No matching data yet. Add description or skills.") as string}</div>
+            <div className="text-sm text-muted-foreground">{(t("applicationDetails.noMatching", { defaultValue: "No matching data yet. Add description or skills.", returnObjects: false }) ?? "No matching data yet. Add description or skills.")}</div>
           ) : (
             <div className="space-y-2 text-sm">
               <div>
-                <span className="text-muted-foreground">{(t("applicationDetails.decision", { defaultValue: "Decision", returnObjects: false }) ?? "Decision") as string}:</span>{" "}
+                <span className="text-muted-foreground">{(t("applicationDetails.decision", { defaultValue: "Decision", returnObjects: false }) ?? "Decision")}:</span>{" "}
                 <span className="font-medium">{app.matching.decision}</span>{" "}
                 <span className="text-muted-foreground">({app.matching.score}/100)</span>
               </div>
               <div>
-                <span className="text-muted-foreground">{(t("applicationDetails.matched", { defaultValue: "Matched", returnObjects: false }) ?? "Matched") as string}:</span>{" "}
+                <span className="text-muted-foreground">{(t("applicationDetails.matched", { defaultValue: "Matched", returnObjects: false }) ?? "Matched")}:</span>{" "}
                 {app.matching.matchedSkillsTop.length ? app.matching.matchedSkillsTop.join(", ") : "—"}
               </div>
               <div>
-                <span className="text-muted-foreground">{(t("applicationDetails.gaps", { defaultValue: "Gaps", returnObjects: false }) ?? "Gaps") as string}:</span>{" "}
+                <span className="text-muted-foreground">{(t("applicationDetails.gaps", { defaultValue: "Gaps", returnObjects: false }) ?? "Gaps")}:</span>{" "}
                 {app.matching.gapsTop.length ? app.matching.gapsTop.join(", ") : "—"}
               </div>
               <div className="text-xs text-muted-foreground">
-                {(t("applicationDetails.computedAt", { defaultValue: "Computed", returnObjects: false }) ?? "Computed") as string} {formatTs(app.matching.computedAt)} • {(t("applicationDetails.confidence", { defaultValue: "Confidence", returnObjects: false }) ?? "Confidence") as string} {Math.round(app.matching.confidence * 100)}%
+                {(t("applicationDetails.computedAt", { defaultValue: "Computed", returnObjects: false }) ?? "Computed")} {formatTs(app.matching.computedAt)} • {(t("applicationDetails.confidence", { defaultValue: "Confidence", returnObjects: false }) ?? "Confidence")} {Math.round(app.matching.confidence * 100)}%
               </div>
             </div>
           )}
@@ -349,7 +350,7 @@ export default function ApplicationDetailsPage() {
       <Card padding="md" shadow="sm" className="space-y-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-base font-semibold">
-          {((t("applicationDetails.history", { defaultValue: "History", returnObjects: false }) ?? "History") as string)}
+          {((t("applicationDetails.history", { defaultValue: "History", returnObjects: false }) ?? "History"))}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -358,26 +359,26 @@ export default function ApplicationDetailsPage() {
             variant={historyFilter === "all" ? "default" : "outline"}
             onClick={() => setHistoryFilter("all")}
           >
-            {((t("applicationDetails.historyFilter.all", { defaultValue: "All", returnObjects: false }) ?? "All") as string)}
+            {((t("applicationDetails.historyFilter.all", { defaultValue: "All", returnObjects: false }) ?? "All"))}
           </Button>
           <Button
             size="sm"
             variant={historyFilter === "statuses" ? "default" : "outline"}
             onClick={() => setHistoryFilter("statuses")}
           >
-            {((t("applicationDetails.historyFilter.statuses", { defaultValue: "Statuses", returnObjects: false }) ?? "Statuses") as string)}
+            {((t("applicationDetails.historyFilter.statuses", { defaultValue: "Statuses", returnObjects: false }) ?? "Statuses"))}
           </Button>
           <Button
             size="sm"
             variant={historyFilter === "comments" ? "default" : "outline"}
             onClick={() => setHistoryFilter("comments")}
           >
-            {((t("applicationDetails.historyFilter.comments", { defaultValue: "Comments", returnObjects: false }) ?? "Comments") as string)}
+            {((t("applicationDetails.historyFilter.comments", { defaultValue: "Comments", returnObjects: false }) ?? "Comments"))}
           </Button>
         </div>
       </div>
         {filteredHistory.length === 0 ? (
-          <div className="text-sm text-muted-foreground">{(t("applicationDetails.noHistory", { defaultValue: "No history yet.", returnObjects: false }) ?? "No history yet.") as string}</div>
+          <div className="text-sm text-muted-foreground">{(t("applicationDetails.noHistory", { defaultValue: "No history yet.", returnObjects: false }) ?? "No history yet.")}</div>
         ) : (
           <div className="divide-y divide-border">
             {filteredHistory.map((h) => (

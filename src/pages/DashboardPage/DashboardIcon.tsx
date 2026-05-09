@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import React from "react";
 
 export type IconName =
@@ -51,12 +52,12 @@ const COLOR: Record<IconName, string> = {
   no_response: "text-status-neutral",
 };
 
-export type DashboardIconProps = {
+export interface DashboardIconProps {
   name: IconName;
   size?: number;
   className?: string;
   title?: string;
-};
+}
 
 export function DashboardIcon({
   name,

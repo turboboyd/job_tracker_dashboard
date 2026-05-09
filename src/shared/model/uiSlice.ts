@@ -1,8 +1,9 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
-type UiState = {
+interface UiState {
   globalError: string | null;
-};
+}
 
 const initialState: UiState = {
   globalError: null

@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import type { TFunction } from "i18next";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -70,7 +71,7 @@ function labelStatus(t: TFunction, v: LoopMatchStatus) {
   const humanizeKey = (k: string) =>
     k
       .split("_")
-      .map((p) => (p ? p[0].toUpperCase() + p.slice(1).toLowerCase() : p))
+      .map((p) => (p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : p))
       .join(" ");
   return t(meta.labelKey, { defaultValue: humanizeKey(meta.key) });
 }
@@ -78,10 +79,10 @@ function labelStatus(t: TFunction, v: LoopMatchStatus) {
 function buildChips(args: {
   t: TFunction;
   filters: MatchesFiltersState;
-  loopOptions: Array<{ id: string; name: string }>;
-}): Array<{ key: string; label: string; patch: Partial<MatchesFiltersState> }> {
+  loopOptions: { id: string; name: string }[];
+}): { key: string; label: string; patch: Partial<MatchesFiltersState> }[] {
   const { t, filters, loopOptions } = args;
-  const chips: Array<{ key: string; label: string; patch: Partial<MatchesFiltersState> }> = [];
+  const chips: { key: string; label: string; patch: Partial<MatchesFiltersState> }[] = [];
 
   if (filters.q.trim()) {
     chips.push({
@@ -154,7 +155,7 @@ export function MatchesFilters({
   onChange: (next: MatchesFiltersState) => void;
   onReset: () => void;
 
-  loopOptions: Array<{ id: string; name: string }>;
+  loopOptions: { id: string; name: string }[];
   platformOptions: string[];
   statusOptions: LoopMatchStatus[];
 

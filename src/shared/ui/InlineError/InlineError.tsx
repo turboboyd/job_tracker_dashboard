@@ -1,10 +1,10 @@
 import React from "react";
 
-type InlineErrorProps = {
+interface InlineErrorProps {
   title?: string;
   message: string;
   className?: string;
-};
+}
 
 export const InlineError: React.FC<InlineErrorProps> = ({
   title,

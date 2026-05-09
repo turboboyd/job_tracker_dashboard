@@ -15,7 +15,7 @@ export function useEnsureUserDoc(params: {
     if (!isAuthReady || !userId) return;
 
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         setIsEnsuringUser(true);
         await ensureUserDoc(db, userId);

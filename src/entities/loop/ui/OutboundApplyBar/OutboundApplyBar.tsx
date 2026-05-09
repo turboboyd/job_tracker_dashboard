@@ -1,12 +1,12 @@
 
 import { Button } from "src/shared/ui";
 
-type Props = {
+interface Props {
   count: number;
   onApply: () => void;
   onClear: () => void;
   disabled?: boolean;
-};
+}
 
 export function OutboundApplyBar({ count, onApply, onClear, disabled }: Props) {
   return (
@@ -20,13 +20,13 @@ export function OutboundApplyBar({ count, onApply, onClear, disabled }: Props) {
           variant="default"
           shadow="sm"
           shape="lg"
-          disabled={disabled || count === 0}
+          disabled={(disabled ?? false) || count === 0}
           onClick={onApply}
         >
           Apply (open links)
         </Button>
 
-        <Button variant="outline" shape="lg" disabled={disabled || count === 0} onClick={onClear}>
+        <Button variant="outline" shape="lg" disabled={(disabled ?? false) || count === 0} onClick={onClear}>
           Clear
         </Button>
       </div>

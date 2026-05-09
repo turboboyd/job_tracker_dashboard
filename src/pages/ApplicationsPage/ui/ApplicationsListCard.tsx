@@ -18,19 +18,19 @@ export function ApplicationsListCard(props: { list: AppRow[]; view: ViewMode }) 
       (t("applicationsPage.empty.today", {
         defaultValue: "Nothing for today.",
         returnObjects: false,
-      }) ?? "Nothing for today.") as string;
+      }) ?? "Nothing for today.");
   } else if (view === "followups") {
     emptyText =
       (t("applicationsPage.empty.followups", {
         defaultValue: "No follow-ups due.",
         returnObjects: false,
-      }) ?? "No follow-ups due.") as string;
+      }) ?? "No follow-ups due.");
   } else {
     emptyText =
       (t("applicationsPage.empty.pipeline", {
         defaultValue: "No applications yet.",
         returnObjects: false,
-      }) ?? "No applications yet.") as string;
+      }) ?? "No applications yet.");
   }
 
   return (

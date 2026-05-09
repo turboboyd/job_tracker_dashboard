@@ -5,13 +5,13 @@ import { Button, Card } from "src/shared/ui";
 
 import { StatusSelect } from "./StatusSelect";
 
-type Props = {
+interface Props {
   match: LoopMatch;
   busy: boolean;
   onUpdateStatus: (next: LoopMatchStatus) => void;
   onEdit: () => void;
   onDelete: () => void;
-};
+}
 
 export function MatchDetailsActionsCard({
   match,

@@ -3,7 +3,7 @@ import type { LoopMatchStatus } from "src/entities/loopMatch";
 import { ALL_PLATFORMS, PLATFORM_REGISTRY } from "./platformRegistry";
 import type { LoopPlatform } from "./types";
 
-export const LOOP_PLATFORMS: Array<{ value: LoopPlatform; label: string }> =
+export const LOOP_PLATFORMS: { value: LoopPlatform; label: string }[] =
   PLATFORM_REGISTRY.map((p) => ({ value: p.id, label: p.label }));
 
 export const LOOP_MATCH_STATUSES = [
@@ -15,7 +15,7 @@ export const LOOP_MATCH_STATUSES = [
   { value: "HR_CALL_SCHEDULED", label: "Interview" },
   { value: "OFFER_RECEIVED", label: "Offer" },
   { value: "REJECTED_PRE_INTERVIEW", label: "Rejected" },
-] as const satisfies ReadonlyArray<{ value: LoopMatchStatus; label: string }>;
+] as const satisfies readonly { value: LoopMatchStatus; label: string }[];
 
 const LOOP_PLATFORM_SET: ReadonlySet<string> = new Set(ALL_PLATFORMS);
 export function isLoopPlatform(v: unknown): v is LoopPlatform {

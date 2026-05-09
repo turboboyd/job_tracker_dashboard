@@ -1,9 +1,9 @@
 import React from "react";
 
-type StatCardProps = {
+interface StatCardProps {
   label: string;
   value: number;
-};
+}
 
 export const StatCard: React.FC<StatCardProps> = ({ label, value }) => {
   return (

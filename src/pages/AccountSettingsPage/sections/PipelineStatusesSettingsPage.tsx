@@ -46,7 +46,7 @@ function sortByOrder<T extends { order: number }>(arr: T[]): T[] {
   return [...arr].sort((a, b) => a.order - b.order);
 }
 
-function resequence<T extends { order: number }>(arr: T[], step: number = 10): T[] {
+function resequence<T extends { order: number }>(arr: T[], step = 10): T[] {
   return arr.map((x, i) => ({ ...x, order: (i + 1) * step }));
 }
 
@@ -54,8 +54,11 @@ function moveItem<T>(arr: T[], index: number, dir: -1 | 1): T[] {
   const next = [...arr];
   const j = index + dir;
   if (j < 0 || j >= next.length) return next;
-  const tmp = next[index];
-  next[index] = next[j];
+
+  // With `noUncheckedIndexedAccess`, indexed access yields `T | undefined`.
+  // Bounds are checked above, so `!` is safe here.
+  const tmp = next[index]!;
+  next[index] = next[j]!;
   next[j] = tmp;
   return next;
 }
@@ -120,7 +123,6 @@ export default function PipelineStatusesSettingsPage() {
             label: "New stage",
             order: (prev.stages.length + 1) * 10,
             visible: true,
-            defaultSubStatusId: undefined,
             subStatuses: [
               {
                 id: `sub_${uidLike()}`,
@@ -133,7 +135,7 @@ export default function PipelineStatusesSettingsPage() {
         ]),
       );
 
-      const defaultStageId = prev.defaultStageId || nextStages[0]?.id || id;
+      const defaultStageId = prev.defaultStageId ?? nextStages[0]?.id ?? id;
       return { ...prev, stages: nextStages, defaultStageId };
     });
   };
@@ -172,8 +174,12 @@ export default function PipelineStatusesSettingsPage() {
             { id, label: "New status", order: (s.subStatuses.length + 1) * 10, visible: true },
           ]),
         );
-        const defaultSubStatusId = s.defaultSubStatusId || next[0]?.id;
-        return { ...s, subStatuses: next, defaultSubStatusId };
+        const defaultSubStatusId = s.defaultSubStatusId ?? next[0]?.id;
+        return {
+          ...s,
+          subStatuses: next,
+          ...(defaultSubStatusId ? { defaultSubStatusId } : {}),
+        };
       });
       return { ...prev, stages };
     });
@@ -187,7 +193,11 @@ export default function PipelineStatusesSettingsPage() {
         const nextSub = resequence(sortByOrder(subStatuses));
         const defaultSubStatusId =
           s.defaultSubStatusId === subId ? nextSub[0]?.id : s.defaultSubStatusId;
-        return { ...s, subStatuses: nextSub, defaultSubStatusId };
+        return {
+          ...s,
+          subStatuses: nextSub,
+          ...(defaultSubStatusId ? { defaultSubStatusId } : {}),
+        };
       });
       return { ...prev, stages };
     });
@@ -218,7 +228,8 @@ export default function PipelineStatusesSettingsPage() {
   };
 
   const onReset = () => setDraft(clonePipeline(savedPipeline));
-  const onResetToDefaults = () => setDraft(clonePipeline(DEFAULT_USER_SETTINGS.pipeline!));
+  const onResetToDefaults = () =>
+    setDraft(clonePipeline(DEFAULT_USER_SETTINGS.pipeline!));
 
   const stagesSorted = useMemo(() => sortByOrder(draft.stages), [draft.stages]);
 
