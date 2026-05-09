@@ -77,16 +77,22 @@ function ListHeader() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+export { ViewToggle };
+
 export function ApplicationsListCard(props: {
   list: AppRow[];
   view: ViewMode;
   query?: string;
   sortBy?: "newest" | "oldest" | "company" | "score";
   onChangeStatus?: (appId: string, status: ProcessStatus) => void;
+  displayMode?: DisplayMode;
+  onDisplayModeChange?: (v: DisplayMode) => void;
 }) {
   const { t } = useTranslation();
-  const { list, view, query = "", sortBy = "newest", onChangeStatus } = props;
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("list");
+  const { list, view, query = "", sortBy = "newest", onChangeStatus, displayMode: displayModeProp, onDisplayModeChange } = props;
+  const [displayModeInternal, setDisplayModeInternal] = useState<DisplayMode>("list");
+  const displayMode = displayModeProp ?? displayModeInternal;
+  const setDisplayMode = onDisplayModeChange ?? setDisplayModeInternal;
 
   const filteredSorted = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -150,16 +156,6 @@ export function ApplicationsListCard(props: {
 
   return (
     <div className="rounded-[14px] border border-border bg-card overflow-hidden">
-      {/* Card toolbar: count + view toggle */}
-      <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border">
-        <span className="text-[12px] text-muted-foreground">
-          {filteredSorted.length > 0
-            ? `${filteredSorted.length} ${t("applicationsPage.items", { defaultValue: "applications" })}`
-            : null}
-        </span>
-        <ViewToggle value={displayMode} onChange={setDisplayMode} />
-      </div>
-
       {filteredSorted.length === 0 ? (
         <div className="px-3 py-6 text-sm text-muted-foreground">
           {query ? "No applications match your search." : emptyText}

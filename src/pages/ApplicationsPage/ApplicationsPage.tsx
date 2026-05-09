@@ -7,7 +7,7 @@ import { db } from "src/shared/config/firebase/firebase";
 
 import { createApplicationsRepo } from "./api/applicationsRepo";
 import { useApplicationsPage } from "./model/useApplicationsPage";
-import { ApplicationsListCard } from "./ui/ApplicationsListCard";
+import { ApplicationsListCard, ViewToggle } from "./ui/ApplicationsListCard";
 import { ApplicationsToolbar } from "./ui/ApplicationsToolbar";
 import { CreateApplicationDialog } from "./ui/CreateApplicationDialog";
 
@@ -26,6 +26,7 @@ export default function ApplicationsPage() {
   const repo = useMemo(() => createApplicationsRepo(db), []);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"list" | "cards">("list");
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("newest");
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -88,6 +89,9 @@ export default function ApplicationsPage() {
               <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
                 {t("applicationsPage.title", "My Applications")}
               </h1>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                Создавай и отслеживай отклики в одном месте.
+              </p>
             </div>
 
             <div className="flex items-center gap-2 pb-3">
@@ -181,6 +185,14 @@ export default function ApplicationsPage() {
         </div>
       </div>
 
+      {/* Meta bar: between header and list */}
+      <div className="flex items-center justify-between gap-3 px-7 py-3 border-b border-border bg-background shrink-0">
+        <span className="text-[13px] text-muted-foreground">
+          Показано <span className="font-semibold tabular-nums text-foreground">{list.length}</span> из {list.length}
+        </span>
+        <ViewToggle value={displayMode} onChange={setDisplayMode} />
+      </div>
+
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto bg-background">
         <div className="flex flex-col gap-3.5 p-7">
@@ -196,6 +208,8 @@ export default function ApplicationsPage() {
             query={query}
             sortBy={sortBy}
             onChangeStatus={onChangeStatus}
+            displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
           />
         </div>
       </div>
