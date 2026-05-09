@@ -1,8 +1,8 @@
 import type { Timestamp } from "firebase/firestore";
 
+import type { ApplicationDoc } from "../documents.types";
 import { FOLLOW_UP_DAYS } from "../lib/constants";
 import { addDays, daysBetween } from "../lib/time";
-import type { ApplicationDoc } from "../types";
 
 /**
  * Follow-up system (client-side):

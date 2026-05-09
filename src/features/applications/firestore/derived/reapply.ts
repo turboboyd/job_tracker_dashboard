@@ -1,8 +1,8 @@
 import type { Timestamp } from "firebase/firestore";
 
+import type { ApplicationDoc } from "../documents.types";
 import { REAPPLY_COOLDOWN_DAYS } from "../lib/constants";
 import { addDays } from "../lib/time";
-import type { ApplicationDoc } from "../types";
 
 /**
  * Re-apply logic (client-side):
