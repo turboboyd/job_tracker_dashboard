@@ -29,3 +29,5 @@ export {
 
 export { createApplicationsRepo } from "./repo";
 export type { ApplicationsRepo } from "./repo";
+
+export { createRestApplicationGateway } from "./rest/gateway";
