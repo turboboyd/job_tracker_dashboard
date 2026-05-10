@@ -9,9 +9,6 @@
     },
     "create": {
       "title": "New application",
-      "subtitle": "Fill in the basics — refine the rest later.",
-      "newBtn": "New",
-      "cancel": "Cancel",
       "preparing": "Preparing…",
       "company": "Company",
       "companyPh": "e.g. ACME GmbH",
@@ -24,35 +21,14 @@
       "desc": "Description (optional)",
       "descPh": "Paste vacancy text to improve matching…",
       "createBtn": "Create",
-      "creating": "Creating…",
-      "contact": {
-        "title": "Primary contact (optional)",
-        "hint": "Add it now or later from the application page.",
-        "firstName": "First name",
-        "firstNamePh": "Anna",
-        "lastName": "Last name",
-        "lastNamePh": "Petrova",
-        "role": "Role",
-        "phone": "Phone",
-        "phonePh": "+49 …",
-        "email": "Email",
-        "emailPh": "name@company.com"
-      },
-      "contactRole": {
-        "HR": "HR",
-        "RECRUITER": "Recruiter",
-        "TECH_INTERVIEWER": "Tech interviewer",
-        "HIRING_MANAGER": "Hiring manager",
-        "REFERRAL": "Referral",
-        "OTHER": "Other"
-      }
+      "creating": "Creating…"
     },
     "pipeline": {
-      "saved": "SAVED",
-      "applied": "APPLIED",
-      "interview": "INTERVIEW",
-      "offer": "OFFER",
-      "rejected": "REJECTED",
+      "saved": "Saved",
+      "applied": "Applied",
+      "interview": "Interview",
+      "offer": "Offer",
+      "rejected": "Rejected",
       "loading": "Loading…",
       "count": "Count: {{count}}",
       "empty": "No applications yet.",

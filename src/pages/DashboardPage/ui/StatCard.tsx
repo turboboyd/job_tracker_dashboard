@@ -1,24 +1,44 @@
 import React from "react";
 
-import { classNames } from "src/shared/lib/classNames";
-
-interface StatCardProps {
+type StatCardProps = {
   label: string;
-  value: number;
-  color?: string;
+  value: number | string;
+  sub?: string;
+  trend?: number;
+  accent?: boolean;
+};
+
+function trendColor(trend: number) {
+  if (trend > 0) return "text-emerald-600";
+  if (trend < 0) return "text-red-500";
+  return "text-subtle-foreground";
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ label, value, color }) => {
+function trendArrow(trend: number) {
+  if (trend > 0) return "↑";
+  if (trend < 0) return "↓";
+  return "→";
+}
+
+export const StatCard: React.FC<StatCardProps> = ({ label, value, sub, trend, accent }) => {
   return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
+    <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div className="truncate text-[11px] font-medium uppercase tracking-[0.07em] text-subtle-foreground">
           {label}
         </div>
-        <div className={classNames("mt-2 text-3xl font-semibold leading-none", color ?? "text-foreground")}>
-          {value}
-        </div>
+        {trend !== undefined && (
+          <span className={`shrink-0 whitespace-nowrap text-[11px] font-medium ${trendColor(trend)}`}>
+            {trendArrow(trend)} {Math.abs(trend)}%
+          </span>
+        )}
       </div>
+      <div
+        className={`mt-2.5 text-[30px] font-semibold leading-none tracking-[-0.03em] tabular-nums ${accent ? "text-primary" : "text-foreground"}`}
+      >
+        {value}
+      </div>
+      {sub && <div className="mt-1.5 text-[11.5px] text-subtle-foreground">{sub}</div>}
     </div>
   );
 };

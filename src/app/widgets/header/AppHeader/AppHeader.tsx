@@ -1,144 +1,86 @@
-import { LogIn, Menu, UserPlus, X } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import { useAuthSelectors } from "src/features/auth/model";
-import { LanguageSelectConnected } from "src/features/i18n";
-import { AppRoutes, RoutePath } from "src/shared/config/routes";
-import { Button } from "src/shared/ui/Button";
-import { ThemeToggle } from "src/shared/ui/molecules/ThemeToggle";
+import {
+  AppRoutes,
+  RoutePath,
+} from "src/app/providers/router/routeConfig/routeConfig";
+import { useAuthSelectors } from "src/entities/auth";
+import { ThemeToggle } from "src/shared/ui";
+import { LanguageSelectConnected } from "src/shared/ui/molecules/LanguageSelect/LanguageSelectConnected";
 
-import { NotificationsBell } from "../NotificationsBell/NotificationsBell";
-import { UserMenu } from "../UserMenu/UserMenu";
-
-interface AppHeaderProps {
-  sidebarOpen?: boolean;
-  onToggleSidebar?: () => void;
-}
-
-interface NavItem {
-  label: string;
-  path: string;
-}
-
-const guestNavItems: NavItem[] = [
-  { label: "header.home", path: "/" },
-  { label: "header.resources", path: "/resources" },
-  { label: "header.about", path: "/about" },
-];
-
-const authNavItems: NavItem[] = [
-  { label: "header.dashboard", path: "/dashboard" },
+const guestNavItems = [
+  { labelKey: "header.home", labelDefault: "Home", path: "/" },
+  { labelKey: "header.resources", labelDefault: "Resources", path: "/resources" },
+  { labelKey: "header.about", labelDefault: "About", path: "/about" },
 ];
 
 function linkClass(isActive: boolean) {
   return [
-    "text-sm font-medium transition-colors",
+    "text-[13px] transition-colors rounded-md px-2.5 py-1.5",
     isActive
-      ? "text-foreground"
+      ? "bg-muted text-foreground font-medium"
       : "text-muted-foreground hover:text-foreground",
   ].join(" ");
 }
 
-const guestActionClass =
-  "inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3";
-
-export const AppHeader: React.FC<AppHeaderProps> = ({
-  sidebarOpen,
-  onToggleSidebar,
-}) => {
+export const AppHeader: React.FC = () => {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuthSelectors();
 
-  const navItems = isAuthenticated ? authNavItems : guestNavItems;
-
-  const leftShiftClass =
-    isAuthenticated && sidebarOpen ? "md:translate-x-64" : "md:translate-x-0";
-
   return (
-    <header className="h-16 bg-card border-b border-border">
-      <div className="mx-auto flex h-full max-w-container items-center justify-between gap-3 px-3 sm:px-4">
-        {/* Left group */}
-        <div
-          className={[
-            "flex items-center gap-2",
-            "transition-transform duration-300 ease-out",
-            leftShiftClass,
-          ].join(" ")}
-        >
-          {isAuthenticated && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleSidebar}
-              aria-label="Toggle sidebar"
-            >
-              {sidebarOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
-            </Button>
-          )}
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-[12px]">
+      <div className="mx-auto flex h-[60px] max-w-[1280px] items-center justify-between gap-6 px-6">
+        {/* Logo + nav */}
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-2.5">
+            <div className="grid h-6 w-6 shrink-0 place-items-center rounded-[6px] bg-foreground text-[13px] font-bold tracking-tighter text-background">
+              L
+            </div>
+            <span className="text-[14.5px] font-semibold tracking-tight">Loopboard</span>
+            <span className="ml-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide border border-border bg-muted text-subtle-foreground">
+              BETA
+            </span>
+          </div>
 
           {!isAuthenticated && (
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-                <span className="text-primary-foreground text-xs font-bold leading-none select-none">J</span>
-              </div>
-              <span className="text-sm font-semibold text-foreground tracking-tight">
-                {t("header.appName")}
-              </span>
-            </div>
+            <nav className="hidden items-center gap-1 md:flex">
+              {guestNavItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.path === "/"}
+                  className={({ isActive }) => linkClass(isActive)}
+                >
+                  {t(item.labelKey, item.labelDefault)}
+                </NavLink>
+              ))}
+            </nav>
           )}
-
-          <nav className="hidden md:flex items-center gap-5 ml-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => linkClass(isActive)}
-              >
-                {t(item.label)}
-              </NavLink>
-            ))}
-          </nav>
         </div>
 
-        {/* Right group */}
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {isAuthenticated ? (
+        {/* Right side */}
+        <div className="flex items-center gap-2">
+          <LanguageSelectConnected labelMode="short" />
+          <ThemeToggle />
+
+          {!isAuthenticated && (
             <>
-              <NotificationsBell />
-              <UserMenu
-                settingsPath={`${RoutePath[AppRoutes.SETTINGS_PROFILE]}`}
-              />
-            </>
-          ) : (
-            <div className="flex items-center gap-1">
               <NavLink
                 to={RoutePath[AppRoutes.LOGIN]}
-                className={guestActionClass}
+                className="rounded-md border border-border-strong px-3 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
               >
-                <LogIn className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{t("auth.signIn")}</span>
+                {t("auth.signIn", "Sign in")}
               </NavLink>
               <NavLink
                 to={RoutePath[AppRoutes.REGISTER]}
-                className={[guestActionClass, "bg-primary text-primary-foreground hover:bg-primary/90"].join(" ")}
+                className="rounded-md bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-all hover:opacity-90"
               >
-                <UserPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{t("auth.createAccount")}</span>
+                {t("auth.createAccount", "Sign up")}
               </NavLink>
-            </div>
+            </>
           )}
-          <LanguageSelectConnected
-            labelMode="short"
-            width="auto"
-            className="h-9 w-[4.75rem] text-xs"
-          />
-          <ThemeToggle />
         </div>
       </div>
     </header>

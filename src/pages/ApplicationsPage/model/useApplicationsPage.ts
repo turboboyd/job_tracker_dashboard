@@ -1,34 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
 
-import type { ApplicationsRepo } from "src/features/applications";
-import type { ContactRole } from "src/entities/contact";
-import { createContact } from "src/features/contacts";
-import { db } from "src/shared/config/firebase/firestore";
+import type {
+  ApplicationDoc,
+  ApplicationsRepo,
+  ProcessStatus,
+} from "../api/applicationsRepo";
 
-import {
-  buildCreateApplicationPayload,
-  canSubmitApplicationForm,
-  getApplicationsPageErrorMessage,
-  loadApplicationsList,
-  subscribeApplicationsList,
-} from "./applicationsPage.helpers";
-import { EMPTY_CREATE_FORM } from "./types";
-import type { AppRow, CreateFormState, PipelineFilterStatus, ViewMode } from "./types";
+import type { PipelineFilterStatus, ViewMode } from "./types";
+import { EMPTY_CREATE_FORM, type CreateFormState } from "./types";
 
-export type { AppRow } from "./types";
+export type AppRow = { id: string; data: ApplicationDoc };
 
-/**
- * Optional contact attached when creating an application.
- * If `firstName` is empty, the contact is silently skipped.
- */
-export interface NewApplicationContactInput {
+export type NewApplicationContactInput = {
   firstName: string;
   lastName: string;
-  role: ContactRole;
+  role: string;
   phone: string;
   email: string;
-}
+};
 
 export function useApplicationsPage(params: {
   userId: string | null;
@@ -39,229 +28,205 @@ export function useApplicationsPage(params: {
 
   const [view, setView] = useState<ViewMode>("pipeline");
   const [activeStatus, setActiveStatus] = useState<PipelineFilterStatus>("ALL");
+
   const [form, setForm] = useState<CreateFormState>(EMPTY_CREATE_FORM);
 
   const [isEnsuringUser, setIsEnsuringUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(false);
 
-  const [list, setList] = useState<AppRow[]>([]);
+  const [allList, setAllList] = useState<AppRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => canSubmitApplicationForm(form), [form]);
+  const canSubmit = useMemo(() => {
+    return form.companyName.trim().length > 0 && form.roleTitle.trim().length > 0;
+  }, [form.companyName, form.roleTitle]);
 
+  // Compute per-status counts from the full allList (pipeline view)
+  const statusCounts = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {
+      ALL: allList.length,
+      SAVED: 0,
+      APPLIED: 0,
+      INTERVIEW_1: 0,
+      OFFER: 0,
+      REJECTED: 0,
+      NO_RESPONSE: 0,
+    };
+    for (const row of allList) {
+      const s = row.data.process.status;
+      if (s in counts) counts[s] = (counts[s] ?? 0) + 1;
+    }
+    return counts;
+  }, [allList]);
+
+  // list = allList filtered client-side by activeStatus (pipeline view only)
+  const list = useMemo<AppRow[]>(() => {
+    if (view !== "pipeline" || activeStatus === "ALL") return allList;
+    return allList.filter((row) => row.data.process.status === activeStatus);
+  }, [allList, view, activeStatus]);
+
+  // Ensure user document exists.
   useEffect(() => {
-    const currentUserId = userId;
-    if (!isAuthReady || !currentUserId) return;
-    const userIdForRequest: string = currentUserId;
+    if (!isAuthReady || !userId) return;
 
     let cancelled = false;
-
-    async function ensureUserDocument() {
+    (async () => {
       try {
         setIsEnsuringUser(true);
-        await repo.ensureUserDoc(userIdForRequest);
-      } catch (error_: unknown) {
-        if (!cancelled) setError(getApplicationsPageErrorMessage(error_));
+        await repo.ensureUserDoc(userId);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        if (!cancelled) setError(message);
       } finally {
         if (!cancelled) setIsEnsuringUser(false);
       }
-    }
-
-    void ensureUserDocument();
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [isAuthReady, repo, userId]);
+  }, [repo, isAuthReady, userId]);
 
-  /**
-   * One-shot loader. Kept as the manual fallback used by `onCreate` and as a
-   * recovery path when subscription has a transient error.
-   */
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   const load = useCallback(async () => {
-    const currentUserId = userId;
-    if (!currentUserId) return;
-    const userIdForRequest: string = currentUserId;
+    if (!userId) return;
 
     setIsLoadingList(true);
     setError(null);
 
     try {
-      const rows = await loadApplicationsList({
-        activeStatus,
-        repo,
-        userId: userIdForRequest,
-        view,
-      });
-      setList(rows);
-    } catch (error_: unknown) {
-      setError(getApplicationsPageErrorMessage(error_));
+      if (view === "pipeline") {
+        // TODO(backend-migration): always load ALL; filter client-side for per-status counts
+        const rows = await repo.queryAllActiveApplications(userId, 500);
+        const changed = await repo.autoMarkGhosting(userId, rows);
+        if (changed > 0) {
+          const fresh = await repo.queryAllActiveApplications(userId, 500);
+          setAllList(fresh);
+        } else {
+          setAllList(rows);
+        }
+        return;
+      }
+
+      if (view === "today") {
+        const rows = await repo.queryTodayTopPriority(userId, 50);
+        const changed = await repo.autoMarkGhosting(userId, rows);
+        if (changed > 0) {
+          const fresh = await repo.queryTodayTopPriority(userId, 50);
+          setAllList(fresh);
+        } else {
+          setAllList(rows);
+        }
+        return;
+      }
+
+      // view === "followups"
+      const rows = await repo.queryFollowUpsDue(userId, 50);
+      const changed = await repo.autoMarkGhosting(userId, rows);
+      if (changed > 0) {
+        const fresh = await repo.queryFollowUpsDue(userId, 50);
+        setAllList(fresh);
+      } else {
+        setAllList(rows);
+      }
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message);
     } finally {
       setIsLoadingList(false);
     }
-  }, [activeStatus, repo, userId, view]);
+  }, [repo, userId, view]);
 
-  const location = useLocation();
-
-  /**
-   * Real-time list subscription via Firestore onSnapshot.
-   *
-   * This is the primary data source — any mutation in any other tab/page
-   * (e.g. status change on details page) propagates here automatically.
-   *
-   * Auto-ghosting (a one-shot client-side maintenance write) runs once per
-   * (userId, view, activeStatus) so it doesn't fire on every snapshot tick.
-   */
-  useEffect(() => {
-    const currentUserId = userId;
-    if (!isAuthReady || !currentUserId) return undefined;
-
-    setIsLoadingList(true);
-    let cancelled = false;
-    let didAutoGhost = false;
-
-    const unsubscribe = subscribeApplicationsList({
-      activeStatus,
-      repo,
-      userId: currentUserId,
-      view,
-      onUpdate: (rows) => {
-        if (cancelled) return;
-        setList(rows);
-        setIsLoadingList(false);
-
-        // Run ghosting check once after first snapshot. The subscription will
-        // pick up any writes the check makes.
-        if (!didAutoGhost) {
-          didAutoGhost = true;
-          repo.autoMarkGhosting(currentUserId, rows).catch(() => undefined);
-        }
-      },
-      onError: (e) => {
-        if (cancelled) return;
-        setError(getApplicationsPageErrorMessage(e));
-        setIsLoadingList(false);
-      },
-    });
-
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, [activeStatus, isAuthReady, repo, userId, view]);
-
-  /**
-   * Belt-and-suspenders: if for any reason the listener is paused (offline,
-   * network blip), trigger a one-shot refetch when:
-   *   - the user navigates back to this route,
-   *   - the tab regains focus or becomes visible.
-   * No-op when the listener is healthy.
-   */
+  // Reload list when auth/view/status changes.
   useEffect(() => {
     if (!isAuthReady || !userId) return;
     void load();
-  }, [isAuthReady, load, userId, location.key]);
-
-  useEffect(() => {
-    if (!isAuthReady || !userId) return undefined;
-
-    const refetch = () => {
-      if (document.visibilityState === "visible") {
-        void load();
-      }
-    };
-
-    document.addEventListener("visibilitychange", refetch);
-    window.addEventListener("focus", refetch);
-    return () => {
-      document.removeEventListener("visibilitychange", refetch);
-      window.removeEventListener("focus", refetch);
-    };
-  }, [isAuthReady, load, userId]);
+  }, [isAuthReady, userId, load]);
 
   const updateForm = useCallback(
     <K extends keyof CreateFormState>(key: K, value: CreateFormState[K]) => {
-      setForm((current) => ({ ...current, [key]: value }));
+      setForm((prev: CreateFormState) => ({ ...prev, [key]: value }));
     },
-    [],
+    []
   );
 
-  const resetForm = useCallback(() => {
-    setForm(EMPTY_CREATE_FORM);
-  }, []);
+  const resetForm = useCallback(() => setForm(EMPTY_CREATE_FORM), []);
 
-  /**
-   * Create a new application and optionally attach a primary contact.
-   *
-   * Returns `true` on success so callers (e.g. the modal) can close.
-   * The contact is created in a separate write — failure to create the
-   * contact does NOT roll back the application; we surface the error so
-   * the user can retry the contact step from the application page.
-   */
-  const onCreate = useCallback(
-    async (contactInput?: NewApplicationContactInput): Promise<boolean> => {
-      const currentUserId = userId;
-      if (!currentUserId || !canSubmit) return false;
-      const userIdForRequest: string = currentUserId;
-
-      setIsCreating(true);
-      setError(null);
-
+  const onChangeStatus = useCallback(
+    async (appId: string, status: ProcessStatus) => {
+      if (!userId) return;
       try {
-        const newAppId = await repo.createApplication(
-          userIdForRequest,
-          buildCreateApplicationPayload(form),
-        );
-
-        // Optional contact attachment — only when a name was filled.
-        if (contactInput && contactInput.firstName.trim().length > 0) {
-          const companyName = form.companyName.trim();
-          const phone = contactInput.phone.trim();
-          const email = contactInput.email.trim();
-          await createContact(db, userIdForRequest, {
-            firstName: contactInput.firstName.trim(),
-            lastName: contactInput.lastName.trim(),
-            role: contactInput.role,
-            applicationIds: [newAppId],
-            ...(companyName ? { companyName } : {}),
-            ...(phone ? { phones: [{ number: phone, label: "mobile" as const }] } : {}),
-            ...(email ? { emails: [{ address: email, label: "work" as const }] } : {}),
-          });
-        }
-
-        resetForm();
-        setView("pipeline");
-        setActiveStatus("ALL");
-
+        await repo.changeStatus(userId, appId, status);
         await load();
-        return true;
-      } catch (error_: unknown) {
-        setError(getApplicationsPageErrorMessage(error_));
-        return false;
-      } finally {
-        setIsCreating(false);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
       }
     },
-    [canSubmit, form, load, repo, resetForm, userId],
+    [repo, userId, load]
   );
 
+  const onCreate = useCallback(async () => {
+    if (!userId || !canSubmit) return;
+
+    setIsCreating(true);
+    setError(null);
+
+    try {
+      await repo.createApplication(userId, {
+        companyName: form.companyName.trim(),
+        roleTitle: form.roleTitle.trim(),
+        vacancyUrl: form.vacancyUrl.trim().length ? form.vacancyUrl.trim() : undefined,
+        source: form.source.trim().length ? form.source.trim() : undefined,
+        status: "SAVED",
+        rawDescription: form.rawDescription.trim().length
+          ? form.rawDescription.trim()
+          : undefined,
+      });
+
+      resetForm();
+      setView("pipeline");
+      // ✅ After create keep user in ALL (so the new card is visible without confusion)
+      setActiveStatus("ALL");
+
+      await load();
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [repo, userId, canSubmit, form, resetForm, load]);
+
   return {
-    activeStatus,
-    canSubmit,
-    error,
-    form,
-    isCreating,
-    isEnsuringUser,
-    isLoadingList,
-    list,
-    load,
-    onCreate,
-    resetForm,
-    setActiveStatus,
-    setError,
-    setView,
-    updateForm,
+    // View
     view,
+    setView,
+    activeStatus,
+    setActiveStatus,
+
+    // Create form
+    form,
+    updateForm,
+    resetForm,
+    canSubmit,
+    onCreate,
+
+    // Data
+    allList,
+    list,
+    statusCounts,
+    load,
+
+    // Actions
+    onChangeStatus,
+
+    // UI states
+    isEnsuringUser,
+    isCreating,
+    isLoadingList,
+    error,
+    setError,
   };
 }

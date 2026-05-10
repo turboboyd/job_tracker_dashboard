@@ -1,17 +1,17 @@
 export { DashboardStats } from "./DashboardStats";
 export { DashboardPipelineCard } from "./DashboardPipelineCard";
-export { DashboardPlanCard } from "./DashboardPlanCard";
 export { DashboardRecentJobsCard } from "./DashboardRecentJobsCard";
 export type { RecentJob } from "./DashboardRecentJobsCard";
 export { DashboardOnboardingActions } from "./DashboardOnboardingActions";
 export { DashboardLoopsFilterModal } from "./DashboardLoopsFilterModal";
 export type { DashboardLoopsFilterValue } from "./DashboardLoopsFilterModal";
 export { DashboardTabsNav } from "./DashboardTabsNav";
-export { DashboardFollowUpsCard } from "./DashboardFollowUpsCard/DashboardFollowUpsCard";
-export { DashboardCrmFunnelCard } from "./DashboardCrmFunnelCard/DashboardCrmFunnelCard";
 
 export { DashboardTrendsCard } from "./DashboardTrendsCard";
 export { DashboardInsightsCard } from "./DashboardInsightsCard";
 export { DashboardTimelineCard } from "./DashboardTimelineCard";
 export { DashboardGoalsCard } from "./DashboardGoalsCard";
 export { DashboardStatusRadarCard } from "./DashboardStatusRadarCard";
+export { DashboardTrendsWidget } from "./DashboardTrendsWidget";
+export { DashboardGoalsWidget } from "./DashboardGoalsWidget";
+export { DashboardInsightsWidget } from "./DashboardInsightsWidget";

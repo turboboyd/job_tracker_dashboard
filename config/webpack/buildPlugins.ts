@@ -39,7 +39,6 @@ export function buildPlugins(
     new ForkTsCheckerWebpackPlugin(),
 
     new ESLintWebpackPlugin({
-      cache: false,
       extensions: ["js", "jsx", "ts", "tsx"],
       failOnError: isProd,
       emitWarning: isDev,

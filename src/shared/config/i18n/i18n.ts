@@ -4,6 +4,9 @@ import { initReactI18next } from "react-i18next";
 
 // NOTE: We keep the initial bundle minimal and load page bundles lazily.
 // These base bundles are used across the app layout (header, auth flows, common UI).
+import headerDe from "src/app/widgets/header/AppHeader/locales/de.json";
+import headerEn from "src/app/widgets/header/AppHeader/locales/en.json";
+import headerRu from "src/app/widgets/header/AppHeader/locales/ru.json";
 // NOTE: shared layer must not import from features/auth locales directly.
 // We keep a mirrored copy of auth translations in shared/locales/auth.
 import authDe from "src/shared/locales/auth/de.json";
@@ -12,18 +15,15 @@ import authRu from "src/shared/locales/auth/ru.json";
 import commonDe from "src/shared/locales/common/de.json";
 import commonEn from "src/shared/locales/common/en.json";
 import commonRu from "src/shared/locales/common/ru.json";
-import headerDe from "src/shared/locales/header/de.json";
-import headerEn from "src/shared/locales/header/en.json";
-import headerRu from "src/shared/locales/header/ru.json";
-import statusDe from "src/shared/locales/status/de.json";
-import statusEn from "src/shared/locales/status/en.json";
-import statusRu from "src/shared/locales/status/ru.json";
+import appPageDe from "src/pages/ApplicationsPage/locales/de.json";
+import appPageEn from "src/pages/ApplicationsPage/locales/en.json";
+import appPageRu from "src/pages/ApplicationsPage/locales/ru.json";
 
 
 export const supportedLngs = ["en", "ru", "de", "uk"] as const;
 export type SupportedLng = (typeof supportedLngs)[number];
 
-void i18n
+i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
@@ -33,7 +33,7 @@ void i18n
           common: commonEn,
           auth: authEn,
           header: headerEn,
-          status: statusEn,
+          ...appPageEn,
         },
       },
       ru: {
@@ -41,7 +41,7 @@ void i18n
           common: commonRu,
           auth: authRu,
           header: headerRu,
-          status: statusRu,
+          ...appPageRu,
         },
       },
       de: {
@@ -49,7 +49,7 @@ void i18n
           common: commonDe,
           auth: authDe,
           header: headerDe,
-          status: statusDe,
+          ...appPageDe,
         },
       },
       // Ukrainian is supported as a language option, but not all bundles have translations yet.
@@ -59,7 +59,6 @@ void i18n
           common: {},
           auth: {},
           header: {},
-          status: {},
         },
       },
     },

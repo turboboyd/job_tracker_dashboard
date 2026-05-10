@@ -1,95 +1,184 @@
-# Job Tracker Dashboard
+# 🚀 Job Tracker Dashboard
 
-React + TypeScript application for organizing and analyzing the job search process.
+A scalable **React + TypeScript** application for managing and optimizing the job search process.
 
-The project is intentionally structured as a maintainable frontend codebase: strict TypeScript, Feature-Sliced Design inspired layers, Firebase integration, architecture checks, lightweight pure-module tests and documented onboarding rules.
+Built with modern frontend architecture principles, Firebase backend integration, and production-grade tooling.
 
-## What the app does
+---
 
-The app helps track job applications as a measurable funnel:
+## 📈 Application Funnel Approach
 
-```txt
-Applied -> HR Contact -> Technical Interview -> Final Interview -> Offer / Rejected
-```
+This app treats job searching as a measurable process:
 
-Main areas:
+📥 Applied
 
-- authentication with Firebase Auth;
-- application tracking;
-- loops for organizing job-search cycles;
-- matches with filtering and pagination;
-- Kanban board with drag and drop;
-- dashboard analytics;
-- English, Russian and German translations;
-- light/dark theme.
+📞 HR Contact
 
-## Tech stack
+🧪 Technical Interview
 
-Core:
+🏢 Final Interview
 
-- React 18;
-- TypeScript;
-- React Router;
-- Redux Toolkit;
-- Firebase Auth;
-- Firestore.
+❌ Rejected
 
-UI and forms:
+✅ Offer
 
-- Tailwind CSS;
-- Radix UI;
-- Lucide icons;
-- Formik;
-- Yup;
-- dnd-kit.
+This allows users to:
 
-Tooling:
+Track application progress visually (Kanban)
 
-- Webpack;
-- ESLint;
-- dependency-cruiser;
-- madge;
-- jscpd;
-- lightweight TypeScript test runner.
+Measure conversion between stages
 
-## Project structure
+Identify weak points in the funnel
 
-```txt
+Improve strategy over time
+
+## 🎯 Who Is It For?
+
+Candidates applying for Ausbildung in Germany
+
+Junior developers
+
+Career switchers
+
+Anyone managing 20–100+ applications
+
+## 📊 How It Helps
+
+Instead of randomly sending CVs, users can:
+
+Organize applications into structured cycles (Loops)
+
+Analyze response rates
+
+Track which platforms bring results
+
+Maintain motivation through visual progress
+
+Make data-driven improvements
+
+## 🎯 Project Purpose
+
+This project demonstrates real-world frontend development skills including:
+
+- Modular architecture design
+- Authentication & secure data access
+- State management
+- Scalable project structure
+- Code quality automation
+- UI/UX best practices
+
+---
+
+## ✨ Core Features
+
+🔐 **Authentication**
+
+- Firebase Auth (Google OAuth + Email/Password)
+- Persistent sessions
+- Secure per-user data isolation
+
+📊 **Dashboard**
+
+- Progress overview
+- Analytics widgets
+- Activity tracking
+
+📂 **Loops Management**
+
+- Organize job search cycles
+- Structured workflow tracking
+
+📄 **Matches Module**
+
+- Filtering & pagination
+- URL-synced filters
+- Proper loading/error/empty states
+
+📌 **Kanban Board**
+
+- Drag & drop powered by `@dnd-kit`
+- Status-based workflow visualization
+
+🌍 **Internationalization**
+
+- English (default)
+- Russian
+- German
+- Lazy-loaded translations
+
+🎨 **Light/Dark Theme**
+
+- System preference detection
+- Persistent theme selection
+
+🧪 **Code Quality**
+
+- TypeScript strict mode
+- ESLint
+- dependency-cruiser
+- madge (circular dependency detection)
+- jscpd (duplicate detection)
+
+---
+
+## 🛠 Tech Stack
+
+### Core
+
+- React
+- TypeScript
+- React Router
+- Redux Toolkit
+
+### UI & UX
+
+- Tailwind CSS
+- Radix UI
+- Framer Motion
+- Tremor
+- Lucide Icons
+
+### Forms & Validation
+
+- Formik
+- Yup
+
+### Backend
+
+- Firebase Authentication
+- Firestore
+
+### Tooling
+
+- Webpack (custom config)
+- ESLint
+- TypeScript (tsc)
+
+---
+
+## 🧠 Architecture
+
+Feature-Sliced Design structure:
+
 src/
-  app/       application bootstrap, providers, store, router, layouts
-  pages/     route-level screens and page controllers
-  features/  user actions and use cases
-  entities/  domain models and domain-specific API/UI
-  shared/    generic UI, helpers, config and infrastructure
-```
+app/
+pages/
+features/
+entities/
+shared/
 
-The dependency direction is:
+This approach ensures scalability, separation of concerns, and maintainability.
 
-```txt
-app -> pages -> features -> entities -> shared
-```
+---
 
-External imports should use public entry points such as:
-
-```ts
-import { Button } from "src/shared/ui";
-import { authReducer } from "src/entities/auth";
-import { LogoutButton } from "src/features/auth";
-```
-
-Detailed architecture rules are documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-## Getting started
+## ⚙️ Getting Started
 
 Install dependencies:
 
-```bash
-npm ci
-```
+npm install
 
-Create or update `.env` with Firebase values:
+Create `.env` file:
 
-```env
 FIREBASE_API_KEY=
 FIREBASE_AUTH_DOMAIN=
 FIREBASE_PROJECT_ID=
@@ -97,78 +186,13 @@ FIREBASE_APP_ID=
 FIREBASE_STORAGE_BUCKET=
 FIREBASE_MESSAGING_SENDER_ID=
 PUBLIC_URL=/job_tracker_dashboard
-```
 
 Start development server:
 
-```bash
 npm run dev
-```
 
-Build production bundle:
+---
 
-```bash
-npm run build
-```
-
-## Quality commands
-
-Run the full gate:
-
-```bash
-npm run check
-```
-
-Run focused checks:
-
-```bash
-npm run typecheck
-npm run lint
-npm run test:auth
-npm run test:core
-npm run check:local-imports
-npm run check:structure-contract
-npm run check:public-api-imports
-npm run check:pages-boundaries
-npm run check:layer-boundaries
-npm run check:arch
-npm run check:docs
-npm run check:doc-references
-npm run check:quality-gate
-npm run check:architecture
-```
-
-## Cleanup commands
-
-List safe generated/refactor cleanup targets:
-
-```bash
-npm run cleanup:repo:list
-```
-
-Delete safe cleanup targets:
-
-```bash
-npm run cleanup:repo
-```
-
-The cleanup script must not delete `.env` or `.env.example`.
-
-## Documentation
-
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution workflow and safe refactoring sequence.
-- [`docs/PR_REVIEW_CHECKLIST.md`](docs/PR_REVIEW_CHECKLIST.md) — review checklist for architecture-safe changes.
-- [`docs/QUALITY_GATE.md`](docs/QUALITY_GATE.md) — final verification workflow and command contract.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layer rules, public API rules and ownership boundaries.
-- [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md) — fast orientation map for the codebase.
-- [`docs/CODE_PLACEMENT.md`](docs/CODE_PLACEMENT.md) — practical rules for where each kind of code belongs.
-- [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — shared vocabulary for architecture, domain and review terms.
-- [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — how to run the project and where to place code.
-- [`docs/TESTING.md`](docs/TESTING.md) — testing strategy and current test commands.
-- [`docs/firestore-contract.md`](docs/firestore-contract.md) — Firestore-related contract notes.
-- [`docs/refactor/PROGRESS.md`](docs/refactor/PROGRESS.md) — refactor progress log.
-- [`docs/refactor/DECISIONS.md`](docs/refactor/DECISIONS.md) — refactor decisions log.
-
-## License
+## 📌 License
 
 ISC

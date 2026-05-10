@@ -1,0 +1,1118 @@
+
+> job-tracker-dashboard@1.0.0 dev
+> webpack serve --mode development --config config/webpack.config.ts --port 3002 --no-open
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+<i> [webpack-dev-server] Project is running at:
+<i> [webpack-dev-server] Loopback: [36mhttp://localhost:3002/[39m, [36mhttp://[::1]:3002/[39m
+<i> [webpack-dev-server] On Your Network (IPv4): [36mhttp://169.254.123.116:3002/[39m
+<i> [webpack-dev-server] Content not from webpack is served from '[36mC:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\public[39m' directory
+<i> [webpack-dev-server] 404s will fallback to '[36m/index.html[39m'
+93 assets
+3377 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 53035 ms
+Type-checking in progress...
+No typescript errors found.
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_MatchesPage_MatchesPage_tsx.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_MatchesPage_locales_en_json.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_LoopsPage_LoopsPage_tsx.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_LoopsPage_locales_en_json.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_CvCheckerPage_CvCheckerPage_tsx.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_CvCheckerPage_locales_en_json.chunk.js
+96 assets
+3377 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\LoopsPage\components\LoopDetailsView.tsx
+  16:10  warning  'Button' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+  18:10  warning  'Header' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (2 errors, 4 warnings)
+[39m[22m
+
+[1m[31mERROR[39m[22m in [1m./src/pages/ApplicationDetailsPage/ApplicationDetailsPage.tsx[39m[22m
+Module build failed (from ./node_modules/babel-loader/lib/index.js):
+SyntaxError: C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\ApplicationDetailsPage\ApplicationDetailsPage.tsx: Unterminated JSX contents. (419:10)
+
+[0m [90m 417 |[39m         )}
+ [90m 418 |[39m       [33m<[39m[33m/[39m[33mCard[39m[33m>[39m
+[31m[1m>[22m[39m[90m 419 |[39m     [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m           [31m[1m^[22m[39m
+ [90m 420 |[39m   )[33m;[39m
+ [90m 421 |[39m }
+ [90m 422 |[39m[0m
+    at toParseError (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parse-error.ts:95:45)
+    at TypeScriptParserMixin.raise (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\tokenizer\index.ts:1507:19)
+    at TypeScriptParserMixin.jsxReadToken (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:104:22)
+    at TypeScriptParserMixin.getTokenFromCode (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:596:14)
+    at TypeScriptParserMixin.getTokenFromCode (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\typescript\index.ts:4121:13)
+    at TypeScriptParserMixin.nextToken (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\tokenizer\index.ts:279:10)
+    at TypeScriptParserMixin.next (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\tokenizer\index.ts:122:10)
+    at TypeScriptParserMixin.eat (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\tokenizer\index.ts:127:12)
+    at TypeScriptParserMixin.expect (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\util.ts:156:15)
+    at TypeScriptParserMixin.jsxParseClosingElementAt (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:460:12)
+    at TypeScriptParserMixin.jsxParseElementAt (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:480:39)
+    at TypeScriptParserMixin.jsxParseElementAt (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:483:34)
+    at TypeScriptParserMixin.jsxParseElementAt (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:483:34)
+    at TypeScriptParserMixin.jsxParseElement (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:559:19)
+    at TypeScriptParserMixin.parseExprAtom (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:573:21)
+    at TypeScriptParserMixin.parseExprSubscripts (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:742:23)
+    at TypeScriptParserMixin.parseUpdate (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:721:21)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:683:23)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\typescript\index.ts:3876:20)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:417:14)
+    at TypeScriptParserMixin.parseExprOps (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:429:23)
+    at TypeScriptParserMixin.parseMaybeConditional (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:384:23)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:301:21)
+    at fn (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\typescript\index.ts:3728:23)
+    at TypeScriptParserMixin.tryParse (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\util.ts:174:20)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\typescript\index.ts:3727:20)
+    at callback (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:257:12)
+    at TypeScriptParserMixin.allowInAnd (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:3202:12)
+    at TypeScriptParserMixin.parseMaybeAssignAllowIn (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:256:17)
+    at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:3316:17)
+    at TypeScriptParserMixin.parseParenAndDistinguishExpression (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:1822:16)
+    at TypeScriptParserMixin.parseExprAtom (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:1170:21)
+    at TypeScriptParserMixin.parseExprAtom (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\jsx\index.ts:583:22)
+    at TypeScriptParserMixin.parseExprSubscripts (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:742:23)
+    at TypeScriptParserMixin.parseUpdate (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:721:21)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:683:23)
+    at TypeScriptParserMixin.parseMaybeUnary (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\typescript\index.ts:3876:20)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:417:14)
+    at TypeScriptParserMixin.parseExprOps (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:429:23)
+    at TypeScriptParserMixin.parseMaybeConditional (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:384:23)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:301:21)
+    at TypeScriptParserMixin.parseMaybeAssign (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\typescript\index.ts:3747:22)
+    at TypeScriptParserMixin.parseExpressionBase (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:226:23)
+    at callback (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:217:39)
+    at TypeScriptParserMixin.allowInAnd (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:3197:16)
+    at TypeScriptParserMixin.parseExpression (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\expression.ts:217:17)
+    at TypeScriptParserMixin.parseReturnStatement (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\statement.ts:1115:28)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\statement.ts:543:21)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\plugins\typescript\index.ts:3223:20)
+    at TypeScriptParserMixin.parseStatementLike (C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\node_modules\@babel\parser\src\parser\statement.ts:482:17)
+
+webpack 5.104.1 compiled with [1m[31m1 error[39m[22m and [1m[33m1 warning[39m[22m in 18509 ms
+No typescript errors found.
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_CvBuilderPage_CvBuilderPage_tsx.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_CvBuilderPage_locales_en_json.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_QuestionsPage_QuestionsPage_tsx.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_QuestionsPage_locales_en_json.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_InboxPage_InboxPage_tsx.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_InboxPage_locales_en_json.chunk.js
+98 assets
+3377 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\LoopsPage\components\LoopDetailsView.tsx
+  16:10  warning  'Button' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+  18:10  warning  'Header' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (2 errors, 4 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1341 ms
+Type-checking in progress...
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_features_applications_firestoreApplications_ts.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_entities_application_model_status_ts.chunk.js
+<i> [webpack-dev-middleware] wait until bundle finished: /assets/js/src_pages_DashboardPage_DashboardAnalyticsPage_tsx.chunk.js
+96 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\LoopsPage\components\LoopDetailsView.tsx
+  16:10  warning  'Button' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+  18:10  warning  'Header' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (2 errors, 4 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1186 ms
+Type-checking in progress...
+ERROR in ./src/pages/ResourcesPage/ResourcesPage.tsx:81:8
+TS2552: Cannot find name 'ResourcesHeader'. Did you mean 'ResourcesPage'?
+  [0m [90m 79 |[39m   [36mreturn[39m (
+   [90m 80 |[39m     [33m<[39m[33mdiv[39m className[33m=[39m[32m"space-y-6"[39m[33m>[39m
+  [31m[1m>[22m[39m[90m 81 |[39m       [33m<[39m[33mResourcesHeader[39m
+   [90m    |[39m        [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+   [90m 82 |[39m         title[33m=[39m{t([32m"resources.title"[39m[33m,[39m { defaultValue[33m:[39m [32m"Resources"[39m })}
+   [90m 83 |[39m         subtitle[33m=[39m{t([32m"resources.subtitle"[39m[33m,[39m {
+   [90m 84 |[39m           defaultValue[33m:[39m[0m
+
+Found 1 error in 4218 ms.
+96 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\LoopsPage\components\LoopDetailsView.tsx
+  16:10  warning  'Button' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+  18:10  warning  'Header' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (2 errors, 4 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 941 ms
+No typescript errors found.
+97 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\LoopsPage\components\LoopDetailsView.tsx
+  16:10  warning  'Button' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+  18:10  warning  'Header' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (2 errors, 4 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 471 ms
+Type-checking in progress...
+No typescript errors found.
+93 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1336 ms
+No typescript errors found.
+93 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 376 ms
+No typescript errors found.
+96 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 738 ms
+No typescript errors found.
+93 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 412 ms
+No typescript errors found.
+93 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 482 ms
+No typescript errors found.
+93 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 352 ms
+No typescript errors found.
+96 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 407 ms
+No typescript errors found.
+93 assets
+3376 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 294 ms
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1477 ms
+Type-checking in progress...
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\DashboardPage\DashboardPage.tsx
+  19:3  warning  'DashboardTrendsWidget' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u    @typescript-eslint/no-unused-vars
+  20:3  warning  'DashboardGoalsWidget' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u     @typescript-eslint/no-unused-vars
+  21:3  warning  'DashboardInsightsWidget' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 8 problems (3 errors, 5 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 915 ms
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 503 ms
+No typescript errors found.
+97 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 559 ms
+Type-checking in progress...
+No typescript errors found.
+97 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 727 ms
+No typescript errors found.
+97 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 589 ms
+Type-checking in progress...
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 568 ms
+Type-checking in progress...
+No typescript errors found.
+97 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1301 ms
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 505 ms
+No typescript errors found.
+93 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 276 ms
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 463 ms
+No typescript errors found.
+93 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 255 ms
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 544 ms
+Type-checking in progress...
+ERROR in ./src/app/providers/router/routeConfig/routeConfig.tsx:68:14
+TS2739: Type '{ main: string; about: string; resources: string; dashboard_resources: string; login: string; register: string; whats_new: string; dashboard: string; dashboard_analytics: string; dashboard_activity: string; ... 15 more ...; not_found: string; }' is missing the following properties from type 'Record<AppRoutes, string>': settings_security, settings_billing
+  [0m [90m 66 |[39m }
+   [90m 67 |[39m
+  [31m[1m>[22m[39m[90m 68 |[39m [36mexport[39m [36mconst[39m [33mRoutePath[39m[33m:[39m [33mRecord[39m[33m<[39m[33mAppRoutes[39m[33m,[39m string[33m>[39m [33m=[39m {
+   [90m    |[39m              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+   [90m 69 |[39m   [[33mAppRoutes[39m[33m.[39m[33mMAIN[39m][33m:[39m [32m`/`[39m[33m,[39m
+   [90m 70 |[39m   [[33mAppRoutes[39m[33m.[39m[33mABOUT[39m][33m:[39m [32m"/about"[39m[33m,[39m
+   [90m 71 |[39m   [[33mAppRoutes[39m[33m.[39m[33mRESOURCES[39m][33m:[39m [32m"/resources"[39m[33m,[39m[0m
+
+Found 1 error in 1868 ms.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 430 ms
+No typescript errors found.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\providers\router\routeConfig\routeConfig.tsx
+  26:3  warning  'SecuritySettingsPage' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^[A-Z_]+$/u  no-unused-vars
+  26:3  warning  'SecuritySettingsPage' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u         @typescript-eslint/no-unused-vars
+  27:3  warning  'BillingSettingsPage' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^[A-Z_]+$/u   no-unused-vars
+  27:3  warning  'BillingSettingsPage' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u          @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 8 problems (2 errors, 6 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 411 ms
+ERROR in ./src/app/providers/router/routeConfig/routeConfig.tsx:26:3
+TS2305: Module '"src/pages"' has no exported member 'SecuritySettingsPage'.
+  [0m [90m 24 |[39m   [33mNotificationsSettingsPage[39m[33m,[39m
+   [90m 25 |[39m   [33mPipelineStatusesSettingsPage[39m[33m,[39m
+  [31m[1m>[22m[39m[90m 26 |[39m   [33mSecuritySettingsPage[39m[33m,[39m
+   [90m    |[39m   [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+   [90m 27 |[39m   [33mBillingSettingsPage[39m[33m,[39m
+   [90m 28 |[39m   [33mDangerZoneSettingsPage[39m[33m,[39m
+   [90m 29 |[39m   [33mProfileQuestionsPage[39m[0m
+
+ERROR in ./src/app/providers/router/routeConfig/routeConfig.tsx:27:3
+TS2305: Module '"src/pages"' has no exported member 'BillingSettingsPage'.
+  [0m [90m 25 |[39m   [33mPipelineStatusesSettingsPage[39m[33m,[39m
+   [90m 26 |[39m   [33mSecuritySettingsPage[39m[33m,[39m
+  [31m[1m>[22m[39m[90m 27 |[39m   [33mBillingSettingsPage[39m[33m,[39m
+   [90m    |[39m   [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+   [90m 28 |[39m   [33mDangerZoneSettingsPage[39m[33m,[39m
+   [90m 29 |[39m   [33mProfileQuestionsPage[39m
+   [90m 30 |[39m } [36mfrom[39m [32m"src/pages"[39m[33m;[39m[0m
+
+Found 2 errors in 439 ms.
+96 assets
+3379 modules
+
+[1m[33mWARNING[39m[22m in [1m./src/app/providers/router/routeConfig/routeConfig.tsx[39m[22m [1m[32m145:29-49[39m[22m
+[1mexport 'SecuritySettingsPage' (imported as 'SecuritySettingsPage') was [1m[31mnot found[39m[22m[1m in 'src/pages' (possible exports: [1m[32mAboutPage, ApplicationDetailsPage, ApplicationsPage, BoardPage, CvBuilderPage, CvCheckerPage, DangerZoneSettingsPage, DashboardActivityPage, DashboardAnalyticsPage, DashboardPage, InboxPage, LoginPage, LoopsPage, MainPage, MatchesPage, NotFoundPage, NotificationsSettingsPage, PipelineStatusesSettingsPage, ProfileQuestionsPage, ProfileSettingsPage, QuestionsPage, RegisterPage, ResourcesPage, WhatsNewPage[39m[22m[1m)[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./src/app/providers/router/routeConfig/routeConfig.tsx[39m[22m [1m[32m148:29-48[39m[22m
+[1mexport 'BillingSettingsPage' (imported as 'BillingSettingsPage') was [1m[31mnot found[39m[22m[1m in 'src/pages' (possible exports: [1m[32mAboutPage, ApplicationDetailsPage, ApplicationsPage, BoardPage, CvBuilderPage, CvCheckerPage, DangerZoneSettingsPage, DashboardActivityPage, DashboardAnalyticsPage, DashboardPage, InboxPage, LoginPage, LoopsPage, MainPage, MatchesPage, NotFoundPage, NotificationsSettingsPage, PipelineStatusesSettingsPage, ProfileQuestionsPage, ProfileSettingsPage, QuestionsPage, RegisterPage, ResourcesPage, WhatsNewPage[39m[22m[1m)[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m3 warnings[39m[22m in 644 ms
+ERROR in ./src/app/providers/router/routeConfig/routeConfig.tsx:26:3
+TS2305: Module '"src/pages"' has no exported member 'SecuritySettingsPage'.
+  [0m [90m 24 |[39m   [33mNotificationsSettingsPage[39m[33m,[39m
+   [90m 25 |[39m   [33mPipelineStatusesSettingsPage[39m[33m,[39m
+  [31m[1m>[22m[39m[90m 26 |[39m   [33mSecuritySettingsPage[39m[33m,[39m
+   [90m    |[39m   [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+   [90m 27 |[39m   [33mBillingSettingsPage[39m[33m,[39m
+   [90m 28 |[39m   [33mDangerZoneSettingsPage[39m[33m,[39m
+   [90m 29 |[39m   [33mProfileQuestionsPage[39m[0m
+
+ERROR in ./src/app/providers/router/routeConfig/routeConfig.tsx:27:3
+TS2305: Module '"src/pages"' has no exported member 'BillingSettingsPage'.
+  [0m [90m 25 |[39m   [33mPipelineStatusesSettingsPage[39m[33m,[39m
+   [90m 26 |[39m   [33mSecuritySettingsPage[39m[33m,[39m
+  [31m[1m>[22m[39m[90m 27 |[39m   [33mBillingSettingsPage[39m[33m,[39m
+   [90m    |[39m   [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+   [90m 28 |[39m   [33mDangerZoneSettingsPage[39m[33m,[39m
+   [90m 29 |[39m   [33mProfileQuestionsPage[39m
+   [90m 30 |[39m } [36mfrom[39m [32m"src/pages"[39m[33m;[39m[0m
+
+Found 2 errors in 679 ms.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1014 ms
+Type-checking in progress...
+No typescript errors found.
+103 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 448 ms
+Type-checking in progress...
+No typescript errors found.
+99 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\ApplicationDetailsPage\ApplicationDetailsPage.tsx
+  69:10  warning  'StageBar' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 4 problems (1 [1m[31merror[39m[22m[1m, 3 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 895 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 675 ms
+No typescript errors found.
+99 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  118:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 2646 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 2742 ms
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1220 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1773 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1711 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1421 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1927 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1108 ms
+Type-checking in progress...
+No typescript errors found.
+99 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\ApplicationsPage\api\applicationsRepo.ts
+  6:3  warning  'changeStatus' is defined but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 4 problems (1 [1m[31merror[39m[22m[1m, 3 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 2172 ms
+Type-checking in progress...
+99 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1109 ms
+Type-checking in progress...
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\ApplicationsPage\model\useApplicationsPage.ts
+  136:9  warning  'onChangeStatus' is assigned a value but never used. Allowed unused vars [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (2 errors, 3 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 2018 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 731 ms
+Type-checking in progress...
+No typescript errors found.
+99 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 806 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 515 ms
+No typescript errors found.
+95 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 260 ms
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1528 ms
+Type-checking in progress...
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1152 ms
+Type-checking in progress...
+No typescript errors found.
+99 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1313 ms
+Type-checking in progress...
+No typescript errors found.
+95 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 522 ms
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 506 ms
+No typescript errors found.
+95 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 274 ms
+No typescript errors found.
+95 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 525 ms
+No typescript errors found.
+95 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 271 ms
+No typescript errors found.
+98 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 519 ms
+No typescript errors found.
+95 assets
+3381 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 559 ms
+No typescript errors found.
+99 assets
+3384 modules
+
+[1m[33mWARNING[39m[22m in [1m[eslint] 
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\app\widgets\sidebar\AppSidebar\AppSidebar.tsx
+  120:74  warning  'onToggle' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\denis\OneDrive\Documents\GitHub\job-tracker-dashboard\.claude\worktrees\awesome-tereshkova-cb1f6e\src\pages\MainPage\components\HowToStartBlock.tsx
+  15:64  warning  'ctaSecondary' is defined but never used. Allowed unused args [1m[33mmust[39m[22m[1m match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+[39m[22m
+
+webpack 5.104.1 compiled with [1m[33m1 warning[39m[22m in 1190 ms
+Type-checking in progress...
+No typescript errors found.

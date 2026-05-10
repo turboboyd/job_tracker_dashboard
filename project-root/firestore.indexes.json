@@ -33,52 +33,6 @@
                     "order": "ASCENDING"
                 },
                 {
-                    "fieldPath": "process.status",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "process.lastStatusChangeAt",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "applications",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "archived",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "priority.score",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "applications",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "archived",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "loopLinkage.loopId",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "applications",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "archived",
-                    "order": "ASCENDING"
-                },
-                {
                     "fieldPath": "process.stage",
                     "order": "ASCENDING"
                 },
@@ -211,84 +165,6 @@
                 {
                     "fieldPath": "periodKey",
                     "order": "DESCENDING"
-                }
-            ]
-        },
-
-        // ===============================
-        // contacts — CRM
-        // ===============================
-        {
-            "collectionGroup": "contacts",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "archived",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "lastName",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "contacts",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "applicationIds",
-                    "arrayConfig": "CONTAINS"
-                },
-                {
-                    "fieldPath": "archived",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "lastName",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-
-        // ===============================
-        // interactions — CRM
-        // ===============================
-        {
-            "collectionGroup": "interactions",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "applicationId",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "occurredAt",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "interactions",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "contactId",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "occurredAt",
-                    "order": "DESCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "interactions",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "nextStepAt",
-                    "order": "ASCENDING"
                 }
             ]
         }

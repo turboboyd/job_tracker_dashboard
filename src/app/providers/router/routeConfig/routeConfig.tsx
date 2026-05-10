@@ -7,7 +7,6 @@ import {
   DashboardPage,
   DashboardAnalyticsPage,
   DashboardActivityPage,
-  DashboardCalendarPage,
   ResourcesPage,
   LoginPage,
   RegisterPage,
@@ -21,19 +20,104 @@ import {
   CvCheckerPage,
   CvBuilderPage,
   InboxPage,
-  ContactsPage,
+  CalendarPage,
+  OptimizationPage,
   ProfileSettingsPage,
   NotificationsSettingsPage,
   PipelineStatusesSettingsPage,
+  SecuritySettingsPage,
+  BillingSettingsPage,
   DangerZoneSettingsPage,
-  ProfileQuestionsPage,
+  ProfileQuestionsPage
 } from "src/pages";
-import { AppRoutes, RoutePath } from "src/shared/config/routes";
 
-export interface RouteItem {
+
+/* eslint no-unused-vars: ["warn", { "varsIgnorePattern": "^[A-Z_]+$" }] */
+
+export enum AppRoutes {
+  MAIN = "main",
+  ABOUT = "about",
+  RESOURCES = "resources",
+  DASHBOARD_RESOURCES = "dashboard_resources",
+  LOGIN = "login",
+  REGISTER = "register",
+  DASHBOARD = "dashboard",
+
+  DASHBOARD_ANALYTICS = "dashboard_analytics",
+  DASHBOARD_ACTIVITY = "dashboard_activity",
+  OPTIMIZATION = "optimization",
+
+  APPLICATIONS = "applications",
+  APPLICATION_DETAILS = "application_details",
+  QUESTIONS = "questions",
+  CV_CHECKER = "cv_checker",
+  CV_BUILDER = "cv_builder",
+  INBOX = "inbox",
+
+  SETTINGS_PROFILE = "settings_profile",
+  SETTINGS_NOTIFICATIONS = "settings_notifications",
+  SETTINGS_PIPELINE_STATUSES = "settings_pipeline_statuses",
+  SETTINGS_SECURITY = "settings_security",
+  SETTINGS_BILLING = "settings_billing",
+  SETTINGS_DANGER_ZONE = "settings_danger_zone",
+
+  PROFILE_QUESTIONS = "profile_questions",
+  WHATS_NEW = "whats_new",
+  LOOPS = "loops",
+  LOOP_DETAILS = "loop_details",
+  MATCHES = "matches",
+  NOT_FOUND = "not_found",
+  BOARD = "board",
+  CALENDAR = "calendar",
+}
+
+export const RoutePath: Record<AppRoutes, string> = {
+  [AppRoutes.MAIN]: `/`,
+  [AppRoutes.ABOUT]: "/about",
+  [AppRoutes.RESOURCES]: "/resources",
+  [AppRoutes.DASHBOARD_RESOURCES]: "/dashboard/resources",
+  [AppRoutes.LOGIN]: "/login",
+  [AppRoutes.REGISTER]: "/register",
+  [AppRoutes.WHATS_NEW]: "/whats-new",
+
+  [AppRoutes.DASHBOARD]: "/dashboard",
+
+  [AppRoutes.DASHBOARD_ANALYTICS]: "/dashboard/analytics",
+  [AppRoutes.DASHBOARD_ACTIVITY]: "/dashboard/activity",
+  [AppRoutes.OPTIMIZATION]: "/dashboard/optimization",
+
+  [AppRoutes.APPLICATIONS]: "/dashboard/applications",
+  [AppRoutes.APPLICATION_DETAILS]: "/dashboard/applications/:appId",
+  [AppRoutes.QUESTIONS]: "/dashboard/questions",
+  [AppRoutes.CV_CHECKER]: "/dashboard/cv-checker",
+  [AppRoutes.CV_BUILDER]: "/dashboard/cv-builder",
+  [AppRoutes.INBOX]: "/dashboard/inbox",
+
+
+
+  // SETTINGS_PROFILE
+  [AppRoutes.SETTINGS_PROFILE]: "/dashboard/settings/profile",
+  [AppRoutes.SETTINGS_NOTIFICATIONS]: "/dashboard/settings/notifications",
+  [AppRoutes.SETTINGS_PIPELINE_STATUSES]:
+    "/dashboard/settings/pipeline-statuses",
+  [AppRoutes.SETTINGS_SECURITY]: "/dashboard/settings/security",
+  [AppRoutes.SETTINGS_BILLING]: "/dashboard/settings/billing",
+  [AppRoutes.SETTINGS_DANGER_ZONE]: "/dashboard/settings/danger-zone",
+
+  [AppRoutes.PROFILE_QUESTIONS]: "/dashboard/profile/questions",
+
+  [AppRoutes.BOARD]: "/dashboard/board",
+  [AppRoutes.CALENDAR]: "/dashboard/calendar",
+  [AppRoutes.LOOPS]: "/dashboard/loops",
+  [AppRoutes.LOOP_DETAILS]: "/dashboard/loops/:loopId",
+  [AppRoutes.MATCHES]: "/dashboard/matches",
+  [AppRoutes.NOT_FOUND]: "/*",
+};
+
+export type RouteItem = {
   path: string;
   element: React.ReactElement;
-}
+};
 
 export const publicRoutes: RouteItem[] = [
   { path: RoutePath[AppRoutes.MAIN], element: <MainPage /> },
@@ -45,11 +129,10 @@ export const publicRoutes: RouteItem[] = [
 ];
 
 export const privateRoutes: RouteItem[] = [
-  {
-    path: RoutePath[AppRoutes.DASHBOARD_RESOURCES],
-    element: <ResourcesPage />,
-  },
+  { path: RoutePath[AppRoutes.DASHBOARD_RESOURCES], element: <ResourcesPage /> },
   { path: RoutePath[AppRoutes.DASHBOARD], element: <DashboardPage /> },
+
+
   {
     path: RoutePath[AppRoutes.DASHBOARD_ANALYTICS],
     element: <DashboardAnalyticsPage />,
@@ -58,28 +141,27 @@ export const privateRoutes: RouteItem[] = [
     path: RoutePath[AppRoutes.DASHBOARD_ACTIVITY],
     element: <DashboardActivityPage />,
   },
-  {
-    path: RoutePath[AppRoutes.DASHBOARD_CALENDAR],
-    element: <DashboardCalendarPage />,
-  },
+
   { path: RoutePath[AppRoutes.APPLICATIONS], element: <ApplicationsPage /> },
-  {
-    path: RoutePath[AppRoutes.APPLICATION_DETAILS],
-    element: <ApplicationDetailsPage />,
-  },
+  { path: RoutePath[AppRoutes.APPLICATION_DETAILS], element: <ApplicationDetailsPage /> },
   { path: RoutePath[AppRoutes.QUESTIONS], element: <QuestionsPage /> },
   { path: RoutePath[AppRoutes.CV_CHECKER], element: <CvCheckerPage /> },
   { path: RoutePath[AppRoutes.CV_BUILDER], element: <CvBuilderPage /> },
   { path: RoutePath[AppRoutes.INBOX], element: <InboxPage /> },
+  { path: RoutePath[AppRoutes.OPTIMIZATION], element: <OptimizationPage /> },
+
   {
     path: RoutePath[AppRoutes.PROFILE_QUESTIONS],
     element: <ProfileQuestionsPage />,
   },
+
   { path: RoutePath[AppRoutes.BOARD], element: <BoardPage /> },
+  { path: RoutePath[AppRoutes.CALENDAR], element: <CalendarPage /> },
+
   { path: RoutePath[AppRoutes.LOOPS], element: <LoopsPage /> },
   { path: RoutePath[AppRoutes.LOOP_DETAILS], element: <LoopsPage /> },
   { path: RoutePath[AppRoutes.MATCHES], element: <MatchesPage /> },
-  { path: RoutePath[AppRoutes.CONTACTS], element: <ContactsPage /> },
+
   {
     path: RoutePath[AppRoutes.SETTINGS_PROFILE],
     element: <ProfileSettingsPage />,
@@ -93,6 +175,14 @@ export const privateRoutes: RouteItem[] = [
     element: <PipelineStatusesSettingsPage />,
   },
   {
+    path: RoutePath[AppRoutes.SETTINGS_SECURITY],
+    element: <SecuritySettingsPage />,
+  },
+  {
+    path: RoutePath[AppRoutes.SETTINGS_BILLING],
+    element: <BillingSettingsPage />,
+  },
+  {
     path: RoutePath[AppRoutes.SETTINGS_DANGER_ZONE],
     element: <DangerZoneSettingsPage />,
   },
@@ -103,6 +193,7 @@ export const notFoundRoute: RouteItem = {
   element: <NotFoundPage />,
 };
 
+// Convenience aggregate (some parts of the codebase expect a single list)
 export const routeConfig: RouteItem[] = [
   ...publicRoutes,
   ...privateRoutes,

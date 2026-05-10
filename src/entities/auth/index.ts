@@ -10,6 +10,9 @@ export {
   type RegisterValues,
 } from "./model/validation";
 
+export { useAuthSelectors } from "./model/hooks/useAuthSelectors";
+export { useAuthActions } from "./model/hooks/useAuthActions";
+
 export {
   authReducer,
   setUser,

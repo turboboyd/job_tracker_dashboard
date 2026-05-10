@@ -1,26 +1,44 @@
-import React, { useMemo, useState } from "react";
+import { ChevronDown, Filter, Plus, Search } from "lucide-react";
+import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { CONTACT_ROLE_KEYS, type ContactRole } from "src/entities/contact";
-import { createApplicationsRepo } from "src/features/applications";
-import { useAuthSelectors } from "src/features/auth/model";
-import { db } from "src/shared/config/firebase/firestore";
+import { useAuthSelectors } from "src/entities/auth/model/hooks/useAuthSelectors";
+import { db } from "src/shared/config/firebase/firebase";
 
+import { createApplicationsRepo } from "./api/applicationsRepo";
 import { useApplicationsPage } from "./model/useApplicationsPage";
-import { ApplicationsListCard } from "./ui/ApplicationsListCard";
-import { ApplicationsPageHeader } from "./ui/ApplicationsPageHeader";
+import { ApplicationsListCard, ViewToggle } from "./ui/ApplicationsListCard";
 import { ApplicationsToolbar } from "./ui/ApplicationsToolbar";
-import {
-  NewApplicationModal,
-  type ContactSectionLabels,
-} from "./ui/NewApplicationModal";
-import type { CreateApplicationLabels } from "./ui/CreateApplicationCard.types";
+import { CreateApplicationDialog } from "./ui/CreateApplicationDialog";
+
+type SortBy = "newest" | "oldest" | "company" | "score";
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "company", label: "Company A–Z" },
+  { value: "score", label: "Match score" },
+];
 
 export default function ApplicationsPage() {
   const { t } = useTranslation();
   const { userId, isAuthReady } = useAuthSelectors();
   const repo = useMemo(() => createApplicationsRepo(db), []);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"list" | "cards">("list");
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("newest");
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortRef = useRef<HTMLDivElement>(null);
+
+  // Company filter state
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Filtered count (surfaced from ApplicationsListCard)
+  const [filteredCount, setFilteredCount] = useState(0);
 
   const {
     view,
@@ -34,103 +52,280 @@ export default function ApplicationsPage() {
     isCreating,
     onCreate,
 
+    allList,
     list,
+    statusCounts,
     isLoadingList,
     error,
+
+    onChangeStatus,
   } = useApplicationsPage({ userId, isAuthReady, repo });
 
-  const labels: CreateApplicationLabels = useMemo(() => {
-    const text = (key: string, defaultValue: string) =>
-      String(t(key, { defaultValue, returnObjects: false }));
-    return {
-      company: text("applicationsPage.create.company", "Company"),
-      companyPlaceholder: text("applicationsPage.create.companyPh", "e.g. ACME GmbH"),
-      createButton: text("applicationsPage.create.createBtn", "Create"),
-      creatingButton: text("applicationsPage.create.creating", "Creating..."),
-      description: text("applicationsPage.create.desc", "Description (optional)"),
-      descriptionPlaceholder: text(
-        "applicationsPage.create.descPh",
-        "Paste vacancy text to improve matching...",
-      ),
-      role: text("applicationsPage.create.role", "Role"),
-      rolePlaceholder: text("applicationsPage.create.rolePh", "e.g. Frontend Developer"),
-      source: text("applicationsPage.create.source", "Source"),
-      sourcePlaceholder: text(
-        "applicationsPage.create.sourcePh",
-        "LinkedIn / Indeed / Company site",
-      ),
-      title: text("applicationsPage.create.title", "New application"),
-      url: text("applicationsPage.create.url", "Vacancy URL"),
-      urlPlaceholder: text("applicationsPage.create.urlPh", "https://..."),
-    };
-  }, [t]);
+  // Close sort dropdown on outside click
+  useEffect(() => {
+    if (!isSortOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setIsSortOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [isSortOpen]);
 
-  const contactLabels: ContactSectionLabels = useMemo(() => {
-    const text = (key: string, defaultValue: string) =>
-      String(t(key, { defaultValue, returnObjects: false }));
-    const roleLabels = CONTACT_ROLE_KEYS.reduce<Record<ContactRole, string>>(
-      (acc, role) => {
-        acc[role] = text(`applicationsPage.create.contactRole.${role}`, role);
-        return acc;
-      },
-      {} as Record<ContactRole, string>,
+  // Close filter panel on outside click
+  useEffect(() => {
+    if (!filterOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [filterOpen]);
+
+  // Unique companies sorted alphabetically from allList
+  const companyOptions = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const row of allList) {
+      const name = row.data.job.companyName;
+      countMap.set(name, (countMap.get(name) ?? 0) + 1);
+    }
+    return Array.from(countMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
+  }, [allList]);
+
+  const currentSortLabel =
+    SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Sort";
+
+  const VIEW_MODES = [
+    { key: "pipeline" as const, label: t("applicationsPage.view.pipeline", "Pipeline") },
+    { key: "today" as const, label: t("applicationsPage.view.today", "Today") },
+    { key: "followups" as const, label: t("applicationsPage.view.followups", "Follow-ups") },
+  ];
+
+  function toggleCompany(name: string) {
+    setSelectedCompanies((prev) =>
+      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
     );
-    return {
-      sectionTitle: text("applicationsPage.create.contact.title", "Primary contact (optional)"),
-      sectionHint: text(
-        "applicationsPage.create.contact.hint",
-        "Add it now or later from the application page.",
-      ),
-      firstName: text("applicationsPage.create.contact.firstName", "First name"),
-      firstNamePh: text("applicationsPage.create.contact.firstNamePh", "Anna"),
-      lastName: text("applicationsPage.create.contact.lastName", "Last name"),
-      lastNamePh: text("applicationsPage.create.contact.lastNamePh", "Petrova"),
-      role: text("applicationsPage.create.contact.role", "Role"),
-      phone: text("applicationsPage.create.contact.phone", "Phone"),
-      phonePh: text("applicationsPage.create.contact.phonePh", "+49 ..."),
-      email: text("applicationsPage.create.contact.email", "Email"),
-      emailPh: text("applicationsPage.create.contact.emailPh", "name@company.com"),
-      cancel: text("applicationsPage.create.cancel", "Cancel"),
-      roleLabels,
-    };
-  }, [t]);
+  }
 
   return (
-    <div className="w-full p-4">
-      <ApplicationsPageHeader
-        view={view}
-        onChangeView={setView}
-        onNewApplication={() => setIsModalOpen(true)}
-      />
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Page header */}
+      <div className="shrink-0 border-b border-border bg-background">
+        <div className="px-7 pt-5 pb-0">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
+                <span>Loopboard</span>
+                <span>/</span>
+                <span className="text-muted-foreground">
+                  {t("applicationsPage.title", "My Applications")}
+                </span>
+              </div>
+              <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
+                {t("applicationsPage.title", "My Applications")}
+              </h1>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                Создавай и отслеживай отклики в одном месте.
+              </p>
+            </div>
 
-      <div className="mt-4 space-y-4">
-        <ApplicationsToolbar
-          view={view}
-          activeStatus={activeStatus}
-          onChangeStatus={setActiveStatus}
-          isLoading={isLoadingList}
-          count={list.length}
-        />
+            <div className="flex items-center gap-2 pb-3">
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t("applicationsPage.searchPlaceholder", "Search company or role…")}
+                  className="rounded-[8px] border border-border bg-muted/50 px-3 py-1.5 pl-8 text-[13px] w-[220px] focus:border-primary focus:outline-none"
+                />
+              </div>
 
-        {error ? (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-            {error}
+              {/* Filters button */}
+              <div ref={filterRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <Filter className="h-3.5 w-3.5 text-subtle-foreground" />
+                  Фильтры
+                  {selectedCompanies.length > 0 && (
+                    <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                      {selectedCompanies.length}
+                    </span>
+                  )}
+                </button>
+
+                {filterOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-2 w-[260px] rounded-[12px] border border-border bg-background shadow-lg">
+                    <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                      <span className="text-[12px] font-semibold text-foreground">Компании</span>
+                      {selectedCompanies.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCompanies([])}
+                          className="text-[11.5px] text-primary hover:underline"
+                        >
+                          Сбросить
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-[260px] overflow-y-auto px-2 pb-3">
+                      {companyOptions.length === 0 ? (
+                        <p className="px-2 py-2 text-[12px] text-muted-foreground">Нет данных</p>
+                      ) : (
+                        companyOptions.map(({ name, count }) => {
+                          const checked = selectedCompanies.includes(name);
+                          return (
+                            <label
+                              key={name}
+                              className="flex cursor-pointer items-center gap-2 rounded-[7px] px-2 py-1.5 hover:bg-muted"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleCompany(name)}
+                                className="h-3.5 w-3.5 rounded accent-primary"
+                              />
+                              <span className="flex-1 truncate text-[12.5px] text-foreground">
+                                {name}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground/70">{count}</span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sort dropdown */}
+              <div ref={sortRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsSortOpen((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  {currentSortLabel}
+                  <ChevronDown className="h-3.5 w-3.5 text-subtle-foreground" />
+                </button>
+                {isSortOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-[8px] border border-border bg-card py-1 shadow-xl">
+                    {SORT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setSortBy(opt.value);
+                          setIsSortOpen(false);
+                        }}
+                        className={[
+                          "flex w-full items-center px-3 py-1.5 text-[12px] transition-colors hover:bg-muted text-left",
+                          opt.value === sortBy
+                            ? "font-medium text-foreground"
+                            : "text-muted-foreground",
+                        ].join(" ")}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* New application button */}
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {t("applicationsPage.newApplication", "New application")}
+              </button>
+            </div>
           </div>
-        ) : null}
 
-        <ApplicationsListCard list={list} view={view} />
+          {/* View mode switcher — underline tab style */}
+          <div className="flex items-center gap-0.5 mt-3 mb-0">
+            {VIEW_MODES.map((vm) => {
+              const isActive = view === vm.key;
+              return (
+                <button
+                  key={vm.key}
+                  type="button"
+                  onClick={() => setView(vm.key)}
+                  className={[
+                    "-mb-px px-3.5 py-2 text-[13px] transition-colors cursor-pointer select-none",
+                    "inline-flex items-center gap-1.5 whitespace-nowrap",
+                    isActive
+                      ? "border-b-2 border-primary font-medium text-foreground"
+                      : "border-b-2 border-transparent text-muted-foreground hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {vm.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <ApplicationsToolbar
+            view={view}
+            activeStatus={activeStatus}
+            onChangeStatus={setActiveStatus}
+            isLoading={isLoadingList}
+            statusCounts={statusCounts}
+          />
+        </div>
       </div>
 
-      <NewApplicationModal
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+      {/* Meta bar: between header and list */}
+      <div className="flex items-center justify-between gap-3 px-7 py-3 border-b border-border bg-background shrink-0">
+        <span className="text-[13px] text-muted-foreground">
+          Показано <span className="font-semibold tabular-nums text-foreground">{filteredCount}</span> из {list.length}
+        </span>
+        <ViewToggle value={displayMode} onChange={setDisplayMode} />
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto bg-background">
+        <div className="flex flex-col gap-3.5 p-7">
+          {error ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+
+          <ApplicationsListCard
+            list={list}
+            view={view}
+            query={query}
+            sortBy={sortBy}
+            onChangeStatus={onChangeStatus}
+            displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
+            selectedCompanies={selectedCompanies}
+            onFilteredCount={setFilteredCount}
+          />
+        </div>
+      </div>
+
+      {/* Create application dialog */}
+      <CreateApplicationDialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
         form={form}
         onChange={updateForm}
         onCreate={onCreate}
         canSubmit={canSubmit}
         isCreating={isCreating}
-        labels={labels}
-        contactLabels={contactLabels}
       />
     </div>
   );

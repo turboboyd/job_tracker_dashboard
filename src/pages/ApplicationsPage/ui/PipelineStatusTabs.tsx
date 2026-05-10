@@ -1,54 +1,63 @@
 import { useTranslation } from "react-i18next";
 
-import { StatusDot } from "src/entities/application";
-import { Button } from "src/shared/ui";
+import { normalizeStatusKey, type StatusKey } from "src/entities/application/model/status";
+import { StatusDot } from "src/entities/application/ui/StatusKit";
 
-import type { PipelineFilterStatus } from "../model/types";
+import { PIPELINE_STATUSES, processStatusKey, type PipelineFilterStatus } from "../model/types";
 
-import {
-  buildApplicationsPipelineStatusOptions,
-  createApplicationsPageTranslator,
-  getApplicationsCountLabel,
-} from "./applicationsPageUi.helpers";
-
-interface PipelineStatusTabsProps {
+export function PipelineStatusTabs(props: {
   activeStatus: PipelineFilterStatus;
-  count: number;
-  isLoading: boolean;
   onChange: (status: PipelineFilterStatus) => void;
-}
-
-export function PipelineStatusTabs({
-  activeStatus,
-  count,
-  isLoading,
-  onChange,
-}: PipelineStatusTabsProps) {
+  isLoading: boolean;
+  statusCounts: Record<string, number>;
+}) {
   const { t } = useTranslation();
-  const text = createApplicationsPageTranslator(t);
-
-  const statusOptions = buildApplicationsPipelineStatusOptions(text);
-  const countLabel = getApplicationsCountLabel(text, isLoading, count);
+  const { activeStatus, onChange, isLoading, statusCounts } = props;
 
   return (
-    <div className="space-y-sm">
-      <div className="flex flex-wrap items-center gap-sm">
-        {statusOptions.map((statusOption) => (
-          <Button
-            key={statusOption.key}
-            variant={activeStatus === statusOption.status ? "default" : "outline"}
-            size="sm"
-            onClick={() => onChange(statusOption.status)}
-          >
-            <span className="inline-flex items-center gap-2">
-              {statusOption.statusKey ? <StatusDot status={statusOption.statusKey} /> : null}
-              <span>{statusOption.label}</span>
-            </span>
-          </Button>
-        ))}
+    <div className="flex items-end gap-0.5 overflow-x-auto">
+      {PIPELINE_STATUSES.map((s) => {
+        const fallback = (t(processStatusKey(s.status), {
+          defaultValue: String(s.status),
+          returnObjects: false,
+        }) ?? String(s.status)) as string;
 
-        <div className="ml-auto text-xs text-muted-foreground">{countLabel}</div>
-      </div>
+        const label = ((t(`applicationsPage.pipeline.${s.key}`, {
+          defaultValue: fallback,
+          returnObjects: false,
+        }) ?? fallback) as string);
+
+        const sk: StatusKey | null =
+          s.status === "ALL" ? null : (normalizeStatusKey(s.status) as StatusKey | null);
+
+        const isActive = activeStatus === s.status;
+
+        return (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => onChange(s.status)}
+            className={[
+              "-mb-px px-3.5 py-2 text-[13px] transition-colors cursor-pointer select-none",
+              "inline-flex items-center gap-1.5 whitespace-nowrap",
+              isActive
+                ? "border-b-2 border-primary font-medium text-foreground"
+                : "border-b-2 border-transparent text-muted-foreground hover:text-foreground",
+            ].join(" ")}
+          >
+            {sk ? <StatusDot status={sk} /> : null}
+            <span>{label}</span>
+            <span className={[
+              "text-[10.5px] px-1.5 py-px rounded-full border",
+              "font-variant-numeric tabular-nums",
+              "bg-muted border-border",
+              isActive ? "text-foreground" : "text-muted-foreground/70",
+            ].join(" ")}>
+              {isLoading && s.status === "ALL" ? "…" : (statusCounts[s.status] ?? 0)}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

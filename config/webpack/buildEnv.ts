@@ -15,8 +15,6 @@ export function buildEnv(isProd: boolean): Record<string, string> {
     FIREBASE_APP_ID: process.env.FIREBASE_APP_ID ?? "",
     FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET ?? "",
     FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID ?? "",
-    GOOGLE_CALENDAR_CONNECT_URL: process.env.GOOGLE_CALENDAR_CONNECT_URL ?? "",
-    GOOGLE_CALENDAR_CLIENT_ID: process.env.GOOGLE_CALENDAR_CLIENT_ID ?? "",
   };
 
   return {
