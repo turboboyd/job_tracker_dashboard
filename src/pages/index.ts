@@ -258,3 +258,7 @@ export const InboxPage = lazyPage(
 export const CalendarPage = lazy(
   () => import("./CalendarPage/CalendarPage"),
 );
+
+export const OptimizationPage = lazy(
+  () => import("./OptimizationPage/OptimizationPage"),
+);

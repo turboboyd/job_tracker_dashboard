@@ -11,6 +11,7 @@ import {
   Settings,
   BookOpen,
   Mail,
+  TrendingUp,
   X,
   ExternalLink,
 } from "lucide-react";
@@ -47,6 +48,7 @@ const SECONDARY_ITEMS = [
   { labelKey: "common.nav.questions", labelDefault: "Questions", path: RoutePath[AppRoutes.QUESTIONS], Icon: HelpCircle },
   { labelKey: "common.nav.resources", labelDefault: "Resources", path: RoutePath[AppRoutes.RESOURCES], Icon: BookOpen },
   { labelKey: "common.nav.inbox", labelDefault: "Inbox", path: RoutePath[AppRoutes.INBOX], Icon: Mail },
+  { labelKey: "common.nav.optimization", labelDefault: "Optimization", path: RoutePath[AppRoutes.OPTIMIZATION], Icon: TrendingUp },
 ];
 
 function SidebarNavItem({

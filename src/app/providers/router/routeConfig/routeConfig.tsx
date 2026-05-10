@@ -21,6 +21,7 @@ import {
   CvBuilderPage,
   InboxPage,
   CalendarPage,
+  OptimizationPage,
   ProfileSettingsPage,
   NotificationsSettingsPage,
   PipelineStatusesSettingsPage,
@@ -44,6 +45,7 @@ export enum AppRoutes {
 
   DASHBOARD_ANALYTICS = "dashboard_analytics",
   DASHBOARD_ACTIVITY = "dashboard_activity",
+  OPTIMIZATION = "optimization",
 
   APPLICATIONS = "applications",
   APPLICATION_DETAILS = "application_details",
@@ -82,6 +84,7 @@ export const RoutePath: Record<AppRoutes, string> = {
 
   [AppRoutes.DASHBOARD_ANALYTICS]: "/dashboard/analytics",
   [AppRoutes.DASHBOARD_ACTIVITY]: "/dashboard/activity",
+  [AppRoutes.OPTIMIZATION]: "/dashboard/optimization",
 
   [AppRoutes.APPLICATIONS]: "/dashboard/applications",
   [AppRoutes.APPLICATION_DETAILS]: "/dashboard/applications/:appId",
@@ -145,6 +148,7 @@ export const privateRoutes: RouteItem[] = [
   { path: RoutePath[AppRoutes.CV_CHECKER], element: <CvCheckerPage /> },
   { path: RoutePath[AppRoutes.CV_BUILDER], element: <CvBuilderPage /> },
   { path: RoutePath[AppRoutes.INBOX], element: <InboxPage /> },
+  { path: RoutePath[AppRoutes.OPTIMIZATION], element: <OptimizationPage /> },
 
   {
     path: RoutePath[AppRoutes.PROFILE_QUESTIONS],
