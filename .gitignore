@@ -37,3 +37,5 @@ report
 /functions/node_modules
 
 /README_technical_spec
+
+.claude/
