@@ -338,3 +338,132 @@ async def test_delete_other_user_is_404(client_a, client_b):
     # Verify User A's application was not touched
     detail = await client_a.get(f"/api/v1/applications/{app_id}", headers=_BEARER)
     assert detail.json()["archived"] is False
+
+
+# ── POST /applications/{id}/status ─────────────────────────────────────────────
+
+
+async def test_status_transition_changes_status(client_a):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 200
+    assert r.json()["status"] == "APPLIED"
+
+
+async def test_status_transition_derives_stage(client_a):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "INTERVIEW_1"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 200
+    assert r.json()["stage"] == "INTERVIEW"
+
+
+async def test_status_transition_saves_sub_status(client_a):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED", "sub_status": "Warte auf Rückmeldung"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 200
+    assert r.json()["sub_status"] == "Warte auf Rückmeldung"
+
+
+async def test_status_transition_updates_last_status_change_at(client_a):
+    cr = await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "status": "SAVED"},
+        headers=_BEARER,
+    )
+    app_id = cr.json()["id"]
+    original_ts = cr.json()["last_status_change_at"]
+
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 200
+    assert r.json()["last_status_change_at"] != original_ts
+
+
+async def test_status_transition_updates_updated_at(client_a):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+    original_updated = cr.json()["updated_at"]
+
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 200
+    assert r.json()["updated_at"] != original_updated
+
+
+async def test_status_transition_requires_auth(db_session):
+    app = _make_app(db_session, _USER_A)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        cr = await c.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+        app_id = cr.json()["id"]
+        r = await c.post(
+            f"/api/v1/applications/{app_id}/status",
+            json={"to_status": "APPLIED"},
+        )
+    assert r.status_code == 401
+
+
+async def test_status_transition_other_user_is_404(client_a, client_b):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+
+    r = await client_b.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 404
+
+
+async def test_status_transition_invalid_status_returns_422(client_a):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "NOT_A_VALID_STATUS"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 422
+
+
+async def test_status_transition_cannot_set_protected_fields(client_a):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED", "stage": "OFFER"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 422
+
+    r2 = await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED", "user_id": "00000000-0000-0000-0000-000000000000"},
+        headers=_BEARER,
+    )
+    assert r2.status_code == 422

@@ -38,6 +38,24 @@ class ReminderItem(BaseModel):
     text: str | None = None
 
 
+# ── Status transition ──────────────────────────────────────────────────────────
+
+
+class StatusTransitionRequest(BaseModel):
+    """Body for POST /applications/{id}/status.
+
+    `comment` and `correlation_id` are accepted for forward-compatibility with
+    the history layer (Sprint 4) but are not persisted yet.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    to_status: ProcessStatus
+    sub_status: str | None = None
+    comment: str | None = None
+    correlation_id: str | None = None
+
+
 # ── Create ─────────────────────────────────────────────────────────────────────
 
 

@@ -4,7 +4,12 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
-from app.modules.applications.schemas import ApplicationCreate, ApplicationPatch, ApplicationRead
+from app.modules.applications.schemas import (
+    ApplicationCreate,
+    ApplicationPatch,
+    ApplicationRead,
+    StatusTransitionRequest,
+)
 from app.modules.applications.service import ApplicationsService
 
 router = APIRouter(prefix="/applications", tags=["applications"])
@@ -72,7 +77,34 @@ async def patch_application(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Application not found",
         )
-    updated = await svc.patch(app, payload)
+    updated = await svc.patch(app, payload, current_user.id)
+    return ApplicationRead.model_validate(updated)
+
+
+@router.post(
+    "/{app_id}/status",
+    response_model=ApplicationRead,
+    summary="Transition application status",
+)
+async def change_application_status(
+    app_id: UUID,
+    payload: StatusTransitionRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> ApplicationRead:
+    """Change the application's status, recomputing all derived fields.
+
+    Protected fields (stage, last_status_change_at, needs_follow_up …)
+    are computed server-side and cannot be sent in the request body.
+    """
+    svc = ApplicationsService(db)
+    app = await svc.get_owned(current_user, app_id)
+    if app is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application not found",
+        )
+    updated = await svc.change_status(app, payload, current_user.id)
     return ApplicationRead.model_validate(updated)
 
 
@@ -95,4 +127,4 @@ async def delete_application(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Application not found",
         )
-    await svc.archive(app)
+    await svc.archive(app, current_user.id)

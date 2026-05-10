@@ -10,7 +10,9 @@ from alembic import context
 # Base metadata — all ORM models must be imported below so Alembic
 # can detect schema changes. Add new model imports here as they are created.
 from app.db.base import Base
+from app.db.models import activity_event  # noqa: F401  — registers ActivityEvent table
 from app.db.models import application  # noqa: F401  — registers Application table
+from app.db.models import application_history  # noqa: F401  — registers ApplicationHistory table
 from app.db.models import user  # noqa: F401  — registers User table
 
 target_metadata = Base.metadata
