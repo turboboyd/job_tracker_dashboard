@@ -39,3 +39,6 @@ report
 /README_technical_spec
 
 .claude/
+
+# Claude worktrees
+.claude/
