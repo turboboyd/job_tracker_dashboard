@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.config import get_settings
+from app.modules.applications.router import router as applications_router
 from app.modules.users.router import router as users_router
 
 router = APIRouter()
@@ -22,3 +23,4 @@ async def health_check() -> dict[str, str]:
 # ── Domain routers ─────────────────────────────────────────────────────────────
 
 router.include_router(users_router)
+router.include_router(applications_router)
