@@ -1,7 +1,7 @@
 import type { FormikErrors, FormikProps, FormikTouched } from "formik";
 import React from "react";
 
-import { getFieldError } from "src/shared/lib/form/getFieldError";
+import { getFieldError } from "src/shared/lib";
 
 import { SelectField, type SelectFieldProps } from "./SelectField";
 

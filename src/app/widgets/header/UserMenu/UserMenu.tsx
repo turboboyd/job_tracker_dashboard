@@ -2,17 +2,14 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import {
-  AppRoutes,
-  RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
-import { useAuthSelectors } from "src/entities/auth";
-import { LogoutButton } from "src/features/auth";
-import { Button } from "src/shared/ui";
+import { useAuthSelectors } from "src/features/auth/model";
+import { LogoutButton } from "src/features/auth/ui/LogoutButton";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
+import { Button } from "src/shared/ui/Button";
 
-type UserMenuProps = {
+interface UserMenuProps {
   settingsPath?: string;
-};
+}
 
 export const UserMenu: React.FC<UserMenuProps> = ({
   settingsPath = `${RoutePath[AppRoutes.SETTINGS_PROFILE]}`,

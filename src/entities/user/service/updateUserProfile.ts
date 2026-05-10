@@ -1,7 +1,7 @@
 import { updateProfile } from "firebase/auth";
 import { getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 
-import { auth } from "src/shared/config/firebase/firebase";
+import { auth } from "src/shared/config/firebase/auth";
 
 import { makeDefaultProfile } from "../lib/defaultProfile";
 import { normalizeProfile } from "../lib/normalizeProfile";
@@ -12,7 +12,7 @@ import { userProfileDocRef } from "./userProfileRefs";
 
 export async function updateUserProfile(uid: string, data: UpdateUserProfileInput): Promise<UserProfile> {
   const user = auth.currentUser;
-  if (!user || user.uid !== uid) {
+  if (user?.uid !== uid) {
     throw new Error("Not authenticated");
   }
 

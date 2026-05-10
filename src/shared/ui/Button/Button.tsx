@@ -2,14 +2,18 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
-import { classNames } from "src/shared/lib";
+import { classNames } from "src/shared/lib/classNames";
+
+const SHADOW_TRANSITION = "transition-shadow duration-normal ease-ease-out";
+const HOVER_SHADOW = "hover:shadow-md";
+const ACTIVE_SHADOW = "active:shadow-sm";
 
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center whitespace-nowrap",
     "text-sm font-medium",
     "transition-colors duration-fast ease-ease-out",
-    "transition-shadow duration-normal ease-ease-out",
+    SHADOW_TRANSITION,
     "active:translate-y-px",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     "disabled:pointer-events-none disabled:opacity-50",
@@ -22,30 +26,35 @@ const buttonVariants = cva(
           "border border-transparent",
           "bg-primary text-primary-foreground",
           "hover:bg-primary/90",
-          "hover:shadow-md",
-          "active:shadow-sm",
+          HOVER_SHADOW,
+          ACTIVE_SHADOW,
         ].join(" "),
-        secondary: ["bg-secondary text-secondary-foreground", "hover:bg-secondary/80", "hover:shadow-md", "active:shadow-sm"].join(" "),
+        secondary: [
+          "bg-secondary text-secondary-foreground border border-border",
+          "hover:bg-secondary/80",
+          HOVER_SHADOW,
+          ACTIVE_SHADOW,
+        ].join(" "),
         outline: [
           "border border-border bg-card text-foreground",
           "hover:bg-muted/60",
-          "hover:shadow-md",
-          "active:shadow-sm",
+          HOVER_SHADOW,
+          ACTIVE_SHADOW,
         ].join(" "),
-        ghost: "text-foreground hover:bg-muted/60 active:bg-muted/80",
+        ghost: "text-foreground hover:bg-muted/70 active:bg-muted",
         link: "underline-offset-4 hover:underline text-primary",
       },
 
       size: {
-        default: "h-10 px-md",
-        sm: "h-9 px-sm",
-        lg: "h-11 px-lg",
-        icon: "h-10 w-10 p-0",
+        default: "h-9 px-md text-sm",
+        sm: "h-8 px-sm text-xs",
+        lg: "h-10 px-lg text-sm",
+        icon: "h-9 w-9 p-0",
       },
 
       shape: {
-        md: "rounded-md",
-        lg: "rounded-lg",
+        md: "rounded-lg",
+        lg: "rounded-xl",
         pill: "rounded-full",
       },
 
@@ -60,20 +69,17 @@ const buttonVariants = cva(
       {
         variant: "outline",
         shadow: "sm",
-        className:
-          "transition-shadow duration-normal ease-ease-out hover:shadow-md",
+        className: `${SHADOW_TRANSITION} ${HOVER_SHADOW}`,
       },
       {
         variant: "default",
         shadow: "sm",
-        className:
-          "transition-shadow duration-normal ease-ease-out hover:shadow-md",
+        className: `${SHADOW_TRANSITION} ${HOVER_SHADOW}`,
       },
       {
         variant: "secondary",
         shadow: "sm",
-        className:
-          "transition-shadow duration-normal ease-ease-out hover:shadow-md",
+        className: `${SHADOW_TRANSITION} ${HOVER_SHADOW}`,
       },
     ],
 

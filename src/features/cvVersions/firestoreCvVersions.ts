@@ -1,6 +1,5 @@
-// src/features/cvVersions/firestoreCvVersions.ts
+import type { Firestore } from "firebase/firestore";
 import {
-  Firestore,
   Timestamp,
   collection,
   doc,
@@ -10,9 +9,10 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { FirebaseStorage, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import type { FirebaseStorage } from "firebase/storage";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
-export type CvVersionDoc = {
+export interface CvVersionDoc {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   label: string;
@@ -21,9 +21,23 @@ export type CvVersionDoc = {
   sizeBytes: number;
   mimeType: string;
   notes?: string;
-  // Optional: you can compute later
   hashSha256?: string;
-};
+}
+
+export interface CvVersionRow {
+  id: string;
+  data: CvVersionDoc;
+}
+
+interface UploadCvVersionInput {
+  file: File;
+  label?: string;
+  notes?: string;
+}
+
+const DEFAULT_MIME_TYPE = "application/octet-stream";
+const DEFAULT_TAKE = 50;
+const FILE_NAME_SPACE_PATTERN = /\s+/g;
 
 function nowTs(): Timestamp {
   return Timestamp.now();
@@ -33,53 +47,99 @@ function cvVersionsCol(db: Firestore, userId: string) {
   return collection(db, "users", userId, "cv_versions");
 }
 
+function cvVersionDoc(db: Firestore, userId: string, cvId: string) {
+  return doc(db, "users", userId, "cv_versions", cvId);
+}
+
+function sanitizeStorageFileName(fileName: string): string {
+  return fileName.replace(FILE_NAME_SPACE_PATTERN, "_");
+}
+
+function trimToOptional(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : undefined;
+}
+
+function buildCvStoragePath(args: {
+  cvId: string;
+  safeName: string;
+  userId: string;
+}): string {
+  return `users/${args.userId}/cv_versions/${args.cvId}/${args.safeName}`;
+}
+
+function buildCvVersionPayload(args: {
+  file: File;
+  filePath: string;
+  label: string | undefined;
+  notes: string | undefined;
+  safeName: string;
+  timestamp: Timestamp;
+}): CvVersionDoc {
+  const notes = trimToOptional(args.notes);
+  const label = trimToOptional(args.label);
+  const mimeType = trimToOptional(args.file.type);
+
+  return {
+    createdAt: args.timestamp,
+    updatedAt: args.timestamp,
+    label: label ?? args.safeName,
+    filePath: args.filePath,
+    fileName: args.file.name,
+    sizeBytes: args.file.size,
+    mimeType: mimeType ?? DEFAULT_MIME_TYPE,
+    ...(notes ? { notes } : {}),
+  };
+}
+
 export async function listCvVersions(
   db: Firestore,
   userId: string,
-  take: number = 50
-): Promise<Array<{ id: string; data: CvVersionDoc }>> {
-  const q = query(cvVersionsCol(db, userId), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.slice(0, take).map((d) => ({ id: d.id, data: d.data() as CvVersionDoc }));
+  take = DEFAULT_TAKE,
+): Promise<CvVersionRow[]> {
+  const versionsQuery = query(
+    cvVersionsCol(db, userId),
+    orderBy("createdAt", "desc"),
+  );
+  const snap = await getDocs(versionsQuery);
+
+  return snap.docs.slice(0, take).map((document) => ({
+    id: document.id,
+    data: document.data() as CvVersionDoc,
+  }));
 }
 
 export async function uploadCvVersion(
   db: Firestore,
   storage: FirebaseStorage,
   userId: string,
-  input: {
-    file: File;
-    label?: string;
-    notes?: string;
-  }
+  input: UploadCvVersionInput,
 ): Promise<string> {
   const cvId = doc(cvVersionsCol(db, userId)).id;
-  const t = nowTs();
+  const timestamp = nowTs();
+  const safeName = sanitizeStorageFileName(input.file.name);
+  const filePath = buildCvStoragePath({ cvId, safeName, userId });
 
-  const file = input.file;
-  const safeName = file.name.replace(/\s+/g, "_");
-  const filePath = `users/${userId}/cv_versions/${cvId}/${safeName}`;
-  const storageRef = ref(storage, filePath);
+  await uploadBytes(ref(storage, filePath), input.file);
+  await setDoc(
+    cvVersionDoc(db, userId, cvId),
+    buildCvVersionPayload({
+      file: input.file,
+      filePath,
+      label: input.label,
+      notes: input.notes,
+      safeName,
+      timestamp,
+    }),
+  );
 
-  await uploadBytes(storageRef, file);
-
-  const docRef = doc(db, "users", userId, "cv_versions", cvId);
-  const payload: CvVersionDoc = {
-    createdAt: t,
-    updatedAt: t,
-    label: input.label?.trim() || safeName,
-    filePath,
-    fileName: file.name,
-    sizeBytes: file.size,
-    mimeType: file.type || "application/octet-stream",
-    notes: input.notes?.trim() || undefined,
-  };
-
-  await setDoc(docRef, payload);
   return cvId;
 }
 
-export async function getCvDownloadUrl(storage: FirebaseStorage, filePath: string): Promise<string> {
+export async function getCvDownloadUrl(
+  storage: FirebaseStorage,
+  filePath: string,
+): Promise<string> {
   return getDownloadURL(ref(storage, filePath));
 }
 
@@ -87,8 +147,10 @@ export async function renameCvVersion(
   db: Firestore,
   userId: string,
   cvId: string,
-  label: string
+  label: string,
 ): Promise<void> {
-  const ref = doc(db, "users", userId, "cv_versions", cvId);
-  await updateDoc(ref, { label, updatedAt: nowTs() });
+  await updateDoc(cvVersionDoc(db, userId, cvId), {
+    label,
+    updatedAt: nowTs(),
+  });
 }

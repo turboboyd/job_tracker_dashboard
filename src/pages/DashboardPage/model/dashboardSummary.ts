@@ -1,4 +1,4 @@
-import type { BoardColumnKey } from "src/entities/application/model/status";
+import type { BoardColumnKey } from "src/entities/application";
 
 /**
  * Normalized board-column counters used across the dashboard.

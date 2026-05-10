@@ -1,5 +1,4 @@
-import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application/model/status";
-import { getBoardColumn } from "src/entities/application/model/status";
+import { BOARD_COLUMNS_LIST, getBoardColumn, type BoardColumnKey } from "src/entities/application";
 import type { LoopMatch } from "src/entities/loopMatch";
 
 import type { BoardOrderByStatus } from "./types";
@@ -83,6 +82,7 @@ export function ensureIdsExist(order: BoardOrderByStatus, matches: readonly Loop
 export function moveInArray<T>(arr: readonly T[], from: number, to: number): T[] {
   const copy = [...arr];
   const [item] = copy.splice(from, 1);
+  if (item === undefined) return copy;
   copy.splice(to, 0, item);
   return copy;
 }
@@ -93,11 +93,14 @@ export function sortByOrder(
   orderIds: readonly string[],
 ): LoopMatch[] {
   const idx = new Map<string, number>();
-  for (let i = 0; i < orderIds.length; i++) idx.set(orderIds[i], i);
+  for (let i = 0; i < orderIds.length; i++) {
+    const id = orderIds[i];
+    if (id !== undefined) idx.set(id, i);
+  }
 
   const decorated = matches.map((m, i) => ({
     m,
-    rank: idx.has(m.id) ? (idx.get(m.id) as number) : Number.MAX_SAFE_INTEGER,
+    rank: idx.has(m.id) ? (idx.get(m.id)!) : Number.MAX_SAFE_INTEGER,
     stable: i,
   }));
 

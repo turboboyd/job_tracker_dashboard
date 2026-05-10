@@ -1,28 +1,12 @@
-import React from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
 
-import { useAuthSelectors } from "src/entities/auth";
+import { AuthRouteGate } from "../_internal/AuthRouteGate";
 
-import { AppRoutes, RoutePath } from "../routeConfig/routeConfig";
-
-export const RequireAuth: React.FC = () => {
-  const { isAuthenticated, isAuthReady } = useAuthSelectors();
-
-  const location = useLocation();
-
-  if (!isAuthReady) {
-    return <div className="p-4">Checking session...</div>;
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <Navigate
-        to={RoutePath[AppRoutes.MAIN]}
-        replace
-        state={{ from: location }}
-      />
-    );
-  }
-
-  return <Outlet />;
-};
+export function RequireAuth() {
+  return (
+    <AuthRouteGate
+      allowAuthenticated
+      redirectTo={RoutePath[AppRoutes.MAIN]}
+    />
+  );
+}

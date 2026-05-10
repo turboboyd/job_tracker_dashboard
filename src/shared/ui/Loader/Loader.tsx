@@ -2,10 +2,11 @@ import React from "react";
 
 export function Loader() {
   return (
-    <div className="p-6">
-      <div className="rounded-md border border-border bg-card p-4 text-card-foreground shadow-[var(--shadow-sm)]">
-        <div className="text-sm font-medium text-foreground">Loading page…</div>
-        <div className="mt-2 text-sm text-muted-foreground">Please wait</div>
+    <div className="flex items-center justify-center p-12">
+      <div className="flex flex-col items-center gap-3 text-center">
+        {/* Spinner */}
+        <div className="h-8 w-8 rounded-full border-2 border-border border-t-primary animate-spin" />
+        <div className="text-sm font-medium text-muted-foreground">Loading…</div>
       </div>
     </div>
   );

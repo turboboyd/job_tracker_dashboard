@@ -6,17 +6,17 @@ import {
   queryFollowUpsDue,
   queryPipelineByStatus,
   queryTodayTopPriority,
-} from "src/features/applications/firestoreApplications";
-import { db } from "src/shared/config/firebase/firebase";
+} from "src/features/applications";
+import { db } from "src/shared/config/firebase/firestore";
 
 
 import type { ViewMode } from "./types";
 
-export type AppRow = { id: string; data: ApplicationDoc };
+export interface AppRow { id: string; data: ApplicationDoc }
 
-type ListResult = {
+interface ListResult {
   rows: AppRow[];
-};
+}
 
 async function fetchList(params: {
   userId: string;

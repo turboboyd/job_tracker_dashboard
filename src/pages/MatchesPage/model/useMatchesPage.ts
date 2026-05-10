@@ -1,7 +1,7 @@
 import React from "react";
 import type { Location, NavigateFunction } from "react-router-dom";
 
-import { updateURLParams } from "src/shared/lib/url/updateURLParams";
+import { updateURLParams } from "src/shared/lib";
 
 import type { MatchesFiltersState, TypeMatch } from "./filters";
 import { matchesFiltersDefaults, selectVisibleMatches } from "./filters";

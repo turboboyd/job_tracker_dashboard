@@ -1,4 +1,4 @@
-import { ResourceCategory } from "./types";
+import type { ResourceCategory } from "./types";
 
 export const CATEGORY_ORDER: Exclude<ResourceCategory, "all">[] = [
   "cv",

@@ -6,7 +6,7 @@ import { Button, Card, SectionHeader } from "src/shared/ui";
 import type { ResourceCategory } from "../model/types";
 import type { CategoryOption } from "../model/useResourcesPage";
 
-type Props = {
+interface Props {
   resultsText: string;
   isPrivate: boolean;
   favIsFetching: boolean;
@@ -20,7 +20,7 @@ type Props = {
   category: ResourceCategory;
   onSelectCategory: (key: ResourceCategory) => void;
   categoryOptions: CategoryOption[];
-};
+}
 
 export const ResourcesFiltersCard: React.FC<Props> = ({
   resultsText,

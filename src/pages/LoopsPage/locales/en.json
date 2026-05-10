@@ -29,6 +29,7 @@
   "save": "Save",
   "cancel": "Cancel",
   "filtersTitle": "Filters",
+  "filters": "Filters",
   "filtersSubtitle": "Update → Apply → links refresh & saved to loop.",
   "apply": "Apply",
   "reset": "Reset",
@@ -67,7 +68,7 @@
   "jobUrl": "Job URL",
   "jobUrlHint": "You can paste without https:// (it will be normalized on save).",
   "jobUrlPlaceholder": "company.com/job",
-  "status": "Status",
+  "statusLabel": "Status",
   "description": "Description",
   "descriptionPlaceholder": "Paste key parts of the job description here…",
   "workMode": {
@@ -120,9 +121,8 @@
   "badgeMode": "Mode: {{value}}",
   "badgePosted": "Posted: {{value}}d",
   "showing": "Showing {{from}}–{{to}} of {{total}}",
+  "noFilters": "No filters applied",
   "signInBody": "Please sign in to view your loops.",
   "signInSubtitle": "Sign in to continue.",
   "title": "Loops page"
 }
-
-

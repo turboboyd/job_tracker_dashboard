@@ -2,29 +2,26 @@
 
 import {
   Bell,
+  ChevronRight,
   ShieldAlert,
   SlidersHorizontal,
   User,
-  ChevronRight,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
-import {
-  AppRoutes,
-  RoutePath,
-} from "src/app/providers/router/routeConfig/routeConfig";
-import { Card } from "src/shared/ui/Card/Card";
-import { SectionHeader } from "src/shared/ui/PageHeaders/PageHeaders";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
+import { Card, SectionHeader } from "src/shared/ui";
 
-type Item = {
+interface Item {
   to: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   variant?: "default" | "danger";
   hint?: string;
-};
+}
 
 function baseItemClass(isActive: boolean) {
   return [

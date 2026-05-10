@@ -2,9 +2,9 @@ import { useTranslation } from "react-i18next";
 
 import { LinkButton } from "src/shared/ui";
 
-type Props = {
+interface Props {
   backTo: string;
-};
+}
 
 export function MatchDetailsHeaderActions({ backTo }: Props) {
   const { t } = useTranslation();

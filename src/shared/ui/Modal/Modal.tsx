@@ -1,13 +1,13 @@
 import * as Dialog from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { classNames } from "src/shared/lib";
-import { Button } from "src/shared/ui";
 
 type ModalSize = "sm" | "md" | "lg";
 
-type ModalProps = {
+interface ModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 
@@ -16,7 +16,7 @@ type ModalProps = {
   children: React.ReactNode;
   size?: ModalSize;
   showClose?: boolean;
-};
+}
 
 const sizeMap: Record<ModalSize, string> = {
   sm: "max-w-[420px]",
@@ -53,7 +53,7 @@ export function Modal({
             "max-h-[92vh] overflow-hidden",
             "rounded-xl border border-border bg-card text-card-foreground",
             "shadow-md",
-            "p-md sm:p-lg",
+            "px-6 py-5 sm:px-8 sm:py-6",
             "flex flex-col",
             "focus:outline-none",
             "transition-transform transition-opacity duration-normal ease-ease-out",
@@ -67,13 +67,13 @@ export function Modal({
             "max-[500px]:translate-x-0 max-[500px]:translate-y-0",
             "max-[500px]:rounded-none",
             "max-[500px]:border-0",
-            "max-[500px]:p-4",
-            "max-[500px]:pt-[max(1rem,env(safe-area-inset-top))]",
-            "max-[500px]:pb-[max(1rem,env(safe-area-inset-bottom))]"
+            "max-[500px]:px-6 max-[500px]:py-5",
+            "max-[500px]:pt-[max(1.25rem,env(safe-area-inset-top))]",
+            "max-[500px]:pb-[max(1.25rem,env(safe-area-inset-bottom))]"
           )}
         >
           {title || description ? (
-            <div className="mb-md pr-20">
+            <div className="mb-md pr-12">
               {title ? (
                 <Dialog.Title className="text-lg font-semibold text-foreground leading-tight">
                   {title}
@@ -92,22 +92,21 @@ export function Modal({
 
           {showClose ? (
             <Dialog.Close asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                shape="pill"
+              <button
+                type="button"
                 className={classNames(
                   "absolute right-sm top-sm",
-                  "border-border bg-card text-foreground",
-                  "shadow-sm",
-                  "hover:bg-muted",
-                  "max-[500px]:right-4 max-[500px]:top-4 max-[500px]:h-10",
+                  "inline-flex h-9 w-9 items-center justify-center rounded-full",
+                  "border border-border bg-card text-muted-foreground shadow-sm",
+                  "transition-colors hover:bg-muted hover:text-foreground",
+                  "max-[500px]:right-4 max-[500px]:top-4 max-[500px]:h-10 max-[500px]:w-10",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 )}
                 aria-label={t("common.close", "Close")}
+                title={t("common.close", "Close")}
               >
-                {t("common.close", "Close")}
-              </Button>
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
             </Dialog.Close>
           ) : null}
         </Dialog.Content>

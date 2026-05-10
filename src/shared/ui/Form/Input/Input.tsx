@@ -9,98 +9,41 @@ import {
   type InputSize,
   type InputWidth,
 } from "./BaseInput";
-import { InputControl, SearchLeftSlot, type InputControlProps } from "./InputControl";
+import {
+  getPresetConfig,
+  resolveIntent,
+  resolveWidth,
+  type InputPreset,
+  type InputStateLegacy,
+} from "./input.presets";
+import { InputControl, type InputControlProps } from "./InputControl";
 
-/**
- * Legacy state для совместимости со старым API.
- * Новая схема — intent.
- */
-export type InputStateLegacy = "default" | "error";
-
-/** @deprecated используйте intent */
-/**
- * Готовые пресеты: задают варианты (size/padding/radius/shadow/intent) и поведение.
- */
-export type InputPreset =
-  | "default"
-  | "compact"
-  | "comfortable"
-  | "wide"
-  | "search"
-  | "password"
-  | "table"
-  | "auth";
-
-type PresetConfig = {
-  variants?: Partial<Pick<BaseInputProps, "size" | "paddingX" | "radius" | "shadow" | "intent" | "width">>;
-  behavior?: Partial<Pick<InputControlProps, "clearable" | "loading" | "showPasswordToggle" | "leftSlot" | "type">>;
-};
-
-const presetMap: Record<InputPreset, PresetConfig> = {
-  default: {
-    variants: { size: "md", paddingX: "sm", radius: "xl", shadow: "sm", width: "full", intent: "default" },
-  },
-  compact: {
-    // по твоей логике: compact => paddingX md (16px)
-    variants: { size: "sm", paddingX: "md", radius: "xl", shadow: "sm", width: "full", intent: "default" },
-  },
-  comfortable: {
-    variants: { size: "md", paddingX: "sm", radius: "xl", shadow: "sm", width: "full", intent: "default" },
-  },
-  wide: {
-    variants: { size: "lg", paddingX: "md", radius: "xl", shadow: "sm", width: "full", intent: "default" },
-  },
-  search: {
-    variants: { size: "md", paddingX: "md", radius: "xl", shadow: "sm", width: "full", intent: "default" },
-    behavior: { type: "search", clearable: true, leftSlot: <SearchLeftSlot /> },
-  },
-  password: {
-    variants: { size: "md", paddingX: "sm", radius: "xl", shadow: "sm", width: "full", intent: "default" },
-    behavior: { type: "password", showPasswordToggle: true },
-  },
-  table: {
-    variants: { size: "sm", paddingX: "sm", radius: "md", shadow: "none", width: "full", intent: "default" },
-  },
-  auth: {
-    variants: { size: "md", paddingX: "md", radius: "xl", shadow: "md", width: "full", intent: "default" },
-  },
-};
-
-export type InputProps = Omit<InputControlProps, "size" | "paddingX" | "width" | "intent"> & {
+export type InputProps = Omit<
+  InputControlProps,
+  "size" | "paddingX" | "width" | "intent"
+> & {
   preset?: InputPreset;
 
-  /** Новая схема */
+  /** Preferred visual state API. */
   intent?: InputIntent;
 
-  /** Legacy: старое state -> intent */
+  /** Legacy state mapped to intent. */
   state?: InputStateLegacy;
 
-  /**
-   * Legacy алиасы для твоего старого API.
-   * inputSize/paddingX переопределяют preset.
-   */
+  // Legacy aliases from the old API. Explicit values override preset values.
   inputSize?: InputSize;
   paddingX?: InputPaddingX;
 
-  /** Варианты */
+  /** Visual variants. */
   size?: InputSize;
   radius?: InputRadius;
   width?: InputWidth;
 
-  /** Legacy ширина */
+  /** Legacy width flag. */
   fullWidth?: boolean;
 };
 
-/**
- * Input — единый публичный компонент.
- *
- * Внутри использует InputControl (слоты/clear/loading/password toggle) и BaseInput вариативность.
- *
- * Приоритет:
- * 1) Явно переданные props
- * 2) preset
- * 3) default preset
- */
+// Public Input component. Resolution order: explicit props, preset, defaults.
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
     {
@@ -121,26 +64,26 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       type,
       ...props
     },
-    ref
+    ref,
   ) => {
-    const presetCfg = presetMap[preset] ?? presetMap.default;
+    const presetCfg = getPresetConfig(preset);
 
     const resolvedSize = size ?? inputSize ?? presetCfg.variants?.size;
     const resolvedPaddingX = paddingX ?? presetCfg.variants?.paddingX;
     const resolvedRadius = radius ?? presetCfg.variants?.radius;
     const resolvedShadow = shadow ?? presetCfg.variants?.shadow;
-
-    const resolvedWidth: InputWidth =
-      width ??
-      (fullWidth === false ? "auto" : presetCfg.variants?.width ?? "full");
-
-    const resolvedIntent: InputIntent =
-      intent ?? (state === "error" ? "error" : presetCfg.variants?.intent ?? "default");
+    const resolvedWidth = resolveWidth(width, fullWidth, presetCfg.variants?.width);
+    const resolvedIntent = resolveIntent(
+      intent,
+      state,
+      presetCfg.variants?.intent,
+    );
 
     const resolvedType = type ?? presetCfg.behavior?.type;
     const resolvedClearable = clearable ?? presetCfg.behavior?.clearable;
     const resolvedLoading = loading ?? presetCfg.behavior?.loading;
-    const resolvedShowPasswordToggle = showPasswordToggle ?? presetCfg.behavior?.showPasswordToggle;
+    const resolvedShowPasswordToggle =
+      showPasswordToggle ?? presetCfg.behavior?.showPasswordToggle;
     const resolvedLeftSlot = leftSlot ?? presetCfg.behavior?.leftSlot;
 
     return (
@@ -153,26 +96,28 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         shadow={resolvedShadow}
         width={resolvedWidth}
         intent={resolvedIntent}
-        clearable={resolvedClearable}
-        loading={resolvedLoading}
-        showPasswordToggle={resolvedShowPasswordToggle}
+        {...(resolvedClearable !== undefined ? { clearable: resolvedClearable } : {})}
+        {...(resolvedLoading !== undefined ? { loading: resolvedLoading } : {})}
+        {...(resolvedShowPasswordToggle !== undefined
+          ? { showPasswordToggle: resolvedShowPasswordToggle }
+          : {})}
         leftSlot={resolvedLeftSlot}
         {...props}
       />
     );
-  }
+  },
 );
 
 Input.displayName = "Input";
 
-
 export type {
+  BaseInputProps,
   InputIntent,
   InputPaddingX,
   InputRadius,
   InputSize,
   InputWidth,
-  BaseInputProps,
 };
 
 export { BaseInput };
+export type { InputPreset, InputStateLegacy };

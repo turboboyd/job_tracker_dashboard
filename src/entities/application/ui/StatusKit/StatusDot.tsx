@@ -2,15 +2,15 @@ import React from "react";
 
 import { getStageColorForStatus, STATUS_COLOR_DOT_CLASS, type StatusKey } from "../../model/status";
 
-function clsx(...xs: Array<string | false | null | undefined>) {
+function clsx(...xs: (string | false | null | undefined)[]) {
   return xs.filter(Boolean).join(" ");
 }
 
-export type StatusDotProps = {
+export interface StatusDotProps {
   status: StatusKey;
   className?: string;
   size?: "xs" | "sm" | "md";
-};
+}
 
 const SIZE_CLASS: Record<NonNullable<StatusDotProps["size"]>, string> = {
   xs: "h-1.5 w-1.5",

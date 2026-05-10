@@ -5,6 +5,7 @@
     "details": "Details",
     "edit": "Edit",
     "delete": "Delete",
+    "openLink": "Open link",
     "cancel": "Cancel",
     "save": "Save"
   },
@@ -64,6 +65,7 @@
     }
   },
   "details": {
+    "untitled": "Match",
     "title": "Match",
     "subtitle": "Full match details.",
     "back": "Back",
@@ -81,5 +83,12 @@
       "platform": "Platform",
       "matchedAt": "Matched"
     }
+  },
+  "fields": {
+    "loop": "Loop",
+    "location": "Location",
+    "platform": "Platform",
+    "matchedAt": "Matched",
+    "description": "Description"
   }
 }

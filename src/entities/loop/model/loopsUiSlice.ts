@@ -1,12 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-import { clampPage } from "src/shared/lib";
+import { clampPage } from "src/shared/lib/url";
 
-export type LoopsUiState = {
+export interface LoopsUiState {
   listPage: number;
   detailsPageByLoopId: Record<string, number | undefined>;
   lastLoopsUrl: string | null;
-};
+}
 
 const initialState: LoopsUiState = {
   listPage: 1,

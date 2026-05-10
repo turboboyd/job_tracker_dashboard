@@ -1,7 +1,7 @@
-type Props = {
+interface Props {
   label: string;
   value: string;
-};
+}
 
 export function MetaRow({ label, value }: Props) {
   return (

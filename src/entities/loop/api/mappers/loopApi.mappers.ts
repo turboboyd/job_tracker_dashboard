@@ -1,13 +1,10 @@
 import {
-  serverTimestamp,
   type DocumentSnapshot,
   type FieldValue,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
 
 import {
-  DEFAULT_CANONICAL_FILTERS,
-  PLATFORM_BY_ID,
   type CanonicalFilters,
   type Loop,
   type LoopPlatform,
@@ -15,45 +12,20 @@ import {
 } from "../../model";
 import type { CreateLoopInput, UpdateLoopInput } from "../loopApi.types";
 
-// --------------------
-// shared utils
-// --------------------
+import {
+  makeTimestamps,
+  mapLoopRecordToEntity,
+  trimArray,
+  trimStr,
+} from "./loopApi.mapperUtils";
 
-export type ApiError = { message: string };
-function trimStr(v: unknown): string {
-  return String(v ?? "").trim();
-}
-
-function trimArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.map(trimStr).filter(Boolean);
-}
-
-const REMOTE_MODE_VALUES = ["any", "remote_only"] as const;
-
-function isRemoteMode(v: unknown): v is RemoteMode {
-  return (
-    typeof v === "string" &&
-    (REMOTE_MODE_VALUES as readonly string[]).includes(v)
-  );
-}
-
-function isLoopPlatform(v: unknown): v is LoopPlatform {
-  return typeof v === "string" && v in PLATFORM_BY_ID;
-}
-
-
-
-function makeTimestamps(): { iso: string; server: FieldValue } {
-  const iso = new Date().toISOString();
-  return { iso, server: serverTimestamp() };
-}
+export interface ApiError { message: string }
 
 // --------------------
 // Firestore payloads
 // --------------------
 
-export type LoopFirestoreCreate = {
+export interface LoopFirestoreCreate {
   name: string;
 
   titles: string[];
@@ -69,7 +41,7 @@ export type LoopFirestoreCreate = {
 
   createdAtTs: FieldValue;
   updatedAtTs: FieldValue;
-};
+}
 
 export type LoopFirestorePatch = Partial<
   Omit<LoopFirestoreCreate, "createdAtTs" | "updatedAtTs">
@@ -86,26 +58,7 @@ export function mapLoopDoc(d: QueryDocumentSnapshot): Loop {
   delete (rest as { createdAtTs?: unknown }).createdAtTs;
   delete (rest as { updatedAtTs?: unknown }).updatedAtTs;
 
-  const filters = (rest.filters ?? undefined) as CanonicalFilters | undefined;
-  const normalizedFilters: CanonicalFilters | undefined =
-    filters ? { ...DEFAULT_CANONICAL_FILTERS, ...filters } : undefined;
-
-  return {
-    id: d.id,
-    name: String(rest.name ?? ""),
-    titles: Array.isArray(rest.titles)
-      ? rest.titles.map((x) => String(x)).filter(Boolean)
-      : [],
-    location: String(rest.location ?? ""),
-    radiusKm: Number(rest.radiusKm ?? 30),
-    remoteMode: isRemoteMode(rest.remoteMode) ? rest.remoteMode : "any",
-    platforms: Array.isArray(rest.platforms)
-      ? rest.platforms.filter(isLoopPlatform)
-      : [],
-    filters: normalizedFilters,
-    createdAtTs: null,
-    updatedAtTs: null,
-  };
+  return mapLoopRecordToEntity(d.id, rest);
 }
 
 export function mapLoopSnap(s: DocumentSnapshot): Loop | null {
@@ -114,26 +67,7 @@ export function mapLoopSnap(s: DocumentSnapshot): Loop | null {
   delete (rest as { createdAtTs?: unknown }).createdAtTs;
   delete (rest as { updatedAtTs?: unknown }).updatedAtTs;
 
-  const filters = (rest.filters ?? undefined) as CanonicalFilters | undefined;
-  const normalizedFilters: CanonicalFilters | undefined =
-    filters ? { ...DEFAULT_CANONICAL_FILTERS, ...filters } : undefined;
-
-  return {
-    id: s.id,
-    name: String(rest.name ?? ""),
-    titles: Array.isArray(rest.titles)
-      ? rest.titles.map((x) => String(x)).filter(Boolean)
-      : [],
-    location: String(rest.location ?? ""),
-    radiusKm: Number(rest.radiusKm ?? 30),
-    remoteMode: isRemoteMode(rest.remoteMode) ? rest.remoteMode : "any",
-    platforms: Array.isArray(rest.platforms)
-      ? rest.platforms.filter(isLoopPlatform)
-      : [],
-    filters: normalizedFilters,
-    createdAtTs: null,
-    updatedAtTs: null,
-  };
+  return mapLoopRecordToEntity(s.id, rest);
 }
 
 // --------------------
@@ -152,7 +86,7 @@ export function cleanLoopCreate(input: CreateLoopInput): LoopFirestoreCreate {
     remoteMode: input.remoteMode,
     platforms: input.platforms,
 
-    filters: input.filters ?? undefined,
+    ...(input.filters !== undefined ? { filters: input.filters } : {}),
 
     createdAt: iso,
     updatedAt: iso,
@@ -178,7 +112,10 @@ export function cleanLoopPatch(input: UpdateLoopInput): LoopFirestorePatch {
   if (typeof input.remoteMode === "string") patch.remoteMode = input.remoteMode;
   if (Array.isArray(input.platforms)) patch.platforms = input.platforms;
 
-  if ("filters" in input) patch.filters = input.filters ?? undefined;
+  if ("filters" in input) {
+    if (input.filters !== undefined) patch.filters = input.filters;
+    else delete (patch as { filters?: unknown }).filters;
+  }
 
   return patch;
 }

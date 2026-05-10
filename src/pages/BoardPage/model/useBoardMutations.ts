@@ -1,11 +1,13 @@
 import React from "react";
 
-import type { BoardColumnKey, StatusKey } from "src/entities/application/model/status";
+import type { BoardColumnKey } from "src/entities/application";
 import {
   useDeleteMatchMutation,
   useUpdateMatchStatusMutation,
   type LoopMatch,
 } from "src/entities/loopMatch";
+
+import { COLUMN_DEFAULT_STATUS } from "./boardStatusMap";
 
 export type BoardMutations = Readonly<{
   busy: boolean;
@@ -14,22 +16,11 @@ export type BoardMutations = Readonly<{
   onDeleteById: (matches: readonly LoopMatch[], matchId: LoopMatch["id"]) => Promise<void>;
 }>;
 
-const COLUMN_DEFAULT_STATUS: Record<BoardColumnKey, StatusKey> = {
-  ACTIVE: "APPLIED",
-  INTERVIEW: "HR_CALL_SCHEDULED",
-  OFFER: "OFFER_RECEIVED",
-  HIRED: "OFFER_ACCEPTED",
-  REJECTED: "REJECTED_PRE_INTERVIEW",
-  NO_RESPONSE: "GHOSTING",
-  ARCHIVED: "ARCHIVED_GENERAL",
-};
-
 function fireAndForget(p: Promise<unknown>): void {
   p.catch(() => {
     // Errors are handled by RTK Query state in UI.
   });
 }
-
 
 export function useBoardMutations(): BoardMutations {
   const [deleteMatchTrigger, deleteState] = useDeleteMatchMutation();
@@ -71,7 +62,6 @@ export function useBoardMutations(): BoardMutations {
     onDeleteById,
   };
 }
-
 
 export function fireAndForgetMutation(p: Promise<unknown>): void {
   fireAndForget(p);

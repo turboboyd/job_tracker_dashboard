@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-03-22",
+  "dependencyCruiser": {
+    "totalViolations": 96,
+    "byRule": {
+      "entities-public-api-only": 45,
+      "features-public-api-only": 7,
+      "no-circular": 29,
+      "no-entities-dep-on-higher": 4,
+      "no-pages-dep-on-app": 3,
+      "no-shared-dep-on-higher": 6,
+      "pages-public-api-only": 0
+    }
+  },
+  "madge": {
+    "cycles": 15
+  },
+  "jscpd": {
+    "percentage": 3.18,
+    "clones": 80,
+    "duplicatedLines": 1233
+  }
+}

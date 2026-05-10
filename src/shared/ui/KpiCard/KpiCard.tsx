@@ -1,32 +1,44 @@
 import React from "react";
 
-import { Card } from "src/shared/ui";
+import { classNames } from "src/shared/lib";
 
-type Props = {
+import { Card } from "../Card/Card";
+
+interface Props {
   title: React.ReactNode;
-  value: number | string;
+  value: React.ReactNode;
   icon?: React.ReactNode;
-};
+  valueClassName?: string;
+  trend?: React.ReactNode;
+}
 
-export function KpiCard({ title, value, icon }: Props) {
+export function KpiCard({ title, value, icon, valueClassName, trend }: Props) {
   return (
     <Card
-      padding="md"
+      padding="none"
       shadow="sm"
       variant="default"
-      className="flex items-center justify-between gap-4"
+      className="p-5 flex items-start justify-between gap-4"
     >
-      <div className="min-w-0">
-        <div className="text-sm text-muted-foreground break-words [hyphens:auto]">
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground truncate">
           {title}
         </div>
-        <div className="mt-1 text-2xl font-semibold text-foreground break-words [hyphens:auto]">
+        <div
+          className={classNames(
+            "mt-2 whitespace-nowrap text-3xl font-semibold leading-none",
+            valueClassName ?? "text-foreground"
+          )}
+        >
           {value}
         </div>
+        {trend ? (
+          <div className="mt-2 text-xs text-muted-foreground">{trend}</div>
+        ) : null}
       </div>
 
       {icon ? (
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border bg-muted text-foreground">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           {icon}
         </div>
       ) : null}

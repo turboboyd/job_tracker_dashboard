@@ -1,10 +1,10 @@
 import * as React from "react";
 
-type UseSidebarOptions = {
+interface UseSidebarOptions {
   enabled: boolean; 
   desktopQuery?: string; 
   defaultDesktopOpen?: boolean; 
-};
+}
 
 export function useSidebar({
   enabled,

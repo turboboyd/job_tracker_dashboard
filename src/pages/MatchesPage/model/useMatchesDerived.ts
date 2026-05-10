@@ -1,52 +1,26 @@
 import React from "react";
 
-import type { LoopMatchStatus } from "src/entities/loopMatch";
+import {
+  buildLoopIdToName,
+  buildPlatformOptions,
+  buildStatusOptions,
+} from "./matchesViewModel";
 
-function cmpStr(a: string, b: string) {
-  return a.localeCompare(b, undefined, { sensitivity: "base" });
-}
-
-function normalizeToken(v: unknown): string {
-  return String(v ?? "")
-    .toLowerCase()
-    .trim();
-}
-
-type MatchLike = {
+interface MatchLike {
   platform?: unknown;
   status?: unknown;
   loopId: string;
-};
+}
 
-type LoopLike = {
+interface LoopLike {
   id: string;
   name: string;
-};
+}
 
 export function useMatchesDerived(matches: MatchLike[], loops: LoopLike[]) {
-  const loopIdToName = React.useMemo(() => {
-    const map = new Map<string, string>();
-    for (const l of loops) map.set(l.id, l.name);
-    return map;
-  }, [loops]);
-
-  const platformOptions = React.useMemo(() => {
-    const set = new Set<string>();
-    for (const m of matches) {
-      const token = normalizeToken(m.platform);
-      if (token) set.add(token);
-    }
-    return Array.from(set).sort(cmpStr);
-  }, [matches]);
-
-  const statusOptions = React.useMemo(() => {
-    const set = new Set<string>();
-    for (const m of matches) {
-      const token = String(m.status ?? "").trim();
-      if (token) set.add(token);
-    }
-    return Array.from(set).sort(cmpStr) as LoopMatchStatus[];
-  }, [matches]);
+  const loopIdToName = React.useMemo(() => buildLoopIdToName(loops), [loops]);
+  const platformOptions = React.useMemo(() => buildPlatformOptions(matches), [matches]);
+  const statusOptions = React.useMemo(() => buildStatusOptions(matches), [matches]);
 
   return { loopIdToName, platformOptions, statusOptions };
 }

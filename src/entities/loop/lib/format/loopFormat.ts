@@ -1,7 +1,8 @@
-import { LOOP_MATCH_STATUSES } from "src/entities/loop/model";
-import type { LoopMatchStatus } from "src/entities/loopMatch/model/types";
+import type { StatusKey } from "src/entities/application";
 
-export function labelStatus(s: LoopMatchStatus) {
+import { LOOP_MATCH_STATUSES } from "../../model/constants";
+
+export function labelStatus(s: StatusKey) {
   return LOOP_MATCH_STATUSES.find((x) => x.value === s)?.label ?? s;
 }
 
@@ -15,5 +16,3 @@ export function joinTitles(titles: string[]) {
     .filter(Boolean)
     .join(" OR ");
 }
-
-

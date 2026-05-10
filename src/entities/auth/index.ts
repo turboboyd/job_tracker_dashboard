@@ -1,3 +1,6 @@
+export { guardAuthRtk } from "./lib/guardAuthRtk";
+export { requireUidFromState } from "./lib/requireUidFromState";
+
 export { selectAuthErrorObject } from "./model/authSelectors";
 
 export {
@@ -6,6 +9,9 @@ export {
   type LoginValues,
   type RegisterValues,
 } from "./model/validation";
+
+export { useAuthSelectors } from "./model/hooks/useAuthSelectors";
+export { useAuthActions } from "./model/hooks/useAuthActions";
 
 export {
   authReducer,
@@ -30,12 +36,8 @@ export {
   signInWithEmail,
   signUpWithEmail,
   signOutThunk,
-  useAuthActions,
-  useAuthSelectors,
-  useAuthRedirect,
   type AuthUser,
   type AuthState,
   type AuthError,
   type StateWithAuth,
 } from "./model";
-

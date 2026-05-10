@@ -5,15 +5,15 @@ import type { StatusKey } from "../../model/status";
 import { StatusDot } from "./StatusDot";
 import { StatusLabel } from "./StatusLabel";
 
-function clsx(...xs: Array<string | false | null | undefined>) {
+function clsx(...xs: (string | false | null | undefined)[]) {
   return xs.filter(Boolean).join(" ");
 }
 
-export type StatusPillProps = {
+export interface StatusPillProps {
   status: StatusKey;
   className?: string;
   dotSize?: "xs" | "sm" | "md";
-};
+}
 
 export function StatusPill({ status, className, dotSize = "sm" }: StatusPillProps) {
   return (

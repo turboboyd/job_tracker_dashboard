@@ -1,46 +1,59 @@
-import React from "react";
+import type { ReactNode } from "react";
 
-type HeaderProps = {
+interface HeaderProps {
   title: string;
-  subtitle?: string;
-  right?: React.ReactNode;
-};
+  subtitle?: string | undefined;
+  right?: ReactNode | undefined;
+}
 
-export function PageHeader({ title, subtitle, right }: HeaderProps) {
+interface HeaderLayoutProps extends HeaderProps {
+  rootClassName: string;
+  titleClassName: string;
+}
+
+function HeaderLayout({
+  title,
+  subtitle,
+  right,
+  rootClassName,
+  titleClassName,
+}: HeaderLayoutProps) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className={rootClassName}>
       <div>
-        <div className="text-2xl font-semibold text-foreground break-words [hyphens:auto]">
-          {title}
-        </div>
+        <div className={titleClassName}>{title}</div>
         {subtitle ? (
-          <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
+          <div className="mt-1.5 text-sm text-muted-foreground leading-relaxed">{subtitle}</div>
         ) : null}
       </div>
-      <div className="w-full sm:w-auto">{right}</div>
+      {right ? <div className="w-full sm:w-auto shrink-0">{right}</div> : null}
     </div>
   );
 }
 
-export function SectionHeader({ title, subtitle, right }: HeaderProps) {
+export function PageHeader(props: HeaderProps) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div className="text-base font-semibold text-foreground break-words [hyphens:auto]">
-          {title}
-        </div>
-        {subtitle ? (
-          <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
-        ) : null}
-      </div>
-      <div className="w-full sm:w-auto">{right}</div>
-    </div>
+    <HeaderLayout
+      {...props}
+      rootClassName="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+      titleClassName="text-2xl font-semibold text-foreground tracking-tight break-words [hyphens:auto]"
+    />
   );
 }
 
-export function PageMessage({ children }: { children: React.ReactNode }) {
+export function SectionHeader(props: HeaderProps) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+    <HeaderLayout
+      {...props}
+      rootClassName="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      titleClassName="text-base font-semibold text-foreground break-words [hyphens:auto]"
+    />
+  );
+}
+
+export function PageMessage({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground leading-relaxed">
       {children}
     </div>
   );

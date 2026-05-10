@@ -1,6 +1,4 @@
-/* eslint-disable sonarjs/slow-regex */
-
-import { SearchFilters } from "./types";
+import type { SearchFilters } from "./types";
 
 export const DEFAULT_FILTERS: SearchFilters = {
   role: "",
@@ -26,19 +24,82 @@ function clampStr(s: string, maxLen: number) {
   return t.length > maxLen ? t.slice(0, maxLen).trim() : t;
 }
 
+function collapseWhitespace(value: string): string {
+  let result = "";
+  let isAfterWhitespace = false;
+
+  for (const char of value.trim()) {
+    if (char.trim() === "") {
+      if (result.length > 0) isAfterWhitespace = true;
+      continue;
+    }
+
+    if (isAfterWhitespace) result += " ";
+    result += char;
+    isAfterWhitespace = false;
+  }
+
+  return result;
+}
+
+function splitByHardSeparator(value: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+
+  for (const char of value) {
+    const isSeparator =
+      char === "," ||
+      char === ";" ||
+      char === "|" ||
+      char === "\n" ||
+      char === "\r";
+
+    if (isSeparator) {
+      parts.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  parts.push(current);
+  return parts;
+}
+
+function splitByOrToken(value: string): string[] {
+  const parts: string[] = [];
+  const currentWords: string[] = [];
+  const words = collapseWhitespace(value).split(" ");
+
+  for (const [index, word] of words.entries()) {
+    const hasWordsBefore = currentWords.length > 0;
+    const hasWordsAfter = index < words.length - 1;
+    const isSeparator = word.toLowerCase() === "or";
+
+    if (isSeparator && hasWordsBefore && hasWordsAfter) {
+      parts.push(currentWords.join(" "));
+      currentWords.length = 0;
+      continue;
+    }
+
+    currentWords.push(word);
+  }
+
+  parts.push(currentWords.join(" "));
+  return parts;
+}
+
+function splitRoleInput(value: string): string[] {
+  return splitByHardSeparator(value).flatMap(splitByOrToken);
+}
+
 export function normalizeRoleToTitles(role: string): string[] {
-  const input = (role ?? "").trim();
+  const input = role.trim();
   if (!input) return [];
 
-  const normalized = input
-    .replace(/\|\|/g, " OR ")
-    .replace(/\s+or\s+/gi, " OR ")
-    .replace(/\s+OR\s+/g, " OR ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const parts = normalized
-    .split(/\s+OR\s+|,|;|\||\n|\r/g)
+  const normalized = collapseWhitespace(input);
+  const parts = splitRoleInput(normalized)
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p) => clampStr(p, 80));

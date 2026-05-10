@@ -1,8 +1,8 @@
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
+import type { ApplicationDoc } from "../documents.types";
 import { REAPPLY_COOLDOWN_DAYS } from "../lib/constants";
 import { addDays } from "../lib/time";
-import { ApplicationDoc } from "../types";
 
 /**
  * Re-apply logic (client-side):
@@ -21,11 +21,7 @@ export function computeReapply(
   const status = app.process.status;
   const eligibleStatuses = ["REJECTED", "NO_RESPONSE"].includes(status);
   if (!eligibleStatuses) {
-    return {
-      needsReapplySuggestion: false,
-      reapplyEligibleAt: undefined,
-      reapplyReason: undefined,
-    };
+    return { needsReapplySuggestion: false };
   }
 
   const last = app.process.lastStatusChangeAt;
@@ -34,7 +30,7 @@ export function computeReapply(
 
   return {
     needsReapplySuggestion: eligible,
-    reapplyEligibleAt: eligible ? eligibleAt : undefined,
-    reapplyReason: eligible ? "cooldown_elapsed" : undefined,
+    ...(eligible ? { reapplyEligibleAt: eligibleAt } : {}),
+    ...(eligible ? { reapplyReason: "cooldown_elapsed" } : {}),
   };
 }

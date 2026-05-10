@@ -1,90 +1,132 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   buildCanonicalFiltersFromLoop,
-  mapCanonicalToSearchFilters,
   buildSearchLinks,
-} from "src/entities/loop/lib";
+  mapCanonicalToSearchFilters,
+} from "../../lib";
 import {
   type CanonicalFilters,
   DEFAULT_CANONICAL_FILTERS,
   type LoopPlatform,
-} from "src/entities/loop/model";
+} from "../../model";
 
 import type { ActiveLink, LoopForLinks } from "./types";
 
+interface LoopSearchLinksState {
+  activeLink: ActiveLink;
+  appliedFilters: CanonicalFilters;
+  baseFilters: CanonicalFilters;
+  draftFilters: CanonicalFilters;
+  isDirty: boolean;
+  loopId: string;
+}
+
 function filtersEqual(a: CanonicalFilters, b: CanonicalFilters) {
-  const keys = Object.keys(DEFAULT_CANONICAL_FILTERS) as Array<keyof CanonicalFilters>;
-  for (const k of keys) {
-    if (a[k] !== b[k]) return false;
+  const keys = Object.keys(DEFAULT_CANONICAL_FILTERS) as (keyof CanonicalFilters)[];
+  return keys.every((key) => a[key] === b[key]);
+}
+
+function createState(loopId: string, baseFilters: CanonicalFilters): LoopSearchLinksState {
+  return {
+    activeLink: null,
+    appliedFilters: baseFilters,
+    baseFilters,
+    draftFilters: baseFilters,
+    isDirty: false,
+    loopId,
+  };
+}
+
+function reconcileState(
+  state: LoopSearchLinksState,
+  loopId: string,
+  baseFilters: CanonicalFilters,
+): LoopSearchLinksState {
+  if (state.loopId !== loopId) {
+    return createState(loopId, baseFilters);
   }
-  return true;
+
+  if (state.isDirty || filtersEqual(state.baseFilters, baseFilters)) {
+    return state;
+  }
+
+  return createState(loopId, baseFilters);
 }
 
 export function useLoopSearchLinksState(loop: LoopForLinks) {
   const baseFromLoop = useMemo(() => buildCanonicalFiltersFromLoop(loop), [loop]);
+  const [storedState, setStoredState] = useState<LoopSearchLinksState>(() =>
+    createState(loop.id, baseFromLoop),
+  );
 
-  const [draftFilters, _setDraftFilters] = useState<CanonicalFilters>(() => baseFromLoop);
-  const [appliedFilters, setAppliedFilters] = useState<CanonicalFilters>(() => baseFromLoop);
-  const [activeLink, setActiveLink] = useState<ActiveLink>(null);
-  const [isDirty, setIsDirty] = useState(false);
-
-
-  useEffect(() => {
-    _setDraftFilters(baseFromLoop);
-    setAppliedFilters(baseFromLoop);
-    setActiveLink(null);
-    setIsDirty(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loop.id]);
-
-  // loop updated (same id) -> sync only if no unsaved edits
-  useEffect(() => {
-    if (isDirty) return;
-
-    _setDraftFilters((prev) => (filtersEqual(prev, baseFromLoop) ? prev : baseFromLoop));
-    setAppliedFilters((prev) => (filtersEqual(prev, baseFromLoop) ? prev : baseFromLoop));
-    setActiveLink(null);
-  }, [baseFromLoop, isDirty]);
+  const state = useMemo(
+    () => reconcileState(storedState, loop.id, baseFromLoop),
+    [baseFromLoop, loop.id, storedState],
+  );
 
   const setDraftFilters = useCallback(
     (next: CanonicalFilters) => {
-      _setDraftFilters(next);
-      setIsDirty(!filtersEqual(next, baseFromLoop));
+      setStoredState((previous) => {
+        const current = reconcileState(previous, loop.id, baseFromLoop);
+
+        return {
+          ...current,
+          draftFilters: next,
+          isDirty: !filtersEqual(next, current.appliedFilters),
+        };
+      });
     },
-    [baseFromLoop]
+    [baseFromLoop, loop.id],
   );
 
   const links = useMemo(() => {
-    return buildSearchLinks(loop.platforms, mapCanonicalToSearchFilters(appliedFilters));
-  }, [loop.platforms, appliedFilters]);
+    return buildSearchLinks(
+      loop.platforms,
+      mapCanonicalToSearchFilters(state.appliedFilters),
+    );
+  }, [loop.platforms, state.appliedFilters]);
 
   const resetFilters = useCallback(() => {
-    _setDraftFilters(baseFromLoop);
-    setAppliedFilters(baseFromLoop);
-    setActiveLink(null);
-    setIsDirty(false);
-  }, [baseFromLoop]);
+    setStoredState(createState(loop.id, baseFromLoop));
+  }, [baseFromLoop, loop.id]);
 
   const applyDraftFilters = useCallback(() => {
-    setAppliedFilters(draftFilters);
-    setActiveLink(null);
-    setIsDirty(false);
-  }, [draftFilters]);
+    setStoredState((previous) => {
+      const current = reconcileState(previous, loop.id, baseFromLoop);
+
+      return {
+        ...current,
+        activeLink: null,
+        appliedFilters: current.draftFilters,
+        isDirty: false,
+      };
+    });
+  }, [baseFromLoop, loop.id]);
 
   const setActive = useCallback((platform: LoopPlatform, url: string) => {
-    setActiveLink({ platform, url });
+    setStoredState((previous) => ({
+      ...previous,
+      activeLink: { platform, url },
+    }));
+  }, []);
+
+  const setActiveLink = useCallback((next: ActiveLink) => {
+    setStoredState((previous) => ({
+      ...previous,
+      activeLink: next,
+    }));
   }, []);
 
   return {
-    draftFilters,
+    draftFilters: state.draftFilters,
     setDraftFilters,
 
-    appliedFilters,
+    appliedFilters: state.appliedFilters,
     applyDraftFilters,
     resetFilters,
 
-    activeLink,
+    activeLink: state.activeLink,
     setActiveLink,
     setActive,
 

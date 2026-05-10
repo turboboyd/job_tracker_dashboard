@@ -5,7 +5,7 @@ import { Modal } from "src/shared/ui";
 import type { CanonicalFilters } from "../../model";
 import { CompactFilters } from "../CompactFilters/CompactFilters";
 
-type Props = {
+interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
 
@@ -16,7 +16,7 @@ type Props = {
   onReset: () => void;
 
   disabled?: boolean;
-};
+}
 
 export function LoopSettingsModal({
   open,
@@ -44,7 +44,7 @@ export function LoopSettingsModal({
         onChange={onChange}
         onApply={onApply}
         onReset={onReset}
-        disabled={disabled}
+        {...(disabled !== undefined ? { disabled } : {})}
       />
     </Modal>
   );

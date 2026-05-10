@@ -1,44 +1,52 @@
-export { clampRadiusKm } from "./searchFilters";
-
-export type {
-  Loop,
-  RemoteMode,
-  CanonicalFilters,
-  SearchFilters,
-  LoopPlatform,
-  PlatformMeta,
-  PlatformGroupId
-} from "./types";
-
-
-
-export { LOOP_MATCH_STATUSES, LOOP_PLATFORMS } from "./constants";
-export { DEFAULT_CANONICAL_FILTERS } from "./canonicalFilters";
-
 export {
-
-  PLATFORM_REGISTRY,
+  DEFAULT_CANONICAL_FILTERS,
+} from "./canonicalFilters";
+export { selectLoopsResumeUrl } from "./loopsUi.selectors";
+export {
+  loopsUiReducer,
+  setLastLoopsUrl,
+  setLoopDetailsPage,
+  setLoopsListPage,
+} from "./loopsUiSlice";
+export type { LoopsUiState } from "./loopsUiSlice";
+export {
+  LOOP_MATCH_STATUSES,
+  LOOP_PLATFORMS,
+} from "./constants";
+export {
+  DEFAULT_LOOP_FILTERS,
+  DEFAULT_LOOP_NAME,
+} from "./defaults";
+export {
   ALL_PLATFORMS,
-  RECOMMENDED_PLATFORMS,
-  PLATFORM_LABEL_BY_ID,
-  PLATFORM_BY_ID,
-  GROUPS,
-  platformsByGroup,
   buildUrlByPlatform,
+  GROUPS,
+  PLATFORM_BY_ID,
+  PLATFORM_LABEL_BY_ID,
+  PLATFORM_REGISTRY,
+  platformsByGroup,
+  RECOMMENDED_PLATFORMS,
 } from "./platformRegistry";
-
-export { normalizeRoleToTitles } from "./roleTitles";
-
-export { DEFAULT_LOOP_NAME, DEFAULT_LOOP_FILTERS } from "./defaults";
-
 export {
-  type ValidationResult,
-  validateLoopName,
-  validateRole,
+  clampRadiusKm,
+  normalizeRoleToTitles,
+} from "./searchFilters";
+export type {
+  CanonicalFilters,
+  Loop,
+  LoopPlatform,
+  PlatformGroupId,
+  PlatformMeta,
+  RemoteMode,
+  SearchFilters,
+  ValidationResult,
+} from "./types";
+export { LOOP_PLATFORM_VALUES } from "./types";
+export {
   validateLocation,
-  validateRadiusKm,
+  validateLoopName,
   validatePlatforms,
+  validateRadiusKm,
   validateRequiredText,
+  validateRole,
 } from "./validators";
-
-

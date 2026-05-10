@@ -11,7 +11,7 @@ import { BoardMatchCard } from "./BoardMatchCard";
 type Props = Readonly<{
   status: BoardColumnKey;
   title: string;
-  color: string;
+  color?: string;
   matches: readonly LoopMatch[];
   loopIdToName: ReadonlyMap<string, string>;
   busy: boolean;

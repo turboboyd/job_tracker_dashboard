@@ -1,14 +1,14 @@
 import React, { useId } from "react";
 
-type FieldRenderProps = {
+interface FieldRenderProps {
   id: string;
-  describedBy?: string;
+  describedBy: string | undefined;
   invalid: boolean;
-  errorId?: string;
-  hintId?: string;
-};
+  errorId: string | undefined;
+  hintId: string | undefined;
+}
 
-type Props = {
+interface Props {
   label: React.ReactNode;
   required?: boolean;
   description?: React.ReactNode;
@@ -16,7 +16,7 @@ type Props = {
   error?: React.ReactNode;
   htmlFor?: string;
   children: React.ReactNode | ((p: FieldRenderProps) => React.ReactNode);
-};
+}
 
 export function FormField({
   label,

@@ -1,19 +1,19 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import type { DateFormat } from "src/entities/userSettings/api/userSettingsApi";
-import { FormField } from "src/shared/ui/Form/FormField/FormField";
+import type { DateFormat } from "src/entities/userSettings";
+import { FormField } from "src/shared/ui";
 
-type Props = {
+interface Props {
   value: DateFormat;
   onChange: (next: DateFormat) => void;
-};
+}
 
-type Option = {
+interface Option {
   value: DateFormat;
   title: string;
   subtitle: string;
-};
+}
 
 function OptionCard({
   active,

@@ -1,31 +1,50 @@
 import { Timestamp } from "firebase/firestore";
 
+import { isPlainObject } from "./plainObject";
+
 /**
  * Firestore rejects `undefined` values.
  * We keep payloads clean by stripping undefined recursively.
  *
  * Important: preserve Firestore Timestamp instances as-is.
+ * Also preserve other non-plain objects (for example Date) instead of flattening them.
  */
-export function stripUndefinedDeep<T>(value: T): T {
-  if (value === undefined || value === null) return value;
-  if (value instanceof Timestamp) return value;
-
-  if (Array.isArray(value)) {
-    return value
-      .filter((v) => v !== undefined)
-      .map((v) => stripUndefinedDeep(v)) as unknown as T;
+function stripUndefinedDeepUnknown(value: unknown): unknown {
+  if (value === undefined || value === null) {
+    return value;
   }
 
-  if (typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (v === undefined) continue;
-      out[k] = stripUndefinedDeep(v as unknown);
+  if (value instanceof Timestamp) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const nextArray: unknown[] = [];
+
+    for (const item of value) {
+      if (item !== undefined) {
+        nextArray.push(stripUndefinedDeepUnknown(item));
+      }
     }
-    // `T` can be instantiated with a type unrelated to `Record<string, unknown>`.
-    // Runtime contract: we preserve the object shape while removing `undefined`.
-    return out as unknown as T;
+
+    return nextArray;
+  }
+
+  if (isPlainObject(value)) {
+    const nextObject: Record<string, unknown> = {};
+
+    for (const [key, nestedValue] of Object.entries(value)) {
+      if (nestedValue !== undefined) {
+        nextObject[key] = stripUndefinedDeepUnknown(nestedValue);
+      }
+    }
+
+    return nextObject;
   }
 
   return value;
+}
+
+export function stripUndefinedDeep<T>(value: T): T {
+  return stripUndefinedDeepUnknown(value) as T;
 }

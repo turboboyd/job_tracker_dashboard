@@ -1,13 +1,25 @@
 {
-  "dropHere": "Ziehe Matches hierher.",
-  "empty": "Noch keine Matches.",
-  "loading": "Matches werden geladen…",
+  "dropHere": "Ziehe Stellen hierher.",
+  "delete": "Löschen",
+  "deleteConfirm": "Diese Stelle vom Board löschen?",
+  "empty": "Noch keine Stellen.",
+  "loading": "Stellen werden geladen…",
+  "openLink": "Link öffnen",
+  "column": {
+    "ACTIVE": "Aktiv",
+    "INTERVIEW": "Interview",
+    "OFFER": "Angebot",
+    "HIRED": "Angenommen",
+    "REJECTED": "Abgelehnt",
+    "NO_RESPONSE": "Keine Antwort",
+    "ARCHIVED": "Archiv"
+  },
   "status.applied": "Beworben",
   "status.interview": "Interview",
   "status.new": "Neu",
   "status.offer": "Angebot",
   "status.rejected": "Absage",
   "status.saved": "Gespeichert",
-  "subtitle": "Ziehe Matches zwischen Spalten, um den Status zu ändern.",
-  "title": "Board"
+  "subtitle": "Ziehe Stellen zwischen Spalten, um den Status zu ändern.",
+  "title": "Bewerbungsboard"
 }

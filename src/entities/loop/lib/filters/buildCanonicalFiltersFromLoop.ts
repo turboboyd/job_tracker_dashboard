@@ -1,5 +1,5 @@
-import type { CanonicalFilters } from "src/entities/loop/model";
-import { DEFAULT_CANONICAL_FILTERS } from "src/entities/loop/model";
+import type { CanonicalFilters } from "../../model";
+import { DEFAULT_CANONICAL_FILTERS } from "../../model";
 
 type UnknownRecord = Record<string, unknown>;
 

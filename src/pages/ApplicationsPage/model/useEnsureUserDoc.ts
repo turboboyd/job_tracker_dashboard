@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { ensureUserDoc } from "src/features/applications/firestoreApplications";
-import { db } from "src/shared/config/firebase/firebase";
+import { ensureUserDoc } from "src/features/applications";
+import { db } from "src/shared/config/firebase/firestore";
 
 export function useEnsureUserDoc(params: {
   userId: string | null;
@@ -15,7 +15,7 @@ export function useEnsureUserDoc(params: {
     if (!isAuthReady || !userId) return;
 
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         setIsEnsuringUser(true);
         await ensureUserDoc(db, userId);

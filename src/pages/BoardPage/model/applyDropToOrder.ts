@@ -1,4 +1,4 @@
-import type { BoardColumnKey } from "src/entities/application/model/status";
+import type { BoardColumnKey } from "src/entities/application";
 
 import type { BoardDragPayload, BoardOrderByStatus } from "./types";
 

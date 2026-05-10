@@ -129,7 +129,7 @@ export default function MatchesPage() {
                 busy={vm.busy}
                 onUpdateStatus={vm.actions.onUpdateStatus}
                 onDelete={vm.actions.onDelete}
-                onEdit={vm.setEditingId}
+                onEdit={vm.openEdit}
               />
             ))}
           </div>
@@ -141,7 +141,7 @@ export default function MatchesPage() {
         busy={vm.busy}
         loopName={vm.editingMatch ? (vm.loopIdToName.get(vm.editingMatch.loopId) ?? "") : ""}
         match={vm.editingMatch}
-        onClose={() => vm.setEditingId(null)}
+        onClose={vm.closeEdit}
         onSave={vm.actions.onSaveEdit}
       />
     </div>

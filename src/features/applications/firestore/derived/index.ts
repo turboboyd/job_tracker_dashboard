@@ -1,6 +1,8 @@
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
-import { ApplicationDoc, DotPatch, MatchingBlock, PriorityBlock, UserDoc } from "../types";
+import type { ApplicationDoc, UserDoc } from "../documents.types";
+import type { MatchingBlock, PriorityBlock } from "../domain.types";
+import type { DotPatch } from "../patch.types";
 
 import { computeRoleFingerprint, withRoleFingerprint } from "./fingerprint";
 import { computeFollowUp } from "./followUp";
@@ -8,7 +10,7 @@ import { computeMatching } from "./matching";
 import { computePriority } from "./priority";
 import { computeReapply } from "./reapply";
 
-export type DerivedComputation = {
+export interface DerivedComputation {
   roleFingerprint: string;
   matching?: MatchingBlock;
   followUp: {
@@ -22,7 +24,7 @@ export type DerivedComputation = {
     reapplyReason?: string;
   };
   priority: PriorityBlock;
-};
+}
 
 export function computeDerived(
   user: UserDoc | null,
@@ -33,12 +35,13 @@ export function computeDerived(
 
   const base = withRoleFingerprint(app, roleFingerprint);
   const matching = computeMatching(user, base, t);
+  const withMatching = matching ? { matching } : {};
 
-  const followUp = computeFollowUp({ ...base, matching }, t);
+  const followUp = computeFollowUp({ ...base, ...withMatching }, t);
   const reapply = computeReapply(
     {
       ...base,
-      matching,
+      ...withMatching,
       process: { ...base.process, ...followUp },
     },
     t,
@@ -46,12 +49,18 @@ export function computeDerived(
 
   const withDerived: ApplicationDoc = {
     ...base,
-    matching,
+    ...withMatching,
     process: { ...base.process, ...followUp, ...reapply },
   };
   const priority = computePriority(withDerived, t);
 
-  return { roleFingerprint, matching, followUp, reapply, priority };
+  return {
+    roleFingerprint,
+    ...(matching ? { matching } : {}),
+    followUp,
+    reapply,
+    priority,
+  };
 }
 
 export function buildDerivedPatch(d: DerivedComputation): DotPatch {

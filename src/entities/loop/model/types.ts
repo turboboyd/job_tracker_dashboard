@@ -1,9 +1,46 @@
-import { PLATFORM_REGISTRY } from "./platformRegistry";
-
 export type RemoteMode = "any" | "remote_only";
 export type ValidationResult = { ok: true } | { ok: false; message: string };
+export const LOOP_PLATFORM_VALUES = [
+  "linkedin",
+  "indeed",
+  "stepstone",
+  "xing",
+  "arbeitsagentur",
+  "jobvector",
+  "joblift",
+  "kimeta",
+  "meinestadt",
+  "stellenanzeigen",
+  "monster",
+  "jobware",
+  "gigajob",
+  "jooble",
+  "adzuna",
+  "glassdoor",
+  "germantechjobs",
+  "honeypot",
+  "instaffo",
+  "wellfound",
+  "getinit",
+  "wearedevelopers",
+  "devjobs",
+  "arbeitnow",
+  "remoteok",
+  "weworkremotely",
+  "remotive",
+  "azubide",
+  "ausbildungde",
+  "azubiyo",
+  "praktikuminfo",
+  "ihk",
+  "github",
+  "levels",
+  "other",
+] as const;
 
-export type Loop = {
+export type LoopPlatform = (typeof LOOP_PLATFORM_VALUES)[number];
+
+export interface Loop {
   id: string;
   name: string;
   titles: string[];
@@ -14,9 +51,9 @@ export type Loop = {
   platforms: LoopPlatform[];
   createdAtTs?: number | null;
   updatedAtTs?: number | null;
-};
+}
 
-export type CanonicalFilters = {
+export interface CanonicalFilters {
   role: string;
 
   location: string;
@@ -40,24 +77,22 @@ export type CanonicalFilters = {
 
   excludeAgencies: boolean;
   language: "any" | "de" | "en";
-};
+}
 
 export type WorkMode = "any" | "remote_only";
 
-export type SearchFilters = {
+export interface SearchFilters {
   role: string;
   location: string;
   radiusKm: number;
   workMode: WorkMode;
-};
+}
 export type PlatformGroupId = "germany" | "tech" | "remote" | "ausbildung";
 
-export type PlatformMeta = {
-  id: string;
+export interface PlatformMeta {
+  id: LoopPlatform;
   label: string;
   group: "recommended" | PlatformGroupId;
   recommended: boolean;
   buildUrl: (f: SearchFilters) => string;
-};
-
-export type LoopPlatform = (typeof PLATFORM_REGISTRY)[number]["id"];
+}

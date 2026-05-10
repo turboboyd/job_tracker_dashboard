@@ -1,13 +1,18 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { StatusLabel, StatusMenu } from "src/entities/application/ui/StatusKit";
 import { classNames } from "src/shared/lib";
-import { Button, Modal } from "src/shared/ui";
+import { Modal } from "src/shared/ui";
 
 import type { LoopMatch, LoopMatchStatus } from "../../model/types";
 
-import { formatMatchedAt, normalizePlatform } from "./matchFormat";
+import {
+  MatchMutationActions,
+  MatchOpenLinkButton,
+  MatchStatusLabelPill,
+  MatchStatusMenuControl,
+  useMatchMeta,
+} from "./matchCard.parts";
 
 type Props = Readonly<{
   open: boolean;
@@ -34,19 +39,7 @@ export function MatchDetailsModal({
   onEdit,
 }: Props) {
   const { t } = useTranslation();
-  const matchedAt = React.useMemo(() => formatMatchedAt(match.matchedAt), [match.matchedAt]);
-
-  const platform = React.useMemo(() => {
-    const p = normalizePlatform(match.platform);
-    return p ? p.toUpperCase() : "";
-  }, [match.platform]);
-
-  const meta = React.useMemo(() => {
-    const parts = [match.location, platform, matchedAt, loopName]
-      .map((v) => String(v ?? "").trim())
-      .filter(Boolean);
-    return parts.join(" • ");
-  }, [match.location, platform, matchedAt, loopName]);
+  const { matchedAt, platform, meta } = useMatchMeta(match, loopName);
 
   const title = React.useMemo(() => {
     const raw = String(match.title ?? "").trim();
@@ -64,7 +57,7 @@ export function MatchDetailsModal({
       open={open}
       onOpenChange={onOpenChange}
       title={title}
-      description={meta || undefined}
+      {...(meta ? { description: meta } : {})}
       size="md"
     >
       <div className="flex flex-col gap-lg">
@@ -95,43 +88,23 @@ export function MatchDetailsModal({
         {/* Actions */}
         <div className={classNames("flex flex-wrap items-center justify-end gap-sm pt-sm")}>
           {/* Keep status visible, but do not duplicate the whole summary card */}
-          <span className="mr-auto rounded-full border border-border bg-card px-sm py-1 text-xs text-muted-foreground">
-            <StatusLabel status={match.status} />
-          </span>
+          <MatchStatusLabelPill status={match.status} />
 
-          {hasUrl ? (
-            <Button asChild variant="outline" size="sm" shape="pill" disabled={busy}>
-              <a href={url} target="_blank" rel="noreferrer">
-                {t("matches.common.openLink", { defaultValue: "Open link" })}
-              </a>
-            </Button>
-          ) : null}
+          {hasUrl ? <MatchOpenLinkButton url={url} busy={busy} /> : null}
 
-          {onUpdateStatus ? (
-            <StatusMenu value={match.status} disabled={busy} onChange={(s) => onUpdateStatus(match.id, s)} size="sm" />
-          ) : null}
+          <MatchStatusMenuControl
+            matchId={match.id}
+            status={match.status}
+            busy={busy}
+            onUpdateStatus={onUpdateStatus}
+          />
 
-          {onEdit ? (
-            <Button
-              variant="outline"
-              size="sm"
-              shape="pill"
-              disabled={busy}
-              onClick={() => onEdit(match.id)}
-            >
-              {t("matches.common.edit", { defaultValue: "Edit" })}
-            </Button>
-          ) : null}
-
-          <Button
-            variant="outline"
-            size="sm"
-            shape="pill"
-            disabled={busy}
-            onClick={() => onDelete(match.id)}
-          >
-            {t("matches.common.delete", { defaultValue: "Delete" })}
-          </Button>
+          <MatchMutationActions
+            matchId={match.id}
+            busy={busy}
+            onDelete={onDelete}
+            onEdit={onEdit}
+          />
         </div>
       </div>
     </Modal>
@@ -151,4 +124,3 @@ function Field({ label, value }: FieldProps) {
     </div>
   );
 }
-

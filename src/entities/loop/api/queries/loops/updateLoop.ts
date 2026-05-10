@@ -1,6 +1,6 @@
 import { updateDoc } from "firebase/firestore";
 
-import { userLoopDoc } from "src/shared/api/firestoreRefs";
+import { userLoopDoc } from "src/shared/api";
 
 import type { UpdateLoopInput } from "../../loopApi.types";
 import {

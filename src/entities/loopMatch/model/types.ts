@@ -1,4 +1,4 @@
-import type { StatusKey } from "src/entities/application/model/status";
+import type { StatusKey } from "src/entities/application";
 import type { LoopPlatform } from "src/entities/loop/model";
 
 /**
@@ -13,7 +13,7 @@ export type LoopMatchStatus = StatusKey;
  * Firestore location: users/{uid}/loopMatches/{matchId}
  * Ownership is guaranteed by document path (no `userId` field required).
  */
-export type LoopMatch = {
+export interface LoopMatch {
   id: string;
   loopId: string;
 
@@ -30,7 +30,7 @@ export type LoopMatch = {
 
   createdAt: string;
   updatedAt: string;
-};
+}
 
 // -----------------------------
 // Inputs for API layer
@@ -38,13 +38,13 @@ export type LoopMatch = {
 
 export type CreateLoopMatchInput = Omit<LoopMatch, "id" | "createdAt" | "updatedAt">;
 
-export type UpdateLoopMatchStatusInput = {
+export interface UpdateLoopMatchStatusInput {
   matchId: string;
   loopId: string;
   status: LoopMatchStatus;
-};
+}
 
-export type UpdateLoopMatchInput = {
+export interface UpdateLoopMatchInput {
   matchId: string;
   patch: Partial<
     Pick<
@@ -52,9 +52,9 @@ export type UpdateLoopMatchInput = {
       "title" | "company" | "location" | "url" | "description" | "matchedAt" | "platform" | "status"
     >
   >;
-};
+}
 
-export type DeleteLoopMatchInput = {
+export interface DeleteLoopMatchInput {
   matchId: string;
   loopId: string;
-};
+}

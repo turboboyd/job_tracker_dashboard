@@ -8,22 +8,22 @@ import {
   startAfter,
 } from "firebase/firestore";
 
-import { userLoopDoc, userLoopsCol } from "src/shared/api/firestoreRefs";
+import { userLoopDoc, userLoopsCol } from "src/shared/api";
 
 import type { Loop } from "../../../model";
 import { mapLoopDoc } from "../../mappers/loopApi.mappers";
 import { snapToPage } from "../../utils/firestorePaging";
 
-export type LoopsPageResponse = {
+export interface LoopsPageResponse {
   items: Loop[];
   total: number;
   nextCursor: string | null;
-};
+}
 
-export type GetLoopsPageInput = {
+export interface GetLoopsPageInput {
   pageSize: number;
   cursorId?: string | null;
-};
+}
 
 async function getLoopsTotal(userId: string): Promise<number> {
   const colRef = userLoopsCol(userId);

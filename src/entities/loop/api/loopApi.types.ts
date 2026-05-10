@@ -1,7 +1,7 @@
-import type { RemoteMode, LoopPlatform, CanonicalFilters } from "src/entities/loop/model";
+import type { CanonicalFilters, LoopPlatform, RemoteMode } from "../model";
 
 
-export type CreateLoopInput = {
+export interface CreateLoopInput {
   name: string;
   titles: string[];
   location: string;
@@ -9,9 +9,9 @@ export type CreateLoopInput = {
   remoteMode: RemoteMode;
   platforms: LoopPlatform[];
   filters?: CanonicalFilters;
-};
+}
 
-export type UpdateLoopInput = {
+export interface UpdateLoopInput {
   loopId: string;
 
   name?: string;
@@ -22,4 +22,4 @@ export type UpdateLoopInput = {
   platforms?: LoopPlatform[];
 
   filters?: CanonicalFilters;
-};
+}

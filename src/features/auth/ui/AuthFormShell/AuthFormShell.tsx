@@ -9,12 +9,12 @@ import {
   type GoogleSignInButtonProps,
 } from "../GoogleSignInButton/GoogleSignInButton";
 
-export type AuthFormShellProps = {
+export interface AuthFormShellProps {
   children: React.ReactNode;
-  googleButtonProps?: Omit<GoogleSignInButtonProps, "className">;
+  googleButtonProps?: Omit<GoogleSignInButtonProps, "className"> | null;
   topError?: string | null;
   className?: string;
-};
+}
 
 export const AuthFormShell: React.FC<AuthFormShellProps> = ({
   children,
@@ -22,9 +22,8 @@ export const AuthFormShell: React.FC<AuthFormShellProps> = ({
   topError,
   className,
 }) => {
-  // В твоём проекте "auth" — это объект внутри default namespace (translation),
-  // поэтому используем ключи вида "auth.xxx", без useTranslation("auth").
   const { t } = useTranslation();
+  const shouldShowGoogle = googleButtonProps !== null;
 
   return (
     <div className={["space-y-4", className].filter(Boolean).join(" ")}>
@@ -32,9 +31,13 @@ export const AuthFormShell: React.FC<AuthFormShellProps> = ({
         <InlineError title={t("auth.errorTitle")} message={topError} />
       ) : null}
 
-      <GoogleSignInButton {...googleButtonProps} />
+      {shouldShowGoogle ? (
+        <>
+          <GoogleSignInButton {...(googleButtonProps ?? {})} />
 
-      <AuthDivider text={t("auth.or")} />
+          <AuthDivider text={t("auth.or")} />
+        </>
+      ) : null}
 
       {children}
     </div>

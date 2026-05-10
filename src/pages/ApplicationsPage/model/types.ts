@@ -1,4 +1,4 @@
-import type { ProcessStatus } from "src/features/applications/firestoreApplications";
+import type { ApplicationDoc, ProcessStatus } from "src/features/applications";
 
 /**
  * View modes for Applications page
@@ -14,13 +14,13 @@ export type PipelineFilterStatus = "ALL" | ProcessStatus;
 /**
  * Create form state for creating new application
  */
-export type CreateFormState = {
+export interface CreateFormState {
   companyName: string;
   roleTitle: string;
   vacancyUrl: string;
   source: string;
   rawDescription: string;
-};
+}
 
 export const EMPTY_CREATE_FORM: CreateFormState = {
   companyName: "",
@@ -30,10 +30,15 @@ export const EMPTY_CREATE_FORM: CreateFormState = {
   rawDescription: "",
 };
 
+export interface AppRow {
+  data: ApplicationDoc;
+  id: string;
+}
+
 /**
  * Pipeline statuses order
  */
-export type PipelineStatusTab = { key: string; status: PipelineFilterStatus };
+export interface PipelineStatusTab { key: string; status: PipelineFilterStatus }
 
 /**
  * Tabs for pipeline view.

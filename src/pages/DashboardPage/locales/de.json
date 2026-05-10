@@ -1,16 +1,32 @@
 {
-  "title": "Dashboard",
+  "title": "Übersicht",
   "onboardingTitle": "Fast geschafft!",
   "loadError": "Daten konnten nicht geladen werden",
   "tabs": {
     "overview": "Übersicht",
     "analytics": "Analytik",
+    "calendar": "Kalender",
     "optimization": "Optimierung",
     "activity": "Aktivität"
   },
   "common": {
     "go": "Öffnen",
-    "done": "Fertig"
+    "done": "Fertig",
+    "apply": "Anwenden",
+    "cancel": "Abbrechen",
+    "loading": "Laden…",
+    "noValue": "-"
+  },
+  "board": {
+    "column": {
+      "ACTIVE": "Aktiv",
+      "INTERVIEW": "Interview",
+      "OFFER": "Angebot",
+      "HIRED": "Angenommen",
+      "REJECTED": "Abgelehnt",
+      "NO_RESPONSE": "Keine Antwort",
+      "ARCHIVED": "Archiv"
+    }
   },
   "status": {
     "new": "Neu",
@@ -25,35 +41,42 @@
     "7d": "7 Tage",
     "30d": "30 Tage",
     "90d": "90 Tage",
-    "12m": "12 Mon"
+    "12m": "12 Mon",
+    "custom": "Benutzerdefiniert",
+    "customTitle": "Zeitraum wählen",
+    "from": "Von",
+    "to": "Bis"
   },
   "loopsFilter": {
-    "button": "Loops",
-    "title": "Dashboard-Loops",
-    "desc": "Wähle aus, welche Loops in Statistiken und in den letzten Bewerbungen enthalten sein sollen.",
-    "all": "Alle Loops",
-    "selected": "Nur ausgewählte Loops",
+    "button": "Suchläufe",
+    "title": "Suchläufe für die Übersicht",
+    "desc": "Wähle aus, welche Suchläufe in Statistiken und letzten Bewerbungen enthalten sein sollen.",
+    "all": "Alle Suchläufe",
+    "selected": "Nur ausgewählte Suchläufe",
     "selectAll": "Alle auswählen",
     "clear": "Leeren",
     "selectedCount": "Ausgewählt",
-    "noLoops": "Keine Loops gefunden."
+    "noLoops": "Keine Suchläufe gefunden."
   },
   "onboarding": {
     "setupProfile": "Profil einrichten",
     "addFirstJob": "Erste Bewerbung hinzufügen",
-    "trackLoops": "Loops verfolgen",
+    "connectLoop": "Suchlauf verbinden",
+    "trackLoops": "Suchläufe verfolgen",
     "tweakFilters": "Filter anpassen",
     "preferences": "Einstellungen",
     "profile": "Profil",
     "newJob": "Neue Bewerbung",
-    "loops": "Loops",
+    "loops": "Suchläufe",
     "answerQuestions": "Fragen beantworten",
-    "startFirstLoop": "Ersten Loop starten",
+    "startFirstLoop": "Ersten Suchlauf starten",
     "addAnotherJob": "Weitere Stelle hinzufügen"
   },
   "pipeline": {
-    "title": "Bewerbungspipeline",
-    "totalLabel": "In der Pipeline",
+    "title": "Bewerbungen nach Status",
+    "chartTitle": "Bewerbungen",
+    "total": "Gesamt",
+    "totalLabel": "In Bearbeitung",
     "centerBottom": "von {{total}} insgesamt",
     "profileCta": {
       "title": "Vervollständige dein Profil",
@@ -62,7 +85,7 @@
     }
   },
   "pipelineFlow": {
-    "title": "Pipeline-Flow",
+    "title": "Entwicklung der Bewerbungen",
     "subtitle": "Wöchentliche Aktivität",
     "total": "Gesamt"
   },
@@ -72,6 +95,9 @@
       "title": "Füge deine erste Bewerbung hinzu",
       "subtitle": "Wir zeigen dir Kennzahlen und Trends, sobald Daten da sind.",
       "cta": "Bewerbung hinzufügen"
+    },
+    "error": {
+      "title": "Stellen konnten nicht geladen werden"
     }
   },
   "recent": {
@@ -92,18 +118,48 @@
       "yearsAgo": "vor {{count}} J"
     }
   },
+  "plan": {
+    "title": "Bewerbungsplan",
+    "count": "{{count}} geplant",
+    "empty": "Noch keine geplanten Aktionen für Bewerbungen.",
+    "emptyFilter": "Keine Aktionen in dieser Ansicht.",
+    "filter": {
+      "all": "Alle",
+      "overdue": "Überfällig",
+      "today": "Heute",
+      "tomorrow": "Morgen"
+    }
+  },
+
+  "calendar": {
+    "week": "Woche",
+    "today": "Heute",
+    "dayAgenda": "Tagesplan",
+    "exportDay": "Tag exportieren",
+    "reason": "Grund",
+    "applicationLink": "Bewerbungslink",
+    "overdue": "Überfällig",
+    "emptyDay": "Für diesen Tag sind keine Aktionen geplant.",
+    "emptyOverdue": "Keine überfälligen Aktionen.",
+    "summary": {
+      "day": "Ausgewählter Tag",
+      "week": "Diese Woche",
+      "overdue": "Überfällig"
+    }
+  },
+
   "timeline": {
-    "title": "Timeline",
+    "title": "Zeitverlauf",
     "subtitle": "Letzte {{days}} Tage",
     "viewAll": "Alle ansehen",
     "empty": "Keine aktuellen Updates"
   },
   "topLoops": {
-    "title": "Top-Loops",
+    "title": "Top-Suchläufe",
     "subtitle": "Wo du Interviews bekommst",
     "manage": "Verwalten",
     "empty": "Noch keine Daten",
-    "total": "In der Pipeline"
+    "total": "In Bearbeitung"
   },
   "trends": {
     "title": "Trends",
@@ -119,9 +175,9 @@
     "emptySubtitle": "Füge Stellen hinzu und aktualisiere Status, um Trends zu sehen."
   },
   "radar": {
-    "title": "Pipeline-Mix",
+    "title": "Verteilung der Bewerbungen",
     "subtitle": "Anteil nach Status",
-    "mix": "Mix"
+    "mix": "Verteilung"
   },
   "quality": {
     "title": "Datenqualität",
@@ -143,10 +199,11 @@
     "days": "Tage"
   },
   "insights": {
-    "title": "Insights",
+    "title": "Einblicke",
     "kpi": {
       "appliedToInterview": "Beworben → Interview",
       "interviewToOffer": "Interview → Angebot",
+      "offerToHired": "Angebot → Angenommen",
       "medianToInterview": "Median bis Interview",
       "medianToOffer": "Median bis Angebot",
       "stale": "Braucht Aufmerksamkeit"

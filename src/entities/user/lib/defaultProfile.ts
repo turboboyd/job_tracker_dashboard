@@ -1,4 +1,4 @@
-import { auth } from "src/shared/config/firebase/firebase";
+import { auth } from "src/shared/config/firebase/auth";
 
 import type { UserProfile } from "../model/types";
 

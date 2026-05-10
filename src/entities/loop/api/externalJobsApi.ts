@@ -1,10 +1,10 @@
 import { getAuth } from "firebase/auth";
 
-import { baseApi } from "src/shared/api/rtk/baseApi";
+import { baseApi } from "src/shared/api/rtk";
 
 export type ExternalProvider = "adzuna" | "jooble";
 
-export type ExternalJobHit = {
+export interface ExternalJobHit {
   source: ExternalProvider;
   title: string;
   company: string;
@@ -12,20 +12,20 @@ export type ExternalJobHit = {
   url: string;
   snippet: string;
   postedAt?: string;
-};
+}
 
-export type SearchExternalJobsArgs = {
+export interface SearchExternalJobsArgs {
   provider: ExternalProvider;
   q: string;
   location?: string;
   radiusKm?: number;
   remoteOnly?: boolean;
   page?: number;
-};
+}
 
-export type SearchExternalJobsResp = { hits: ExternalJobHit[] };
+export interface SearchExternalJobsResp { hits: ExternalJobHit[] }
 
-type ErrorPayload = { error?: unknown; message?: unknown };
+interface ErrorPayload { error?: unknown; message?: unknown }
 
 const FUNCTIONS_BASE =
   "http://127.0.0.1:5001/application-tracker-dashboard/europe-west3";

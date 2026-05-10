@@ -1,6 +1,7 @@
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
-import { ApplicationDoc, PriorityBlock } from "../types";
+import type { ApplicationDoc } from "../documents.types";
+import type { PriorityBlock } from "../domain.types";
 
 /**
  * Priority calculation (client-side):

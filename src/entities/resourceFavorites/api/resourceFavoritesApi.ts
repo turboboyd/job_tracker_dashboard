@@ -7,18 +7,16 @@ import {
   setDoc,
 } from "firebase/firestore";
 
-import { baseApi } from "src/shared/api/rtk/baseApi";
-import { guardRtk } from "src/shared/api/rtk/guardRtk";
-import type { ApiError } from "src/shared/api/rtk/rtkError";
-import { db } from "src/shared/config/firebase/firebase";
-import { toMillisOptional } from "src/shared/lib/firestore/toMillis";
+import { baseApi, guardRtk, type ApiError, type RtkMeta } from "src/shared/api";
+import { db } from "src/shared/config/firebase/firestore";
+import { toMillisOptional } from "src/shared/lib";
 
-export type ResourceFavorites = {
+export interface ResourceFavorites {
   ids: string[];
   // Keep this serializable for RTK Query cache / Redux devtools.
   updatedAt?: number;
-  userId?: string;
-};
+  userId: string;
+}
 
 const favoritesDocRef = (uid: string) =>
   doc(db, "users", uid, "private", "resourcesFavorites");
@@ -35,11 +33,16 @@ const normalizeIds = (ids: unknown): string[] => {
 
 const normalizeFavorites = (
   input: Partial<ResourceFavorites> | undefined | null,
+  uid: string,
 ): ResourceFavorites => {
+  const updatedAt = toMillisOptional(
+    (input as { updatedAt?: unknown } | null)?.updatedAt,
+  );
+
   return {
     ids: normalizeIds(input?.ids),
-    updatedAt: toMillisOptional((input as { updatedAt?: unknown } | null)?.updatedAt),
-    userId: typeof input?.userId === "string" ? input.userId : undefined,
+    userId: typeof input?.userId === "string" ? input.userId : uid,
+    ...(updatedAt !== undefined ? { updatedAt } : {}),
   };
 };
 
@@ -64,7 +67,7 @@ export const resourceFavoritesApi = baseApi.injectEndpoints({
             return initial;
           }
 
-          return normalizeFavorites(snap.data() as Partial<ResourceFavorites>);
+          return normalizeFavorites(snap.data() as Partial<ResourceFavorites>, uid);
         }),
       providesTags: (_r, _e, arg) => [{ type: "ResourceFavorites", id: arg.uid }],
     }),
@@ -75,7 +78,7 @@ export const resourceFavoritesApi = baseApi.injectEndpoints({
       { uid: string; resourceId: string }
     >({
       queryFn: ({ uid, resourceId }): Promise<
-        QueryReturnValue<ResourceFavorites, ApiError, undefined>
+        QueryReturnValue<ResourceFavorites, ApiError, RtkMeta>
       > =>
         guardRtk(async () => {
           const id = resourceId.trim();
@@ -87,7 +90,7 @@ export const resourceFavoritesApi = baseApi.injectEndpoints({
             const snap = await tx.get(ref);
 
             const current = snap.exists()
-              ? normalizeFavorites(snap.data() as Partial<ResourceFavorites>)
+              ? normalizeFavorites(snap.data() as Partial<ResourceFavorites>, uid)
               : ({ ids: [], userId: uid } as ResourceFavorites);
 
             const set = new Set(current.ids);

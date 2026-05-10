@@ -2,11 +2,11 @@ import React from "react";
 
 export type StatusTone = "success" | "warning" | "info";
 
-type Props = {
+interface Props {
   label: string;
   tone: StatusTone;
   className?: string;
-};
+}
 
 export const StatusPill: React.FC<Props> = ({ label, tone, className }) => {
   let toneClass: string;

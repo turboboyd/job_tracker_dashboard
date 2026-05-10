@@ -1,8 +1,5 @@
-import type { Api, EndpointBuilder } from "@reduxjs/toolkit/query";
-
-import { baseApi } from "src/shared/api/rtk/baseApi";
-import { guardRtk } from "src/shared/api/rtk/guardRtk";
-import { requireUidFromState } from "src/shared/api/rtk/requireUid";
+import { guardAuthRtk } from "src/entities/auth/lib";
+import type { AppEndpointBuilder } from "src/shared/api/rtk";
 
 import type { Loop } from "../../model";
 import type { CreateLoopInput, UpdateLoopInput } from "../loopApi.types";
@@ -20,46 +17,7 @@ import {
 } from "../queries/loops/getLoopsPage";
 import { updateLoopQuery } from "../queries/loops/updateLoop";
 
-type BaseApi = typeof baseApi;
-
-type ExtractBaseQuery<T> =
-  T extends Api<
-    infer BQ,
-    infer _Definitions,
-    infer _ReducerPath,
-    infer _TagTypes,
-    infer _Enhancers
-  >
-    ? BQ
-    : never;
-
-type ExtractReducerPath<T> =
-  T extends Api<
-    infer _BQ,
-    infer _Definitions,
-    infer RP,
-    infer _TagTypes,
-    infer _Enhancers
-  >
-    ? RP
-    : never;
-
-type ExtractTagTypes<T> =
-  T extends Api<
-    infer _BQ,
-    infer _Definitions,
-    infer _ReducerPath,
-    infer TT,
-    infer _Enhancers
-  >
-    ? TT
-    : never;
-
-type Builder = EndpointBuilder<
-  ExtractBaseQuery<BaseApi>,
-  ExtractTagTypes<BaseApi>,
-  ExtractReducerPath<BaseApi>
->;
+type Builder = AppEndpointBuilder;
 
 function provideLoopsListTags(items: Loop[] | undefined) {
   return [
@@ -79,28 +37,19 @@ export function buildLoopEndpoints(builder: Builder) {
   return {
     getLoops: builder.query<Loop[], void>({
       queryFn: (_arg, api) =>
-        guardRtk(() => {
-          const uid = requireUidFromState(api.getState());
-          return getLoopsQuery(uid);
-        }),
+        guardAuthRtk(api, (uid) => getLoopsQuery(uid)),
       providesTags: (res) => provideLoopsListTags(res),
     }),
 
     getLoopsPage: builder.query<LoopsPageResponse, GetLoopsPageInput>({
       queryFn: (arg, api) =>
-        guardRtk(() => {
-          const uid = requireUidFromState(api.getState());
-          return getLoopsPageQuery(uid, arg);
-        }),
+        guardAuthRtk(api, (uid) => getLoopsPageQuery(uid, arg)),
       providesTags: (res) => provideLoopsPageTags(res),
     }),
 
     getLoop: builder.query<Loop | null, { loopId: string }>({
       queryFn: ({ loopId }, api) =>
-        guardRtk(() => {
-          const uid = requireUidFromState(api.getState());
-          return getLoopByIdQuery(uid, loopId);
-        }),
+        guardAuthRtk(api, (uid) => getLoopByIdQuery(uid, loopId)),
       providesTags: (_res, _err, arg) => [
         { type: "Loops" as const, id: arg.loopId },
       ],
@@ -108,19 +57,13 @@ export function buildLoopEndpoints(builder: Builder) {
 
     createLoop: builder.mutation<{ id: string }, CreateLoopInput>({
       queryFn: (input, api) =>
-        guardRtk(() => {
-          const uid = requireUidFromState(api.getState());
-          return createLoopQuery(uid, input);
-        }),
+        guardAuthRtk(api, (uid) => createLoopQuery(uid, input)),
       invalidatesTags: [{ type: "Loops", id: "LIST" }],
     }),
 
     updateLoop: builder.mutation<void, UpdateLoopInput>({
       queryFn: (input, api) =>
-        guardRtk(() => {
-          const uid = requireUidFromState(api.getState());
-          return updateLoopQuery(uid, input);
-        }),
+        guardAuthRtk(api, (uid) => updateLoopQuery(uid, input)),
       invalidatesTags: (_r, _e, a) => [
         { type: "Loops", id: a.loopId },
         { type: "Loops", id: "LIST" },
@@ -129,10 +72,7 @@ export function buildLoopEndpoints(builder: Builder) {
 
     deleteLoop: builder.mutation<void, DeleteLoopInput>({
       queryFn: (input, api) =>
-        guardRtk(() => {
-          const uid = requireUidFromState(api.getState());
-          return deleteLoopQuery(uid, input);
-        }),
+        guardAuthRtk(api, (uid) => deleteLoopQuery(uid, input)),
       invalidatesTags: (_r, _e, a) => [
         { type: "Loops", id: a.loopId },
         { type: "Loops", id: "LIST" },

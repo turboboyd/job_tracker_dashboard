@@ -6,7 +6,7 @@ import {
   type DocumentReference,
 } from "firebase/firestore";
 
-import { db } from "src/shared/config/firebase/firebase";
+import { db } from "src/shared/config/firebase/firestore";
 
 // -----------------------------
 // User-owned collections

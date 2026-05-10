@@ -4,36 +4,33 @@ import { Button } from "src/shared/ui";
 
 import type { ViewMode } from "../model/types";
 
-export function ViewModeSwitch(props: {
-  value: ViewMode;
+import {
+  buildApplicationsViewModeOptions,
+  createApplicationsPageTranslator,
+} from "./applicationsPageUi.helpers";
+
+interface ViewModeSwitchProps {
   onChange: (value: ViewMode) => void;
-}) {
+  value: ViewMode;
+}
+
+export function ViewModeSwitch({ onChange, value }: ViewModeSwitchProps) {
   const { t } = useTranslation();
-  const { value, onChange } = props;
+  const text = createApplicationsPageTranslator(t);
+  const viewOptions = buildApplicationsViewModeOptions(text);
 
   return (
     <div className="flex items-center gap-sm">
-      <Button
-        size="sm"
-        variant={value === "pipeline" ? "default" : "outline"}
-        onClick={() => onChange("pipeline")}
-      >
-        {((t("applicationsPage.views.pipeline", { defaultValue: "Pipeline", returnObjects: false }) ?? "Pipeline") as string)}
-      </Button>
-      <Button
-        size="sm"
-        variant={value === "today" ? "default" : "outline"}
-        onClick={() => onChange("today")}
-      >
-        {((t("applicationsPage.views.today", { defaultValue: "Today", returnObjects: false }) ?? "Today") as string)}
-      </Button>
-      <Button
-        size="sm"
-        variant={value === "followups" ? "default" : "outline"}
-        onClick={() => onChange("followups")}
-      >
-        {((t("applicationsPage.views.followups", { defaultValue: "Follow-ups", returnObjects: false }) ?? "Follow-ups") as string)}
-      </Button>
+      {viewOptions.map((viewOption) => (
+        <Button
+          key={viewOption.value}
+          size="sm"
+          variant={value === viewOption.value ? "default" : "outline"}
+          onClick={() => onChange(viewOption.value)}
+        >
+          {viewOption.label}
+        </Button>
+      ))}
     </div>
   );
 }

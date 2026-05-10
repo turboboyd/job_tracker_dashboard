@@ -1,14 +1,14 @@
 import React from "react";
 
-import { Button } from "src/shared/ui/Button/Button";
+import { Button } from "src/shared/ui";
 
-export type AuthSubmitButtonProps = {
+export interface AuthSubmitButtonProps {
   disabled?: boolean;
   isSubmitting?: boolean;
   idleText: string;
   submittingText: string;
   className?: string;
-};
+}
 
 export const AuthSubmitButton: React.FC<AuthSubmitButtonProps> = ({
   disabled,

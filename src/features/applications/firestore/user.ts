@@ -1,9 +1,10 @@
-import { Firestore, getDoc, writeBatch } from "firebase/firestore";
+import type { Firestore} from "firebase/firestore";
+import { getDoc, writeBatch } from "firebase/firestore";
 
+import type { UserDoc } from "./documents.types";
 import { stripUndefinedDeep } from "./lib/sanitize";
 import { nowTs } from "./lib/time";
 import { userDocRef } from "./refs";
-import { UserDoc } from "./types";
 
 export async function getUserDoc(
   db: Firestore,

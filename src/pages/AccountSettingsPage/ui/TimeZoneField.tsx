@@ -1,16 +1,15 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { FormField } from "src/shared/ui/Form/FormField/FormField";
-import { Select } from "src/shared/ui/Form/Select/Select";
+import { FormField, Select } from "src/shared/ui";
 
-import type { TimeZoneOption } from "./PreferencesSection";
+import type { TimeZoneOption } from "./preferences.types";
 
-type Props = {
+interface Props {
   value: string;
-  options: ReadonlyArray<TimeZoneOption>;
+  options: readonly TimeZoneOption[];
   onChange: (next: string) => void;
-};
+}
 
 export function TimeZoneField({ value, options, onChange }: Props) {
   const { t } = useTranslation();
@@ -21,7 +20,7 @@ export function TimeZoneField({ value, options, onChange }: Props) {
       required
     >
       <Select
-        value={value as string}
+        value={value}
         onChange={(v) => onChange(v)}
         options={options.map((o) => ({ value: o.value, label: o.label }))}
       />

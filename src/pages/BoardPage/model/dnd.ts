@@ -16,9 +16,9 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function isBoardDragPayload(value: unknown): value is BoardDragPayload {
   if (!isObject(value)) return false;
 
-  const matchId = value["matchId"];
-  const fromStatus = value["fromStatus"];
-  const fromIndex = value["fromIndex"];
+  const matchId = value.matchId;
+  const fromStatus = value.fromStatus;
+  const fromIndex = value.fromIndex;
 
   return (
     typeof matchId === "string" &&

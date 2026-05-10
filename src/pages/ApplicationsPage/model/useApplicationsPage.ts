@@ -11,6 +11,14 @@ import { EMPTY_CREATE_FORM, type CreateFormState } from "./types";
 
 export type AppRow = { id: string; data: ApplicationDoc };
 
+export type NewApplicationContactInput = {
+  firstName: string;
+  lastName: string;
+  role: string;
+  phone: string;
+  email: string;
+};
+
 export function useApplicationsPage(params: {
   userId: string | null;
   isAuthReady: boolean;

@@ -4,11 +4,11 @@ import { STATUS_KEYS, statusesForStage, type Stage, type StatusKey } from "../..
 
 import { StatusLabel } from "./StatusLabel";
 
-function clsx(...xs: Array<string | false | null | undefined>) {
+function clsx(...xs: (string | false | null | undefined)[]) {
   return xs.filter(Boolean).join(" ");
 }
 
-export type StatusMenuProps = {
+export interface StatusMenuProps {
   value: StatusKey;
   onChange: (next: StatusKey) => void;
   disabled?: boolean;
@@ -16,7 +16,7 @@ export type StatusMenuProps = {
   options?: readonly StatusKey[];
   className?: string;
   size?: "sm" | "md";
-};
+}
 
 const SIZE_CLASS: Record<NonNullable<StatusMenuProps["size"]>, string> = {
   sm: "h-9 px-sm text-sm",

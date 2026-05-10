@@ -1,7 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
-
 import { classNames } from "src/shared/lib";
 
 export type InputSize = "sm" | "md" | "lg";
@@ -15,8 +14,9 @@ export const baseInputVariants = cva(
   [
     "block",
     "bg-input text-foreground",
-    "border border-input",
-    "hover:border-border",
+    "hover:border-ring/30",
+    "border border-border",
+    
     "placeholder:text-muted-foreground",
     "outline-none",
     "transition-colors duration-fast ease-ease-out",

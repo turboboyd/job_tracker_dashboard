@@ -1,10 +1,10 @@
 import { deleteDoc } from "firebase/firestore";
 
-import { userLoopDoc } from "src/shared/api/firestoreRefs";
+import { userLoopDoc } from "src/shared/api";
 
-export type DeleteLoopInput = {
+export interface DeleteLoopInput {
   loopId: string;
-};
+}
 
 export async function deleteLoopQuery(uid: string, input: DeleteLoopInput): Promise<void> {
   const { loopId } = input;

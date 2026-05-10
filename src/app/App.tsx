@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { Loader } from "src/shared/ui";
+import { Loader } from "src/shared/ui/Loader";
 
 import { AppRouter } from "./providers/router";
 

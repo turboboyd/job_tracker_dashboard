@@ -1,4 +1,5 @@
-import { Firestore, collection, doc } from "firebase/firestore";
+import type { Firestore} from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
 
 export function usersRef(db: Firestore) {
   return collection(db, "users");
