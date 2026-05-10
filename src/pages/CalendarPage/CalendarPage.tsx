@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Link, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useAuthSelectors } from "src/entities/auth";
@@ -9,7 +9,7 @@ import {
 import { db } from "src/shared/config/firebase/firebase";
 import { toMillis } from "src/shared/lib/firestore/toMillis";
 
-// ─── Event types ──────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type EventTone = "accent" | "info" | "warning" | "neutral";
 
@@ -22,44 +22,62 @@ type CalEvent = {
   appId?: string;
 };
 
-// ─── Tone colors ──────────────────────────────────────────────────────────────
+// ─── Tone tokens (matching design vars) ──────────────────────────────────────
 
 const TONE_BG: Record<EventTone, string> = {
-  accent:  "color-mix(in oklab, var(--primary) 16%, transparent)",
-  info:    "color-mix(in oklab, #6366f1 16%, transparent)",
-  warning: "color-mix(in oklab, rgb(218,113,38) 16%, transparent)",
+  accent:  "color-mix(in oklab, var(--primary) 18%, transparent)",
+  info:    "color-mix(in oklab, #7c3aed 18%, transparent)",
+  warning: "color-mix(in oklab, rgb(218,113,38) 18%, transparent)",
   neutral: "hsl(var(--muted))",
 };
+
 const TONE_FG: Record<EventTone, string> = {
   accent:  "var(--primary)",
-  info:    "#6366f1",
+  info:    "#7c3aed",
   warning: "rgb(180,83,9)",
   neutral: "hsl(var(--muted-foreground))",
 };
-const TONE_DOT: Record<EventTone, string> = {
-  accent:  "var(--primary)",
-  info:    "#6366f1",
-  warning: "rgb(218,113,38)",
-  neutral: "hsl(var(--muted-foreground))",
-};
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const LEGEND = [
+  { label: "Интервью", tone: "accent"  as EventTone },
+  { label: "Тех",      tone: "info"    as EventTone },
+  { label: "Дедлайн",  tone: "warning" as EventTone },
+];
+
+// ─── Russian locale ───────────────────────────────────────────────────────────
+
+const RU_MONTHS = [
+  "Январь","Февраль","Март","Апрель","Май","Июнь",
+  "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь",
+];
+const RU_MONTHS_GEN = [
+  "янв","фев","мар","апр","мая","июн",
+  "июл","авг","сен","окт","ноя","дек",
+];
+const RU_MONTHS_GEN_FULL = [
+  "января","февраля","марта","апреля","мая","июня",
+  "июля","августа","сентября","октября","ноября","декабря",
+];
+const RU_MONTHS_SHORT_UP = [
+  "ЯНВ","ФЕВ","МАР","АПР","МАЙ","ИЮН",
+  "ИЮЛ","АВГ","СЕН","ОКТ","НОЯ","ДЕК",
+];
+const DOW = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
 
 function toDateKey(ms: number): string {
   const d = new Date(ms);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
 function toTimeStr(ms: number): string {
   const d = new Date(ms);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
-/** Mon=0 … Sun=6 (Russian week ordering) */
-function dayOfWeekMon(date: Date): number {
+/** Mon=0…Sun=6 */
+function dowMon(date: Date): number {
   return (date.getDay() + 6) % 7;
 }
 
@@ -67,41 +85,40 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
-/** Map ApplicationDoc rows → CalEvent[] */
+// ─── Event derivation from Firebase applications ──────────────────────────────
+
 function deriveEvents(rows: Array<{ id: string; data: ApplicationDoc }>): CalEvent[] {
   const events: CalEvent[] = [];
 
   for (const { id, data } of rows) {
     const company = data.job.companyName || "—";
-    const role = data.job.roleTitle || "";
-    const label = role ? `${role} · ${company}` : company;
-    const status = data.process.status;
+    const role    = data.job.roleTitle   || "";
+    const status  = data.process.status;
 
-    // 1. nextActionAt — highest priority explicit scheduled event
+    // 1 — explicit scheduled action (most reliable)
     if (data.process.nextActionAt) {
       const ms = toMillis(data.process.nextActionAt);
       if (ms) {
         const tone: EventTone =
-          status === "INTERVIEW_1" || status === "INTERVIEW_2" ? "accent"
-          : status === "TEST_TASK" ? "info"
-          : "neutral";
+          status === "INTERVIEW_1" || status === "INTERVIEW_2" ? "accent" :
+          status === "TEST_TASK" ? "info" : "neutral";
         events.push({
           id: `${id}_next`,
           dateKey: toDateKey(ms),
           time: toTimeStr(ms),
-          label: data.process.nextActionText || label,
+          label: data.process.nextActionText || (role ? `${role} · ${company}` : company),
           tone,
           appId: id,
         });
       }
     }
 
-    // 2. followUpDueAt — follow-up deadline
+    // 2 — follow-up deadline
     if (data.process.followUpDueAt) {
       const ms = toMillis(data.process.followUpDueAt);
       if (ms) {
         events.push({
-          id: `${id}_followup`,
+          id: `${id}_fu`,
           dateKey: toDateKey(ms),
           time: "—",
           label: `Follow-up · ${company}`,
@@ -111,7 +128,7 @@ function deriveEvents(rows: Array<{ id: string; data: ApplicationDoc }>): CalEve
       }
     }
 
-    // 3. Status-based events — derive from lastStatusChangeAt
+    // 3 — status-based proxy (only if no explicit date)
     if (!data.process.nextActionAt) {
       const ms = toMillis(data.process.lastStatusChangeAt);
       if (ms) {
@@ -135,10 +152,10 @@ function deriveEvents(rows: Array<{ id: string; data: ApplicationDoc }>): CalEve
           });
         } else if (status === "TEST_TASK") {
           events.push({
-            id: `${id}_test`,
+            id: `${id}_tt`,
             dateKey: toDateKey(ms),
             time: "—",
-            label: `Тестовое · ${company}`,
+            label: role ? `Тестовое · ${company}` : `Тестовое · ${company}`,
             tone: "warning",
             appId: id,
           });
@@ -150,60 +167,43 @@ function deriveEvents(rows: Array<{ id: string; data: ApplicationDoc }>): CalEve
   return events;
 }
 
-// ─── Section label ────────────────────────────────────────────────────────────
-
-function SLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-subtle-foreground">
-      {children}
-    </p>
-  );
-}
-
-// ─── Event chip ───────────────────────────────────────────────────────────────
-
-function EventChip({ event, onClick }: { event: CalEvent; onClick?: () => void }) {
-  return (
-    <div
-      onClick={onClick}
-      title={event.label}
-      className="cursor-pointer truncate rounded-[3px] px-[5px] py-[2px] text-[10.5px] font-medium leading-[1.4]"
-      style={{
-        background: TONE_BG[event.tone],
-        color: TONE_FG[event.tone],
-      }}
-    >
-      {event.time !== "—" && (
-        <span className="mr-1 tabular-nums">{event.time}</span>
-      )}
-      {event.label}
-    </div>
-  );
-}
-
 // ─── View toggle ──────────────────────────────────────────────────────────────
 
 type ViewMode = "day" | "week" | "month";
-const VIEW_LABELS: { key: ViewMode; label: string }[] = [
-  { key: "day",   label: "День" },
+const VIEWS: { key: ViewMode; label: string }[] = [
+  { key: "day",   label: "День"   },
   { key: "week",  label: "Неделя" },
-  { key: "month", label: "Месяц" },
+  { key: "month", label: "Месяц"  },
 ];
 
 function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode) => void }) {
   return (
-    <div className="inline-flex gap-0 rounded-[7px] border border-border bg-muted/50 p-0.5">
-      {VIEW_LABELS.map(({ key, label }) => (
+    <div
+      style={{
+        display: "inline-flex",
+        gap: 0,
+        padding: 2,
+        borderRadius: 7,
+        background: "hsl(var(--muted))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      {VIEWS.map(({ key, label }) => (
         <button
           key={key}
           type="button"
           onClick={() => onChange(key)}
-          className={[
-            "rounded-[5px] px-2.5 py-1 text-[12px] transition-colors cursor-pointer",
-            value === key
-              ? "bg-card font-medium text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          ].join(" ")}
+          style={{
+            padding: "4px 10px",
+            fontSize: 12,
+            borderRadius: 5,
+            cursor: "pointer",
+            background: value === key ? "hsl(var(--card))" : "transparent",
+            color: value === key ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))",
+            fontWeight: value === key ? 500 : 400,
+            boxShadow: value === key ? "0 1px 3px rgba(0,0,0,.07)" : "none",
+            border: "none",
+          }}
         >
           {label}
         </button>
@@ -212,44 +212,42 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
   );
 }
 
-// ─── Russian month names ──────────────────────────────────────────────────────
+// ─── Section label ────────────────────────────────────────────────────────────
 
-const RU_MONTHS = [
-  "Январь","Февраль","Март","Апрель","Май","Июнь",
-  "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь",
-];
-const RU_MONTHS_GEN = [
-  "января","февраля","марта","апреля","мая","июня",
-  "июля","августа","сентября","октября","ноября","декабря",
-];
-const DOW_LABELS = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "hsl(var(--muted-foreground))" }}>
+      {children}
+    </div>
+  );
+}
 
-// ─── Month grid ───────────────────────────────────────────────────────────────
+// ─── Month calendar grid ──────────────────────────────────────────────────────
 
 function MonthGrid({
   year,
   month,
-  today,
+  todayKey,
   eventsByDate,
 }: {
   year: number;
   month: number;
-  today: Date;
+  todayKey: string;
   eventsByDate: Map<string, CalEvent[]>;
 }) {
-  const firstDay = new Date(year, month, 1);
-  const startOffset = dayOfWeekMon(firstDay); // 0=Mon … 6=Sun
-  const totalDays = daysInMonth(year, month);
-  const totalCells = Math.ceil((startOffset + totalDays) / 7) * 7;
+  const firstDay   = new Date(year, month, 1);
+  const offset     = dowMon(firstDay);           // empty cells before day 1
+  const total      = daysInMonth(year, month);
+  const cellCount  = Math.ceil((offset + total) / 7) * 7;
 
-  const todayKey = toDateKey(today.getTime());
+  type Cell = { dayNum: number; inMonth: boolean; dateKey: string | null };
+  const cells: Cell[] = [];
 
-  const cells: Array<{ dayNum: number; inMonth: boolean; dateKey: string | null }> = [];
-  for (let i = 0; i < totalCells; i++) {
-    const dayNum = i - startOffset + 1;
-    const inMonth = dayNum >= 1 && dayNum <= totalDays;
+  for (let i = 0; i < cellCount; i++) {
+    const dayNum  = i - offset + 1;
+    const inMonth = dayNum >= 1 && dayNum <= total;
     const dateKey = inMonth
-      ? `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`
+      ? `${year}-${String(month + 1).padStart(2,"0")}-${String(dayNum).padStart(2,"0")}`
       : null;
     cells.push({ dayNum, inMonth, dateKey });
   }
@@ -257,45 +255,50 @@ function MonthGrid({
   return (
     <>
       {/* Day-of-week header */}
-      <div className="grid grid-cols-7 border-b border-border">
-        {DOW_LABELS.map((d) => (
-          <div
-            key={d}
-            className="px-2.5 py-2 text-[11px] font-medium uppercase tracking-[0.06em] text-subtle-foreground"
-          >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid hsl(var(--border))" }}>
+        {DOW.map((d) => (
+          <div key={d} style={{ padding: "8px 10px", fontSize: 11, color: "hsl(var(--muted-foreground))", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500 }}>
             {d}
           </div>
         ))}
       </div>
 
-      {/* Cells */}
-      <div className="grid grid-cols-7 flex-1">
+      {/* Cell grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", flex: 1 }}>
         {cells.map((c, i) => {
-          const isToday = c.dateKey === todayKey;
-          const events = c.dateKey ? (eventsByDate.get(c.dateKey) ?? []) : [];
-          const isLastRow = i >= cells.length - 7;
-          const isLastCol = (i + 1) % 7 === 0;
+          const isToday     = c.dateKey === todayKey;
+          const isLastCol   = (i + 1) % 7 === 0;
+          const isLastRow   = i >= cellCount - 7;
+          const events      = c.dateKey ? (eventsByDate.get(c.dateKey) ?? []) : [];
 
           return (
             <div
               key={i}
-              className="relative flex flex-col gap-0.5"
               style={{
                 minHeight: 96,
                 padding: 6,
-                borderRight: isLastCol ? "none" : "1px solid hsl(var(--border))",
+                borderRight:  isLastCol ? "none" : "1px solid hsl(var(--border))",
                 borderBottom: isLastRow ? "none" : "1px solid hsl(var(--border))",
-                background: c.inMonth ? undefined : "hsl(var(--muted)/0.4)",
-                opacity: c.inMonth ? 1 : 0.5,
+                background:   c.inMonth ? "transparent" : "hsl(var(--muted))",
+                opacity:      c.inMonth ? 1 : 0.5,
+                position:     "relative",
               }}
             >
               {/* Day number */}
               <div
-                className="mb-0.5 inline-flex h-[22px] min-w-[22px] items-center justify-center self-start rounded-full text-[12px] tabular-nums"
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minWidth: 22,
+                  height: 22,
+                  borderRadius: 99,
+                  fontSize: 12,
                   fontWeight: isToday ? 600 : 400,
                   color: isToday ? "white" : "hsl(var(--muted-foreground))",
                   background: isToday ? "var(--primary)" : "transparent",
+                  marginBottom: 4,
+                  fontVariantNumeric: "tabular-nums",
                   paddingInline: isToday ? 4 : 0,
                 }}
               >
@@ -303,14 +306,38 @@ function MonthGrid({
               </div>
 
               {/* Events */}
-              {events.slice(0, 3).map((e) => (
-                <EventChip key={e.id} event={e} />
-              ))}
-              {events.length > 3 && (
-                <span className="text-[10px] text-subtle-foreground">
-                  +{events.length - 3} ещё
-                </span>
-              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {events.slice(0, 3).map((e) => (
+                  <div
+                    key={e.id}
+                    title={e.label}
+                    style={{
+                      fontSize: 10.5,
+                      padding: "2px 5px",
+                      borderRadius: 3,
+                      background: TONE_BG[e.tone],
+                      color: TONE_FG[e.tone],
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {e.time !== "—" && (
+                      <span style={{ fontVariantNumeric: "tabular-nums", marginRight: 4 }}>
+                        {e.time}
+                      </span>
+                    )}
+                    {e.label}
+                  </div>
+                ))}
+                {events.length > 3 && (
+                  <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginTop: 1 }}>
+                    +{events.length - 3} ещё
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
@@ -319,18 +346,51 @@ function MonthGrid({
   );
 }
 
-// ─── Upcoming events sidebar ──────────────────────────────────────────────────
+// ─── Today card ───────────────────────────────────────────────────────────────
 
-function UpcomingEvents({
-  today,
-  events,
-}: {
-  today: Date;
-  events: CalEvent[];
-}) {
-  const todayKey = toDateKey(today.getTime());
+function TodayCard({ today, events }: { today: Date; events: CalEvent[] }) {
+  const day     = today.getDate();
+  const monthFull = RU_MONTHS_GEN_FULL[today.getMonth()];
+  const label   = `Сегодня · ${day} ${monthFull}`;
 
-  const todayEvents = events.filter((e) => e.dateKey === todayKey);
+  return (
+    <div style={{ borderRadius: 14, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", padding: 18 }}>
+      <SectionLabel>{label}</SectionLabel>
+
+      {events.length === 0 ? (
+        <div style={{ marginTop: 14, padding: 14, borderRadius: 7, background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))", textAlign: "center" }}>
+          <div style={{ fontSize: 12.5, color: "hsl(var(--muted-foreground))" }}>Свободный день</div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", opacity: 0.7, marginTop: 4 }}>Хорошее время подготовиться к интервью</div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+          {events.map((e) => (
+            <div
+              key={e.id}
+              style={{
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: TONE_BG[e.tone],
+                border: `1px solid ${TONE_FG[e.tone]}22`,
+              }}
+            >
+              <div style={{ fontSize: 12.5, fontWeight: 500, color: TONE_FG[e.tone], lineHeight: 1.3 }}>{e.label}</div>
+              {e.time !== "—" && (
+                <div style={{ fontSize: 11, color: TONE_FG[e.tone], opacity: 0.8, marginTop: 3, fontVariantNumeric: "tabular-nums" }}>
+                  {e.time}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Upcoming events card ─────────────────────────────────────────────────────
+
+function UpcomingCard({ todayKey, events }: { todayKey: string; events: CalEvent[] }) {
   const upcoming = events
     .filter((e) => e.dateKey >= todayKey)
     .sort((a, b) => {
@@ -341,107 +401,66 @@ function UpcomingEvents({
     })
     .slice(0, 8);
 
-  const todayLabel = `Сегодня · ${today.getDate()} ${RU_MONTHS_GEN[today.getMonth()]}`;
-
   return (
-    <div className="flex flex-col gap-3.5">
-      {/* Today card */}
-      <div className="rounded-[14px] border border-border bg-card p-[18px]">
-        <SLabel>{todayLabel}</SLabel>
-        {todayEvents.length === 0 ? (
-          <div className="mt-3.5 rounded-[7px] border border-border bg-muted/50 p-3.5 text-center">
-            <p className="text-[12.5px] text-muted-foreground">Свободный день</p>
-            <p className="mt-1 text-[11px] text-subtle-foreground">
-              Хорошее время для подготовки к интервью
-            </p>
-          </div>
-        ) : (
-          <div className="mt-3.5 flex flex-col gap-2">
-            {todayEvents.map((e) => (
+    <div style={{ borderRadius: 14, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", padding: 18, flex: 1 }}>
+      <SectionLabel>Ближайшие события</SectionLabel>
+
+      {upcoming.length === 0 ? (
+        <div style={{ marginTop: 14, fontSize: 12.5, color: "hsl(var(--muted-foreground))" }}>
+          Нет запланированных событий
+        </div>
+      ) : (
+        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 1 }}>
+          {upcoming.map((e, i) => {
+            const d   = new Date(e.dateKey);
+            const day = d.getDate();
+            const mon = RU_MONTHS_SHORT_UP[d.getMonth()];
+            const monFull = RU_MONTHS_GEN_FULL[d.getMonth()];
+
+            return (
               <div
                 key={e.id}
-                className="flex items-center gap-2.5 rounded-[7px] border border-border p-2.5"
-                style={{ background: TONE_BG[e.tone] }}
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  padding: "10px 0",
+                  borderBottom: i < upcoming.length - 1 ? "1px solid hsl(var(--border))" : "none",
+                  cursor: "pointer",
+                  alignItems: "flex-start",
+                }}
               >
+                {/* Date badge */}
                 <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{ background: TONE_DOT[e.tone] }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p
-                    className="truncate text-[12.5px] font-medium"
-                    style={{ color: TONE_FG[e.tone] }}
-                  >
-                    {e.label}
-                  </p>
-                  {e.time !== "—" && (
-                    <p className="text-[11px] tabular-nums" style={{ color: TONE_FG[e.tone], opacity: 0.7 }}>
-                      {e.time}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Upcoming list */}
-      <div className="rounded-[14px] border border-border bg-card p-[18px]">
-        <SLabel>Ближайшие события</SLabel>
-        {upcoming.length === 0 ? (
-          <p className="mt-3.5 text-[12.5px] text-muted-foreground">
-            Нет запланированных событий
-          </p>
-        ) : (
-          <div className="mt-3.5 flex flex-col gap-0">
-            {upcoming.map((e, i) => {
-              const d = new Date(e.dateKey);
-              const day = d.getDate();
-              const mon = RU_MONTHS_GEN[d.getMonth()];
-              return (
-                <div
-                  key={e.id}
-                  className="flex cursor-pointer gap-3 py-2.5"
                   style={{
-                    borderBottom: i < upcoming.length - 1
-                      ? "1px solid hsl(var(--border))"
-                      : "none",
+                    width: 36,
+                    flexShrink: 0,
+                    textAlign: "center",
+                    padding: "4px 0",
+                    borderRadius: 5,
+                    background: TONE_BG[e.tone],
+                    color: TONE_FG[e.tone],
                   }}
                 >
-                  {/* Date badge */}
-                  <div
-                    className="w-9 shrink-0 rounded-[5px] py-1 text-center"
-                    style={{
-                      background: TONE_BG[e.tone],
-                      color: TONE_FG[e.tone],
-                    }}
-                  >
-                    <div className="text-[14px] font-semibold leading-none tabular-nums">
-                      {day}
-                    </div>
-                    <div className="mt-0.5 text-[9px] uppercase">
-                      {mon.slice(0, 3)}
-                    </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                    {day}
                   </div>
+                  <div style={{ fontSize: 9, marginTop: 2 }}>{mon}</div>
+                </div>
 
-                  {/* Label */}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] font-medium leading-[1.3]">
-                      {e.label}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-subtle-foreground tabular-nums">
-                      {e.time !== "—" ? `${e.time} · ` : ""}{day} {mon}
-                    </p>
+                {/* Content */}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.3, color: "hsl(var(--foreground))" }}>
+                    {e.label}
+                  </div>
+                  <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+                    {e.time !== "—" && <>{e.time} · </>}{day} {monFull}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* TODO(backend-migration): manual events + iCal sync → POST /api/v1/calendar/events */}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -450,47 +469,45 @@ function UpcomingEvents({
 
 export function CalendarPage() {
   const { userId, isAuthReady } = useAuthSelectors();
-  const [today] = useState(() => new Date());
+
+  const [today]     = useState(() => new Date());
+  const todayKey    = toDateKey(today.getTime());
 
   const [viewMode, setViewMode] = useState<ViewMode>("month");
-  const [curYear, setCurYear] = useState(today.getFullYear());
-  const [curMonth, setCurMonth] = useState(today.getMonth()); // 0-indexed
+  const [curYear,  setCurYear]  = useState(today.getFullYear());
+  const [curMonth, setCurMonth] = useState(today.getMonth());
 
-  // ── Load applications from Firestore ──────────────────────────────────────
-  const [rows, setRows] = useState<Array<{ id: string; data: ApplicationDoc }>>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // ── Load from Firebase ────────────────────────────────────────────────────
+  const [rows, setRows]       = useState<Array<{ id: string; data: ApplicationDoc }>>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthReady || !userId) return;
     let cancelled = false;
-    setIsLoading(true);
+    setLoading(true);
     queryAllActiveApplications(db, userId, 500)
-      .then((data) => {
-        if (!cancelled) setRows(data);
-      })
-      .catch(() => {
-        // ignore errors silently — calendar shows empty state
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+      .then((data) => { if (!cancelled) setRows(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [isAuthReady, userId]);
 
-  // ── Derive calendar events ─────────────────────────────────────────────────
+  // ── Derive events ─────────────────────────────────────────────────────────
   const allEvents = useMemo(() => deriveEvents(rows), [rows]);
 
   const eventsByDate = useMemo(() => {
-    const map = new Map<string, CalEvent[]>();
+    const m = new Map<string, CalEvent[]>();
     for (const e of allEvents) {
-      const arr = map.get(e.dateKey) ?? [];
+      const arr = m.get(e.dateKey) ?? [];
       arr.push(e);
-      map.set(e.dateKey, arr);
+      m.set(e.dateKey, arr);
     }
-    return map;
+    return m;
   }, [allEvents]);
 
-  // ── Month navigation ───────────────────────────────────────────────────────
+  const todayEvents = eventsByDate.get(todayKey) ?? [];
+
+  // ── Navigation ────────────────────────────────────────────────────────────
   function prevMonth() {
     if (curMonth === 0) { setCurMonth(11); setCurYear((y) => y - 1); }
     else setCurMonth((m) => m - 1);
@@ -529,15 +546,15 @@ export function CalendarPage() {
               {/* TODO(backend-migration): iCal sync → GET /api/v1/calendar/ical-feed */}
               <button
                 type="button"
-                className="flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+                className="flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted transition-colors"
               >
-                <Link className="h-3.5 w-3.5 text-muted-foreground" />
+                <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
                 Sync iCal
               </button>
               {/* TODO(backend-migration): create manual event → POST /api/v1/calendar/events */}
               <button
                 type="button"
-                className="flex items-center gap-1.5 rounded-[8px] bg-foreground px-3 py-1.5 text-[12.5px] font-medium text-background transition-opacity hover:opacity-80"
+                className="flex items-center gap-1.5 rounded-[8px] bg-foreground px-3 py-1.5 text-[12.5px] font-medium text-background hover:opacity-80 transition-opacity"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Создать событие
@@ -548,89 +565,91 @@ export function CalendarPage() {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex-1 overflow-y-auto bg-background p-7">
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center text-[13px] text-muted-foreground">
-            Загрузка…
-          </div>
-        ) : (
-          <div
-            className="grid gap-3.5"
-            style={{ gridTemplateColumns: "minmax(0, 1fr) 300px" }}
-          >
-            {/* ── Main calendar card ── */}
-            <div className="flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-border bg-card">
-              {/* Calendar top bar */}
-              <div className="flex items-center justify-between border-b border-border px-5 py-4">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={prevMonth}
-                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground transition-colors hover:bg-muted"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={nextMonth}
-                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground transition-colors hover:bg-muted"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                  <span className="ml-1.5 text-[16px] font-semibold tracking-[-0.015em]">
-                    {monthLabel}
-                  </span>
-                </div>
+      <div className="flex-1 overflow-y-auto bg-background">
+        <div className="p-7">
+          {loading ? (
+            <div className="flex h-40 items-center justify-center text-[13px] text-muted-foreground">
+              Загрузка…
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 300px", gap: 14 }}>
 
-                {/* Legend */}
-                <div className="flex gap-3.5 text-[11px] text-subtle-foreground">
-                  {[
-                    { l: "Интервью", c: "var(--primary)" },
-                    { l: "Тех",      c: "#6366f1" },
-                    { l: "Дедлайн", c: "rgb(218,113,38)" },
-                  ].map(({ l, c }) => (
-                    <span key={l} className="flex items-center gap-1.5">
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-[2px]"
-                        style={{ background: c }}
-                      />
-                      {l}
+              {/* ── Main calendar card ── */}
+              <div
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid hsl(var(--border))",
+                  background: "hsl(var(--card))",
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Month nav bar */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid hsl(var(--border))" }}>
+                  {/* Left: nav + title */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={prevMonth}
+                      style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", cursor: "pointer", color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <ChevronLeft style={{ width: 16, height: 16 }} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={nextMonth}
+                      style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", cursor: "pointer", color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <ChevronRight style={{ width: 16, height: 16 }} />
+                    </button>
+                    <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.015em", marginLeft: 6 }}>
+                      {monthLabel}
                     </span>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Month grid */}
-              <div className="flex flex-1 flex-col">
-                {viewMode === "month" && (
+                  {/* Right: legend */}
+                  <div style={{ display: "flex", gap: 14, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                    {LEGEND.map(({ label, tone }) => (
+                      <span key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: 2, background: TONE_FG[tone], flexShrink: 0 }} />
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Grid */}
+                {viewMode === "month" ? (
                   <MonthGrid
                     year={curYear}
                     month={curMonth}
-                    today={today}
+                    todayKey={todayKey}
                     eventsByDate={eventsByDate}
                   />
-                )}
-                {viewMode !== "month" && (
-                  <div className="flex flex-1 items-center justify-center py-16 text-[13px] text-muted-foreground">
-                    <div className="text-center">
-                      <CalendarDays className="mx-auto mb-3 h-8 w-8 text-subtle-foreground" />
-                      <p className="font-medium text-foreground">
-                        {viewMode === "day" ? "Вид по дням" : "Вид по неделям"}
-                      </p>
-                      <p className="mt-1 text-subtle-foreground text-[12px]">
-                        {/* TODO(backend-migration): day/week views → GET /api/v1/calendar/events */}
-                        Будет доступно после подключения бэкенда
-                      </p>
-                    </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "64px 0", flexDirection: "column", gap: 8, color: "hsl(var(--muted-foreground))" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+                      {viewMode === "day" ? "Вид по дням" : "Вид по неделям"}
+                    </span>
+                    <span style={{ fontSize: 12 }}>
+                      {/* TODO(backend-migration): GET /api/v1/calendar/events */}
+                      Будет доступно после подключения бэкенда
+                    </span>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* ── Right sidebar ── */}
-            <UpcomingEvents today={today} events={allEvents} />
-          </div>
-        )}
+              {/* ── Right sidebar ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <TodayCard today={today} events={todayEvents} />
+                <UpcomingCard todayKey={todayKey} events={allEvents} />
+              </div>
+
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
