@@ -10,6 +10,15 @@ export {
   userSettingsDoc,
 } from "./firestoreRefs";
 
+export {
+  buildAuthedRequest,
+  restDelete,
+  restGet,
+  restPatch,
+  restPost,
+} from "./rest/restClient";
+export type { HttpMethod } from "./rest/restClient";
+
 export { baseApi } from "./rtk/baseApi";
 export type { AppEndpointBuilder } from "./rtk/endpointBuilder";
 export { guardRtk } from "./rtk/guardRtk";

@@ -31,3 +31,7 @@ export {
   getApplicationGateway,
   registerApplicationGateway,
 } from "./api/applicationGateway";
+export type {
+  ApplicationGateway,
+  CreateApplicationInput,
+} from "./api/applicationGateway";
