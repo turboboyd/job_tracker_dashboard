@@ -1,8 +1,12 @@
+import logging
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+logger = logging.getLogger(__name__)
 
 _engine = None
 _async_session_factory = None
@@ -48,3 +52,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def check_db_connection() -> bool:
+    """Probe the database with SELECT 1. Returns True if reachable, False otherwise."""
+    try:
+        engine = _get_engine()
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return True
+    except Exception as exc:
+        logger.warning("DB connection probe failed: %s", exc)
+        return False

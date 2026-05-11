@@ -23,3 +23,13 @@ htmlcov/
 
 # Environment — never commit real secrets
 .env
+
+# Firebase service-account keys — must never be committed.
+# The convention is to place keys under backend/secrets/ (created locally
+# by the developer). The pattern rules below also defend against keys
+# accidentally placed elsewhere under backend/.
+secrets/
+*.serviceAccount*.json
+*serviceAccount*.json
+firebaseServiceAccount*.json
+serviceAccountKey*.json

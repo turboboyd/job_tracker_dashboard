@@ -43,3 +43,6 @@ report
 # Claude worktrees
 .claude/
 backend/secrets
+backend/storage/
+
+

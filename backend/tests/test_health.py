@@ -1,5 +1,7 @@
-"""Tests for GET /api/v1/health."""
+"""Tests for GET /api/v1/health (liveness) and GET /api/v1/health/ready (readiness)."""
 
+
+# ── Liveness ──────────────────────────────────────────────────────────────────
 
 def test_health_status_200(client):
     response = client.get("/api/v1/health")
@@ -30,3 +32,45 @@ def test_unknown_route_returns_404(client):
     body = response.json()
     assert "error" in body
     assert body["error"]["code"] == "404"
+
+
+# ── Readiness — unit tests (DB mocked via monkeypatch) ────────────────────────
+
+async def _db_up() -> bool:
+    return True
+
+
+async def _db_down() -> bool:
+    return False
+
+
+def test_readiness_200_when_db_reachable(client, monkeypatch):
+    """Readiness endpoint returns 200 when check_db_connection returns True."""
+    monkeypatch.setattr("app.api.v1.routes.check_db_connection", _db_up)
+    response = client.get("/api/v1/health/ready")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ready"
+
+
+def test_readiness_503_when_db_unreachable(client, monkeypatch):
+    """Readiness endpoint returns 503 when check_db_connection returns False."""
+    monkeypatch.setattr("app.api.v1.routes.check_db_connection", _db_down)
+    response = client.get("/api/v1/health/ready")
+    assert response.status_code == 503
+    data = response.json()
+    assert data["status"] == "degraded"
+    assert data["reason"] == "database"
+
+
+def test_readiness_no_auth_required(client, monkeypatch):
+    """Readiness endpoint must not require an Authorization header."""
+    monkeypatch.setattr("app.api.v1.routes.check_db_connection", _db_up)
+    response = client.get("/api/v1/health/ready", headers={})
+    assert response.status_code == 200
+
+
+def test_readiness_content_type(client, monkeypatch):
+    monkeypatch.setattr("app.api.v1.routes.check_db_connection", _db_up)
+    response = client.get("/api/v1/health/ready")
+    assert "application/json" in response.headers["content-type"]

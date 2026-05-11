@@ -65,9 +65,21 @@ class ApplicationsService:
         *,
         archived: bool = False,
         statuses: list[str] | None = None,
-    ) -> list[Application]:
+        stage: str | None = None,
+        search: str | None = None,
+        sort: str = "updated_at_desc",
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[Application], int]:
         return await self._repo.list_for_user(
-            user.id, archived=archived, statuses=statuses
+            user.id,
+            archived=archived,
+            statuses=statuses,
+            stage=stage,
+            search=search,
+            sort=sort,
+            limit=limit,
+            offset=offset,
         )
 
     async def create(self, user: User, payload: ApplicationCreate) -> Application:

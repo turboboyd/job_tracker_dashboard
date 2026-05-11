@@ -13,6 +13,7 @@ from app.core.errors import (
     validation_error_handler,
 )
 from app.core.logging import setup_logging
+from app.core.middleware import RequestIDMiddleware
 
 
 def create_app() -> FastAPI:
@@ -29,6 +30,8 @@ def create_app() -> FastAPI:
     )
 
     # ── Middleware ─────────────────────────────────────────────────────────────
+    # CORSMiddleware is added first so RequestIDMiddleware wraps outside it
+    # and sets request_id before any inner processing.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ALLOWED_ORIGINS,
@@ -36,6 +39,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(RequestIDMiddleware)
 
     # ── Exception handlers ────────────────────────────────────────────────────
     # Order matters: more specific handlers first.
