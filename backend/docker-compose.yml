@@ -6,6 +6,10 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: job_tracker
     ports:
+      # Host port 5432 is the default. If another PostgreSQL instance already
+      # occupies 5432 on your machine, change the left value:
+      #   "5433:5432"   ← host:container
+      # Then update DATABASE_URL in backend/.env to use the new host port.
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -18,15 +22,24 @@ services:
 
   api:
     build: .
+    # Publishes on host port 8000. The React dev server's REST gateway defaults
+    # to port 8001 (src/shared/config/backendConfig.ts). When running both
+    # together, either change the published port here to 8001 or run uvicorn
+    # directly with --port 8001. See README → "Start the API".
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/job_tracker
       ENVIRONMENT: development
       LOG_LEVEL: INFO
+      # To enable real Firebase Auth inside Docker, uncomment the line below
+      # and mount the secrets directory via the volumes block.
+      # FIREBASE_CREDENTIALS_JSON_PATH: /run/secrets/firebaseServiceAccount.json
     depends_on:
       postgres:
         condition: service_healthy
+    # volumes:
+    #   - ./secrets:/run/secrets:ro   # mount Firebase service-account key (read-only)
     profiles:
       - full
 

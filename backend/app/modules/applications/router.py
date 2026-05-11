@@ -6,8 +6,10 @@ from app.auth.deps import CurrentUser
 from app.db.session import DbSession
 from app.modules.applications.schemas import (
     ApplicationCreate,
+    ApplicationListResponse,
     ApplicationPatch,
     ApplicationRead,
+    SortParam,
     StatusTransitionRequest,
 )
 from app.modules.applications.service import ApplicationsService
@@ -15,20 +17,48 @@ from app.modules.applications.service import ApplicationsService
 router = APIRouter(prefix="/applications", tags=["applications"])
 
 
-@router.get("", response_model=list[ApplicationRead], summary="List applications")
+@router.get("", response_model=ApplicationListResponse, summary="List applications")
 async def list_applications(
     current_user: CurrentUser,
     db: DbSession,
     archived: bool = Query(default=False, description="Include archived applications"),
     status: str | None = Query(
         default=None,
-        description="Comma-separated ProcessStatus values to filter by",
+        description="Comma-separated ProcessStatus values (e.g. APPLIED,INTERVIEW_1)",
     ),
-) -> list[ApplicationRead]:
+    stage: str | None = Query(
+        default=None,
+        description="Filter by stage (ACTIVE | INTERVIEW | OFFER | REJECTED | NO_RESPONSE | ARCHIVED)",
+    ),
+    search: str | None = Query(
+        default=None,
+        description="Case-insensitive substring search over company_name, role_title, location_text, source",
+    ),
+    limit: int = Query(default=50, ge=1, le=100, description="Items per page (1–100)"),
+    offset: int = Query(default=0, ge=0, description="Number of items to skip"),
+    sort: SortParam = Query(
+        default="updated_at_desc",
+        description="Sort order",
+    ),
+) -> ApplicationListResponse:
     statuses = [s.strip() for s in status.split(",")] if status else None
     svc = ApplicationsService(db)
-    apps = await svc.list_for_user(current_user, archived=archived, statuses=statuses)
-    return [ApplicationRead.model_validate(a) for a in apps]
+    items, total = await svc.list_for_user(
+        current_user,
+        archived=archived,
+        statuses=statuses,
+        stage=stage,
+        search=search,
+        sort=sort,
+        limit=limit,
+        offset=offset,
+    )
+    return ApplicationListResponse(
+        items=[ApplicationRead.model_validate(a) for a in items],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.post(

@@ -59,6 +59,23 @@ docker compose up -d postgres
 docker compose ps
 ```
 
+> **Port 5432 already occupied?** If another PostgreSQL instance (e.g., a
+> different project) already uses port 5432 on your machine, change the
+> published host port in `docker-compose.yml`:
+>
+> ```yaml
+> ports:
+>   - "5433:5432"   # host:container — use any free port on the left
+> ```
+>
+> Then update `DATABASE_URL` (and optionally `TEST_DATABASE_URL`) in
+> `backend/.env` to reference the new host port:
+>
+> ```bash
+> DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/job_tracker
+> TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/job_tracker_test
+> ```
+
 ### 4. Run database migrations
 
 ```bash
@@ -75,14 +92,37 @@ alembic upgrade head
 ### 5. Start the API
 
 ```bash
+# Default — API reachable at http://localhost:8000
 uvicorn app.main:app --reload
+
+# Frontend integration — match the React dev server's REST gateway default
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-The API is available at http://localhost:8000.
+| Port | Scenario |
+|---|---|
+| **8000** | Docker (`docker compose --profile full up`), standalone backend dev |
+| **8001** | Local full-stack: React dev server (port 3000) → REST gateway → backend |
+
+> The React frontend's REST gateway is hard-coded to `http://127.0.0.1:8001/api/v1`
+> (`src/shared/config/backendConfig.ts`). Use port **8001** when running both servers
+> locally. The Docker `api` service publishes **8000** — see the comment in
+> `docker-compose.yml` for how to change it.
+
+### Health probes
+
+| URL | Type | Success | Failure |
+|---|---|---|---|
+| `GET /api/v1/health` | **Liveness** | `200 {"status":"ok", ...}` | — (always 200 if process is up) |
+| `GET /api/v1/health/ready` | **Readiness** | `200 {"status":"ready"}` | `503 {"status":"degraded","reason":"database"}` |
+
+Use `/health` as the process liveness check (container restart trigger).  
+Use `/health/ready` as the traffic readiness check (load-balancer gate, deployment smoke).
 
 | URL | Description |
 |---|---|
-| `GET /api/v1/health` | Liveness probe |
+| `GET /api/v1/health` | Liveness probe — always 200 while the process runs |
+| `GET /api/v1/health/ready` | Readiness probe — 200 when DB reachable; 503 otherwise |
 | `GET /api/docs` | Swagger UI |
 | `GET /api/redoc` | ReDoc |
 | `GET /api/openapi.json` | OpenAPI schema |
@@ -133,6 +173,119 @@ curl -s -X PATCH http://localhost:8000/api/v1/users/me \
 ```
 
 Without `FIREBASE_CREDENTIALS_JSON_PATH` set the API returns `503 Service Unavailable` on all auth endpoints.
+
+## Real Firebase Auth smoke test
+
+Use this checklist to verify, end-to-end, that the backend accepts a real
+Firebase ID token issued to the React app and provisions the matching local
+user row. Everything below is doc/config-safe — no real `.env` or service
+account is committed.
+
+### 1. Place the Firebase service-account key (off-Git)
+
+```bash
+# from the repository root
+mkdir -p backend/secrets
+# Firebase Console → Project Settings → Service accounts → Generate new private key
+# Save the downloaded JSON as:
+#   backend/secrets/firebaseServiceAccount.json
+```
+
+`backend/secrets/` is listed in `backend/.gitignore` along with common
+service-account filename patterns (`*serviceAccount*.json`,
+`firebaseServiceAccount*.json`, `serviceAccountKey*.json`). Run
+`git status` after dropping the file in — it must NOT appear.
+
+> **Firebase project parity.** The service account must belong to the same
+> Firebase project as the frontend web app (`src/shared/config/firebase/app.ts`).
+> A project mismatch produces a generic 401 on every protected endpoint and
+> is the most common smoke-test failure.
+
+### 2. Point the backend at the key
+
+In `backend/.env` (copied from `.env.example`):
+
+```bash
+FIREBASE_CREDENTIALS_JSON_PATH=/absolute/path/to/backend/secrets/firebaseServiceAccount.json
+# Windows example:
+# FIREBASE_CREDENTIALS_JSON_PATH=C:\Users\you\...\backend\secrets\firebaseServiceAccount.json
+```
+
+> **Restart required.** The Firebase verifier is built lazily on the first
+> auth request and cached for the lifetime of the process. After editing
+> `FIREBASE_CREDENTIALS_JSON_PATH` you must fully restart uvicorn — the
+> `--reload` watcher does not rebuild the cached verifier on env-only changes.
+
+### 3. Bring up Postgres and migrate
+
+```bash
+docker compose up -d postgres
+alembic upgrade head
+```
+
+### 4. Run the API on port 8001
+
+```bash
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
+```
+
+Port **8001** matches the frontend REST gateway default
+(`http://127.0.0.1:8001/api/v1` in `src/shared/config/backendConfig.ts`).
+Running on the default 8000 will leave every frontend REST call hitting a
+closed port.
+
+> **Docker profile note.** `docker compose --profile full up` publishes the
+> API on **8000**, not 8001. If you use the docker profile, either change
+> the published port or temporarily point the frontend REST config at 8000
+> for that smoke run. Keep one canonical port per session to avoid confusion.
+
+### 5. Start the frontend dev server
+
+```bash
+# from the repository root
+npm run start
+```
+
+Open the app at **http://localhost:3000** and sign in with Firebase.
+
+> **CORS host pinning.** `CORS_ALLOWED_ORIGINS` defaults to
+> `["http://localhost:3000", "http://localhost:5173"]`. Opening the frontend
+> at `http://127.0.0.1:3000` instead will be blocked by CORS unless you
+> extend the list.
+
+### 6. Grab a real ID token from DevTools
+
+After signing in, open the browser console on the frontend tab and run:
+
+```js
+await firebase.auth().currentUser.getIdToken()
+// or, with the modular SDK:
+// await (await import("firebase/auth")).getAuth().currentUser.getIdToken()
+```
+
+Copy the returned string.
+
+### 7. Hit `/api/v1/users/me`
+
+```bash
+TOKEN="<paste-the-id-token>"
+
+curl -s http://127.0.0.1:8001/api/v1/users/me \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+**Expected outcome:**
+
+- First call for a Firebase UID — backend creates a new row in `users`
+  (`firebase_uid`, `email`, `display_name`, `photo_url` populated from the
+  token claims) and returns the `UserRead` payload.
+- Subsequent calls — backend returns the same row, refreshing
+  `email` / `display_name` / `photo_url` if Firebase reports new values.
+- Missing or malformed token → `401 Unauthorized`.
+- `FIREBASE_CREDENTIALS_JSON_PATH` empty or wrong → `503 Service Unavailable`.
+
+If the first call returns 200 and a row appears in `users`, the real-auth
+path is healthy.
 
 ## Docker (full stack)
 

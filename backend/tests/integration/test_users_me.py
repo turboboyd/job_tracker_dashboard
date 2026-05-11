@@ -41,6 +41,13 @@ class _RejectVerifier:
         raise ValueError("Invalid token")
 
 
+class _NotConfiguredVerifier:
+    """Always raises RuntimeError — simulates Firebase Admin SDK not initialised."""
+
+    def verify_id_token(self, token: str) -> DecodedFirebaseToken:
+        raise RuntimeError("Firebase credentials not configured")
+
+
 # ── Default test identity ───────────────────────────────────────────────────
 
 _DEFAULT_USER: DecodedFirebaseToken = {
@@ -94,6 +101,14 @@ async def test_get_me_invalid_token_returns_401(db_session):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.get("/api/v1/users/me", headers={"Authorization": "Bearer bad"})
     assert r.status_code == 401
+
+
+async def test_get_me_firebase_not_configured_returns_503(db_session):
+    """If Firebase Admin SDK is not initialised the API must return 503, not 500."""
+    app = _make_app(db_session, _NotConfiguredVerifier())
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.get("/api/v1/users/me", headers={"Authorization": "Bearer any-token"})
+    assert r.status_code == 503
 
 
 async def test_get_me_valid_token_creates_user_and_returns_200(client):

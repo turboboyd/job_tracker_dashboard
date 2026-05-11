@@ -253,6 +253,28 @@ async def test_add_comment_appears_in_history_list(client_a):
     assert "COMMENT" in types
 
 
+async def test_add_comment_wrong_field_name_returns_422(client_a):
+    """Contract: request body field is 'text', not 'comment'."""
+    app_id = await _create_app(client_a)
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/comments",
+        json={"comment": "This uses the wrong field name."},
+        headers=_BEARER,
+    )
+    assert r.status_code == 422
+
+
+async def test_add_comment_missing_text_returns_422(client_a):
+    """'text' is a required field; empty body must fail validation."""
+    app_id = await _create_app(client_a)
+    r = await client_a.post(
+        f"/api/v1/applications/{app_id}/comments",
+        json={},
+        headers=_BEARER,
+    )
+    assert r.status_code == 422
+
+
 # ── Security ──────────────────────────────────────────────────────────────────────
 
 
