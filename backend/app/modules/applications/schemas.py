@@ -4,7 +4,9 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
+
+from app.modules.applications.age import compute_age
 
 ProcessStatus = Literal[
     "SAVED",
@@ -23,6 +25,14 @@ EmploymentType = Literal["FULL_TIME", "PART_TIME", "CONTRACT"]
 WorkMode = Literal["REMOTE", "HYBRID", "ON_SITE"]
 AppliedVia = Literal[
     "company_site", "linkedin", "indeed", "stepstone", "email", "referral", "other"
+]
+SortParam = Literal[
+    "created_at_desc",
+    "created_at_asc",
+    "updated_at_desc",
+    "updated_at_asc",
+    "last_status_change_at_desc",
+    "last_status_change_at_asc",
 ]
 
 
@@ -44,8 +54,8 @@ class ReminderItem(BaseModel):
 class StatusTransitionRequest(BaseModel):
     """Body for POST /applications/{id}/status.
 
-    `comment` and `correlation_id` are accepted for forward-compatibility with
-    the history layer (Sprint 4) but are not persisted yet.
+    `comment` is stored in the STATUS_CHANGE history entry.
+    `correlation_id` is stored in the STATUS_CHANGE history entry.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -210,3 +220,26 @@ class ApplicationRead(BaseModel):
     # Timestamps
     created_at: datetime
     updated_at: datetime
+
+    # Pipeline age — derived at serialization time, not stored in DB
+    days_in_pipeline: int = 0
+    days_since_applied: int | None = None
+    days_in_current_status: int = 0
+
+    @model_validator(mode="after")
+    def _fill_age(self) -> ApplicationRead:
+        ages = compute_age(self.created_at, self.applied_at, self.last_status_change_at)
+        self.days_in_pipeline = ages["days_in_pipeline"]
+        self.days_since_applied = ages["days_since_applied"]
+        self.days_in_current_status = ages["days_in_current_status"]
+        return self
+
+
+# ── List response ──────────────────────────────────────────────────────────────
+
+
+class ApplicationListResponse(BaseModel):
+    items: list[ApplicationRead]
+    total: int
+    limit: int
+    offset: int

@@ -13,6 +13,8 @@ from app.db.base import Base
 from app.db.models import activity_event  # noqa: F401  — registers ActivityEvent table
 from app.db.models import application  # noqa: F401  — registers Application table
 from app.db.models import application_history  # noqa: F401  — registers ApplicationHistory table
+from app.db.models import document  # noqa: F401  — registers Document table
+from app.db.models import firestore_migration_log  # noqa: F401  — registers FirestoreMigrationLog table
 from app.db.models import user  # noqa: F401  — registers User table
 
 target_metadata = Base.metadata

@@ -1,0 +1,35 @@
+# Environment — never embed credentials in an image
+.env
+*.env
+
+# Firebase service-account keys
+secrets/
+*.serviceAccount*.json
+*serviceAccount*.json
+firebaseServiceAccount*.json
+serviceAccountKey*.json
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / coverage output (keep image lean)
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor / OS noise
+.DS_Store
+*.swp

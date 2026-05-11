@@ -1,14 +1,18 @@
+import re
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_LOCALHOST_PATTERN = re.compile(r"@(localhost|127\.0\.0\.1)(:\d+)?/")
 
 
 class Settings(BaseSettings):
     # ── Application ────────────────────────────────────────────────────────────
     APP_NAME: str = "job-tracker-api"
     APP_VERSION: str = "0.1.0"
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: Literal["development", "production"] = "development"
     LOG_LEVEL: str = "INFO"
 
     # ── Database ───────────────────────────────────────────────────────────────
@@ -24,6 +28,10 @@ class Settings(BaseSettings):
     # Absolute path to the Firebase service-account JSON file.
     # Required for production; leave empty to use mocked auth in tests.
     FIREBASE_CREDENTIALS_JSON_PATH: str = ""
+
+    # ── Document Storage ───────────────────────────────────────────────────────
+    # Local filesystem root for uploaded documents (dev/test only).
+    DOCUMENT_STORAGE_ROOT: str = "storage/documents"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -48,9 +56,30 @@ class Settings(BaseSettings):
     def normalise_log_level(cls, v: str) -> str:
         return v.upper()
 
+    @model_validator(mode="after")
+    def validate_production_settings(self) -> "Settings":
+        """Refuse to start in production with unsafe defaults."""
+        if self.ENVIRONMENT != "production":
+            return self
+        if _LOCALHOST_PATTERN.search(self.DATABASE_URL):
+            raise ValueError(
+                "DATABASE_URL points to localhost — this must be overridden in production. "
+                "Set DATABASE_URL to a non-local PostgreSQL connection string."
+            )
+        if not self.FIREBASE_CREDENTIALS_JSON_PATH:
+            raise ValueError(
+                "FIREBASE_CREDENTIALS_JSON_PATH must be set in production. "
+                "Point it to the Firebase service-account JSON file."
+            )
+        return self
+
     @property
     def is_development(self) -> bool:
         return self.ENVIRONMENT == "development"
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
 
 
 @lru_cache(maxsize=1)

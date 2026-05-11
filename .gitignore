@@ -42,3 +42,6 @@ report
 
 # Claude worktrees
 .claude/
+
+# Local document storage (dev/test uploads)
+backend/storage/
