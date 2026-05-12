@@ -11,20 +11,19 @@ Covers:
 - range=7d / 30d / all filtering
 - invalid range returns 422
 """
-from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from __future__ import annotations
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-from app.auth.firebase import DecodedFirebaseToken, IFirebaseVerifier, get_verifier
+from app.auth.firebase import DecodedFirebaseToken, get_verifier
 from app.db.session import get_db
 from app.main import create_app
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 # ── Mock helpers ─────────────────────────────────────────────────────────────
 
@@ -86,8 +85,17 @@ async def client_b(db_session):
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
+async def _create_cycle(client: AsyncClient, title: str = "Analytics Cycle") -> str:
+    r = await client.post(
+        "/api/v1/cycles", json={"title": title, "target_role": "Backend Engineer"}, headers=_BEARER
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
 async def _create_app(client: AsyncClient, overrides: dict | None = None) -> str:
-    payload = {**_MINIMAL_APP, **(overrides or {})}
+    cycle_id = await _create_cycle(client)
+    payload = {**_MINIMAL_APP, "cycle_id": cycle_id, **(overrides or {})}
     r = await client.post("/api/v1/applications", json=payload, headers=_BEARER)
     assert r.status_code == 201, r.text
     return r.json()["id"]

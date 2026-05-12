@@ -3,6 +3,7 @@
 No database required — these tests inspect the schema object only.
 All paths checked here are required by docs/backend-api-contract.md.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -32,6 +33,8 @@ _REQUIRED_PATHS = [
     "/api/v1/health",
     "/api/v1/health/ready",
     "/api/v1/users/me",
+    "/api/v1/cycles",
+    "/api/v1/cycles/{cycle_id}",
     "/api/v1/applications",
     "/api/v1/applications/{app_id}",
     "/api/v1/applications/{app_id}/status",
@@ -61,6 +64,18 @@ def test_health_ready_has_get(paths):
 def test_users_me_has_get_and_patch(paths):
     assert "get" in paths["/api/v1/users/me"]
     assert "patch" in paths["/api/v1/users/me"]
+
+
+def test_cycles_has_get_and_post(paths):
+    assert "get" in paths["/api/v1/cycles"]
+    assert "post" in paths["/api/v1/cycles"]
+
+
+def test_cycle_detail_has_get_patch_delete(paths):
+    detail = paths["/api/v1/cycles/{cycle_id}"]
+    assert "get" in detail
+    assert "patch" in detail
+    assert "delete" in detail
 
 
 def test_applications_has_get_and_post(paths):
@@ -167,10 +182,16 @@ def test_application_create_schema_exists(components):
     assert "ApplicationCreate" in components
 
 
-def test_application_create_requires_company_name_and_role_title(components):
+def test_application_create_requires_cycle_company_name_and_role_title(components):
     required = components["ApplicationCreate"].get("required", [])
+    assert "cycle_id" in required
     assert "company_name" in required
     assert "role_title" in required
+
+
+def test_application_create_has_cycle_id(components):
+    props = components["ApplicationCreate"].get("properties", {})
+    assert "cycle_id" in props
 
 
 def test_application_create_rejects_extra_fields(components):
@@ -184,12 +205,77 @@ def test_application_read_schema_exists(components):
     assert "ApplicationRead" in components
 
 
+def test_application_read_has_cycle_id_and_favorite(components):
+    props = components["ApplicationRead"].get("properties", {})
+    assert "cycle_id" in props
+    assert "is_favorite" in props
+
+
+def test_cycle_schemas_exist(components):
+    assert "CycleCreate" in components
+    assert "CycleUpdate" in components
+    assert "CycleRead" in components
+
+
+def test_cycle_create_requires_title_and_target_role(components):
+    required = components["CycleCreate"].get("required", [])
+    assert "title" in required
+    assert "target_role" in required
+
+
+def test_cycle_read_has_campaign_fields(components):
+    props = components["CycleRead"].get("properties", {})
+    for field in (
+        "target_role",
+        "location",
+        "weekly_target",
+        "start_date",
+        "end_date",
+        "status",
+    ):
+        assert field in props
+
+
+def test_cycle_status_enum_has_active_paused_archived(components):
+    # Pydantic/FastAPI may expose the enum through CycleStatus or inline anyOf.
+    enum_values = set()
+    if "CycleStatus" in components:
+        enum_values.update(components["CycleStatus"].get("enum", []))
+    for schema_name in ("CycleCreate", "CycleUpdate", "CycleRead"):
+        props = components.get(schema_name, {}).get("properties", {})
+        status_schema = props.get("status", {})
+        enum_values.update(status_schema.get("enum", []))
+        for item in status_schema.get("anyOf", []):
+            enum_values.update(item.get("enum", []))
+    assert {"active", "paused", "archived"}.issubset(enum_values)
+
+
 def test_user_read_schema_exists(components):
     assert "UserRead" in components
 
 
 def test_history_list_response_schema_exists(components):
     assert "HistoryListResponse" in components
+
+
+def test_history_list_response_has_pagination(components):
+    props = components["HistoryListResponse"].get("properties", {})
+    assert "items" in props
+    assert "total" in props
+    assert "limit" in props
+    assert "offset" in props
+
+
+def test_history_list_has_filter_params(paths):
+    params = {
+        p["name"]
+        for p in paths["/api/v1/applications/{app_id}/history"]["get"].get(
+            "parameters", []
+        )
+    }
+    assert "limit" in params
+    assert "offset" in params
+    assert "type" in params
 
 
 def test_activity_feed_response_schema_exists(components):
@@ -212,7 +298,7 @@ def test_openapi_version_present(schema):
 
 
 def test_openapi_path_count(paths):
-    assert len(paths) == 13, f"Expected 13 paths, got {len(paths)}: {sorted(paths)}"
+    assert len(paths) == 15, f"Expected 15 paths, got {len(paths)}: {sorted(paths)}"
 
 
 # ── ApplicationListResponse envelope ──────────────────────────────────────────
@@ -240,6 +326,8 @@ def test_applications_list_has_new_query_params(paths):
     assert "offset" in params, "offset param missing"
     assert "search" in params, "search param missing"
     assert "stage" in params, "stage param missing"
+    assert "cycle_id" in params, "cycle_id param missing"
+    assert "is_favorite" in params, "is_favorite param missing"
 
 
 def test_applications_list_sort_param_has_enum(paths):
@@ -250,9 +338,12 @@ def test_applications_list_sort_param_has_enum(paths):
     # FastAPI inlines Literal as allOf or enum depending on version
     enum_values = schema.get("enum") or schema.get("allOf", [{}])[0].get("enum", [])
     for expected in (
-        "updated_at_desc", "updated_at_asc",
-        "created_at_desc", "created_at_asc",
-        "last_status_change_at_desc", "last_status_change_at_asc",
+        "updated_at_desc",
+        "updated_at_asc",
+        "created_at_desc",
+        "created_at_asc",
+        "last_status_change_at_desc",
+        "last_status_change_at_asc",
     ):
         assert expected in enum_values, f"Sort value missing: {expected}"
 
@@ -317,6 +408,14 @@ def test_document_list_response_has_items_and_total(components):
 
 def test_document_read_has_required_fields(components):
     props = components["DocumentRead"].get("properties", {})
-    for field in ("id", "application_id", "kind", "original_filename",
-                  "content_type", "size_bytes", "sha256_hash", "status"):
+    for field in (
+        "id",
+        "application_id",
+        "kind",
+        "original_filename",
+        "content_type",
+        "size_bytes",
+        "sha256_hash",
+        "status",
+    ):
         assert field in props, f"DocumentRead missing field: {field}"

@@ -69,6 +69,8 @@ All error responses share a single shape:
 | 401 | `"401"` | Missing or invalid token |
 | 404 | `"404"` | Resource not found (or belongs to another user) |
 | 422 | `"VALIDATION_ERROR"` | Pydantic validation failure |
+| 422 | `"CYCLE_REQUIRED"` | Application create request omitted `cycle_id` |
+| 422 | `"INVALID_CYCLE"` | `cycle_id` is invalid, belongs to another user, paused, or archived |
 | 500 | `"INTERNAL_ERROR"` | Unhandled server exception |
 | 503 | `"503"` | Firebase Admin not configured / DB unreachable |
 
@@ -175,6 +177,114 @@ Content-Type: application/json
 
 ---
 
+## Cycles
+
+Cycles are backend-owned source-of-truth job search campaigns/search directions. Every newly created application must reference one active cycle owned by the current authenticated user.
+
+A cycle can represent a user-facing "Направление поиска" / "Цикл поиска", for example: "Ausbildung Fachinformatiker 2026".
+
+**CycleStatus:** `active` | `paused` | `archived`
+
+### GET /cycles
+
+List cycles for the current user. Sorted by `updated_at` desc, then `created_at` desc.
+
+```
+GET /api/v1/cycles
+GET /api/v1/cycles?status=active
+Authorization: Bearer <token>
+```
+
+**Query params:**
+
+| Name | Type | Default | Notes |
+|---|---:|---:|---|
+| `status` | `active` \| `paused` \| `archived` | — | Optional status filter |
+
+**Response 200:**
+```json
+[
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "title": "Ausbildung Fachinformatiker 2026",
+    "target_role": "Fachinformatiker Anwendungsentwicklung",
+    "location": "Wolfsburg / Braunschweig",
+    "goal": "Find Ausbildung contract for 2026",
+    "description": "Primary search direction for Ausbildung applications",
+    "weekly_target": 10,
+    "start_date": "2026-01-01",
+    "end_date": "2026-12-31",
+    "status": "active",
+    "created_at": "2026-05-12T10:00:00Z",
+    "updated_at": "2026-05-12T10:00:00Z"
+  }
+]
+```
+
+### POST /cycles
+
+Create a cycle. New cycles start with status `active`.
+
+```
+POST /api/v1/cycles
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request body:**
+```json
+{
+  "title": "Ausbildung Fachinformatiker 2026",
+  "target_role": "Fachinformatiker Anwendungsentwicklung",
+  "location": "Wolfsburg / Braunschweig",
+  "goal": "Find Ausbildung contract for 2026",
+  "description": "Primary search direction for Ausbildung applications",
+  "weekly_target": 10,
+  "start_date": "2026-01-01",
+  "end_date": "2026-12-31"
+}
+```
+
+**Response 201:** `CycleRead`.
+
+**Validation:** `title` and `target_role` are required. Extra fields are rejected with `422`.
+
+### GET /cycles/{cycle_id}
+
+Return one cycle owned by the current user.
+
+**Response 404:** Cycle not found or belongs to another user.
+
+### PATCH /cycles/{cycle_id}
+
+Update mutable cycle fields.
+
+**Request body** (all fields optional):
+```json
+{
+  "title": "Updated title",
+  "target_role": "Platform Engineer",
+  "location": "Berlin",
+  "goal": "Updated goal",
+  "description": "Updated description",
+  "weekly_target": 20,
+  "start_date": "2026-02-01",
+  "end_date": null,
+  "status": "paused"
+}
+```
+
+`status` may be `active`, `paused`, or `archived`.
+
+### DELETE /cycles/{cycle_id}
+
+Soft-delete a cycle by setting `status=archived`. Existing applications keep their `cycle_id`; new applications cannot be created into an archived cycle.
+
+**Response 204:** No body.
+
+---
+
 ## Applications
 
 ### Enum reference
@@ -262,7 +372,9 @@ Authorization: Bearer <token>
 | `status` | string | — | valid `ProcessStatus` | Comma-separated values (e.g. `APPLIED,INTERVIEW_1`) |
 | `stage` | string | — | valid stage | Filter by computed stage (`ACTIVE`, `INTERVIEW`, `OFFER`, `REJECTED`, `NO_RESPONSE`, `ARCHIVED`) |
 | `search` | string | — | — | Case-insensitive substring match over `company_name`, `role_title`, `location_text`, `source` |
-| `limit` | int | `50` | 1–100 | Items per page |
+| `cycle_id` | UUID | — | existing cycle id | Filter by source cycle |
+| `is_favorite` | bool | — | — | Filter favorite/non-favorite applications |
+| `limit` | int | `20` | 1–100 | Items per page |
 | `offset` | int | `0` | ≥ 0 | Items to skip |
 | `sort` | enum | `updated_at_desc` | see below | Sort order |
 
@@ -288,7 +400,9 @@ Invalid `sort` values return `422`.
     {
       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "user_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "cycle_id": "4b33e9a4-7a7e-4d94-87c1-5d70b78e48a0",
       "archived": false,
+      "is_favorite": false,
       "company_name": "Acme Corp",
       "role_title": "Senior Frontend Engineer",
       "location_text": "Berlin, Germany",
@@ -334,7 +448,7 @@ Invalid `sort` values return `422`.
     }
   ],
   "total": 142,
-  "limit": 50,
+  "limit": 20,
   "offset": 0
 }
 ```
@@ -355,9 +469,10 @@ Authorization: Bearer <token>
 Content-Type: application/json
 ```
 
-**Request body** (`company_name` and `role_title` are required; all others optional):
+**Request body** (`cycle_id`, `company_name`, and `role_title` are required by backend service rules; all others optional):
 ```json
 {
+  "cycle_id": "4b33e9a4-7a7e-4d94-87c1-5d70b78e48a0",
   "company_name": "Acme Corp",
   "role_title": "Senior Frontend Engineer",
   "location_text": "Berlin, Germany",
@@ -368,6 +483,7 @@ Content-Type: application/json
   "salary": { "currency": "EUR", "min": 80000, "max": 100000 },
   "posted_at": "2024-01-10T00:00:00Z",
   "status": "SAVED",
+  "is_favorite": false,
   "sub_status": null,
   "applied_at": null,
   "applied_via": null,
@@ -389,7 +505,7 @@ Content-Type: application/json
 
 **Response 201:** Full `ApplicationRead` object (same shape as the list item above).
 
-**Validation:** Extra fields are rejected with `422`. `company_name` and `role_title` cannot be null or empty.
+**Validation:** Extra fields are rejected with `422`. `company_name` and `role_title` cannot be null or empty. If `cycle_id` is omitted, the backend returns `422` with code `CYCLE_REQUIRED`. If `cycle_id` is invalid, belongs to another user, paused, or archived, the backend returns `422` with code `INVALID_CYCLE`.
 
 ---
 
@@ -431,6 +547,7 @@ Content-Type: application/json
   "salary": { "currency": "EUR", "min": 90000, "max": 110000 },
   "posted_at": null,
   "status": "INTERVIEW_1",
+  "is_favorite": true,
   "sub_status": null,
   "applied_at": "2024-01-12T14:00:00Z",
   "applied_via": "linkedin",
@@ -455,7 +572,11 @@ Content-Type: application/json
 
 **Response 200:** Updated `ApplicationRead` object.
 
-**Read-only fields** (not accepted in PATCH body): `id`, `user_id`, `stage`, `needs_follow_up`, `follow_up_due_at`, `needs_reapply_suggestion`, `reapply_eligible_at`, `last_status_change_at`, `created_at`, `updated_at`, `role_fingerprint`.
+**Tags:** `tags` is a simple string array on the application. Removing a tag is done by sending the replacement array, for example `{ "tags": ["react"] }`. The backend trims empty tags and removes duplicate values case-insensitively.
+
+**Favorites:** `is_favorite` can be changed via PATCH. No separate favorite endpoints are required.
+
+**Read-only fields** (not accepted in PATCH body): `id`, `user_id`, `cycle_id`, `stage`, `needs_follow_up`, `follow_up_due_at`, `needs_reapply_suggestion`, `reapply_eligible_at`, `last_status_change_at`, `created_at`, `updated_at`, `role_fingerprint`.
 
 **Response 404:** Application not found or belongs to another user.
 
@@ -520,7 +641,7 @@ Authorization: Bearer <token>
 List history events for an application, newest first.
 
 ```
-GET /api/v1/applications/{app_id}/history?limit=50
+GET /api/v1/applications/{app_id}/history?limit=20&offset=0&type=COMMENT
 Authorization: Bearer <token>
 ```
 
@@ -528,7 +649,13 @@ Authorization: Bearer <token>
 
 | Param | Type | Default | Range | Description |
 |---|---|---|---|---|
-| `limit` | int | `50` | 1–100 | Maximum number of items to return |
+| `limit` | int | `20` | 1–100 | Maximum number of items to return |
+| `offset` | int | `0` | ≥ 0 | Number of history items to skip |
+| `type` | enum | — | see below | Optional event type filter |
+
+**History type filter values:**
+
+`APPLICATION_CREATED`, `STATUS_CHANGE`, `FIELD_CHANGE`, `COMMENT`, `APPLICATION_ARCHIVED`, `DOCUMENT_UPLOADED`, `DOCUMENT_DELETED`.
 
 **Response 200:**
 ```json
@@ -539,7 +666,7 @@ Authorization: Bearer <token>
       "application_id": "3fa85f64-...",
       "user_id": "7c9e6679-...",
       "actor": "user",
-      "type": "comment",
+      "type": "COMMENT",
       "from_status": null,
       "to_status": null,
       "field_path": null,
@@ -552,9 +679,14 @@ Authorization: Bearer <token>
       "correlation_id": null,
       "created_at": "2024-01-16T11:00:00Z"
     }
-  ]
+  ],
+  "total": 42,
+  "limit": 20,
+  "offset": 0
 }
 ```
+
+`total` is the count of all matching history rows for the applied `type` filter.
 
 **Response 404:** Application not found or belongs to another user.
 
@@ -616,6 +748,10 @@ Authorization: Bearer <token>
 |---|---|---|---|---|
 | `limit` | int | `50` | 1–100 | Maximum number of events to return |
 | `kind` | string | — | — | Filter by event kind (e.g. `comment_added`, `status_changed`) |
+
+**History type filter values:**
+
+`APPLICATION_CREATED`, `STATUS_CHANGE`, `FIELD_CHANGE`, `COMMENT`, `APPLICATION_ARCHIVED`, `DOCUMENT_UPLOADED`, `DOCUMENT_DELETED`.
 
 **Response 200:**
 ```json
@@ -783,6 +919,10 @@ List all documents for an application.
 GET /api/v1/applications/{app_id}/documents
 Authorization: Bearer <token>
 ```
+
+**History type filter values:**
+
+`APPLICATION_CREATED`, `STATUS_CHANGE`, `FIELD_CHANGE`, `COMMENT`, `APPLICATION_ARCHIVED`, `DOCUMENT_UPLOADED`, `DOCUMENT_DELETED`.
 
 **Response 200:**
 ```json

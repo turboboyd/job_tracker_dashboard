@@ -51,6 +51,22 @@ async def http_exception_handler(
 async def validation_error_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
+    for err in exc.errors():
+        if (
+            request.method == "POST"
+            and request.url.path.endswith("/api/v1/applications")
+            and tuple(err.get("loc", ())) == ("body", "cycle_id")
+            and err.get("type") in {"missing", "uuid_type"}
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content=_error_body(
+                    "CYCLE_REQUIRED",
+                    "Create or select an active search cycle before creating an application.",
+                    _rid(request),
+                ),
+            )
+
     first = exc.errors()[0] if exc.errors() else {}
     field = ".".join(str(p) for p in first.get("loc", []))
     msg = first.get("msg", "Validation error")

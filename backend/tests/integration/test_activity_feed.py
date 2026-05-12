@@ -4,6 +4,7 @@ Covers:
 - GET /api/v1/activity/feed
 - Activity events created by application CRUD and status transitions
 """
+
 from __future__ import annotations
 
 import pytest
@@ -11,11 +12,11 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-from app.auth.firebase import DecodedFirebaseToken, IFirebaseVerifier, get_verifier
+from app.auth.firebase import DecodedFirebaseToken, get_verifier
 from app.db.session import get_db
 from app.main import create_app
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 # ── Mock helpers ────────────────────────────────────────────────────────────────
 
@@ -77,9 +78,22 @@ async def client_b(db_session):
 # ── Helper ──────────────────────────────────────────────────────────────────────
 
 
-async def _create_app(client) -> str:
-    r = await client.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
-    assert r.status_code == 201
+async def _create_cycle(client: AsyncClient, title: str = "Default Cycle") -> str:
+    r = await client.post(
+        "/api/v1/cycles", json={"title": title, "target_role": "Backend Engineer"}, headers=_BEARER
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+async def _create_app(client: AsyncClient) -> str:
+    cycle_id = await _create_cycle(client)
+    r = await client.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "cycle_id": cycle_id},
+        headers=_BEARER,
+    )
+    assert r.status_code == 201, r.text
     return r.json()["id"]
 
 
@@ -229,9 +243,7 @@ async def test_feed_kind_filter(client_a):
         headers=_BEARER,
     )
 
-    r = await client_a.get(
-        "/api/v1/activity/feed?kind=APPLICATION_CREATED", headers=_BEARER
-    )
+    r = await client_a.get("/api/v1/activity/feed?kind=APPLICATION_CREATED", headers=_BEARER)
     assert r.status_code == 200
     kinds = [e["kind"] for e in r.json()["items"]]
     assert all(k == "APPLICATION_CREATED" for k in kinds)

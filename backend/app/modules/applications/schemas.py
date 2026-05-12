@@ -72,6 +72,9 @@ class StatusTransitionRequest(BaseModel):
 class ApplicationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    # Source cycle — every new application must belong to an active user-owned cycle.
+    cycle_id: UUID
+
     # Job — required
     company_name: str
     role_title: str
@@ -87,6 +90,7 @@ class ApplicationCreate(BaseModel):
 
     # Process
     status: ProcessStatus = "SAVED"
+    is_favorite: bool = False
     sub_status: str | None = None
     applied_at: datetime | None = None
     applied_via: AppliedVia | None = None
@@ -133,6 +137,7 @@ class ApplicationPatch(BaseModel):
 
     # Process
     status: ProcessStatus | None = None
+    is_favorite: bool | None = None
     sub_status: str | None = None
     applied_at: datetime | None = None
     applied_via: AppliedVia | None = None
@@ -170,7 +175,9 @@ class ApplicationRead(BaseModel):
 
     id: UUID
     user_id: UUID
+    cycle_id: UUID | None
     archived: bool
+    is_favorite: bool
 
     # Job
     company_name: str

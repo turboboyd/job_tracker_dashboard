@@ -3,6 +3,7 @@
 Uses a real PostgreSQL database. Firebase auth and storage are mocked via
 dependency_overrides — no credentials or real filesystem outside tmp_path.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,13 +14,12 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-from app.auth.firebase import DecodedFirebaseToken, IFirebaseVerifier, get_verifier
+from app.auth.firebase import DecodedFirebaseToken, get_verifier
 from app.db.session import get_db
 from app.main import create_app
 from app.modules.documents.storage import LocalStorageAdapter, get_storage_adapter
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 # ── Mock helpers ────────────────────────────────────────────────────────────────
 
@@ -96,9 +96,19 @@ async def client_b(db_session, tmp_path):
 @pytest_asyncio.fixture
 async def app_id_a(client_a):
     """Application owned by User A."""
+    cycle = await client_a.post(
+        "/api/v1/cycles",
+        json={"title": "Documents Cycle", "target_role": "Backend Engineer"},
+        headers=_BEARER,
+    )
+    assert cycle.status_code == 201
     r = await client_a.post(
         "/api/v1/applications",
-        json={"company_name": "Acme", "role_title": "Engineer"},
+        json={
+            "company_name": "Acme",
+            "role_title": "Engineer",
+            "cycle_id": cycle.json()["id"],
+        },
         headers=_BEARER,
     )
     assert r.status_code == 201

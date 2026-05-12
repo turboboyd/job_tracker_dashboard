@@ -3,19 +3,22 @@
 Uses a real PostgreSQL database. Firebase auth is mocked via
 dependency_overrides — no real credentials needed.
 """
+
 from __future__ import annotations
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-from app.auth.firebase import DecodedFirebaseToken, IFirebaseVerifier, get_verifier
+from app.auth.firebase import DecodedFirebaseToken, get_verifier
+from app.db.models.cycle import Cycle
+from app.db.models.user import User
 from app.db.session import get_db
 from app.main import create_app
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 # ── Mock helpers ────────────────────────────────────────────────────────────────
 
@@ -44,6 +47,41 @@ _USER_B: DecodedFirebaseToken = {
 _BEARER = {"Authorization": "Bearer mock"}
 
 _MINIMAL_APP = {"company_name": "Acme Corp", "role_title": "Backend Engineer"}
+
+
+async def _seed_user_cycle(session: AsyncSession, user_data: DecodedFirebaseToken) -> Cycle:
+    result = await session.execute(
+        select(User).where(User.firebase_uid == user_data["firebase_uid"])
+    )
+    user = result.scalar_one_or_none()
+    if user is None:
+        user = User(
+            firebase_uid=user_data["firebase_uid"],
+            email=user_data["email"],
+            display_name=user_data["display_name"],
+            photo_url=user_data["photo_url"],
+        )
+        session.add(user)
+        await session.flush()
+    cycle = Cycle(
+        user_id=user.id,
+        title=f"{user_data['display_name']} Cycle",
+        target_role="Backend Engineer",
+        status="active",
+    )
+    session.add(cycle)
+    await session.flush()
+    await session.refresh(cycle)
+    return cycle
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def seeded_cycles(db_session):
+    cycle_a = await _seed_user_cycle(db_session, _USER_A)
+    cycle_b = await _seed_user_cycle(db_session, _USER_B)
+    _MINIMAL_APP["cycle_id"] = str(cycle_a.id)
+    yield {"a": str(cycle_a.id), "b": str(cycle_b.id)}
+    _MINIMAL_APP.pop("cycle_id", None)
 
 
 # ── App factory ─────────────────────────────────────────────────────────────────
@@ -101,6 +139,8 @@ async def test_create_minimal_returns_201(client_a):
     assert body["role_title"] == "Backend Engineer"
     assert body["status"] == "SAVED"
     assert body["archived"] is False
+    assert body["is_favorite"] is False
+    assert body["cycle_id"] == _MINIMAL_APP["cycle_id"]
     assert "id" in body
     assert "created_at" in body
 
@@ -119,6 +159,7 @@ async def test_create_full_payload(client_a):
     payload = {
         "company_name": "BigCo",
         "role_title": "Senior Python Dev",
+        "cycle_id": _MINIMAL_APP["cycle_id"],
         "status": "APPLIED",
         "location_text": "Berlin, Germany",
         "vacancy_url": "https://bigco.com/jobs/123",
@@ -147,6 +188,86 @@ async def test_create_protected_fields_rejected(client_a):
     assert r.status_code == 422
 
 
+async def test_create_without_cycle_id_fails_with_cycle_required(client_a):
+    payload = {"company_name": "No Cycle", "role_title": "Engineer"}
+
+    r = await client_a.post("/api/v1/applications", json=payload, headers=_BEARER)
+
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "CYCLE_REQUIRED"
+    assert (
+        r.json()["error"]["message"]
+        == "Create or select an active search cycle before creating an application."
+    )
+
+
+async def test_create_invalid_cycle_id_fails_with_invalid_cycle(client_a):
+    payload = {
+        **_MINIMAL_APP,
+        "cycle_id": "00000000-0000-0000-0000-000000000000",
+    }
+
+    r = await client_a.post("/api/v1/applications", json=payload, headers=_BEARER)
+
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "INVALID_CYCLE"
+    assert r.json()["error"]["message"] == "Selected search cycle is not available."
+
+
+async def test_create_another_users_cycle_fails_with_invalid_cycle(
+    client_a,
+    seeded_cycles,
+):
+    payload = {**_MINIMAL_APP, "cycle_id": seeded_cycles["b"]}
+
+    r = await client_a.post("/api/v1/applications", json=payload, headers=_BEARER)
+
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "INVALID_CYCLE"
+
+
+async def test_create_archived_cycle_fails_with_invalid_cycle(client_a):
+    cycle = await client_a.post(
+        "/api/v1/cycles",
+        json={"title": "Archived Cycle", "target_role": "Backend Engineer"},
+        headers=_BEARER,
+    )
+    cycle_id = cycle.json()["id"]
+    await client_a.delete(f"/api/v1/cycles/{cycle_id}", headers=_BEARER)
+
+    r = await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "cycle_id": cycle_id},
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "INVALID_CYCLE"
+
+
+async def test_create_paused_cycle_fails_with_invalid_cycle(client_a):
+    cycle = await client_a.post(
+        "/api/v1/cycles",
+        json={"title": "Paused Cycle", "target_role": "Backend Engineer"},
+        headers=_BEARER,
+    )
+    cycle_id = cycle.json()["id"]
+    await client_a.patch(
+        f"/api/v1/cycles/{cycle_id}",
+        json={"status": "paused"},
+        headers=_BEARER,
+    )
+
+    r = await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "cycle_id": cycle_id},
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "INVALID_CYCLE"
+
+
 # ── GET /applications ───────────────────────────────────────────────────────────
 
 
@@ -156,7 +277,7 @@ async def test_list_empty_initially(client_a):
     body = r.json()
     assert body["items"] == []
     assert body["total"] == 0
-    assert body["limit"] == 50
+    assert body["limit"] == 20
     assert body["offset"] == 0
 
 
@@ -204,6 +325,56 @@ async def test_list_filters_by_status(client_a):
     assert all(s == "APPLIED" for s in statuses)
 
 
+async def test_list_filters_by_cycle_id(client_a):
+    other_cycle = await client_a.post(
+        "/api/v1/cycles",
+        json={"title": "Second Cycle", "target_role": "Backend Engineer"},
+        headers=_BEARER,
+    )
+    other_cycle_id = other_cycle.json()["id"]
+    await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "company_name": "First Cycle Co"},
+        headers=_BEARER,
+    )
+    await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "cycle_id": other_cycle_id, "company_name": "Second Cycle Co"},
+        headers=_BEARER,
+    )
+
+    r = await client_a.get(
+        f"/api/v1/applications?cycle_id={other_cycle_id}",
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 200
+    items = r.json()["items"]
+    assert len(items) == 1
+    assert items[0]["cycle_id"] == other_cycle_id
+    assert items[0]["company_name"] == "Second Cycle Co"
+
+
+async def test_cycle_filter_does_not_leak_other_user_applications(
+    client_a,
+    client_b,
+    seeded_cycles,
+):
+    await client_b.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "cycle_id": seeded_cycles["b"], "company_name": "User B Co"},
+        headers=_BEARER,
+    )
+
+    r = await client_a.get(
+        f"/api/v1/applications?cycle_id={seeded_cycles['b']}",
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 200
+    assert r.json()["items"] == []
+
+
 async def test_list_isolates_between_users(client_a, client_b):
     """User B must not see User A's applications."""
     await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
@@ -211,6 +382,54 @@ async def test_list_isolates_between_users(client_a, client_b):
     r = await client_b.get("/api/v1/applications", headers=_BEARER)
     assert r.status_code == 200
     assert r.json()["items"] == []
+
+
+async def test_list_limit_over_max_returns_422(client_a):
+    r = await client_a.get("/api/v1/applications?limit=101", headers=_BEARER)
+
+    assert r.status_code == 422
+
+
+async def test_list_limit_offset_and_total(client_a):
+    for company in ("Offset A", "Offset B", "Offset C"):
+        await client_a.post(
+            "/api/v1/applications",
+            json={**_MINIMAL_APP, "company_name": company},
+            headers=_BEARER,
+        )
+
+    r = await client_a.get(
+        "/api/v1/applications?limit=2&offset=1&sort=created_at_asc",
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 3
+    assert body["limit"] == 2
+    assert body["offset"] == 1
+    assert len(body["items"]) == 2
+
+
+async def test_list_filters_by_is_favorite(client_a):
+    await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "company_name": "Favorite Co", "is_favorite": True},
+        headers=_BEARER,
+    )
+    await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "company_name": "Regular Co"},
+        headers=_BEARER,
+    )
+
+    r = await client_a.get("/api/v1/applications?is_favorite=true", headers=_BEARER)
+
+    assert r.status_code == 200
+    items = r.json()["items"]
+    assert len(items) == 1
+    assert items[0]["company_name"] == "Favorite Co"
+    assert items[0]["is_favorite"] is True
 
 
 # ── GET /applications/{id} ──────────────────────────────────────────────────────
@@ -256,6 +475,46 @@ async def test_patch_updates_fields(client_a):
     body = r.json()
     assert body["role_title"] == "Staff Engineer"
     assert body["current_note"] == "Updated note"
+
+
+async def test_patch_can_set_and_unset_favorite(client_a):
+    cr = await client_a.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
+    app_id = cr.json()["id"]
+
+    favorite = await client_a.patch(
+        f"/api/v1/applications/{app_id}",
+        json={"is_favorite": True},
+        headers=_BEARER,
+    )
+    assert favorite.status_code == 200
+    assert favorite.json()["is_favorite"] is True
+
+    regular = await client_a.patch(
+        f"/api/v1/applications/{app_id}",
+        json={"is_favorite": False},
+        headers=_BEARER,
+    )
+    assert regular.status_code == 200
+    assert regular.json()["is_favorite"] is False
+
+
+async def test_patch_tags_replaces_and_normalizes_tags(client_a):
+    cr = await client_a.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "tags": ["python", " remote ", "Python", ""]},
+        headers=_BEARER,
+    )
+    app_id = cr.json()["id"]
+    assert cr.json()["tags"] == ["python", "remote"]
+
+    r = await client_a.patch(
+        f"/api/v1/applications/{app_id}",
+        json={"tags": ["backend"]},
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 200
+    assert r.json()["tags"] == ["backend"]
 
 
 async def test_patch_status_change_updates_stage_and_timestamp(client_a):
@@ -522,12 +781,12 @@ async def test_list_search_case_insensitive(client_a):
     """search= is case-insensitive across company_name, role_title, location_text, source."""
     await client_a.post(
         "/api/v1/applications",
-        json={"company_name": "Notion Labs", "role_title": "Backend Engineer"},
+        json={**_MINIMAL_APP, "company_name": "Notion Labs", "role_title": "Backend Engineer"},
         headers=_BEARER,
     )
     await client_a.post(
         "/api/v1/applications",
-        json={"company_name": "Other Corp", "role_title": "Frontend"},
+        json={**_MINIMAL_APP, "company_name": "Other Corp", "role_title": "Frontend"},
         headers=_BEARER,
     )
 
@@ -543,7 +802,11 @@ async def test_list_search_on_role_title(client_a):
     """search= matches role_title."""
     await client_a.post(
         "/api/v1/applications",
-        json={"company_name": "Acme", "role_title": "Staff Machine Learning Engineer"},
+        json={
+            **_MINIMAL_APP,
+            "company_name": "Acme",
+            "role_title": "Staff Machine Learning Engineer",
+        },
         headers=_BEARER,
     )
 
@@ -557,7 +820,7 @@ async def test_list_limit_offset_pagination(client_a):
     for i in range(4):
         await client_a.post(
             "/api/v1/applications",
-            json={"company_name": f"Paginate Co {i}", "role_title": "Dev"},
+            json={**_MINIMAL_APP, "company_name": f"Paginate Co {i}", "role_title": "Dev"},
             headers=_BEARER,
         )
 
@@ -621,10 +884,14 @@ async def test_list_sort_created_at_params_accepted(client_a):
 async def test_list_sort_updated_at_desc(client_a):
     """Most recently patched application appears first with updated_at_desc."""
     cr1 = await client_a.post(
-        "/api/v1/applications", json={"company_name": "Alpha", "role_title": "Dev"}, headers=_BEARER
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "company_name": "Alpha", "role_title": "Dev"},
+        headers=_BEARER,
     )
     cr2 = await client_a.post(
-        "/api/v1/applications", json={"company_name": "Beta", "role_title": "Dev"}, headers=_BEARER
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "company_name": "Beta", "role_title": "Dev"},
+        headers=_BEARER,
     )
     id1, id2 = cr1.json()["id"], cr2.json()["id"]
 
@@ -642,10 +909,14 @@ async def test_list_sort_updated_at_desc(client_a):
 async def test_list_sort_updated_at_asc(client_a):
     """Least recently updated application appears first with updated_at_asc."""
     cr1 = await client_a.post(
-        "/api/v1/applications", json={"company_name": "Alpha", "role_title": "Dev"}, headers=_BEARER
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "company_name": "Alpha", "role_title": "Dev"},
+        headers=_BEARER,
     )
     cr2 = await client_a.post(
-        "/api/v1/applications", json={"company_name": "Beta", "role_title": "Dev"}, headers=_BEARER
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "company_name": "Beta", "role_title": "Dev"},
+        headers=_BEARER,
     )
     id1, id2 = cr1.json()["id"], cr2.json()["id"]
 
@@ -682,7 +953,7 @@ async def test_list_age_fields_on_single_get(client_a):
     assert "days_since_applied" in body
     assert "days_in_current_status" in body
     assert isinstance(body["days_in_pipeline"], int)
-    assert body["days_since_applied"] is None   # no applied_at on a fresh SAVED app
+    assert body["days_since_applied"] is None  # no applied_at on a fresh SAVED app
     assert isinstance(body["days_in_current_status"], int)
 
 

@@ -5,6 +5,7 @@ Covers:
 - POST /api/v1/applications/{id}/comments
 - History creation side-effects of create / patch / status-change / archive
 """
+
 from __future__ import annotations
 
 import pytest
@@ -12,11 +13,11 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-from app.auth.firebase import DecodedFirebaseToken, IFirebaseVerifier, get_verifier
+from app.auth.firebase import DecodedFirebaseToken, get_verifier
 from app.db.session import get_db
 from app.main import create_app
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 # ── Mock helpers ────────────────────────────────────────────────────────────────
 
@@ -78,9 +79,22 @@ async def client_b(db_session):
 # ── Helper ──────────────────────────────────────────────────────────────────────
 
 
-async def _create_app(client) -> str:
-    r = await client.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
-    assert r.status_code == 201
+async def _create_cycle(client: AsyncClient, title: str = "Default Cycle") -> str:
+    r = await client.post(
+        "/api/v1/cycles", json={"title": title, "target_role": "Backend Engineer"}, headers=_BEARER
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+async def _create_app(client: AsyncClient) -> str:
+    cycle_id = await _create_cycle(client)
+    r = await client.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "cycle_id": cycle_id},
+        headers=_BEARER,
+    )
+    assert r.status_code == 201, r.text
     return r.json()["id"]
 
 
@@ -91,7 +105,11 @@ async def test_create_app_creates_history_item(client_a):
     app_id = await _create_app(client_a)
     r = await client_a.get(f"/api/v1/applications/{app_id}/history", headers=_BEARER)
     assert r.status_code == 200
-    items = r.json()["items"]
+    body = r.json()
+    assert body["total"] >= 1
+    assert body["limit"] == 20
+    assert body["offset"] == 0
+    items = body["items"]
     assert len(items) >= 1
     types = [i["type"] for i in items]
     assert "APPLICATION_CREATED" in types
@@ -302,21 +320,85 @@ async def test_comment_other_user_is_404(client_a, client_b):
     assert r.status_code == 404
 
 
-# ── limit parameter ────────────────────────────────────────────────────────────────
+# ── pagination and filters ────────────────────────────────────────────────────────
 
 
-async def test_history_limit_parameter(client_a):
+async def test_history_limit_offset_and_total(client_a):
     app_id = await _create_app(client_a)
-    # Trigger several history entries
-    for status in ("APPLIED", "INTERVIEW_1", "OFFER"):
+    for status_value in ("APPLIED", "INTERVIEW_1", "OFFER"):
         await client_a.post(
             f"/api/v1/applications/{app_id}/status",
-            json={"to_status": status},
+            json={"to_status": status_value},
             headers=_BEARER,
         )
 
     r = await client_a.get(
-        f"/api/v1/applications/{app_id}/history?limit=2", headers=_BEARER
+        f"/api/v1/applications/{app_id}/history?limit=2&offset=1",
+        headers=_BEARER,
     )
+
     assert r.status_code == 200
-    assert len(r.json()["items"]) <= 2
+    body = r.json()
+    assert body["total"] >= 4
+    assert body["limit"] == 2
+    assert body["offset"] == 1
+    assert len(body["items"]) == 2
+
+
+async def test_history_limit_over_max_returns_422(client_a):
+    app_id = await _create_app(client_a)
+
+    r = await client_a.get(
+        f"/api/v1/applications/{app_id}/history?limit=101",
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 422
+
+
+async def test_history_type_filter_returns_comments_only(client_a):
+    app_id = await _create_app(client_a)
+    await client_a.post(
+        f"/api/v1/applications/{app_id}/comments",
+        json={"text": "Only comment."},
+        headers=_BEARER,
+    )
+    await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED"},
+        headers=_BEARER,
+    )
+
+    r = await client_a.get(
+        f"/api/v1/applications/{app_id}/history?type=COMMENT",
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 1
+    assert [item["type"] for item in body["items"]] == ["COMMENT"]
+
+
+async def test_history_type_filter_returns_status_changes_only(client_a):
+    app_id = await _create_app(client_a)
+    await client_a.post(
+        f"/api/v1/applications/{app_id}/comments",
+        json={"text": "Not a status change."},
+        headers=_BEARER,
+    )
+    await client_a.post(
+        f"/api/v1/applications/{app_id}/status",
+        json={"to_status": "APPLIED"},
+        headers=_BEARER,
+    )
+
+    r = await client_a.get(
+        f"/api/v1/applications/{app_id}/history?type=STATUS_CHANGE",
+        headers=_BEARER,
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 1
+    assert [item["type"] for item in body["items"]] == ["STATUS_CHANGE"]
