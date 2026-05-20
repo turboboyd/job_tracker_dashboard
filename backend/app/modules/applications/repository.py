@@ -21,7 +21,9 @@ class ApplicationsRepository:
         self._db = db
 
     async def get_by_id(self, app_id: UUID) -> Application | None:
-        result = await self._db.execute(select(Application).where(Application.id == app_id))
+        result = await self._db.execute(
+            select(Application).where(Application.id == app_id)
+        )
         return result.scalar_one_or_none()
 
     async def list_for_user(
@@ -32,7 +34,7 @@ class ApplicationsRepository:
         statuses: list[str] | None = None,
         stage: str | None = None,
         search: str | None = None,
-        cycle_id: UUID | None = None,
+        loop_id: str | None = None,
         is_favorite: bool | None = None,
         sort: str = "updated_at_desc",
         limit: int = 50,
@@ -56,8 +58,8 @@ class ApplicationsRepository:
                     Application.source.ilike(pattern),
                 )
             )
-        if cycle_id is not None:
-            conditions.append(Application.cycle_id == cycle_id)
+        if loop_id is not None:
+            conditions.append(Application.loop_id == loop_id)
         if is_favorite is not None:
             conditions.append(Application.is_favorite == is_favorite)
 

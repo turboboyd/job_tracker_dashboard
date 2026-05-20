@@ -16,13 +16,13 @@ import {
   validateReminderInputs,
 } from "./applicationDetails.helpers";
 import {
-  DetailsCardTitle,
-  DetailsMutedMessage,
-} from "./applicationDetails.primitives";
-import {
   OutcomeWizard,
   type OutcomeWizardSubmit,
 } from "./applicationDetails.outcomeWizard";
+import {
+  DetailsCardTitle,
+  DetailsMutedMessage,
+} from "./applicationDetails.primitives";
 import {
   ReminderModal,
   type ReminderDraft,

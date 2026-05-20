@@ -295,6 +295,13 @@ To run the API inside Docker alongside Postgres:
 docker compose --profile full up --build
 ```
 
+## Production readiness
+
+Use [docs/backend-production.md](../docs/backend-production.md) as the server
+planning runbook. It covers required environment variables, explicit migration
+commands, health/readiness probes, CORS expectations, and the features that are
+intentionally not enabled for production yet.
+
 ## Project structure
 
 ```

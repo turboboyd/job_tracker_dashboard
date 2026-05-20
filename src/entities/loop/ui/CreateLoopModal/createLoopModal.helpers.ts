@@ -1,14 +1,14 @@
-import type { CreateLoopInput } from "../../api/loopApi.types";
 import {
   DEFAULT_CANONICAL_FILTERS,
   RECOMMENDED_PLATFORMS,
   normalizeRoleToTitles,
+  type CreateLoopInput,
 } from "../../model";
 
 import type { CreateLoopForm } from "./createLoopModal.types";
 
 export function createInitialLoopForm(): CreateLoopForm {
-  return { name: "My Loop", role: "", location: "Berlin" };
+  return { name: "New loop", role: "", location: "Berlin" };
 }
 
 export function validateCreateLoopForm(form: CreateLoopForm): string | null {

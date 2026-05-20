@@ -17,6 +17,7 @@ import {
   getPagedMatches,
   stableFiltersKey,
 } from "../matchesViewModel";
+import { readMatchesStateFromSearch } from "../useMatchesPage";
 
 const BASE_DATE = "2026-01-01T00:00:00.000Z";
 const LINKEDIN_PLATFORM = "linkedin";
@@ -186,4 +187,18 @@ test("pagination, reset keys and lookup helpers are deterministic", () => {
     }),
     "userId:user-1|filters:q=react|sort=matchedAtDesc|loops=|platforms=|statuses=|total:3|visible:1",
   );
+});
+
+
+test("readMatchesStateFromSearch supports canonical loopId URL filter", () => {
+  const state = readMatchesStateFromSearch("?loopId=loop-a,loop-b&page=2");
+
+  assert.deepEqual(state.filters.loopIds, ["loop-a", "loop-b"]);
+  assert.equal(state.page, 2);
+});
+
+test("readMatchesStateFromSearch keeps legacy loop param as read-only compatibility", () => {
+  const state = readMatchesStateFromSearch("?loop=legacy-loop");
+
+  assert.deepEqual(state.filters.loopIds, ["legacy-loop"]);
 });

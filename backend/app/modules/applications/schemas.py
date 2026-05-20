@@ -72,8 +72,8 @@ class StatusTransitionRequest(BaseModel):
 class ApplicationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Source cycle — every new application must belong to an active user-owned cycle.
-    cycle_id: UUID
+    # Source loop — every new application must belong to an active user-owned loop.
+    loop_id: str
 
     # Job — required
     company_name: str
@@ -109,7 +109,6 @@ class ApplicationCreate(BaseModel):
     vacancy_description: str | None = None
 
     # Linkage
-    loop_id: str | None = None
     has_loop: bool = False
     cv_version_id: str | None = None
     profile_version_id: str | None = None
@@ -175,7 +174,6 @@ class ApplicationRead(BaseModel):
 
     id: UUID
     user_id: UUID
-    cycle_id: UUID | None
     archived: bool
     is_favorite: bool
 

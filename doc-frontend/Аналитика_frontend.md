@@ -18,11 +18,11 @@
 | KPI: заявок отправлено | `matchesAll` filtered by range | ✅ реально |
 | KPI: ответы от компаний % | `pipelineSummary.byColumn` | ✅ реально |
 | KPI: дошли до оффера % | `pipelineSummary.byColumn` | ✅ реально |
-| KPI: среднее время цикла | `updatedAt − createdAt` (median) | ✅ реально |
+| KPI: среднее время в воронке | `updatedAt − createdAt` (median) | ✅ реально |
 | Воронка (4 шага) | `pipelineSummary.byColumn` | ✅ реально |
 | Спарклайн — заявки | `bucketByPeriod(matchesAll)` | ✅ реально (приближение) |
 | Спарклайн — ответы | `bucketByPeriod(matchesAll)` | ✅ реально (приближение) |
-| Спарклайн — оффер/цикл | — | ❌ нужен бэкенд |
+| Спарклайн — оффер/воронка | — | ❌ нужен бэкенд |
 | Недельная активность | `matchesAll` grouped by ISO week | ✅ реально |
 | Loss breakdown — нет ответа | `byColumn.NO_RESPONSE` | ✅ реально |
 | Loss breakdown — после HR/тех | `statusHistory` analysis | ✅ реально (приближение) |
@@ -47,8 +47,8 @@ offerCount    = byColumn["OFFER"] + byColumn["HIRED"]
 replyRate     = Math.round(hrScreenCount / pipelineSummary.total * 100)
 interviewRate = Math.round(offerCount / pipelineSummary.total * 100)
 
-// Медиана цикла — по закрытым матчам (REJECTED, HIRED, NO_RESPONSE):
-cycleDays = median(matchesAll
+// Медиана времени в воронке — по закрытым матчам (REJECTED, HIRED, NO_RESPONSE):
+pipelineDays = median(matchesAll
   .filter(m => ["REJECTED","HIRED","NO_RESPONSE"].includes(m.status))
   .map(m => (updatedAt - createdAt) / 86400000))
 ```
@@ -77,7 +77,7 @@ cycleDays = median(matchesAll
 
 ## Что нужно сделать на фронтенде
 
-1. **Подключить фильтр по циклам (`loopsFilter`)** — `setLoopsFilter` есть в хуке, но `matchesAll` сейчас не фильтруется по `loopId`. Нужно добавить фильтр в `rangeMatches`.
+1. **Подключить фильтр по направлениям поиска (`loopsFilter`)** — `setLoopsFilter` есть в хуке, но `matchesAll` сейчас не фильтруется по `loopId`. Нужно добавить фильтр в `rangeMatches`.
 
 2. **Дельта показателей** — как только бэкенд вернёт `GET /api/v1/analytics/kpi?range=X`, сравнивать текущий период с предыдущим и показывать `+18%` / `−3д`.
 
@@ -85,7 +85,7 @@ cycleDays = median(matchesAll
 
 4. **Экспорт** — кнопка «Экспорт» должна вызывать `GET /api/v1/analytics/export?range=X&format=csv` и скачивать файл через `<a download>`.
 
-5. **Точные спарклайны** — сейчас `offer` и `cycleDays` sparklines возвращают `[0,0,...,0]`. После подключения `/api/v1/analytics/kpi` заполнить из `sparklines.interviewRate` и `sparklines.medianDaysInPipeline`.
+5. **Точные спарклайны** — сейчас `offer` и `pipelineDays` sparklines возвращают `[0,0,...,0]`. После подключения `/api/v1/analytics/kpi` заполнить из `sparklines.interviewRate` и `sparklines.medianDaysInPipeline`.
 
 6. **Реалтайм обновления** — рефетчить KPI при изменении статуса (SSE или рефетч через React Query invalidation).
 
@@ -114,6 +114,6 @@ src/pages/DashboardPage/
 // useAnalyticsKpis.ts
 export function useAnalyticsKpis(matchesAll, pipelineSummary, timeRange) {
   // ... вся логика вычислений
-  return { totalApplied, replyRate, interviewRate, cycleDays, sparkBuckets };
+  return { totalApplied, replyRate, interviewRate, pipelineDays, sparkBuckets };
 }
 ```

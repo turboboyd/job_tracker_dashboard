@@ -11,7 +11,6 @@ import json
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import APIError
@@ -25,8 +24,8 @@ from app.modules.applications.schemas import (
     ApplicationPatch,
     StatusTransitionRequest,
 )
-from app.modules.cycles.repository import CyclesRepository
 from app.modules.history.service import HistoryService
+from app.modules.loops.service import LoopsService
 
 # Fields that are user-settable and worth tracking per-field on PATCH.
 # Derived/system fields (stage, needs_follow_up, last_status_change_at, …)
@@ -98,9 +97,9 @@ def _normalize_tags(tags: list[str] | None) -> list[str] | None:
 class ApplicationsService:
     def __init__(self, db: AsyncSession) -> None:
         self._repo = ApplicationsRepository(db)
-        self._cycles = CyclesRepository(db)
         self._history = HistoryService(db)
         self._activity = ActivityService(db)
+        self._loops = LoopsService(db)
 
     async def list_for_user(
         self,
@@ -110,19 +109,25 @@ class ApplicationsService:
         statuses: list[str] | None = None,
         stage: str | None = None,
         search: str | None = None,
-        cycle_id: UUID | None = None,
+        loop_id: str | None = None,
         is_favorite: bool | None = None,
         sort: str = "updated_at_desc",
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Application], int]:
+        if loop_id is not None:
+            try:
+                await self._loops.require_owned_for_read(user, loop_id)
+            except APIError:
+                return [], 0
+
         return await self._repo.list_for_user(
             user.id,
             archived=archived,
             statuses=statuses,
             stage=stage,
             search=search,
-            cycle_id=cycle_id,
+            loop_id=loop_id,
             is_favorite=is_favorite,
             sort=sort,
             limit=limit,
@@ -130,15 +135,10 @@ class ApplicationsService:
         )
 
     async def create(self, user: User, payload: ApplicationCreate) -> Application:
-        cycle = await self._cycles.get_by_id(payload.cycle_id)
-        if cycle is None or cycle.user_id != user.id or cycle.status != "active":
-            raise APIError(
-                code="INVALID_CYCLE",
-                message="Selected search cycle is not available.",
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
+        await self._loops.require_owned_active(user, payload.loop_id)
 
         data = payload.model_dump(exclude_none=True)
+        data["has_loop"] = True
 
         if "salary" in data:
             data["salary"] = _jsonb_safe(data["salary"])
@@ -181,6 +181,9 @@ class ApplicationsService:
             updates["reminders"] = _jsonb_safe(updates["reminders"])
         if "tags" in updates:
             updates["tags"] = _normalize_tags(updates["tags"])
+        if "loop_id" in updates:
+            await self._loops.require_owned_active_by_user_id(user_id, updates["loop_id"])
+            updates["has_loop"] = True
 
         if "status" in updates and updates["status"] != app.status:
             updates["last_status_change_at"] = datetime.now(UTC)

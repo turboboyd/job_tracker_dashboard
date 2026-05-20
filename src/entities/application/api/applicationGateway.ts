@@ -9,6 +9,7 @@ import type {
 export interface CreateApplicationInput {
   companyName: string;
   roleTitle: string;
+  isFavorite?: boolean | undefined;
   vacancyUrl?: string | undefined;
   source?: string | undefined;
   status?: ProcessStatus | undefined;

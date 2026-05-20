@@ -46,7 +46,7 @@ Anyone managing 20–100+ applications
 
 Instead of randomly sending CVs, users can:
 
-Organize applications into structured cycles (Loops)
+Organize applications into structured Loops
 
 Analyze response rates
 
@@ -85,7 +85,7 @@ This project demonstrates real-world frontend development skills including:
 
 📂 **Loops Management**
 
-- Organize job search cycles
+- Organize job search directions with Loops
 - Structured workflow tracking
 
 📄 **Matches Module**
@@ -115,6 +115,7 @@ This project demonstrates real-world frontend development skills including:
 
 - TypeScript strict mode
 - ESLint
+- Quality gate: `npm run check`
 - dependency-cruiser
 - madge (circular dependency detection)
 - jscpd (duplicate detection)
@@ -190,6 +191,20 @@ PUBLIC_URL=/job_tracker_dashboard
 Start development server:
 
 npm run dev
+
+---
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Onboarding](docs/ONBOARDING.md)
+- [Code Placement](docs/CODE_PLACEMENT.md)
+- [Glossary](docs/GLOSSARY.md)
+- [Project Map](docs/PROJECT_MAP.md)
+- [Testing](docs/TESTING.md)
+- [Contributing](CONTRIBUTING.md)
+- [PR Review Checklist](docs/PR_REVIEW_CHECKLIST.md)
+- [Quality Gate](docs/QUALITY_GATE.md)
 
 ---
 

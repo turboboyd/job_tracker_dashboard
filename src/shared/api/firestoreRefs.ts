@@ -9,37 +9,6 @@ import {
 import { db } from "src/shared/config/firebase/firestore";
 
 // -----------------------------
-// User-owned collections
-// -----------------------------
-
-export const userLoopsCol = <T extends DocumentData = DocumentData>(
-  uid: string
-): CollectionReference<T> =>
-  collection(db, "users", uid, "loops") as CollectionReference<T>;
-
-export const userLoopDoc = <T extends DocumentData = DocumentData>(
-  uid: string,
-  loopId: string
-): DocumentReference<T> =>
-  doc(db, "users", uid, "loops", loopId) as DocumentReference<T>;
-
-export const userLoopMatchesCol = <T extends DocumentData = DocumentData>(
-  uid: string
-): CollectionReference<T> =>
-  // Legacy path kept for backwards compatibility.
-  // The app has moved to the unified applications model.
-  // NOTE: Do not write new data to this collection.
-  collection(db, "users", uid, "loopMatches") as CollectionReference<T>;
-
-export const userLoopMatchDoc = <T extends DocumentData = DocumentData>(
-  uid: string,
-  matchId: string
-): DocumentReference<T> =>
-  // Legacy path kept for backwards compatibility.
-  // NOTE: Do not write new data to this doc.
-  doc(db, "users", uid, "loopMatches", matchId) as DocumentReference<T>;
-
-// -----------------------------
 // Unified Job Search Dashboard v1
 // users/{uid}/applications
 // -----------------------------

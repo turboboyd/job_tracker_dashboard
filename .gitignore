@@ -9,19 +9,29 @@
 
 # testing
 /coverage
+coverage/
 
 # production
 /build
 /dist
+build/
+dist/
 
 # misc
 .DS_Store
 .env
+.env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 process.env
+*.log
+*.zip
+__pycache__/
+*.pyc
+.pytest_cache/
 
 npm-debug.log*
 yarn-debug.log*
@@ -43,6 +53,17 @@ report
 # Claude worktrees
 .claude/
 backend/secrets
+backend/secrets/
 backend/storage/
+backend/.venv/
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# deployment-local config generated from examples
+deploy/*.env
+!deploy/*.env.example
+deploy/Caddyfile
+!deploy/Caddyfile.example
 
 

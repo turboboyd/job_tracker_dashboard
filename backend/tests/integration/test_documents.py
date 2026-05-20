@@ -66,7 +66,9 @@ def _make_app(
 
     app.dependency_overrides[get_db] = _db
     app.dependency_overrides[get_verifier] = lambda: _MockVerifier(user_data)
-    app.dependency_overrides[get_storage_adapter] = lambda: LocalStorageAdapter(storage_dir)
+    app.dependency_overrides[get_storage_adapter] = (
+        lambda: LocalStorageAdapter(storage_dir)
+    )
     return app
 
 
@@ -96,18 +98,18 @@ async def client_b(db_session, tmp_path):
 @pytest_asyncio.fixture
 async def app_id_a(client_a):
     """Application owned by User A."""
-    cycle = await client_a.post(
-        "/api/v1/cycles",
-        json={"title": "Documents Cycle", "target_role": "Backend Engineer"},
+    loop = await client_a.post(
+        "/api/v1/loops",
+        json={"title": "Documents Loop", "target_role": "Backend Engineer"},
         headers=_BEARER,
     )
-    assert cycle.status_code == 201
+    assert loop.status_code == 201
     r = await client_a.post(
         "/api/v1/applications",
         json={
             "company_name": "Acme",
             "role_title": "Engineer",
-            "cycle_id": cycle.json()["id"],
+            "loop_id": loop.json()["id"],
         },
         headers=_BEARER,
     )
@@ -274,7 +276,12 @@ async def test_delete_then_get_returns_404(client_a, app_id_a):
 # ── Ownership isolation ───────────────────────────────────────────────────────────
 
 
-async def test_other_user_cannot_get_document(client_a, client_b, app_id_a, uploaded_doc):
+async def test_other_user_cannot_get_document(
+    client_a,
+    client_b,
+    app_id_a,
+    uploaded_doc,
+):
     doc_id = uploaded_doc["id"]
     r = await client_b.get(f"/api/v1/documents/{doc_id}", headers=_BEARER)
     assert r.status_code == 404

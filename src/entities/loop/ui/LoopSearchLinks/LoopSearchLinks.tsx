@@ -35,6 +35,7 @@ export function LoopSearchLinks(props: LoopSearchLinksProps) {
     setIsAddMatchModalOpen,
     setIsSettingsOpen,
     setIsSourcesModalOpen,
+    shouldRenderAddMatchModal,
     t,
     totalPages,
     userId,
@@ -86,12 +87,14 @@ export function LoopSearchLinks(props: LoopSearchLinksProps) {
           disabled={isSaving}
         />
 
-        <LoopSearchAddMatchSection
-          open={isAddMatchModalOpen}
-          onOpenChange={setIsAddMatchModalOpen}
-          loopId={loop.id}
-          {...(defaultPlatform !== undefined ? { defaultPlatform } : {})}
-        />
+        {shouldRenderAddMatchModal ? (
+          <LoopSearchAddMatchSection
+            open={isAddMatchModalOpen}
+            onOpenChange={setIsAddMatchModalOpen}
+            loopId={loop.id}
+            {...(defaultPlatform !== undefined ? { defaultPlatform } : {})}
+          />
+        ) : null}
       </div>
     </div>
   );

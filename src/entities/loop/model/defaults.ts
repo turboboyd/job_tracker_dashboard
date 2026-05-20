@@ -1,7 +1,7 @@
 import { DEFAULT_CANONICAL_FILTERS } from "./canonicalFilters";
 import { ALL_PLATFORMS, RECOMMENDED_PLATFORMS } from "./platformRegistry";
 
-export const DEFAULT_LOOP_NAME = "My Loop";
+export const DEFAULT_LOOP_NAME = "New loop";
 
 export const DEFAULT_LOOP_FILTERS = DEFAULT_CANONICAL_FILTERS;
 export const DEFAULT_LOOP_PLATFORMS_RECOMMENDED = RECOMMENDED_PLATFORMS;

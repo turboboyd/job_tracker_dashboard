@@ -4,7 +4,6 @@ import { InteractionTypeIcon, INTERACTION_TYPE_LABELS } from "src/entities/conta
 import type { InteractionDoc } from "src/entities/contact";
 import { classNames } from "src/shared/lib";
 import { Button } from "src/shared/ui/Button";
-import { Card } from "src/shared/ui/Card";
 
 interface InteractionRow {
   id: string;

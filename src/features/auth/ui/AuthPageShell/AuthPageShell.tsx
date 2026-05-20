@@ -33,7 +33,7 @@ function BrandPanel() {
         >
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-medium uppercase tracking-[0.07em] text-subtle-foreground">Cycle</div>
+              <div className="text-[10px] font-medium uppercase tracking-[0.07em] text-subtle-foreground">Loop</div>
               <div className="mt-1 text-[14px] font-semibold">Frontend EU</div>
             </div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600">
@@ -80,7 +80,7 @@ function BrandPanel() {
       {/* Tagline */}
       <div>
         <p className="max-w-[380px] text-[22px] font-semibold leading-[1.25] tracking-[-0.025em]">
-          One cycle — dozens of sources. Apply with intention.
+          One Loop — dozens of sources. Apply with intention.
         </p>
         <div className="mt-4 flex gap-5 text-[12px] text-muted-foreground">
           <span>● 2 800+ candidates</span>

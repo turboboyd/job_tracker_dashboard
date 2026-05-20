@@ -21,6 +21,7 @@ export interface ApplicationDoc {
   updatedAt: Timestamp;
   createdBy: string;
   archived: boolean;
+  isFavorite?: boolean;
   job: {
     companyName: string;
     companyId?: string;
@@ -73,6 +74,10 @@ export interface ApplicationDoc {
     legacyMatchId?: string;
   };
   hasLoop?: boolean;
+  /** Backend-derived age metrics. Preserved from ApplicationRead for future UI labels. */
+  daysInPipeline?: number;
+  daysSinceApplied?: number;
+  daysInCurrentStatus?: number;
   tags?: string[];
   matching?: MatchingBlock;
   priority?: PriorityBlock;

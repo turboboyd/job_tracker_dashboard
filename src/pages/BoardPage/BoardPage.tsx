@@ -57,7 +57,7 @@ export default function BoardPage() {
                 className="flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <Filter className="h-3.5 w-3.5 text-subtle-foreground" />
-                {t("board.allLoops", "Все циклы")}
+                {t("board.allLoops", "Все направления")}
               </button>
               <button
                 type="button"

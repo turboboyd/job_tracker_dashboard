@@ -23,8 +23,16 @@ This glossary gives new developers a shared vocabulary for the project. Use thes
 | Term | Meaning in this project |
 | --- | --- |
 | Application | A tracked job application. Domain ownership: `src/entities/application`. |
-| Loop | A job-search cycle or search stream used to group applications and matches. Domain ownership: `src/entities/loop`. |
+| Loop | A job-search direction or stream used to group applications and matches. Domain ownership: `src/entities/loop`. |
 | Match | A potential job opportunity matched to a loop. Domain ownership: `src/entities/loopMatch`. |
+| Matches Feed | The `/dashboard/matches` product surface for reviewing incoming vacancy candidates before creating Applications. It may show saved Vacancy Matches and future safe preview candidates, but it does not create Applications automatically. |
+| Vacancy Analysis | Saved deterministic analysis of one Vacancy Match against pasted resume text. The raw resume text is not stored. |
+| Analysis Plan | Backend policy tier (`free`, `basic`, `premium`) stored on `users.analysis_plan`; it controls daily analysis quotas and optional analysis outputs. Payments are future work. |
+| Discovery Source | Backend-owned source definition that can be referenced by Loop `selected_sources`. F21 exposes metadata only and does not fetch vacancies. |
+| Source Adapter | Backend component that can produce bounded dry-run preview items for one Discovery Source when that source is explicitly marked runnable. F37 adds the interface; no broad external search is enabled. |
+| Arbeitsagentur Adapter | First safe source adapter. It calls the public Jobsuche JSON endpoint with a tiny dry-run limit and does not save results automatically. |
+| Discovery Preview Item | Temporary item returned by a dry-run discovery run. It becomes a Vacancy Match only after an explicit user save action; no application is created. |
+| Match Conversion | Explicit user action that creates one Application from one saved Vacancy Match and links the match to that Application. It does not submit anything externally. |
 | Board | Kanban-style view over applications and statuses. Route ownership: `src/pages/BoardPage`. |
 | Dashboard | Analytical views and derived metrics over applications, loops and outcomes. Route ownership: `src/pages/DashboardPage`. |
 | Pipeline | The configured sequence of stages and sub-statuses used to classify application progress. |

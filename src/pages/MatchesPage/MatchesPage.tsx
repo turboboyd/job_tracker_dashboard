@@ -1,12 +1,18 @@
 import { Filter, RefreshCw, Plus } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { MatchCard } from "src/entities/loopMatch";
+import type { VacancyMatch } from "src/features/vacancyMatches";
 import { getErrorMessage } from "src/shared/lib";
 import { PageMessage } from "src/shared/ui";
 
 import { EditMatchModal } from "./components/EditMatchModal";
+import { MatchesDiscoveryPreviewPanel } from "./components/MatchesDiscoveryPreviewPanel";
 import { MatchesFilters } from "./components/MatchesFilters";
+import { MatchesSavedVacancyMatchesSection } from "./components/MatchesSavedVacancyMatchesSection";
+import { getMatchesDiscoverySavedPreviewKey } from "./components/matchesDiscoveryPreview.helpers";
+import { MATCHES_SAVED_MATCHES_COPY } from "./components/matchesSavedVacancyMatches.helpers";
 import { useMatchesPageController } from "./model/useMatchesPageController";
 
 function MatchesPageHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -59,6 +65,30 @@ export default function MatchesPage() {
   const { t } = useTranslation();
   const vm = useMatchesPageController();
   const { matchesQ, loopsQ } = vm.queries;
+  const [savedMatchesReloadKey, setSavedMatchesReloadKey] = useState(0);
+  const [savedPreviewKeys, setSavedPreviewKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+
+  function handleSavedMatchChanged() {
+    setSavedMatchesReloadKey((value) => value + 1);
+    void matchesQ.refetch();
+  }
+
+  const handleSavedItemsLoaded = useCallback((items: VacancyMatch[]) => {
+    setSavedPreviewKeys(
+      new Set(
+        items.map((item) =>
+          getMatchesDiscoverySavedPreviewKey({
+            loopId: item.loopId,
+            sourceId: item.source,
+            externalId: item.externalId,
+            sourceUrl: item.sourceUrl,
+          }),
+        ),
+      ),
+    );
+  }, []);
 
   const title = t("matches.list.title", "Matches");
   const subtitle = t("matches.list.subtitle", "");
@@ -90,7 +120,20 @@ export default function MatchesPage() {
       <div className="flex h-full flex-col overflow-hidden">
         <MatchesPageHeader title={title} subtitle={subtitle} />
         <div className="flex-1 overflow-y-auto bg-background p-7">
-          <PageMessage>{t("matches.list.empty")}</PageMessage>
+          <MatchesDiscoveryPreviewPanel
+            filters={vm.filters}
+            loops={vm.loops}
+            loopsLoading={loopsQ.isLoading}
+            savedPreviewKeys={savedPreviewKeys}
+            onMatchSaved={handleSavedMatchChanged}
+          />
+          <MatchesSavedVacancyMatchesSection
+            loops={vm.loops}
+            loopsLoading={loopsQ.isLoading}
+            onItemsLoaded={handleSavedItemsLoaded}
+            reloadKey={savedMatchesReloadKey}
+            selectedLoopIds={vm.filters.loopIds}
+          />
         </div>
       </div>
     );
@@ -120,6 +163,28 @@ export default function MatchesPage() {
 
       <div className="flex-1 min-h-0 overflow-y-auto bg-background">
         <div className="p-7">
+          <MatchesDiscoveryPreviewPanel
+            filters={vm.filters}
+            loops={vm.loops}
+            loopsLoading={loopsQ.isLoading}
+            savedPreviewKeys={savedPreviewKeys}
+            onMatchSaved={handleSavedMatchChanged}
+          />
+          <MatchesSavedVacancyMatchesSection
+            loops={vm.loops}
+            loopsLoading={loopsQ.isLoading}
+            onItemsLoaded={handleSavedItemsLoaded}
+            reloadKey={savedMatchesReloadKey}
+            selectedLoopIds={vm.filters.loopIds}
+          />
+          <div className="mb-3">
+            <h2 className="text-[16px] font-semibold text-foreground">
+              {MATCHES_SAVED_MATCHES_COPY.legacyApplicationsTitle}
+            </h2>
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              {MATCHES_SAVED_MATCHES_COPY.legacyApplicationsIntro}
+            </p>
+          </div>
           <div className="rounded-[14px] border border-border bg-card overflow-hidden">
             {vm.pagedMatches.map((m) => (
               <MatchCard

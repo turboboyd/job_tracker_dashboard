@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 
 import { clampPage, getErrorMessage } from "src/shared/lib";
 
-import { useUpdateLoopMutation } from "../../api/loopApi";
 import { mapWorkModeToRemoteMode, openUrl } from "../../lib";
 import { normalizeRoleToTitles, type LoopPlatform } from "../../model";
 
@@ -18,9 +17,11 @@ export function useLoopSearchLinksController({
   userId,
   page,
   onPageChange,
+  onUpdateLoop,
+  onAddVacancy,
 }: LoopSearchLinksProps) {
   const { t } = useTranslation();
-  const [updateLoop, updateState] = useUpdateLoopMutation();
+  const [isSaving, setIsSaving] = useState(false);
 
   const [isSourcesModalOpen, setIsSourcesModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -41,8 +42,7 @@ export function useLoopSearchLinksController({
     links,
   } = useLoopSearchLinksState(loopForState);
 
-  const isSaving = updateState.isLoading;
-  const canEditSources = Boolean(userId) && !isSaving;
+  const canEditSources = Boolean(userId) && Boolean(onUpdateLoop) && !isSaving;
   const totalPages = Math.max(1, Math.ceil(links.length / PAGE_SIZE));
   const safePage = Math.max(1, Math.min(totalPages, clampPage(page)));
   const offset = (safePage - 1) * PAGE_SIZE;
@@ -69,22 +69,24 @@ export function useLoopSearchLinksController({
     applyDraftFilters();
     onPageChange(1);
 
-    if (!userId) return;
+    if (!userId || !onUpdateLoop) return;
 
     try {
-      await updateLoop({
-        loopId: loop.id,
+      setIsSaving(true);
+      await onUpdateLoop({
         name: loop.name,
         titles: normalizeRoleToTitles(draftFilters.role),
         location: draftFilters.location,
         radiusKm: draftFilters.radiusKm,
         remoteMode: mapWorkModeToRemoteMode(draftFilters.workMode),
         filters: draftFilters,
-      }).unwrap();
+      });
 
       setIsSettingsOpen(false);
     } catch (err) {
       console.error("Failed to save filters:", getErrorMessage(err));
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -94,19 +96,26 @@ export function useLoopSearchLinksController({
   };
 
   const handleSaveSources = async (nextPlatforms: LoopPlatform[]) => {
-    if (!userId) return;
+    if (!userId || !onUpdateLoop) return;
 
     try {
-      await updateLoop({
-        loopId: loop.id,
+      setIsSaving(true);
+      await onUpdateLoop({
         platforms: nextPlatforms,
-      }).unwrap();
+      });
     } catch (err) {
       console.error("Failed to update sources:", getErrorMessage(err));
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const openAddModal = (platform?: LoopPlatform) => {
+    if (onAddVacancy) {
+      onAddVacancy();
+      return;
+    }
+
     setDefaultPlatform(platform);
     setIsAddMatchModalOpen(true);
   };
@@ -133,6 +142,7 @@ export function useLoopSearchLinksController({
     isSourcesModalOpen,
     links,
     loop,
+    shouldRenderAddMatchModal: !onAddVacancy,
     onAddLink: openAddModal,
     onOpenAdd: () => openAddModal(),
     onPageChange,

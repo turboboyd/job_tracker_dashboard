@@ -2,8 +2,8 @@ from fastapi import APIRouter
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
-from app.modules.users.schemas import UserPatch, UserRead
-from app.modules.users.service import UsersService
+from app.modules.users.schemas import AnalysisPlanRead, UserPatch, UserRead
+from app.modules.users.service import UsersService, get_analysis_plan_for_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -31,3 +31,19 @@ async def patch_me(
     service = UsersService(db)
     updated = await service.patch_me(current_user, patch)
     return UserRead.model_validate(updated)
+
+
+@router.get(
+    "/me/analysis-plan",
+    response_model=AnalysisPlanRead,
+    summary="Get current user's analysis plan",
+)
+async def get_my_analysis_plan(
+    current_user: CurrentUser,
+) -> AnalysisPlanRead:
+    """Return current analysis plan limits and feature flags.
+
+    This is read-only. Plan changes are intentionally not exposed as public
+    self-upgrade until billing/admin authorization is implemented.
+    """
+    return get_analysis_plan_for_user(current_user)

@@ -195,6 +195,7 @@ export const BoardPage = lazyPage(
   }),
 );
 
+
 export const ApplicationsPage = lazyPage(
   () => import("./ApplicationsPage/ApplicationsPage"),
   "applications",

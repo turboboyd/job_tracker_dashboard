@@ -20,36 +20,45 @@ async def ensure_local_user(db: AsyncSession, firebase_user: DecodedFirebaseToke
     - First call for a firebase_uid → creates a new User row.
     - Subsequent calls → returns the existing User, updating email /
       display_name / photo_url if Firebase reports new values.
-    - Concurrent inserts (race condition) → handled via savepoint; the
-      losing request falls back to a SELECT of the winning row.
+    - Concurrent inserts (race condition) → the losing request rolls back
+      the failed transaction, re-selects the winning row, and returns it.
 
-    Never raises; always returns a valid User.
+    Raises only if the insert fails and no winning row can be found after
+    rollback, which indicates a non-race integrity problem.
     """
     result = await db.execute(
         select(User).where(User.firebase_uid == firebase_user["firebase_uid"])
     )
     user = result.scalar_one_or_none()
 
-    if user is None:
-        user = _build_user(firebase_user)
-        db.add(user)
-        try:
-            async with db.begin_nested():
-                await db.flush()
-            logger.info("Created local user firebase_uid=%r", firebase_user["firebase_uid"])
-        except IntegrityError:
-            # Another concurrent request already inserted the row.
-            result = await db.execute(
-                select(User).where(User.firebase_uid == firebase_user["firebase_uid"])
-            )
-            user = result.scalar_one()
-            logger.debug(
-                "Race-condition on insert; using existing user firebase_uid=%r",
-                firebase_user["firebase_uid"],
-            )
-    else:
-        user = _sync_firebase_fields(db, user, firebase_user)
+    if user is not None:
+        return _sync_firebase_fields(db, user, firebase_user)
 
+    user = _build_user(firebase_user)
+    db.add(user)
+    try:
+        await db.flush()
+    except IntegrityError:
+        # A parallel first-load request may have inserted the same firebase_uid
+        # after our initial SELECT and before our INSERT.  Once flush fails the
+        # SQLAlchemy session is in a failed transaction state, so rollback is
+        # mandatory before any further SELECT; otherwise later dependency/route
+        # code hits PendingRollbackError.
+        await db.rollback()
+        result = await db.execute(
+            select(User).where(User.firebase_uid == firebase_user["firebase_uid"])
+        )
+        existing_user = result.scalar_one_or_none()
+        if existing_user is None:
+            raise
+
+        logger.debug(
+            "Concurrent local-user insert detected; using existing user firebase_uid=%r",
+            firebase_user["firebase_uid"],
+        )
+        return _sync_firebase_fields(db, existing_user, firebase_user)
+
+    logger.info("Created local user firebase_uid=%r", firebase_user["firebase_uid"])
     return user
 
 
@@ -59,6 +68,7 @@ def _build_user(firebase_user: DecodedFirebaseToken) -> User:
         email=firebase_user.get("email"),
         display_name=firebase_user.get("display_name"),
         photo_url=firebase_user.get("photo_url"),
+        analysis_plan="free",
     )
 
 

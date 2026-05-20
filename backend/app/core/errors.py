@@ -44,29 +44,17 @@ async def http_exception_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
-        content=_error_body(str(exc.status_code), exc.detail or "HTTP error", _rid(request)),
+        content=_error_body(
+            str(exc.status_code),
+            exc.detail or "HTTP error",
+            _rid(request),
+        ),
     )
 
 
 async def validation_error_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    for err in exc.errors():
-        if (
-            request.method == "POST"
-            and request.url.path.endswith("/api/v1/applications")
-            and tuple(err.get("loc", ())) == ("body", "cycle_id")
-            and err.get("type") in {"missing", "uuid_type"}
-        ):
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=_error_body(
-                    "CYCLE_REQUIRED",
-                    "Create or select an active search cycle before creating an application.",
-                    _rid(request),
-                ),
-            )
-
     first = exc.errors()[0] if exc.errors() else {}
     field = ".".join(str(p) for p in first.get("loc", []))
     msg = first.get("msg", "Validation error")
@@ -89,6 +77,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     # via its own transport send, bypassing the send_with_rid wrapper.
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=_error_body("INTERNAL_ERROR", "An unexpected error occurred", request_id),
+        content=_error_body(
+            "INTERNAL_ERROR",
+            "An unexpected error occurred",
+            request_id,
+        ),
         headers={"X-Request-ID": request_id},
     )

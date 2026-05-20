@@ -130,6 +130,15 @@ class HistoryService:
         self,
         user: User,
         app_id: UUID,
-        limit: int = 50,
-    ) -> list[ApplicationHistory]:
-        return await self._repo.list_for_application(app_id, user.id, limit=limit)
+        *,
+        limit: int = 20,
+        offset: int = 0,
+        event_type: str | None = None,
+    ) -> tuple[list[ApplicationHistory], int]:
+        return await self._repo.list_for_application(
+            app_id,
+            user.id,
+            limit=limit,
+            offset=offset,
+            event_type=event_type,
+        )

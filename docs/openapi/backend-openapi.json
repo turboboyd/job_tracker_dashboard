@@ -124,39 +124,143 @@
         ]
       }
     },
-    "/api/v1/cycles": {
+    "/api/v1/users/me/analysis-plan": {
       "get": {
         "tags": [
-          "cycles"
+          "users"
         ],
-        "summary": "List cycles",
-        "description": "List cycles owned by the authenticated user.\n\nSorted by updated_at desc, then created_at desc. Optional status filter supports\nactive, paused, and archived.",
-        "operationId": "list_cycles_api_v1_cycles_get",
+        "summary": "Get current user's analysis plan",
+        "description": "Return current analysis plan limits and feature flags.\n\nThis is read-only. Plan changes are intentionally not exposed as public\nself-upgrade until billing/admin authorization is implemented.",
+        "operationId": "get_my_analysis_plan_api_v1_users_me_analysis_plan_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisPlanRead"
+                }
+              }
+            }
+          }
+        },
         "security": [
           {
             "HTTPBearer": []
           }
+        ]
+      }
+    },
+    "/api/v1/dev/users/me/analysis-plan": {
+      "patch": {
+        "tags": [
+          "dev-tools"
         ],
+        "summary": "Development-only current user analysis plan switch",
+        "description": "Set current user's analysis plan for local development testing only.",
+        "operationId": "patch_my_analysis_plan_for_dev_api_v1_dev_users_me_analysis_plan_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevAnalysisPlanPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevAnalysisPlanUpdateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/vacancy-import/preview": {
+      "post": {
+        "tags": [
+          "vacancy-import"
+        ],
+        "summary": "Preview a single user-provided vacancy URL",
+        "description": "Fetch and parse one user-provided vacancy URL for an editable preview.\n\nThe endpoint does not create or persist applications and does not store imported HTML.",
+        "operationId": "preview_vacancy_import_api_v1_vacancy_import_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyImportPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyImportPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/discovery-sources": {
+      "get": {
+        "tags": [
+          "discovery-sources"
+        ],
+        "summary": "List discovery sources",
+        "operationId": "list_sources_api_v1_discovery_sources_get",
         "parameters": [
           {
-            "name": "status",
+            "name": "enabled_only",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "enum": [
-                    "active",
-                    "paused",
-                    "archived"
-                  ],
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
+              "type": "boolean",
+              "default": false,
+              "title": "Enabled Only"
             }
           }
         ],
@@ -166,11 +270,191 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CycleRead"
-                  },
-                  "title": "Response List Cycles Api V1 Cycles Get"
+                  "$ref": "#/components/schemas/DiscoverySourceListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery-sources/runtime-status": {
+      "get": {
+        "tags": [
+          "discovery-sources"
+        ],
+        "summary": "List discovery source runtime configuration status",
+        "operationId": "list_source_runtime_statuses_api_v1_discovery_sources_runtime_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverySourceRuntimeStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery-preview": {
+      "post": {
+        "tags": [
+          "discovery-preview"
+        ],
+        "summary": "Preview a manual source input without saving it",
+        "operationId": "preview_discovery_source_api_v1_discovery_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoveryPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/discovery-runs": {
+      "post": {
+        "tags": [
+          "discovery-runs"
+        ],
+        "summary": "Run safe discovery evaluation without fetching sources",
+        "operationId": "create_discovery_run_api_v1_discovery_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoveryRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/loops": {
+      "get": {
+        "tags": [
+          "loops"
+        ],
+        "summary": "List loops",
+        "operationId": "list_loops_api_v1_loops_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Archived"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopListResponse"
                 }
               }
             }
@@ -189,10 +473,10 @@
       },
       "post": {
         "tags": [
-          "cycles"
+          "loops"
         ],
-        "summary": "Create cycle",
-        "operationId": "create_cycle_api_v1_cycles_post",
+        "summary": "Create loop",
+        "operationId": "create_loop_api_v1_loops_post",
         "security": [
           {
             "HTTPBearer": []
@@ -203,7 +487,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CycleCreate"
+                "$ref": "#/components/schemas/LoopCreate"
               }
             }
           }
@@ -214,7 +498,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CycleRead"
+                  "$ref": "#/components/schemas/LoopRead"
                 }
               }
             }
@@ -232,13 +516,13 @@
         }
       }
     },
-    "/api/v1/cycles/{cycle_id}": {
+    "/api/v1/loops/{loop_id}": {
       "get": {
         "tags": [
-          "cycles"
+          "loops"
         ],
-        "summary": "Get cycle",
-        "operationId": "get_cycle_api_v1_cycles__cycle_id__get",
+        "summary": "Get loop",
+        "operationId": "get_loop_api_v1_loops__loop_id__get",
         "security": [
           {
             "HTTPBearer": []
@@ -246,13 +530,13 @@
         ],
         "parameters": [
           {
-            "name": "cycle_id",
+            "name": "loop_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid",
-              "title": "Cycle Id"
+              "title": "Loop Id"
             }
           }
         ],
@@ -262,7 +546,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CycleRead"
+                  "$ref": "#/components/schemas/LoopRead"
                 }
               }
             }
@@ -281,10 +565,10 @@
       },
       "patch": {
         "tags": [
-          "cycles"
+          "loops"
         ],
-        "summary": "Update cycle",
-        "operationId": "patch_cycle_api_v1_cycles__cycle_id__patch",
+        "summary": "Update loop",
+        "operationId": "patch_loop_api_v1_loops__loop_id__patch",
         "security": [
           {
             "HTTPBearer": []
@@ -292,13 +576,13 @@
         ],
         "parameters": [
           {
-            "name": "cycle_id",
+            "name": "loop_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid",
-              "title": "Cycle Id"
+              "title": "Loop Id"
             }
           }
         ],
@@ -307,7 +591,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CycleUpdate"
+                "$ref": "#/components/schemas/LoopUpdate"
               }
             }
           }
@@ -318,7 +602,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CycleRead"
+                  "$ref": "#/components/schemas/LoopRead"
                 }
               }
             }
@@ -337,11 +621,10 @@
       },
       "delete": {
         "tags": [
-          "cycles"
+          "loops"
         ],
-        "summary": "Archive cycle",
-        "description": "Soft-delete by setting status=archived; applications are not deleted.",
-        "operationId": "delete_cycle_api_v1_cycles__cycle_id__delete",
+        "summary": "Archive loop",
+        "operationId": "delete_loop_api_v1_loops__loop_id__delete",
         "security": [
           {
             "HTTPBearer": []
@@ -349,19 +632,912 @@
         ],
         "parameters": [
           {
-            "name": "cycle_id",
+            "name": "loop_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid",
-              "title": "Cycle Id"
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/import-preview": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Preview one vacancy URL for a loop without saving it",
+        "operationId": "import_match_preview_api_v1_loops__loop_id__matches_import_preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyImportPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyImportPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Save vacancy preview as a match under a loop",
+        "operationId": "create_match_api_v1_loops__loop_id__matches_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyMatchCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyMatchRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "List vacancy matches for a loop",
+        "operationId": "list_matches_api_v1_loops__loop_id__matches_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "new",
+                    "saved",
+                    "ignored",
+                    "converted"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyMatchListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/from-preview": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Save one selected discovery preview item as a vacancy match",
+        "operationId": "create_match_from_preview_api_v1_loops__loop_id__matches_from_preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyMatchFromPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyMatchFromPreviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/preview-ignores": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Hide one discovery preview item from future preview feeds",
+        "operationId": "create_preview_ignore_api_v1_loops__loop_id__matches_preview_ignores_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyPreviewIgnoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyPreviewIgnoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "List preview items hidden by the current user for a loop",
+        "operationId": "list_preview_ignores_api_v1_loops__loop_id__matches_preview_ignores_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyPreviewIgnoreListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/preview-ignores/{ignore_id}": {
+      "delete": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Remove one hidden discovery preview item",
+        "operationId": "delete_preview_ignore_api_v1_loops__loop_id__matches_preview_ignores__ignore_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "ignore_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Ignore Id"
             }
           }
         ],
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/{match_id}": {
+      "patch": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Update editable vacancy match fields",
+        "operationId": "patch_match_api_v1_loops__loop_id__matches__match_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyMatchPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyMatchRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/{match_id}/evaluate": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Evaluate deterministic score and duplicate metadata for a vacancy match",
+        "operationId": "evaluate_match_api_v1_loops__loop_id__matches__match_id__evaluate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyMatchEvaluationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/{match_id}/create-application": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Create an application from a saved vacancy match",
+        "operationId": "create_application_from_match_api_v1_loops__loop_id__matches__match_id__create_application_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplicationFromMatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateApplicationFromMatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/{match_id}/convert-to-application": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Create an application from a saved vacancy match",
+        "operationId": "convert_match_to_application_api_v1_loops__loop_id__matches__match_id__convert_to_application_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConvertMatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/{match_id}/analyses": {
+      "post": {
+        "tags": [
+          "vacancy-analysis"
+        ],
+        "summary": "Create and save vacancy analysis",
+        "operationId": "create_analysis_api_v1_loops__loop_id__matches__match_id__analyses_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyAnalysisCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyAnalysisResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "vacancy-analysis"
+        ],
+        "summary": "List saved vacancy analyses for a match",
+        "operationId": "list_analyses_api_v1_loops__loop_id__matches__match_id__analyses_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyAnalysisListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/{match_id}/analyses/latest": {
+      "get": {
+        "tags": [
+          "vacancy-analysis"
+        ],
+        "summary": "Get latest saved vacancy analysis for a match",
+        "operationId": "latest_analysis_api_v1_loops__loop_id__matches__match_id__analyses_latest_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyAnalysisRead"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -456,23 +1632,22 @@
             "description": "Case-insensitive substring search over company_name, role_title, location_text, source"
           },
           {
-            "name": "cycle_id",
+            "name": "loop_id",
             "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "type": "string",
-                  "format": "uuid"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Filter by cycle id",
-              "title": "Cycle Id"
+              "description": "Filter by loop id",
+              "title": "Loop Id"
             },
-            "description": "Filter by cycle id"
+            "description": "Filter by loop id"
           },
           {
             "name": "is_favorite",
@@ -1407,12 +2582,97 @@
         ],
         "title": "ActivityFeedResponse"
       },
+      "AnalysisPlanFeatures": {
+        "properties": {
+          "cover_letter": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "short_template",
+              "enabled"
+            ],
+            "title": "Cover Letter"
+          },
+          "interview_questions": {
+            "type": "boolean",
+            "title": "Interview Questions"
+          },
+          "cv_keywords": {
+            "type": "boolean",
+            "title": "Cv Keywords"
+          },
+          "multi_match_comparison": {
+            "type": "boolean",
+            "title": "Multi Match Comparison"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "high"
+            ],
+            "title": "Priority"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cover_letter",
+          "interview_questions",
+          "cv_keywords",
+          "multi_match_comparison",
+          "priority"
+        ],
+        "title": "AnalysisPlanFeatures"
+      },
+      "AnalysisPlanLimits": {
+        "properties": {
+          "basic_daily_limit": {
+            "type": "integer",
+            "title": "Basic Daily Limit"
+          },
+          "ai_daily_limit": {
+            "type": "integer",
+            "title": "Ai Daily Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "basic_daily_limit",
+          "ai_daily_limit"
+        ],
+        "title": "AnalysisPlanLimits"
+      },
+      "AnalysisPlanRead": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "basic",
+              "premium"
+            ],
+            "title": "Plan"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/AnalysisPlanLimits"
+          },
+          "features": {
+            "$ref": "#/components/schemas/AnalysisPlanFeatures"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "limits",
+          "features"
+        ],
+        "title": "AnalysisPlanRead"
+      },
       "ApplicationCreate": {
         "properties": {
-          "cycle_id": {
+          "loop_id": {
             "type": "string",
-            "format": "uuid",
-            "title": "Cycle Id"
+            "title": "Loop Id"
           },
           "company_name": {
             "type": "string",
@@ -1670,17 +2930,6 @@
             ],
             "title": "Vacancy Description"
           },
-          "loop_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Loop Id"
-          },
           "has_loop": {
             "type": "boolean",
             "title": "Has Loop",
@@ -1712,7 +2961,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "cycle_id",
+          "loop_id",
           "company_name",
           "role_title"
         ],
@@ -2141,18 +3390,6 @@
             "format": "uuid",
             "title": "User Id"
           },
-          "cycle_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cycle Id"
-          },
           "archived": {
             "type": "boolean",
             "title": "Archived"
@@ -2503,7 +3740,6 @@
         "required": [
           "id",
           "user_id",
-          "cycle_id",
           "archived",
           "is_favorite",
           "company_name",
@@ -2622,114 +3858,149 @@
         ],
         "title": "CommentRequest"
       },
-      "CycleCreate": {
+      "ConvertMatchResponse": {
         "properties": {
-          "title": {
+          "application_id": {
             "type": "string",
-            "title": "Title"
+            "format": "uuid",
+            "title": "Application Id"
           },
-          "target_role": {
+          "match": {
+            "$ref": "#/components/schemas/VacancyMatchRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "application_id",
+          "match"
+        ],
+        "title": "ConvertMatchResponse"
+      },
+      "CreateApplicationFromMatchRequest": {
+        "properties": {
+          "status": {
             "type": "string",
-            "title": "Target Role"
-          },
-          "location": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
+            "enum": [
+              "SAVED",
+              "PLANNED",
+              "APPLIED",
+              "VIEWED",
+              "INTERVIEW_1",
+              "INTERVIEW_2",
+              "TEST_TASK",
+              "OFFER",
+              "REJECTED",
+              "NO_RESPONSE",
+              "WITHDREW"
             ],
-            "title": "Location"
+            "title": "Status",
+            "default": "SAVED"
           },
-          "goal": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Goal"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "weekly_target": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Weekly Target"
-          },
-          "start_date": {
+          "notes": {
             "anyOf": [
               {
                 "type": "string",
-                "format": "date"
+                "maxLength": 5000
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Start Date"
+            "title": "Notes"
           },
-          "end_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
+          "favorite": {
+            "type": "boolean",
+            "title": "Favorite",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CreateApplicationFromMatchRequest"
+      },
+      "CreateApplicationFromMatchResponse": {
+        "properties": {
+          "application": {
+            "$ref": "#/components/schemas/ApplicationRead"
+          },
+          "match": {
+            "$ref": "#/components/schemas/VacancyMatchRead"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "already_linked": {
+            "type": "boolean",
+            "title": "Already Linked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "application",
+          "match",
+          "created",
+          "already_linked"
+        ],
+        "title": "CreateApplicationFromMatchResponse"
+      },
+      "DevAnalysisPlanPatch": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "basic",
+              "premium"
             ],
-            "title": "End Date"
+            "title": "Plan"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "title",
-          "target_role"
+          "plan"
         ],
-        "title": "CycleCreate"
+        "title": "DevAnalysisPlanPatch"
       },
-      "CycleRead": {
+      "DevAnalysisPlanUpdateResponse": {
         "properties": {
-          "id": {
+          "plan": {
             "type": "string",
-            "format": "uuid",
-            "title": "Id"
+            "enum": [
+              "free",
+              "basic",
+              "premium"
+            ],
+            "title": "Plan"
           },
-          "user_id": {
+          "message": {
             "type": "string",
-            "format": "uuid",
-            "title": "User Id"
-          },
-          "title": {
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "message"
+        ],
+        "title": "DevAnalysisPlanUpdateResponse"
+      },
+      "DiscoveryPreviewMatchPayload": {
+        "properties": {
+          "loop_id": {
             "type": "string",
-            "title": "Title"
+            "title": "Loop Id"
           },
-          "target_role": {
+          "source_id": {
             "type": "string",
-            "title": "Target Role"
+            "title": "Source Id"
           },
-          "location": {
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "source": {
             "anyOf": [
               {
                 "type": "string"
@@ -2738,9 +4009,9 @@
                 "type": "null"
               }
             ],
-            "title": "Location"
+            "title": "Source"
           },
-          "goal": {
+          "company_name": {
             "anyOf": [
               {
                 "type": "string"
@@ -2749,9 +4020,9 @@
                 "type": "null"
               }
             ],
-            "title": "Goal"
+            "title": "Company Name"
           },
-          "description": {
+          "role_title": {
             "anyOf": [
               {
                 "type": "string"
@@ -2760,83 +4031,118 @@
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "Role Title"
           },
-          "weekly_target": {
+          "location_text": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Weekly Target"
+            "title": "Location Text"
           },
-          "start_date": {
+          "vacancy_description": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Start Date"
+            "title": "Vacancy Description"
           },
-          "end_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "End Date"
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Confidence"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "status": {
+            "type": "string",
+            "const": "saved",
+            "title": "Status",
+            "default": "saved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loop_id",
+          "source_id",
+          "source_url",
+          "source",
+          "company_name",
+          "role_title",
+          "location_text",
+          "vacancy_description",
+          "confidence",
+          "warnings"
+        ],
+        "title": "DiscoveryPreviewMatchPayload"
+      },
+      "DiscoveryPreviewRequest": {
+        "properties": {
+          "loop_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Loop Id"
+          },
+          "source_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Source Id"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "loop_id",
+          "source_id",
+          "url"
+        ],
+        "title": "DiscoveryPreviewRequest"
+      },
+      "DiscoveryPreviewResponse": {
+        "properties": {
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
           },
           "status": {
             "type": "string",
             "enum": [
-              "active",
-              "paused",
-              "archived"
+              "ready",
+              "limited"
             ],
             "title": "Status"
           },
-          "created_at": {
+          "normalized_url": {
             "type": "string",
-            "format": "date-time",
-            "title": "Created At"
+            "title": "Normalized Url"
           },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "user_id",
-          "title",
-          "target_role",
-          "location",
-          "goal",
-          "description",
-          "weekly_target",
-          "start_date",
-          "end_date",
-          "status",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "CycleRead"
-      },
-      "CycleUpdate": {
-        "properties": {
           "title": {
             "anyOf": [
               {
@@ -2848,7 +4154,7 @@
             ],
             "title": "Title"
           },
-          "target_role": {
+          "company": {
             "anyOf": [
               {
                 "type": "string"
@@ -2857,7 +4163,7 @@
                 "type": "null"
               }
             ],
-            "title": "Target Role"
+            "title": "Company"
           },
           "location": {
             "anyOf": [
@@ -2870,7 +4176,7 @@
             ],
             "title": "Location"
           },
-          "goal": {
+          "snippet": {
             "anyOf": [
               {
                 "type": "string"
@@ -2879,9 +4185,9 @@
                 "type": "null"
               }
             ],
-            "title": "Goal"
+            "title": "Snippet"
           },
-          "description": {
+          "external_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -2890,63 +4196,516 @@
                 "type": "null"
               }
             ],
-            "title": "Description"
+            "title": "External Id"
           },
-          "weekly_target": {
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "can_create_match": {
+            "type": "boolean",
+            "title": "Can Create Match"
+          },
+          "match": {
+            "$ref": "#/components/schemas/DiscoveryPreviewMatchPayload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loop_id",
+          "source_id",
+          "status",
+          "normalized_url",
+          "title",
+          "company",
+          "location",
+          "snippet",
+          "warnings",
+          "can_create_match",
+          "match"
+        ],
+        "title": "DiscoveryPreviewResponse"
+      },
+      "DiscoveryRunItem": {
+        "properties": {
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "source_id": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Weekly Target"
-          },
-          "start_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Start Date"
-          },
-          "end_date": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "End Date"
+            "title": "Source Id"
           },
           "status": {
+            "type": "string",
+            "enum": [
+              "skipped",
+              "unsupported",
+              "would_run",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "items_previewed": {
+            "type": "integer",
+            "title": "Items Previewed",
+            "default": 0
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "preview_items": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryRunPreviewItem"
+            },
+            "type": "array",
+            "title": "Preview Items"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loop_id",
+          "status",
+          "reason",
+          "message"
+        ],
+        "title": "DiscoveryRunItem"
+      },
+      "DiscoveryRunPreviewItem": {
+        "properties": {
+          "external_id": {
             "anyOf": [
               {
-                "type": "string",
-                "enum": [
-                  "active",
-                  "paused",
-                  "archived"
-                ]
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Status"
+            "title": "External Id"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snippet"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          },
+          "raw_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw Metadata"
+          },
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_url"
+        ],
+        "title": "DiscoveryRunPreviewItem"
+      },
+      "DiscoveryRunRequest": {
+        "properties": {
+          "loop_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loop Id"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": true
+          },
+          "source_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ids"
+          },
+          "search_scope": {
+            "type": "string",
+            "enum": [
+              "focused",
+              "normal",
+              "broad"
+            ],
+            "title": "Search Scope",
+            "default": "normal"
+          },
+          "page": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Page",
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Page Size",
+            "default": 5
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "CycleUpdate"
+        "title": "DiscoveryRunRequest"
+      },
+      "DiscoveryRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "completed_with_warnings",
+              "failed",
+              "skipped"
+            ],
+            "title": "Status"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "default": 5
+          },
+          "loops_checked": {
+            "type": "integer",
+            "title": "Loops Checked"
+          },
+          "sources_checked": {
+            "type": "integer",
+            "title": "Sources Checked"
+          },
+          "matches_created": {
+            "type": "integer",
+            "title": "Matches Created"
+          },
+          "matches_previewed": {
+            "type": "integer",
+            "title": "Matches Previewed"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryRunItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status",
+          "dry_run",
+          "loops_checked",
+          "sources_checked",
+          "matches_created",
+          "matches_previewed",
+          "warnings",
+          "items"
+        ],
+        "title": "DiscoveryRunResponse"
+      },
+      "DiscoverySource": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "job_board",
+              "company_site"
+            ],
+            "title": "Type"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "countries": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Countries"
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/DiscoverySourceCapabilities"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "enabled",
+          "description",
+          "capabilities"
+        ],
+        "title": "DiscoverySource"
+      },
+      "DiscoverySourceCapabilities": {
+        "properties": {
+          "manual_import": {
+            "type": "boolean",
+            "title": "Manual Import"
+          },
+          "automatic_discovery": {
+            "type": "boolean",
+            "title": "Automatic Discovery"
+          },
+          "requires_credentials": {
+            "type": "boolean",
+            "title": "Requires Credentials"
+          },
+          "supports_filters": {
+            "type": "boolean",
+            "title": "Supports Filters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "manual_import",
+          "automatic_discovery",
+          "requires_credentials",
+          "supports_filters"
+        ],
+        "title": "DiscoverySourceCapabilities"
+      },
+      "DiscoverySourceListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoverySource"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "DiscoverySourceListResponse"
+      },
+      "DiscoverySourceRuntimeStatus": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$",
+            "title": "Source Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "automatic_discovery": {
+            "type": "boolean",
+            "title": "Automatic Discovery"
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured"
+          },
+          "runnable": {
+            "type": "boolean",
+            "title": "Runnable"
+          },
+          "configuration_status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "not_configured",
+              "not_runnable"
+            ],
+            "title": "Configuration Status"
+          },
+          "message_code": {
+            "type": "string",
+            "title": "Message Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "name",
+          "automatic_discovery",
+          "configured",
+          "runnable",
+          "configuration_status",
+          "message_code"
+        ],
+        "title": "DiscoverySourceRuntimeStatus"
+      },
+      "DiscoverySourceRuntimeStatusResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoverySourceRuntimeStatus"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "DiscoverySourceRuntimeStatusResponse"
       },
       "DocumentKind": {
         "type": "string",
@@ -3307,6 +5066,493 @@
         ],
         "title": "KpiResponse"
       },
+      "LoopCreate": {
+        "properties": {
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keywords"
+          },
+          "excluded_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded Keywords"
+          },
+          "employment_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Employment Types"
+          },
+          "work_modes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Work Modes"
+          },
+          "selected_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Selected Sources"
+          },
+          "auto_discovery_enabled": {
+            "type": "boolean",
+            "title": "Auto Discovery Enabled",
+            "default": false
+          },
+          "discovery_radius_km": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 250.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Radius Km"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "target_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Role"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "radius_km": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 500.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radius Km"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "archived"
+            ],
+            "title": "Status",
+            "default": "active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "LoopCreate"
+      },
+      "LoopListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LoopRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "LoopListResponse"
+      },
+      "LoopRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "target_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Role"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "radius_km": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radius Km"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keywords"
+          },
+          "excluded_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded Keywords"
+          },
+          "employment_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Employment Types"
+          },
+          "work_modes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Work Modes"
+          },
+          "selected_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Selected Sources"
+          },
+          "auto_discovery_enabled": {
+            "type": "boolean",
+            "title": "Auto Discovery Enabled"
+          },
+          "discovery_radius_km": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Radius Km"
+          },
+          "last_discovery_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Discovery At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "title",
+          "target_role",
+          "location",
+          "radius_km",
+          "sources",
+          "status",
+          "keywords",
+          "excluded_keywords",
+          "employment_types",
+          "work_modes",
+          "selected_sources",
+          "auto_discovery_enabled",
+          "discovery_radius_km",
+          "last_discovery_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "LoopRead"
+      },
+      "LoopUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "target_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Role"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "radius_km": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 500.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radius Km"
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "paused",
+                  "archived"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keywords"
+          },
+          "excluded_keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded Keywords"
+          },
+          "employment_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employment Types"
+          },
+          "work_modes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Modes"
+          },
+          "selected_sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Sources"
+          },
+          "auto_discovery_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Discovery Enabled"
+          },
+          "discovery_radius_km": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 250.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Radius Km"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LoopUpdate"
+      },
       "ReminderItem": {
         "properties": {
           "id": {
@@ -3545,6 +5791,15 @@
             "type": "string",
             "title": "Date Format"
           },
+          "analysis_plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "basic",
+              "premium"
+            ],
+            "title": "Analysis Plan"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -3566,11 +5821,1372 @@
           "language",
           "timezone",
           "date_format",
+          "analysis_plan",
           "created_at",
           "updated_at"
         ],
         "title": "UserRead",
         "description": "Public representation of a local user (returned by GET/PATCH /users/me)."
+      },
+      "VacancyAnalysisCreate": {
+        "properties": {
+          "analysis_type": {
+            "type": "string",
+            "enum": [
+              "basic",
+              "ai"
+            ],
+            "title": "Analysis Type",
+            "default": "basic"
+          },
+          "resume_text": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Resume Text"
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 2,
+            "title": "Language",
+            "default": "ru"
+          },
+          "include_cover_letter": {
+            "type": "boolean",
+            "title": "Include Cover Letter",
+            "default": false
+          },
+          "include_interview_questions": {
+            "type": "boolean",
+            "title": "Include Interview Questions",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "resume_text"
+        ],
+        "title": "VacancyAnalysisCreate"
+      },
+      "VacancyAnalysisListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VacancyAnalysisRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "VacancyAnalysisListResponse"
+      },
+      "VacancyAnalysisQuota": {
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "basic",
+              "premium"
+            ],
+            "title": "Plan"
+          },
+          "basic_used": {
+            "type": "integer",
+            "title": "Basic Used"
+          },
+          "basic_limit": {
+            "type": "integer",
+            "title": "Basic Limit"
+          },
+          "ai_used": {
+            "type": "integer",
+            "title": "Ai Used"
+          },
+          "ai_limit": {
+            "type": "integer",
+            "title": "Ai Limit"
+          },
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan",
+          "basic_used",
+          "basic_limit",
+          "ai_used",
+          "ai_limit",
+          "day"
+        ],
+        "title": "VacancyAnalysisQuota"
+      },
+      "VacancyAnalysisRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "match_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Match Id"
+          },
+          "analysis_type": {
+            "type": "string",
+            "enum": [
+              "basic",
+              "ai"
+            ],
+            "title": "Analysis Type"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "ollama",
+              "openai",
+              "gemini",
+              "groq"
+            ],
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "basic",
+              "premium"
+            ],
+            "title": "Plan"
+          },
+          "resume_hash": {
+            "type": "string",
+            "title": "Resume Hash"
+          },
+          "vacancy_snapshot": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Vacancy Snapshot"
+          },
+          "overall_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Overall Score"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "strengths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Strengths"
+          },
+          "gaps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Gaps"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risks"
+          },
+          "recommended_cv_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Cv Keywords"
+          },
+          "application_angle": {
+            "type": "string",
+            "title": "Application Angle"
+          },
+          "cover_letter_draft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Letter Draft"
+          },
+          "interview_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Interview Questions"
+          },
+          "model_info": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Model Info"
+          },
+          "quota_day": {
+            "type": "string",
+            "format": "date",
+            "title": "Quota Day"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "loop_id",
+          "match_id",
+          "analysis_type",
+          "provider",
+          "model",
+          "plan",
+          "resume_hash",
+          "vacancy_snapshot",
+          "overall_score",
+          "summary",
+          "strengths",
+          "gaps",
+          "risks",
+          "recommended_cv_keywords",
+          "application_angle",
+          "cover_letter_draft",
+          "interview_questions",
+          "model_info",
+          "quota_day",
+          "created_at"
+        ],
+        "title": "VacancyAnalysisRead"
+      },
+      "VacancyAnalysisResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "match_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Match Id"
+          },
+          "analysis_type": {
+            "type": "string",
+            "enum": [
+              "basic",
+              "ai"
+            ],
+            "title": "Analysis Type"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "ollama",
+              "openai",
+              "gemini",
+              "groq"
+            ],
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "basic",
+              "premium"
+            ],
+            "title": "Plan"
+          },
+          "resume_hash": {
+            "type": "string",
+            "title": "Resume Hash"
+          },
+          "vacancy_snapshot": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Vacancy Snapshot"
+          },
+          "overall_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Overall Score"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "strengths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Strengths"
+          },
+          "gaps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Gaps"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risks"
+          },
+          "recommended_cv_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recommended Cv Keywords"
+          },
+          "application_angle": {
+            "type": "string",
+            "title": "Application Angle"
+          },
+          "cover_letter_draft": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Letter Draft"
+          },
+          "interview_questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Interview Questions"
+          },
+          "model_info": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Model Info"
+          },
+          "quota_day": {
+            "type": "string",
+            "format": "date",
+            "title": "Quota Day"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "quota": {
+            "$ref": "#/components/schemas/VacancyAnalysisQuota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "loop_id",
+          "match_id",
+          "analysis_type",
+          "provider",
+          "model",
+          "plan",
+          "resume_hash",
+          "vacancy_snapshot",
+          "overall_score",
+          "summary",
+          "strengths",
+          "gaps",
+          "risks",
+          "recommended_cv_keywords",
+          "application_angle",
+          "cover_letter_draft",
+          "interview_questions",
+          "model_info",
+          "quota_day",
+          "created_at",
+          "quota"
+        ],
+        "title": "VacancyAnalysisResponse"
+      },
+      "VacancyImportPreviewRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "VacancyImportPreviewRequest"
+      },
+      "VacancyImportPreviewResponse": {
+        "properties": {
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "location_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Text"
+          },
+          "vacancy_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vacancy Description"
+          },
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Confidence"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_url",
+          "source",
+          "company_name",
+          "role_title",
+          "location_text",
+          "vacancy_description",
+          "confidence",
+          "warnings"
+        ],
+        "title": "VacancyImportPreviewResponse"
+      },
+      "VacancyMatchCreate": {
+        "properties": {
+          "source_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "location_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Text"
+          },
+          "vacancy_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vacancy Description"
+          },
+          "raw_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw Metadata"
+          },
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Confidence"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "saved",
+              "ignored",
+              "converted"
+            ],
+            "title": "Status",
+            "default": "saved"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_url"
+        ],
+        "title": "VacancyMatchCreate"
+      },
+      "VacancyMatchEvaluationResponse": {
+        "properties": {
+          "match_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Match Id"
+          },
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "total_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Total Score"
+          },
+          "title_match_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Title Match Score"
+          },
+          "location_match_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Location Match Score"
+          },
+          "employment_type_match_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Employment Type Match Score"
+          },
+          "work_mode_match_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Work Mode Match Score"
+          },
+          "keyword_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Keyword Score"
+          },
+          "excluded_keyword_penalty": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Excluded Keyword Penalty"
+          },
+          "source_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Source Score"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "penalties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Penalties"
+          },
+          "duplicate_status": {
+            "type": "string",
+            "enum": [
+              "none",
+              "possible_duplicate",
+              "likely_duplicate",
+              "exact_duplicate"
+            ],
+            "title": "Duplicate Status"
+          },
+          "duplicate_of_match_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of Match Id"
+          },
+          "duplicate_application_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Application Id"
+          },
+          "duplicate_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Duplicate Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "match_id",
+          "loop_id",
+          "total_score",
+          "title_match_score",
+          "location_match_score",
+          "employment_type_match_score",
+          "work_mode_match_score",
+          "keyword_score",
+          "excluded_keyword_penalty",
+          "source_score",
+          "reasons",
+          "penalties",
+          "duplicate_status",
+          "duplicate_of_match_id",
+          "duplicate_application_id",
+          "duplicate_reasons"
+        ],
+        "title": "VacancyMatchEvaluationResponse"
+      },
+      "VacancyMatchFromPreviewRequest": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_]+$",
+            "title": "Source Id"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "source_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Source Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          },
+          "raw_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw Metadata"
+          },
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Confidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_url"
+        ],
+        "title": "VacancyMatchFromPreviewRequest"
+      },
+      "VacancyMatchFromPreviewResponse": {
+        "properties": {
+          "match": {
+            "$ref": "#/components/schemas/VacancyMatchRead"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "match",
+          "created",
+          "duplicate"
+        ],
+        "title": "VacancyMatchFromPreviewResponse"
+      },
+      "VacancyMatchListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VacancyMatchRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "VacancyMatchListResponse"
+      },
+      "VacancyMatchPatch": {
+        "properties": {
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "location_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Text"
+          },
+          "vacancy_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vacancy Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "saved",
+                  "ignored",
+                  "converted"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "VacancyMatchPatch"
+      },
+      "VacancyMatchRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "location_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Text"
+          },
+          "vacancy_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vacancy Description"
+          },
+          "raw_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw Metadata"
+          },
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Confidence"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "application_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "loop_id",
+          "source_url",
+          "source",
+          "company_name",
+          "role_title",
+          "location_text",
+          "vacancy_description",
+          "confidence",
+          "warnings",
+          "status",
+          "application_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VacancyMatchRead"
+      },
+      "VacancyPreviewIgnoreListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VacancyPreviewIgnoreRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "VacancyPreviewIgnoreListResponse"
+      },
+      "VacancyPreviewIgnoreRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "loop_id",
+          "source_id",
+          "source_url",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VacancyPreviewIgnoreRead"
+      },
+      "VacancyPreviewIgnoreRequest": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-z0-9_]+$",
+            "title": "Source Id"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "source_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Source Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id",
+          "source_url"
+        ],
+        "title": "VacancyPreviewIgnoreRequest"
+      },
+      "VacancyPreviewIgnoreResponse": {
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/VacancyPreviewIgnoreRead"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item",
+          "created",
+          "duplicate"
+        ],
+        "title": "VacancyPreviewIgnoreResponse"
       },
       "ValidationError": {
         "properties": {

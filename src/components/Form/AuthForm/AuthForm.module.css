@@ -1,0 +1,33 @@
+.form {
+  padding: 64px;
+}
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 40px;
+}
+
+.title_wrap{
+  margin-bottom: 40px;
+}
+
+.text{
+  margin-bottom: 40px;
+}
+
+.btn_login{
+  border: none;
+  background: transparent;
+}
+.error {
+  padding: 12px 14px;
+  margin: -20px 0 24px;
+  color: #b42318;
+  background-color: #fff1f0;
+  border: 1px solid #f5c2c0;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}

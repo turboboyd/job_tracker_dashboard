@@ -2,10 +2,6 @@ export {
   publicStatsDoc,
   userApplicationDoc,
   userApplicationsCol,
-  userLoopDoc,
-  userLoopMatchDoc,
-  userLoopMatchesCol,
-  userLoopsCol,
   userOutcomeDoc,
   userSettingsDoc,
 } from "./firestoreRefs";
@@ -14,10 +10,11 @@ export {
   buildAuthedRequest,
   restDelete,
   restGet,
+  restGetBlob,
   restPatch,
   restPost,
 } from "./rest/restClient";
-export type { HttpMethod } from "./rest/restClient";
+export type { HttpMethod, RestBlobResponse } from "./rest/restClient";
 
 export { baseApi } from "./rtk/baseApi";
 export type { AppEndpointBuilder } from "./rtk/endpointBuilder";

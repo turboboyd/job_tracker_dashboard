@@ -1,6 +1,7 @@
 import {
   ArrowUpRight,
   Bookmark,
+  Download,
   ChevronDown,
   ExternalLink,
   FileText,
@@ -8,27 +9,43 @@ import {
   Plus,
   Sparkles,
   Tag,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { AppRoutes, RoutePath } from "src/app/providers/router/routeConfig/routeConfig";
+import {
+  AppRoutes,
+  RoutePath,
+} from "src/app/providers/router/routeConfig/routeConfig";
 import { useAuthSelectors } from "src/entities/auth";
-import { normalizeStatusKey, type StatusKey } from "src/entities/application/model/status";
+import {
+  normalizeStatusKey,
+  type StatusKey,
+} from "src/entities/application/model/status";
 import { StatusPill } from "src/entities/application/ui/StatusKit";
 import {
   type ApplicationDoc,
   type ProcessStatus,
   type HistoryEventDoc,
-  getApplication,
-  getApplicationHistory,
-  changeStatus,
-  addComment,
-  updateApplicationWithHistory,
 } from "src/features/applications/firestoreApplications";
-// TODO(backend-migration): Replace with REST API call when migrating from Firebase.
-import { db } from "src/shared/config/firebase/firebase";
-
+import {
+  changeApplicationStatusViaRest,
+  createApplicationCommentViaRest,
+  deleteDocumentViaRest,
+  downloadDocumentViaRest,
+  getApplicationByIdViaRest,
+  getApplicationHistoryPageViaRest,
+  listApplicationDocumentsViaRest,
+  updateApplicationViaRest,
+  uploadApplicationDocumentViaRest,
+  validateApplicationDocumentUploadFile,
+  type ApplicationHistoryTypeFilter,
+  type DocumentKind,
+} from "src/features/applications/rest/queries";
+import type { ApplicationDocument } from "src/features/applications/rest/adapter";
+import { ApiError } from "src/shared/api/rest/restClient";
+import { getApplicationVacancyDescription } from "./applicationDetails.helpers";
 import { InlineField } from "./ui/InlineField";
 import { SalaryField } from "./ui/SalaryField";
 import { TagsField } from "./ui/TagsField";
@@ -39,17 +56,28 @@ import type { WorkMode } from "src/features/applications/firestore/types";
 
 function statusLabel(status: ProcessStatus): string {
   switch (status) {
-    case "SAVED": return "Saved";
-    case "PLANNED": return "Planned";
-    case "APPLIED": return "Applied";
-    case "VIEWED": return "Viewed";
-    case "INTERVIEW_1": return "Interview";
-    case "INTERVIEW_2": return "Interview 2";
-    case "TEST_TASK": return "Test task";
-    case "OFFER": return "Offer";
-    case "REJECTED": return "Rejected";
-    case "NO_RESPONSE": return "No response";
-    default: return status;
+    case "SAVED":
+      return "Saved";
+    case "PLANNED":
+      return "Planned";
+    case "APPLIED":
+      return "Applied";
+    case "VIEWED":
+      return "Viewed";
+    case "INTERVIEW_1":
+      return "Interview";
+    case "INTERVIEW_2":
+      return "Interview 2";
+    case "TEST_TASK":
+      return "Test task";
+    case "OFFER":
+      return "Offer";
+    case "REJECTED":
+      return "Rejected";
+    case "NO_RESPONSE":
+      return "No response";
+    default:
+      return status;
   }
 }
 
@@ -61,7 +89,12 @@ function formatTs(ts: unknown): string {
       typeof maybe?.toDate === "function"
         ? (maybe.toDate as () => Date)()
         : new Date(ts as never);
-    return d.toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   } catch {
     return "";
   }
@@ -75,9 +108,51 @@ function formatDate(ts: unknown): string {
       typeof maybe?.toDate === "function"
         ? (maybe.toDate as () => Date)()
         : new Date(ts as never);
-    return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" });
+    return d.toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return "";
+  }
+}
+
+function formatIsoDate(value: string): string {
+  try {
+    return new Date(value).toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return value;
+  }
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const power = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  const value = bytes / 1024 ** power;
+  return `${value.toFixed(value >= 10 || power === 0 ? 0 : 1)} ${units[power]}`;
+}
+
+function documentKindLabel(kind: string): string {
+  switch (kind) {
+    case "cv":
+      return "CV";
+    case "cover_letter":
+      return "Cover letter";
+    case "portfolio":
+      return "Portfolio";
+    case "other":
+      return "Other";
+    default:
+      return kind;
   }
 }
 
@@ -98,7 +173,21 @@ function daysAgo(ts: unknown): number {
 function errorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (typeof e === "string") return e;
-  try { return JSON.stringify(e); } catch { return String(e); }
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return String(e);
+  }
+}
+
+function logRestError(context: string, e: unknown): void {
+  if (e instanceof ApiError && e.requestId) {
+    console.error(context, {
+      status: e.status,
+      code: e.code,
+      requestId: e.requestId,
+    });
+  }
 }
 
 function getInitial(name: string): string {
@@ -108,11 +197,11 @@ function getInitial(name: string): string {
 // ─── Stage ribbon ────────────────────────────────────────────────────────────
 
 const STAGE_STEPS: { status: ProcessStatus; label: string }[] = [
-  { status: "SAVED",      label: "Сохранено" },
-  { status: "APPLIED",    label: "Отправлено" },
-  { status: "INTERVIEW_1",label: "Интервью" },
-  { status: "TEST_TASK",  label: "Тест" },
-  { status: "OFFER",      label: "Предложение" },
+  { status: "SAVED", label: "Сохранено" },
+  { status: "APPLIED", label: "Отправлено" },
+  { status: "INTERVIEW_1", label: "Интервью" },
+  { status: "TEST_TASK", label: "Тест" },
+  { status: "OFFER", label: "Предложение" },
 ];
 const TERMINAL_NEG: ProcessStatus[] = ["REJECTED", "NO_RESPONSE"];
 
@@ -130,13 +219,19 @@ function StageRibbon({ current }: { current: ProcessStatus }) {
             <div
               className={[
                 "h-[4px] rounded-full mb-1.5 transition-colors",
-                isActive ? "bg-primary" : isPast ? "bg-primary/50" : "bg-border",
+                isActive
+                  ? "bg-primary"
+                  : isPast
+                    ? "bg-primary/50"
+                    : "bg-border",
               ].join(" ")}
             />
             <div
               className={[
                 "text-[11px] truncate",
-                isActive ? "font-medium text-foreground" : "text-muted-foreground",
+                isActive
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground",
               ].join(" ")}
             >
               {i + 1}. {step.label}
@@ -159,13 +254,13 @@ function StageRibbon({ current }: { current: ProcessStatus }) {
 // ─── Status change dropdown ──────────────────────────────────────────────────
 
 const STATUS_OPTIONS: { value: ProcessStatus; label: string }[] = [
-  { value: "SAVED",      label: "Saved" },
-  { value: "APPLIED",    label: "Applied" },
-  { value: "INTERVIEW_1",label: "Interview" },
-  { value: "TEST_TASK",  label: "Test task" },
-  { value: "OFFER",      label: "Offer" },
-  { value: "REJECTED",   label: "Rejected" },
-  { value: "NO_RESPONSE",label: "No response" },
+  { value: "SAVED", label: "Saved" },
+  { value: "APPLIED", label: "Applied" },
+  { value: "INTERVIEW_1", label: "Interview" },
+  { value: "TEST_TASK", label: "Test task" },
+  { value: "OFFER", label: "Offer" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "NO_RESPONSE", label: "No response" },
 ];
 
 function StatusDropdown({
@@ -188,7 +283,11 @@ function StatusDropdown({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1 rounded-[7px] border border-border bg-card px-2.5 py-1 text-[12px] font-medium hover:bg-muted transition-colors disabled:opacity-50"
       >
-        {sk ? <StatusPill status={sk} className="text-[11px]" dotSize="xs" /> : <span>{statusLabel(current)}</span>}
+        {sk ? (
+          <StatusPill status={sk} className="text-[11px]" dotSize="xs" />
+        ) : (
+          <span>{statusLabel(current)}</span>
+        )}
         <ChevronDown className="h-3 w-3 text-muted-foreground ml-0.5" />
       </button>
       {open && (
@@ -199,13 +298,26 @@ function StatusDropdown({
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => { onChange(opt.value); setOpen(false); }}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
                 className={[
                   "flex w-full items-center gap-2 px-3 py-1.5 text-[12.5px] hover:bg-muted transition-colors",
-                  opt.value === current ? "font-medium text-foreground" : "text-muted-foreground",
+                  opt.value === current
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground",
                 ].join(" ")}
               >
-                {optSk ? <StatusPill status={optSk} className="text-[11px]" dotSize="xs" /> : <span>{opt.label}</span>}
+                {optSk ? (
+                  <StatusPill
+                    status={optSk}
+                    className="text-[11px]"
+                    dotSize="xs"
+                  />
+                ) : (
+                  <span>{opt.label}</span>
+                )}
               </button>
             );
           })}
@@ -218,10 +330,10 @@ function StatusDropdown({
 // ─── Work mode chips ─────────────────────────────────────────────────────────
 
 const WORK_MODE_OPTIONS: { value: WorkMode | "ANY"; label: string }[] = [
-  { value: "REMOTE",  label: "Remote" },
-  { value: "HYBRID",  label: "Hybrid" },
+  { value: "REMOTE", label: "Remote" },
+  { value: "HYBRID", label: "Hybrid" },
   { value: "ON_SITE", label: "On-site" },
-  { value: "ANY",     label: "Any" },
+  { value: "ANY", label: "Any" },
 ];
 
 function WorkModeChips({
@@ -240,20 +352,27 @@ function WorkModeChips({
       </p>
       <div className="flex flex-wrap gap-1.5">
         {WORK_MODE_OPTIONS.map((opt) => {
-          const isActive = opt.value === "ANY" ? current == null : current === opt.value;
+          const isActive =
+            opt.value === "ANY" ? current == null : current === opt.value;
           return (
             <button
               key={opt.value}
               type="button"
               disabled={disabled}
-              onClick={() => onSelect(opt.value === "ANY" ? undefined : (opt.value as WorkMode))}
+              onClick={() =>
+                onSelect(
+                  opt.value === "ANY" ? undefined : (opt.value as WorkMode),
+                )
+              }
               className={[
                 "rounded-[6px] border px-2.5 py-1 text-[11.5px] font-medium transition-colors",
                 isActive
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-card text-foreground border-border hover:bg-muted",
                 disabled ? "opacity-50 cursor-not-allowed" : "",
-              ].filter(Boolean).join(" ")}
+              ]
+                .filter(Boolean)
+                .join(" ")}
             >
               {opt.label}
             </button>
@@ -278,11 +397,17 @@ function SLabel({ children }: { children: React.ReactNode }) {
 
 function MatchBar({ score }: { score: number }) {
   const color =
-    score >= 85 ? "bg-emerald-500" : score >= 70 ? "bg-primary" : "bg-muted-foreground/40";
+    score >= 85
+      ? "bg-emerald-500"
+      : score >= 70
+        ? "bg-primary"
+        : "bg-muted-foreground/40";
   return (
     <div>
       <div className="flex items-baseline gap-2 mt-2">
-        <span className="text-[28px] font-semibold tracking-[-0.025em] tabular-nums">{score}</span>
+        <span className="text-[28px] font-semibold tracking-[-0.025em] tabular-nums">
+          {score}
+        </span>
         <span className="text-[13px] text-muted-foreground">/ 100</span>
       </div>
       <div className="h-[5px] bg-muted rounded-full overflow-hidden mt-2">
@@ -298,9 +423,11 @@ function MatchBar({ score }: { score: number }) {
 // ─── History type helpers ────────────────────────────────────────────────────
 
 function historyEventTitle(ev: HistoryEventDoc): string {
-  if (ev.type === "STATUS_CHANGE") return `Статус: ${ev.fromStatus ?? "?"} → ${ev.toStatus ?? "?"}`;
+  if (ev.type === "STATUS_CHANGE")
+    return `Статус: ${ev.fromStatus ?? "?"} → ${ev.toStatus ?? "?"}`;
   if (ev.type === "COMMENT") return ev.comment ?? "Комментарий";
-  if (ev.type === "FIELD_CHANGE") return `Поле обновлено: ${ev.fieldPath ?? "?"}`;
+  if (ev.type === "FIELD_CHANGE")
+    return `Поле обновлено: ${ev.fieldPath ?? "?"}`;
   return ev.comment ?? "Событие";
 }
 
@@ -312,7 +439,27 @@ function historyDot(ev: HistoryEventDoc): string {
 
 // ─── Tab type ────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "description" | "timeline" | "prep" | "contacts" | "files" | "notes";
+type Tab =
+  | "overview"
+  | "description"
+  | "timeline"
+  | "prep"
+  | "contacts"
+  | "files"
+  | "notes";
+
+type HistoryTypeFilter = "ALL" | ApplicationHistoryTypeFilter;
+
+const HISTORY_PAGE_SIZE = 20;
+
+const HISTORY_TYPE_FILTERS: Array<{ label: string; value: HistoryTypeFilter }> = [
+  { label: "Все", value: "ALL" },
+  { label: "Комментарии", value: "COMMENT" },
+  { label: "Статусы", value: "STATUS_CHANGE" },
+  { label: "Изменения", value: "FIELD_CHANGE" },
+  { label: "Документы", value: "DOCUMENT_UPLOADED" },
+  { label: "Архив", value: "APPLICATION_ARCHIVED" },
+];
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 
@@ -322,27 +469,64 @@ export default function ApplicationDetailsPage() {
   const { userId, isAuthReady } = useAuthSelectors();
 
   const [app, setApp] = useState<ApplicationDoc | null>(null);
-  const [history, setHistory] = useState<Array<{ id: string; data: HistoryEventDoc }>>([]);
+  const [history, setHistory] = useState<
+    Array<{ id: string; data: HistoryEventDoc }>
+  >([]);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyLimit, setHistoryLimit] = useState(HISTORY_PAGE_SIZE);
+  const [historyOffset, setHistoryOffset] = useState(0);
+  const [historyType, setHistoryType] = useState<HistoryTypeFilter>("ALL");
+  const [documents, setDocuments] = useState<ApplicationDocument[]>([]);
+  const [documentsTotal, setDocumentsTotal] = useState(0);
+  const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [documentUploadKind, setDocumentUploadKind] =
+    useState<DocumentKind>("other");
   const [tab, setTab] = useState<Tab>("overview");
   const [commentText, setCommentText] = useState("");
 
   // ── Load ──────────────────────────────────────────────────────────────────
+
+  async function loadHistoryPage(nextOffset = 0, mode: "replace" | "append" = "replace") {
+    if (!appId) return;
+    const page = await getApplicationHistoryPageViaRest(appId, {
+      limit: HISTORY_PAGE_SIZE,
+      offset: nextOffset,
+      type: historyType === "ALL" ? undefined : historyType,
+    });
+    setHistory((current) =>
+      mode === "append" ? [...current, ...page.items] : page.items,
+    );
+    setHistoryTotal(page.total);
+    setHistoryLimit(page.limit);
+    setHistoryOffset(page.offset);
+  }
 
   async function load() {
     if (!userId || !appId) return;
     setIsLoading(true);
     setError(null);
     try {
-      // TODO(backend-migration): GET /api/v1/applications/:appId
-      const a = await getApplication(db, userId, appId);
-      setApp(a);
-      // TODO(backend-migration): GET /api/v1/applications/:appId/history
-      const h = await getApplicationHistory(db, userId, appId, 50);
-      setHistory(h);
+      const [applicationRow, h, documentList] = await Promise.all([
+        getApplicationByIdViaRest(userId, appId),
+        getApplicationHistoryPageViaRest(appId, {
+          limit: HISTORY_PAGE_SIZE,
+          offset: 0,
+          type: historyType === "ALL" ? undefined : historyType,
+        }),
+        listApplicationDocumentsViaRest(appId),
+      ]);
+      setApp(applicationRow.data);
+      setHistory(h.items);
+      setHistoryTotal(h.total);
+      setHistoryLimit(h.limit);
+      setHistoryOffset(h.offset);
+      setDocuments(documentList.items);
+      setDocumentsTotal(documentList.total);
     } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage core load failed", e);
       setError(errorMessage(e));
     } finally {
       setIsLoading(false);
@@ -355,6 +539,12 @@ export default function ApplicationDetailsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthReady, userId, appId]);
 
+  useEffect(() => {
+    if (!isAuthReady || !userId || !appId) return;
+    void loadHistoryPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyType]);
+
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   async function onChangeStatus(next: ProcessStatus) {
@@ -362,9 +552,13 @@ export default function ApplicationDetailsPage() {
     setIsMutating(true);
     setError(null);
     try {
-      await changeStatus(db, userId, appId, next);
-      await load();
+      const updated = await changeApplicationStatusViaRest(userId, appId, {
+        toStatus: next,
+      });
+      setApp(updated.data);
+      await loadHistoryPage(0);
     } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage status change failed", e);
       setError(errorMessage(e));
     } finally {
       setIsMutating(false);
@@ -377,10 +571,95 @@ export default function ApplicationDetailsPage() {
     setIsMutating(true);
     setError(null);
     try {
-      await addComment(db, userId, appId, { text });
+      await createApplicationCommentViaRest(appId, text);
       setCommentText("");
       await load();
     } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage comment creation failed", e);
+      setError(errorMessage(e));
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
+  async function refreshDocuments() {
+    if (!appId) return;
+    setIsDocumentsLoading(true);
+    try {
+      const documentList = await listApplicationDocumentsViaRest(appId);
+      setDocuments(documentList.items);
+      setDocumentsTotal(documentList.total);
+    } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage documents load failed", e);
+      setError(errorMessage(e));
+    } finally {
+      setIsDocumentsLoading(false);
+    }
+  }
+
+  async function onDownloadDocument(documentId: string) {
+    setIsMutating(true);
+    setError(null);
+    try {
+      const response = await downloadDocumentViaRest(documentId);
+      const filename =
+        response.filename ??
+        documents.find((item) => item.id === documentId)?.originalFilename ??
+        "document";
+      const objectUrl = URL.createObjectURL(response.blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage document download failed", e);
+      setError(errorMessage(e));
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
+  async function onDeleteDocument(documentId: string) {
+    setIsMutating(true);
+    setError(null);
+    try {
+      await deleteDocumentViaRest(documentId);
+      setDocuments((prev) => prev.filter((item) => item.id !== documentId));
+      setDocumentsTotal((prev) => Math.max(0, prev - 1));
+    } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage document delete failed", e);
+      setError(errorMessage(e));
+    } finally {
+      setIsMutating(false);
+    }
+  }
+
+  async function onUploadDocument(file: File | null) {
+    if (!appId || !file) return;
+
+    const validation = validateApplicationDocumentUploadFile(file);
+    if (!validation.ok) {
+      setError(validation.message ?? "Файл нельзя загрузить.");
+      return;
+    }
+
+    setIsMutating(true);
+    setError(null);
+    try {
+      const uploadedDocument = await uploadApplicationDocumentViaRest(appId, {
+        file,
+        kind: documentUploadKind,
+      });
+      setDocuments((prev) => [
+        uploadedDocument,
+        ...prev.filter((item) => item.id !== uploadedDocument.id),
+      ]);
+      setDocumentsTotal((prev) => prev + 1);
+    } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage document upload failed", e);
       setError(errorMessage(e));
     } finally {
       setIsMutating(false);
@@ -390,12 +669,22 @@ export default function ApplicationDetailsPage() {
   // ── Field save helpers ────────────────────────────────────────────────────
   // TODO(backend-migration): PATCH /api/v1/applications/:appId
 
-  async function saveField(patch: Record<string, unknown>, fieldPath?: string): Promise<void> {
+  async function saveField(
+    patch: Record<string, unknown>,
+    fieldPath?: string,
+  ): Promise<void> {
     if (!userId || !appId) return;
-    await updateApplicationWithHistory(db, userId, appId, patch, () => [
-      { actor: "user", type: "FIELD_CHANGE", fieldPath },
-    ]);
-    await load();
+    try {
+      const updated = await updateApplicationViaRest(userId, appId, patch);
+      setApp(updated.data);
+      await loadHistoryPage(0);
+    } catch (e: unknown) {
+      logRestError(
+        `ApplicationDetailsPage field save failed: ${fieldPath ?? "unknown"}`,
+        e,
+      );
+      throw e;
+    }
   }
 
   async function saveWorkMode(mode: WorkMode | undefined) {
@@ -403,11 +692,13 @@ export default function ApplicationDetailsPage() {
     setIsMutating(true);
     setError(null);
     try {
-      await updateApplicationWithHistory(db, userId, appId, { "job.workMode": mode ?? null }, () => [
-        { actor: "user", type: "FIELD_CHANGE", fieldPath: "job.workMode" },
-      ]);
-      await load();
+      const updated = await updateApplicationViaRest(userId, appId, {
+        "job.workMode": mode ?? null,
+      });
+      setApp(updated.data);
+      await loadHistoryPage(0);
     } catch (e: unknown) {
+      logRestError("ApplicationDetailsPage work mode save failed", e);
       setError(errorMessage(e));
     } finally {
       setIsMutating(false);
@@ -418,25 +709,31 @@ export default function ApplicationDetailsPage() {
 
   const days = useMemo(() => (app ? daysAgo(app.createdAt) : 0), [app]);
   const interviewCount = useMemo(
-    () => history.filter((h) => h.data.toStatus === "INTERVIEW_1" || h.data.toStatus === "INTERVIEW_2").length,
+    () =>
+      history.filter(
+        (h) =>
+          h.data.toStatus === "INTERVIEW_1" ||
+          h.data.toStatus === "INTERVIEW_2",
+      ).length,
     [history],
   );
 
   const TABS: { key: Tab; label: string; badge?: number }[] = [
-    { key: "overview",     label: "Обзор" },
-    { key: "description",  label: "Описание" },
-    { key: "timeline",     label: "Хронология", badge: history.length },
-    { key: "prep",         label: "Подготовка" },
-    { key: "contacts",     label: "Контакты" },
-    { key: "files",        label: "Файлы" },
-    { key: "notes",        label: "Заметки" },
+    { key: "overview", label: "Обзор" },
+    { key: "description", label: "Описание" },
+    { key: "timeline", label: "Хронология", badge: history.length },
+    { key: "prep", label: "Подготовка" },
+    { key: "contacts", label: "Контакты" },
+    { key: "files", label: "Файлы", badge: documentsTotal || undefined },
+    { key: "notes", label: "Заметки" },
   ];
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   const companyName = app?.job.companyName ?? "";
-  const roleTitle   = app?.job.roleTitle   ?? "Application";
-  const initial     = getInitial(companyName || roleTitle);
+  const roleTitle = app?.job.roleTitle ?? "Application";
+  const initial = getInitial(companyName || roleTitle);
+  const vacancyDescription = getApplicationVacancyDescription(app);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -472,14 +769,25 @@ export default function ApplicationDetailsPage() {
                   <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
                     {roleTitle}
                   </h1>
-                  {app && (() => {
-                    const sk = normalizeStatusKey(app.process.status) as StatusKey | null;
-                    return sk ? <StatusPill status={sk} className="text-[11px]" dotSize="xs" /> : null;
-                  })()}
+                  {app &&
+                    (() => {
+                      const sk = normalizeStatusKey(
+                        app.process.status,
+                      ) as StatusKey | null;
+                      return sk ? (
+                        <StatusPill
+                          status={sk}
+                          className="text-[11px]"
+                          dotSize="xs"
+                        />
+                      ) : null;
+                    })()}
                 </div>
                 <div className="flex items-center gap-3 text-[13px] text-muted-foreground flex-wrap">
                   {companyName && (
-                    <span className="font-medium text-foreground">{companyName}</span>
+                    <span className="font-medium text-foreground">
+                      {companyName}
+                    </span>
                   )}
                   {app?.job.locationText && (
                     <span>· {app.job.locationText}</span>
@@ -487,12 +795,19 @@ export default function ApplicationDetailsPage() {
                   {app?.job.salary && (
                     <span>
                       · {app.job.salary.currency}
-                      {app.job.salary.min ? ` ${app.job.salary.min / 1000}K` : ""}
-                      {app.job.salary.max ? `–${app.job.salary.max / 1000}K` : ""}
+                      {app.job.salary.min
+                        ? ` ${app.job.salary.min / 1000}K`
+                        : ""}
+                      {app.job.salary.max
+                        ? `–${app.job.salary.max / 1000}K`
+                        : ""}
                     </span>
                   )}
                   {days > 0 && (
-                    <span>· {days} {days === 1 ? "день" : days < 5 ? "дня" : "дней"} в воронке</span>
+                    <span>
+                      · {days} {days === 1 ? "день" : days < 5 ? "дня" : "дней"}{" "}
+                      в воронке
+                    </span>
                   )}
                 </div>
               </div>
@@ -574,7 +889,9 @@ export default function ApplicationDetailsPage() {
           )}
 
           {!isLoading && !app && (
-            <div className="text-[13px] text-muted-foreground">Заявка не найдена.</div>
+            <div className="text-[13px] text-muted-foreground">
+              Заявка не найдена.
+            </div>
           )}
 
           {app && (
@@ -600,7 +917,9 @@ export default function ApplicationDetailsPage() {
                       {[
                         {
                           label: "Match-скор",
-                          value: app.matching ? String(app.matching.score) : "—",
+                          value: app.matching
+                            ? String(app.matching.score)
+                            : "—",
                           sub: app.matching ? "/ 100" : "нет данных",
                           accent: "text-primary",
                         },
@@ -620,7 +939,10 @@ export default function ApplicationDetailsPage() {
                           sub: "в хронологии",
                         },
                       ].map((s) => (
-                        <div key={s.label} className="rounded-[14px] border border-border bg-card p-4">
+                        <div
+                          key={s.label}
+                          className="rounded-[14px] border border-border bg-card p-4"
+                        >
                           <SLabel>{s.label}</SLabel>
                           <div className="flex items-baseline gap-1.5 mt-2">
                             <span
@@ -631,7 +953,9 @@ export default function ApplicationDetailsPage() {
                             >
                               {s.value}
                             </span>
-                            <span className="text-[11.5px] text-muted-foreground">{s.sub}</span>
+                            <span className="text-[11.5px] text-muted-foreground">
+                              {s.sub}
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -690,7 +1014,32 @@ export default function ApplicationDetailsPage() {
                       ) : (
                         <p className="text-[13px] text-muted-foreground">
                           {/* TODO(backend-migration): GET /api/v1/applications/:appId/matching — AI-бриф генерируется на сервере после анализа JD и CV */}
-                          AI-анализ ещё не доступен. Добавьте описание вакансии и навыки в профиль.
+                          AI-анализ ещё не доступен. Добавьте описание вакансии
+                          и навыки в профиль.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Vacancy description preview */}
+                    <div className="rounded-[14px] border border-border bg-card p-5">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <SLabel>Описание вакансии</SLabel>
+                        <button
+                          type="button"
+                          onClick={() => setTab("description")}
+                          className="text-[11.5px] text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Открыть
+                        </button>
+                      </div>
+                      {vacancyDescription ? (
+                        <p className="line-clamp-6 whitespace-pre-wrap text-[13px] leading-[1.65] text-muted-foreground">
+                          {vacancyDescription}
+                        </p>
+                      ) : (
+                        <p className="text-[13px] leading-[1.65] text-muted-foreground">
+                          Описание вакансии пока не добавлено. При импорте по
+                          ссылке оно сохранится здесь.
                         </p>
                       )}
                     </div>
@@ -699,15 +1048,20 @@ export default function ApplicationDetailsPage() {
                     {/* TODO(backend-migration): GET /api/v1/applications/:appId/next-action */}
                     <div
                       className="rounded-[14px] border bg-card p-5"
-                      style={{
-                        background: "linear-gradient(135deg, color-mix(in oklab, var(--primary) 5%, var(--card)), var(--card))",
-                        borderColor: "color-mix(in oklab, var(--primary) 20%, var(--border))",
-                      } as React.CSSProperties}
+                      style={
+                        {
+                          background:
+                            "linear-gradient(135deg, color-mix(in oklab, var(--primary) 5%, var(--card)), var(--card))",
+                          borderColor:
+                            "color-mix(in oklab, var(--primary) 20%, var(--border))",
+                        } as React.CSSProperties
+                      }
                     >
                       <SLabel>Следующее действие</SLabel>
                       <p className="mt-3 text-[13px] text-muted-foreground">
                         {/* TODO(backend-migration): backend should compute next recommended action */}
-                        Запланируйте следующий шаг — отправка, интервью или follow-up.
+                        Запланируйте следующий шаг — отправка, интервью или
+                        follow-up.
                       </p>
                     </div>
                   </div>
@@ -726,7 +1080,10 @@ export default function ApplicationDetailsPage() {
                           Изменить
                         </button>
                       </div>
-                      <div className="grid gap-2" style={{ gridTemplateColumns: "auto 1fr" }}>
+                      <div
+                        className="grid gap-2"
+                        style={{ gridTemplateColumns: "auto 1fr" }}
+                      >
                         {[
                           ["Источник", app.job.source ?? "—"],
                           ["Локация", app.job.locationText ?? "—"],
@@ -771,7 +1128,8 @@ export default function ApplicationDetailsPage() {
                           onChange={(e) => setCommentText(e.target.value)}
                           placeholder="Добавить комментарий…"
                           onKeyDown={(e) => {
-                            if (e.key === "Enter" && commentText.trim()) void onAddComment();
+                            if (e.key === "Enter" && commentText.trim())
+                              void onAddComment();
                           }}
                           className="flex-1 rounded-[8px] border border-border bg-muted/50 px-3 py-1.5 text-[12.5px] focus:border-primary focus:outline-none"
                         />
@@ -793,7 +1151,9 @@ export default function ApplicationDetailsPage() {
               {tab === "description" && (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
                   <div className="rounded-[14px] border border-border bg-card p-7">
-                    <h2 className="text-[18px] font-semibold tracking-[-0.02em] mb-4">О роли</h2>
+                    <h2 className="text-[18px] font-semibold tracking-[-0.02em] mb-4">
+                      О роли
+                    </h2>
                     {app.job.vacancyUrl ? (
                       <a
                         href={app.job.vacancyUrl}
@@ -805,10 +1165,16 @@ export default function ApplicationDetailsPage() {
                         Открыть вакансию
                       </a>
                     ) : null}
-                    {/* TODO(backend-migration): job.description — store full JD in DB, parsed from URL or pasted by user */}
-                    <p className="text-[13.5px] leading-[1.7] text-muted-foreground">
-                      Описание вакансии не добавлено. Вставьте текст вакансии или откройте по ссылке — AI автоматически разберёт ключевые требования.
-                    </p>
+                    {vacancyDescription ? (
+                      <div className="whitespace-pre-wrap rounded-[12px] border border-border bg-muted/30 p-4 text-[13.5px] leading-[1.7] text-foreground">
+                        {vacancyDescription}
+                      </div>
+                    ) : (
+                      <p className="text-[13.5px] leading-[1.7] text-muted-foreground">
+                        Описание вакансии не добавлено. Импортируйте вакансию
+                        по ссылке или вставьте текст вручную при создании заявки.
+                      </p>
+                    )}
                   </div>
                   <div className="rounded-[14px] border border-border bg-card p-5">
                     <SLabel>Ключевые слова</SLabel>
@@ -824,7 +1190,9 @@ export default function ApplicationDetailsPage() {
                           </span>
                         ))
                       ) : (
-                        <p className="text-[12px] text-muted-foreground">Теги не добавлены.</p>
+                        <p className="text-[12px] text-muted-foreground">
+                          Теги не добавлены.
+                        </p>
                       )}
                     </div>
                     <button
@@ -841,8 +1209,33 @@ export default function ApplicationDetailsPage() {
               {/* ── TIMELINE ── */}
               {tab === "timeline" && (
                 <div className="max-w-[800px]">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap gap-1">
+                      {HISTORY_TYPE_FILTERS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setHistoryType(option.value)}
+                          className={[
+                            "rounded-md border px-2.5 py-1 text-[12px] transition-colors",
+                            historyType === option.value
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-card text-muted-foreground hover:bg-muted",
+                          ].join(" ")}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-[12px] text-muted-foreground">
+                      Показано {history.length} из {historyTotal}
+                    </span>
+                  </div>
+
                   {history.length === 0 ? (
-                    <p className="text-[13px] text-muted-foreground">История пока пуста.</p>
+                    <p className="text-[13px] text-muted-foreground">
+                      История пока пуста.
+                    </p>
                   ) : (
                     <div className="rounded-[14px] border border-border bg-card overflow-hidden">
                       {history.map((h, i) => (
@@ -850,7 +1243,9 @@ export default function ApplicationDetailsPage() {
                           key={h.id}
                           className={[
                             "grid gap-4 px-5 py-4",
-                            i < history.length - 1 ? "border-b border-border" : "",
+                            i < history.length - 1
+                              ? "border-b border-border"
+                              : "",
                           ].join(" ")}
                           style={{ gridTemplateColumns: "80px 24px 1fr" }}
                         >
@@ -866,7 +1261,9 @@ export default function ApplicationDetailsPage() {
 
                           {/* Dot + line */}
                           <div className="relative flex justify-center">
-                            <div className={`mt-1.5 h-[10px] w-[10px] rounded-full ${historyDot(h.data)}`} />
+                            <div
+                              className={`mt-1.5 h-[10px] w-[10px] rounded-full ${historyDot(h.data)}`}
+                            />
                             {i < history.length - 1 && (
                               <div className="absolute top-4 bottom-[-17px] left-1/2 w-px -translate-x-1/2 bg-border" />
                             )}
@@ -891,6 +1288,17 @@ export default function ApplicationDetailsPage() {
                     </div>
                   )}
 
+                  {history.length < historyTotal ? (
+                    <button
+                      type="button"
+                      disabled={isMutating}
+                      onClick={() => void loadHistoryPage(historyOffset + historyLimit, "append")}
+                      className="mt-3 rounded-[10px] border border-border bg-card px-4 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                    >
+                      Загрузить ещё
+                    </button>
+                  ) : null}
+
                   {/* Add comment */}
                   <div className="mt-4 flex gap-2">
                     <input
@@ -899,7 +1307,8 @@ export default function ApplicationDetailsPage() {
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder="Добавить заметку в хронологию…"
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && commentText.trim()) void onAddComment();
+                        if (e.key === "Enter" && commentText.trim())
+                          void onAddComment();
                       }}
                       className="flex-1 rounded-[10px] border border-border bg-card px-4 py-2 text-[13px] focus:border-primary focus:outline-none"
                     />
@@ -925,8 +1334,10 @@ export default function ApplicationDetailsPage() {
                     </div>
                     {/* TODO(backend-migration): POST /api/v1/applications/:appId/prep — AI generates checklist and questions based on JD + user profile */}
                     <p className="text-[13px] text-muted-foreground leading-relaxed">
-                      Подготовка генерируется AI на основе описания вакансии и вашего профиля.
-                      Добавьте описание вакансии на вкладке «Описание», чтобы получить персональный чек-лист и вопросы.
+                      Подготовка генерируется AI на основе описания вакансии и
+                      вашего профиля. Добавьте описание вакансии на вкладке
+                      «Описание», чтобы получить персональный чек-лист и
+                      вопросы.
                     </p>
                   </div>
                   <div className="rounded-[14px] border border-border bg-card p-5">
@@ -957,7 +1368,8 @@ export default function ApplicationDetailsPage() {
                     {/* TODO(backend-migration): GET /api/v1/applications/:appId/contacts — contact list from DB */}
                     <div className="px-5 py-10 text-center">
                       <p className="text-[13px] text-muted-foreground">
-                        Контакты не добавлены. Привяжите рекрутера или HR из вашей книги контактов.
+                        Контакты не добавлены. Привяжите рекрутера или HR из
+                        вашей книги контактов.
                       </p>
                     </div>
                   </div>
@@ -969,22 +1381,117 @@ export default function ApplicationDetailsPage() {
                 <div className="max-w-[900px]">
                   <div className="rounded-[14px] border border-border bg-card overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                      <SLabel>Прикреплённые файлы</SLabel>
-                      {/* TODO(backend-migration): POST /api/v1/applications/:appId/files (multipart) — file upload to S3 */}
+                      <div>
+                        <SLabel>Прикреплённые файлы</SLabel>
+                        <p className="mt-1 text-[12px] text-muted-foreground">
+                          {documentsTotal > 0
+                            ? `${documentsTotal} файлов`
+                            : "Файлы пока не прикреплены"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={documentUploadKind}
+                          onChange={(event) =>
+                            setDocumentUploadKind(
+                              event.target.value as DocumentKind,
+                            )
+                          }
+                          disabled={isMutating}
+                          className="rounded-md border border-border bg-background px-2 py-1 text-[12px] text-muted-foreground disabled:opacity-50"
+                        >
+                          <option value="cv">CV</option>
+                          <option value="cover_letter">Cover letter</option>
+                          <option value="portfolio">Portfolio</option>
+                          <option value="other">Other</option>
+                        </select>
+                        <label className="flex cursor-pointer items-center gap-1.5 text-[12px] text-muted-foreground transition-colors hover:text-foreground">
+                          <Plus className="h-3.5 w-3.5" />
+                          Добавить файл
+                          <input
+                            type="file"
+                            accept=".pdf,.docx,.txt,.zip,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,application/zip"
+                            disabled={isMutating}
+                            className="hidden"
+                            onChange={(event) => {
+                              const file =
+                                event.currentTarget.files?.[0] ?? null;
+                              event.currentTarget.value = "";
+                              void onUploadDocument(file);
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {isDocumentsLoading ? (
+                      <div className="px-5 py-10 text-center text-[13px] text-muted-foreground">
+                        Загрузка файлов…
+                      </div>
+                    ) : documents.length === 0 ? (
+                      <div className="px-5 py-10 text-center">
+                        <FileText className="mx-auto h-8 w-8 text-muted-foreground/40 mb-3" />
+                        <p className="text-[13px] text-muted-foreground">
+                          Файлы не прикреплены. Добавьте PDF, DOCX, TXT или ZIP
+                          до 10 MB.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {documents.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-4 px-5 py-4"
+                          >
+                            <div className="min-w-0 flex items-start gap-3">
+                              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <div className="min-w-0">
+                                <p className="truncate text-[13px] font-medium text-foreground">
+                                  {item.originalFilename}
+                                </p>
+                                <p className="mt-1 text-[12px] text-muted-foreground">
+                                  {documentKindLabel(item.kind)} ·{" "}
+                                  {item.contentType} ·{" "}
+                                  {formatBytes(item.sizeBytes)}
+                                </p>
+                                <p className="mt-1 text-[11px] text-muted-foreground/80">
+                                  {item.status} ·{" "}
+                                  {formatIsoDate(item.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void onDownloadDocument(item.id)}
+                                disabled={isMutating}
+                                className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void onDeleteDocument(item.id)}
+                                disabled={isMutating}
+                                className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground hover:text-destructive disabled:opacity-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex justify-end border-t border-border px-5 py-3">
                       <button
                         type="button"
-                        className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => void refreshDocuments()}
+                        disabled={isDocumentsLoading || isMutating}
+                        className="text-[12px] text-muted-foreground hover:text-foreground disabled:opacity-50"
                       >
-                        <Plus className="h-3.5 w-3.5" />
-                        Добавить файл
+                        Обновить список
                       </button>
-                    </div>
-                    {/* TODO(backend-migration): GET /api/v1/applications/:appId/files — file list from S3 / DB */}
-                    <div className="px-5 py-10 text-center">
-                      <FileText className="mx-auto h-8 w-8 text-muted-foreground/40 mb-3" />
-                      <p className="text-[13px] text-muted-foreground">
-                        Файлы не прикреплены. Добавьте резюме, сопроводительное письмо или тестовое задание.
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -1000,28 +1507,39 @@ export default function ApplicationDetailsPage() {
                       <InlineField
                         label="Role title"
                         value={app.job.roleTitle}
-                        onSave={(v) => saveField({ "job.roleTitle": v }, "job.roleTitle")}
+                        onSave={(v) =>
+                          saveField({ "job.roleTitle": v }, "job.roleTitle")
+                        }
                         disabled={isMutating}
                         placeholder="—"
                       />
                       <InlineField
                         label="Company"
                         value={app.job.companyName}
-                        onSave={(v) => saveField({ "job.companyName": v }, "job.companyName")}
+                        onSave={(v) =>
+                          saveField({ "job.companyName": v }, "job.companyName")
+                        }
                         disabled={isMutating}
                         placeholder="—"
                       />
                       <InlineField
                         label="Location"
                         value={app.job.locationText ?? ""}
-                        onSave={(v) => saveField({ "job.locationText": v }, "job.locationText")}
+                        onSave={(v) =>
+                          saveField(
+                            { "job.locationText": v },
+                            "job.locationText",
+                          )
+                        }
                         disabled={isMutating}
                         placeholder="—"
                       />
                       <InlineField
                         label="Vacancy URL"
                         value={app.job.vacancyUrl ?? ""}
-                        onSave={(v) => saveField({ "job.vacancyUrl": v }, "job.vacancyUrl")}
+                        onSave={(v) =>
+                          saveField({ "job.vacancyUrl": v }, "job.vacancyUrl")
+                        }
                         type="url"
                         disabled={isMutating}
                         placeholder="—"
@@ -1029,13 +1547,17 @@ export default function ApplicationDetailsPage() {
                       <InlineField
                         label="Source"
                         value={app.job.source ?? ""}
-                        onSave={(v) => saveField({ "job.source": v }, "job.source")}
+                        onSave={(v) =>
+                          saveField({ "job.source": v }, "job.source")
+                        }
                         disabled={isMutating}
                         placeholder="—"
                       />
                       <SalaryField
                         salary={app.job.salary}
-                        onSave={(salary) => saveField({ "job.salary": salary }, "job.salary")}
+                        onSave={(salary) =>
+                          saveField({ "job.salary": salary }, "job.salary")
+                        }
                         disabled={isMutating}
                       />
                       <WorkModeChips
@@ -1052,14 +1574,21 @@ export default function ApplicationDetailsPage() {
                     <InlineField
                       label="Заметка"
                       value={app.notes?.currentNote ?? ""}
-                      onSave={(v) => saveField({ "notes.currentNote": v }, "notes.currentNote")}
+                      onSave={(v) =>
+                        saveField(
+                          { "notes.currentNote": v },
+                          "notes.currentNote",
+                        )
+                      }
                       multiline
                       disabled={isMutating}
                       placeholder="Добавить заметку…"
                     />
                     <TagsField
                       tags={app.notes?.tags ?? []}
-                      onSave={(tags) => saveField({ "notes.tags": tags }, "notes.tags")}
+                      onSave={(tags) =>
+                        saveField({ "notes.tags": tags }, "notes.tags")
+                      }
                       disabled={isMutating}
                     />
                   </div>

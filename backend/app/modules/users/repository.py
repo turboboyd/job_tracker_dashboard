@@ -28,3 +28,9 @@ class UsersRepository:
         user.updated_at = datetime.now(UTC)
         await self._db.flush()
         return user
+
+    async def set_analysis_plan(self, user: User, plan: str) -> User:
+        user.analysis_plan = plan
+        user.updated_at = datetime.now(UTC)
+        await self._db.flush()
+        return user

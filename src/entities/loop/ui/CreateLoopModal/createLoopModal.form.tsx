@@ -25,7 +25,7 @@ export function CreateLoopFormFields({
         disabled={disabled}
         label="Loop name"
         onChange={(name) => onFormChange((p) => ({ ...p, name }))}
-        placeholder="My Loop"
+        placeholder="New loop"
         value={form.name}
       />
 

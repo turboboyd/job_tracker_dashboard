@@ -27,9 +27,23 @@ env/
 # Test / coverage output (keep image lean)
 tests/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
+coverage/
+
+# Local runtime data and generated artifacts
+storage/
+*.log
+*.zip
+*.tar
+*.tar.gz
+*.sqlite
+*.db
 
 # Editor / OS noise
 .DS_Store
 *.swp
+.idea/
+.vscode/

@@ -1,10 +1,10 @@
-import { skipToken } from "@reduxjs/toolkit/query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useGetLoopsQuery, type Loop } from "src/entities/loop";
+import type { Loop } from "src/entities/loop";
 import { createApplicationsRepo } from "src/features/applications";
 import { useAuthSelectors } from "src/features/auth/model";
+import { useBackendLoopsQuery } from "src/features/loops";
 import { db } from "src/shared/config/firebase/firestore";
 
 import type { DashboardLoopsFilterValue } from "../ui";
@@ -57,7 +57,10 @@ export function useDashboardData(): DashboardData {
   const { t } = useTranslation(undefined, { keyPrefix: "dashboard" });
   const { userId, isAuthReady } = useAuthSelectors();
 
-  const loopsQuery = useGetLoopsQuery(userId && isAuthReady ? undefined : skipToken);
+  const loopsQuery = useBackendLoopsQuery({
+    includeArchived: true,
+    skip: !userId || !isAuthReady,
+  });
   const loops = loopsQuery.data ?? [];
 
   const [loopsFilter, setLoopsFilter] = useState<DashboardLoopsFilterValue>(readDashboardLoopsFilter);

@@ -33,7 +33,7 @@ export function buildGoogleCalendarOutboxId(dedupeKey: string): string {
   const cleaned = `google-calendar-${dedupeKey}`
     .replace(/[^a-z0-9_-]+/gi, "-")
     .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
+    .replace(/(?:^-)|(?:-$)/g, "")
     .toLowerCase();
 
   return `${cleaned.slice(0, 96)}-${checksum(dedupeKey)}`;

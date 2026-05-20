@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 *.pyo
 *.pyd
 
@@ -9,6 +10,8 @@ __pycache__/
 *.egg
 dist/
 build/
+*.log
+*.zip
 .eggs/
 
 # Virtual environments
@@ -23,12 +26,15 @@ htmlcov/
 
 # Environment — never commit real secrets
 .env
+.env.*
+!.env.example
 
 # Firebase service-account keys — must never be committed.
 # The convention is to place keys under backend/secrets/ (created locally
 # by the developer). The pattern rules below also defend against keys
 # accidentally placed elsewhere under backend/.
 secrets/
+storage/
 *.serviceAccount*.json
 *serviceAccount*.json
 firebaseServiceAccount*.json

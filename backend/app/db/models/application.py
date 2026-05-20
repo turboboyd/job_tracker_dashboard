@@ -25,12 +25,6 @@ class Application(Base):
         nullable=False,
         index=True,
     )
-    cycle_id: Mapped[uuid.UUID | None] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("cycles.id"),
-        nullable=True,
-        index=True,
-    )
     archived: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )

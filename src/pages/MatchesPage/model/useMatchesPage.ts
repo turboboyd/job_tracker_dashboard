@@ -31,7 +31,7 @@ export function readMatchesStateFromSearch(search: string): {
 
   const q = sp.get("q") ?? matchesFiltersDefaults.q;
   const sort = (sp.get("sort") as MatchesFiltersState["sort"]) ?? matchesFiltersDefaults.sort;
-  const loopIds = readCsv(sp, "loop");
+  const loopIds = readCsv(sp, "loopId").concat(readCsv(sp, "loop"));
   const platforms = readCsv(sp, "platform");
   const statuses = readCsv(sp, "status") as MatchesFiltersState["statuses"];
 
@@ -66,7 +66,8 @@ export function writeMatchesStateToUrl(args: {
       q: filters.q.trim() || null,
       sort: filters.sort !== matchesFiltersDefaults.sort ? filters.sort : null,
 
-      loop: writeCsv(filters.loopIds),
+      loopId: writeCsv(filters.loopIds),
+      loop: null,
       platform: writeCsv(filters.platforms),
       status: writeCsv(filters.statuses),
 

@@ -1,13 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import type { Loop } from "src/entities/loop";
+import { listLoopsViaRest } from "src/features/loops";
+import { ApiError } from "src/shared/api/rest/restClient";
 
 import type {
   ApplicationDoc,
   ApplicationsRepo,
   ProcessStatus,
 } from "../api/applicationsRepo";
-
-import type { PipelineFilterStatus, ViewMode } from "./types";
+import {
+  applyApplicationStatusOptimisticUpdate,
+  buildCreateApplicationPayload,
+  buildLoopTitleMap,
+  calculateStatusCounts,
+  canSubmitApplicationForm,
+  filterFollowUpApplications,
+  filterSelectableApplicationLoops,
+  filterTodayApplications,
+  getArchivedLoopCreateErrorMessage,
+  getLoopTargetRole,
+  getNextRoleTitleAfterLoopSelect,
+  isBackendLoopId,
+  mergeApplicationRow,
+} from "./applicationsPage.helpers";
 import { EMPTY_CREATE_FORM, type CreateFormState } from "./types";
+import type { PipelineFilterStatus, ViewMode } from "./types";
 
 export type AppRow = { id: string; data: ApplicationDoc };
 
@@ -23,55 +41,87 @@ export function useApplicationsPage(params: {
   userId: string | null;
   isAuthReady: boolean;
   repo: ApplicationsRepo;
+  loopFilterId?: string | null;
 }) {
-  const { userId, isAuthReady, repo } = params;
+  const { userId, isAuthReady, repo, loopFilterId = null } = params;
 
   const [view, setView] = useState<ViewMode>("pipeline");
   const [activeStatus, setActiveStatus] = useState<PipelineFilterStatus>("ALL");
 
   const [form, setForm] = useState<CreateFormState>(EMPTY_CREATE_FORM);
+  const roleTitleManuallyEditedRef = useRef(false);
+
+  const [loops, setLoops] = useState<Loop[]>([]);
+  const [isLoadingLoops, setIsLoadingLoops] = useState(false);
+  const [loopsError, setLoopsError] = useState<unknown>(null);
+  const validLoopFilterId = useMemo(
+    () => (loopFilterId && isBackendLoopId(loopFilterId) ? loopFilterId : null),
+    [loopFilterId],
+  );
+  const activeLoops = useMemo(() => filterSelectableApplicationLoops(loops), [loops]);
+  const loopFilter = useMemo(
+    () => loops.find((loop) => loop.id === validLoopFilterId) ?? null,
+    [loops, validLoopFilterId],
+  );
+  const loopTitleById = useMemo(() => buildLoopTitleMap(loops), [loops]);
 
   const [isEnsuringUser, setIsEnsuringUser] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(false);
 
   const [allList, setAllList] = useState<AppRow[]>([]);
+  const [countSourceList, setCountSourceList] = useState<AppRow[]>([]);
+  const [pageTotal, setPageTotal] = useState(0);
+  const [pageLimit, setPageLimit] = useState(20);
+  const [pageOffset, setPageOffset] = useState(0);
+  const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => {
-    return form.companyName.trim().length > 0 && form.roleTitle.trim().length > 0;
-  }, [form.companyName, form.roleTitle]);
+  const canSubmit = useMemo(() => canSubmitApplicationForm(form), [form]);
 
-  // Compute per-status counts from the full allList (pipeline view)
-  const statusCounts = useMemo<Record<string, number>>(() => {
-    const counts: Record<string, number> = {
-      ALL: allList.length,
-      SAVED: 0,
-      APPLIED: 0,
-      INTERVIEW_1: 0,
-      OFFER: 0,
-      REJECTED: 0,
-      NO_RESPONSE: 0,
-    };
-    for (const row of allList) {
-      const s = row.data.process.status;
-      if (s in counts) counts[s] = (counts[s] ?? 0) + 1;
+  const selectLoop = useCallback((loop: Loop) => {
+    setForm((prev) => ({
+      ...prev,
+      loopId: loop.id,
+      roleTitle: getNextRoleTitleAfterLoopSelect({
+        currentRoleTitle: prev.roleTitle,
+        targetRole: getLoopTargetRole(loop),
+        wasManuallyEdited: roleTitleManuallyEditedRef.current,
+      }),
+    }));
+  }, []);
+
+  const selectLoopById = useCallback((loopId: string) => {
+    const loop = activeLoops.find((item) => item.id === loopId);
+    if (!loop) {
+      setForm((prev) => ({ ...prev, loopId: "" }));
+      setError(getArchivedLoopCreateErrorMessage());
+      return;
     }
-    return counts;
-  }, [allList]);
 
-  // list = allList filtered client-side by activeStatus (pipeline view only)
-  const list = useMemo<AppRow[]>(() => {
-    if (view !== "pipeline" || activeStatus === "ALL") return allList;
-    return allList.filter((row) => row.data.process.status === activeStatus);
-  }, [allList, view, activeStatus]);
+    setError(null);
+    selectLoop(loop);
+  }, [activeLoops, selectLoop]);
 
-  // Ensure user document exists.
+  const statusCounts = useMemo<Record<string, number>>(
+    () => calculateStatusCounts(countSourceList),
+    [countSourceList],
+  );
+
+  const viewCounts = useMemo(() => ({
+    pipeline: countSourceList.length,
+    today: filterTodayApplications(countSourceList).length,
+    followups: filterFollowUpApplications(countSourceList).length,
+  }), [countSourceList]);
+
+  const list = useMemo<AppRow[]>(() => allList, [allList]);
+
   useEffect(() => {
     if (!isAuthReady || !userId) return;
 
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         setIsEnsuringUser(true);
         await repo.ensureUserDoc(userId);
@@ -88,7 +138,41 @@ export function useApplicationsPage(params: {
     };
   }, [repo, isAuthReady, userId]);
 
-  // eslint-disable-next-line sonarjs/cognitive-complexity
+  useEffect(() => {
+    if (form.loopId || activeLoops.length !== 1) return;
+    selectLoop(activeLoops[0]);
+  }, [activeLoops, form.loopId, selectLoop]);
+
+  useEffect(() => {
+    if (!isAuthReady || !userId) {
+      setLoops([]);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      setIsLoadingLoops(true);
+      setLoopsError(null);
+      try {
+        const response = await listLoopsViaRest({ includeArchived: true, limit: 100 });
+        if (!cancelled) setLoops(response.items);
+      } catch (loadError: unknown) {
+        if (!cancelled) {
+          setLoops([]);
+          setLoopsError(loadError);
+          logApplicationsPageRestError("ApplicationsPage loops load failed", loadError);
+          setError(mapApplicationsPageError(loadError));
+        }
+      } finally {
+        if (!cancelled) setIsLoadingLoops(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthReady, userId]);
+
   const load = useCallback(async () => {
     if (!userId) return;
 
@@ -96,49 +180,79 @@ export function useApplicationsPage(params: {
     setError(null);
 
     try {
+      const countRows = await loadApplicationsCountSource({
+        repo,
+        userId,
+        showArchived,
+        favoriteOnly,
+        loopFilterId: validLoopFilterId,
+      });
+      setCountSourceList(countRows);
+
       if (view === "pipeline") {
-        // TODO(backend-migration): always load ALL; filter client-side for per-status counts
-        const rows = await repo.queryAllActiveApplications(userId, 500);
-        const changed = await repo.autoMarkGhosting(userId, rows);
-        if (changed > 0) {
-          const fresh = await repo.queryAllActiveApplications(userId, 500);
-          setAllList(fresh);
-        } else {
-          setAllList(rows);
-        }
+        const result = await repo.queryApplicationsPage(userId, {
+          archived: showArchived,
+          status: activeStatus === "ALL" ? undefined : activeStatus,
+          limit: pageLimit,
+          offset: pageOffset,
+          sort: "updated_at_desc",
+          isFavorite: favoriteOnly ? true : undefined,
+          loopId: validLoopFilterId ?? undefined,
+        });
+        setAllList(result.items);
+        setPageTotal(result.total);
+        setPageLimit(result.limit);
+        setPageOffset(result.offset);
         return;
       }
 
-      if (view === "today") {
-        const rows = await repo.queryTodayTopPriority(userId, 50);
-        const changed = await repo.autoMarkGhosting(userId, rows);
-        if (changed > 0) {
-          const fresh = await repo.queryTodayTopPriority(userId, 50);
-          setAllList(fresh);
-        } else {
-          setAllList(rows);
-        }
-        return;
-      }
-
-      // view === "followups"
-      const rows = await repo.queryFollowUpsDue(userId, 50);
+      const scopedRows = favoriteOnly
+        ? countRows.filter((row) => row.data.isFavorite === true)
+        : countRows;
+      const rows = view === "today"
+        ? filterTodayApplications(scopedRows)
+        : filterFollowUpApplications(scopedRows);
       const changed = await repo.autoMarkGhosting(userId, rows);
       if (changed > 0) {
-        const fresh = await repo.queryFollowUpsDue(userId, 50);
-        setAllList(fresh);
+        const refreshedRows = await loadApplicationsCountSource({
+          repo,
+          userId,
+          showArchived,
+          favoriteOnly,
+          loopFilterId: validLoopFilterId,
+        });
+        setCountSourceList(refreshedRows);
+        setAllList(view === "today"
+          ? filterTodayApplications(refreshedRows)
+          : filterFollowUpApplications(refreshedRows));
       } else {
         setAllList(rows);
       }
+      setPageTotal(rows.length);
+      setPageLimit((current) => Math.max(1, current));
+      setPageOffset(0);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
     } finally {
       setIsLoadingList(false);
     }
-  }, [repo, userId, view]);
+  }, [
+    repo,
+    userId,
+    view,
+    activeStatus,
+    favoriteOnly,
+    showArchived,
+    pageLimit,
+    pageOffset,
+    validLoopFilterId,
+  ]);
 
-  // Reload list when auth/view/status changes.
+  useEffect(() => {
+    setPageOffset(0);
+  }, [activeStatus, favoriteOnly, showArchived, view, validLoopFilterId]);
+
   useEffect(() => {
     if (!isAuthReady || !userId) return;
     void load();
@@ -146,87 +260,227 @@ export function useApplicationsPage(params: {
 
   const updateForm = useCallback(
     <K extends keyof CreateFormState>(key: K, value: CreateFormState[K]) => {
+      if (key === "roleTitle") roleTitleManuallyEditedRef.current = true;
       setForm((prev: CreateFormState) => ({ ...prev, [key]: value }));
     },
-    []
+    [],
   );
 
-  const resetForm = useCallback(() => setForm(EMPTY_CREATE_FORM), []);
+  const resetForm = useCallback(() => {
+    roleTitleManuallyEditedRef.current = false;
+    setForm(EMPTY_CREATE_FORM);
+  }, []);
 
   const onChangeStatus = useCallback(
     async (appId: string, status: ProcessStatus) => {
       if (!userId) return;
+
+      setError(null);
+      const previousAllList = allList;
+      const previousCountSourceList = countSourceList;
+
+      setAllList((current) => applyApplicationStatusOptimisticUpdate(current, appId, status));
+      setCountSourceList((current) => applyApplicationStatusOptimisticUpdate(current, appId, status));
+
       try {
-        await repo.changeStatus(userId, appId, status);
-        await load();
+        const updatedRow = await repo.changeStatus(userId, appId, status);
+        setAllList((current) => mergeApplicationRow(current, updatedRow));
+        setCountSourceList((current) => mergeApplicationRow(current, updatedRow));
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : String(e);
+        setAllList(previousAllList);
+        setCountSourceList(previousCountSourceList);
         setError(message);
       }
     },
-    [repo, userId, load]
+    [allList, countSourceList, repo, userId],
   );
 
   const onCreate = useCallback(async () => {
     if (!userId || !canSubmit) return;
 
+    const selectedLoop = activeLoops.find((loop) => loop.id === form.loopId);
+    if (!selectedLoop) {
+      setError(getArchivedLoopCreateErrorMessage());
+      return;
+    }
+
     setIsCreating(true);
     setError(null);
 
     try {
-      await repo.createApplication(userId, {
-        companyName: form.companyName.trim(),
-        roleTitle: form.roleTitle.trim(),
-        vacancyUrl: form.vacancyUrl.trim().length ? form.vacancyUrl.trim() : undefined,
-        source: form.source.trim().length ? form.source.trim() : undefined,
-        status: "SAVED",
-        rawDescription: form.rawDescription.trim().length
-          ? form.rawDescription.trim()
-          : undefined,
-      });
+      await repo.createApplication(userId, buildCreateApplicationPayload(form));
 
       resetForm();
       setView("pipeline");
-      // ✅ After create keep user in ALL (so the new card is visible without confusion)
       setActiveStatus("ALL");
 
       await load();
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
+      const message = mapApplicationsPageError(e);
+      logApplicationsPageRestError("ApplicationsPage create failed", e);
       setError(message);
     } finally {
       setIsCreating(false);
     }
-  }, [repo, userId, canSubmit, form, resetForm, load]);
+  }, [activeLoops, repo, userId, canSubmit, form, resetForm, load]);
+
+  const goToPreviousPage = useCallback(() => {
+    setPageOffset((current) => Math.max(0, current - pageLimit));
+  }, [pageLimit]);
+
+  const goToNextPage = useCallback(() => {
+    setPageOffset((current) => {
+      const next = current + pageLimit;
+      return next >= pageTotal ? current : next;
+    });
+  }, [pageLimit, pageTotal]);
+
+  const onToggleFavorite = useCallback(async (appId: string, nextValue: boolean) => {
+    if (!userId) return;
+    setError(null);
+    setAllList((current) =>
+      current.map((row) =>
+        row.id === appId
+          ? { ...row, data: { ...row.data, isFavorite: nextValue } }
+          : row,
+      ),
+    );
+
+    try {
+      await repo.setFavorite(userId, appId, nextValue);
+      await load();
+    } catch (e: unknown) {
+      const message = mapApplicationsPageError(e);
+      logApplicationsPageRestError("ApplicationsPage favorite toggle failed", e);
+      setError(message);
+      await load();
+    }
+  }, [load, repo, userId]);
+
+  const onArchiveApplication = useCallback(async (appId: string) => {
+    if (!userId) return;
+    const confirmed = window.confirm("Архивировать заявку?");
+    if (!confirmed) return;
+
+    setError(null);
+    try {
+      await repo.archiveApplication(userId, appId);
+      setAllList((current) => current.filter((row) => row.id !== appId));
+      await load();
+    } catch (e: unknown) {
+      const message = mapApplicationsPageError(e);
+      logApplicationsPageRestError("ApplicationsPage archive failed", e);
+      setError(message);
+    }
+  }, [load, repo, userId]);
+
+  const onRestoreApplication = useCallback(async (appId: string) => {
+    if (!userId) return;
+    setError(null);
+
+    try {
+      await repo.restoreApplication(userId, appId);
+      setAllList((current) => current.filter((row) => row.id !== appId));
+      await load();
+    } catch (e: unknown) {
+      const message = mapApplicationsPageError(e);
+      logApplicationsPageRestError("ApplicationsPage restore failed", e);
+      setError(message);
+    }
+  }, [load, repo, userId]);
 
   return {
-    // View
     view,
     setView,
     activeStatus,
     setActiveStatus,
-
-    // Create form
     form,
     updateForm,
     resetForm,
     canSubmit,
     onCreate,
-
-    // Data
+    activeLoops,
+    loopTitleById,
+    isLoadingLoops,
+    loops,
+    loopFilter,
+    selectLoopById,
     allList,
     list,
     statusCounts,
+    viewCounts,
     load,
-
-    // Actions
+    pageTotal,
+    pageLimit,
+    pageOffset,
+    favoriteOnly,
+    setFavoriteOnly,
+    showArchived,
+    setShowArchived,
+    goToPreviousPage,
+    goToNextPage,
     onChangeStatus,
-
-    // UI states
+    onToggleFavorite,
+    onArchiveApplication,
+    onRestoreApplication,
     isEnsuringUser,
     isCreating,
     isLoadingList,
-    error,
+    error: error ?? (loopsError ? mapApplicationsPageError(loopsError) : null),
     setError,
   };
+}
+
+function mapApplicationsPageError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function logApplicationsPageRestError(message: string, error: unknown): void {
+  if (error instanceof ApiError) {
+    console.error(message, {
+      requestId: error.requestId,
+      status: error.status,
+      code: error.code,
+    });
+  }
+}
+
+
+async function loadApplicationsCountSource(params: {
+  repo: ApplicationsRepo;
+  userId: string;
+  showArchived: boolean;
+  favoriteOnly: boolean;
+  loopFilterId: string | null;
+}): Promise<AppRow[]> {
+  const { repo, userId, showArchived, favoriteOnly, loopFilterId } = params;
+  const firstPage = await repo.queryApplicationsPage(userId, {
+    archived: showArchived,
+    limit: 100,
+    offset: 0,
+    sort: "updated_at_desc",
+    isFavorite: favoriteOnly ? true : undefined,
+    loopId: loopFilterId ?? undefined,
+  });
+
+  const rows = [...firstPage.items];
+  let nextOffset = firstPage.offset + firstPage.limit;
+
+  while (nextOffset < firstPage.total) {
+    const nextPage = await repo.queryApplicationsPage(userId, {
+      archived: showArchived,
+      limit: 100,
+      offset: nextOffset,
+      sort: "updated_at_desc",
+      isFavorite: favoriteOnly ? true : undefined,
+      loopId: loopFilterId ?? undefined,
+    });
+    rows.push(...nextPage.items);
+    nextOffset = nextPage.offset + nextPage.limit;
+
+    if (nextPage.items.length === 0) break;
+  }
+
+  return rows;
 }

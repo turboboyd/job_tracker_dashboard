@@ -79,19 +79,21 @@ async def client_b(db_session):
 # ── Helper ──────────────────────────────────────────────────────────────────────
 
 
-async def _create_cycle(client: AsyncClient, title: str = "Default Cycle") -> str:
-    r = await client.post(
-        "/api/v1/cycles", json={"title": title, "target_role": "Backend Engineer"}, headers=_BEARER
+async def _create_loop(client: AsyncClient, title: str = "Default Loop") -> str:
+    response = await client.post(
+        "/api/v1/loops",
+        json={"title": title, "target_role": "Backend Engineer"},
+        headers=_BEARER,
     )
-    assert r.status_code == 201, r.text
-    return r.json()["id"]
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
 
 
 async def _create_app(client: AsyncClient) -> str:
-    cycle_id = await _create_cycle(client)
+    loop_id = await _create_loop(client)
     r = await client.post(
         "/api/v1/applications",
-        json={**_MINIMAL_APP, "cycle_id": cycle_id},
+        json={**_MINIMAL_APP, "loop_id": loop_id},
         headers=_BEARER,
     )
     assert r.status_code == 201, r.text
@@ -298,7 +300,10 @@ async def test_add_comment_missing_text_returns_422(client_a):
 
 async def test_history_requires_auth(db_session):
     app_obj = _make_app(db_session, _USER_A)
-    async with AsyncClient(transport=ASGITransport(app=app_obj), base_url="http://test") as c:
+    async with AsyncClient(
+        transport=ASGITransport(app=app_obj),
+        base_url="http://test",
+    ) as c:
         app_id = await _create_app(c)
         r = await c.get(f"/api/v1/applications/{app_id}/history")
     assert r.status_code == 401

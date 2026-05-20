@@ -3,8 +3,6 @@ import React, { useMemo, useState } from "react";
 import { getErrorMessage } from "src/shared/lib";
 import { Modal } from "src/shared/ui";
 
-import { useCreateLoopMutation } from "../../api/loopApi";
-
 import { CreateLoopFormFields } from "./createLoopModal.form";
 import {
   buildCreateLoopInput,
@@ -16,12 +14,13 @@ import type { CreateLoopForm, CreateLoopModalProps } from "./createLoopModal.typ
 export function CreateLoopModal({
   open,
   onOpenChange,
+  onCreateLoop,
   onCreated,
 }: CreateLoopModalProps) {
-  const [createLoop, st] = useCreateLoopMutation();
   const initial = useMemo<CreateLoopForm>(() => createInitialLoopForm(), []);
   const [form, setForm] = useState<CreateLoopForm>(initial);
   const [error, setError] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -30,7 +29,7 @@ export function CreateLoopModal({
     }
   }, [open, initial]);
 
-  const disabled = st.isLoading;
+  const disabled = isCreating;
 
   async function onCreate() {
     setError(null);
@@ -42,12 +41,15 @@ export function CreateLoopModal({
     }
 
     try {
-      const res = await createLoop(buildCreateLoopInput(form)).unwrap();
+      setIsCreating(true);
+      const res = await onCreateLoop(buildCreateLoopInput(form));
 
       onOpenChange(false);
       onCreated(res.id);
     } catch (e) {
       setError(getErrorMessage(e));
+    } finally {
+      setIsCreating(false);
     }
   }
 
@@ -56,7 +58,7 @@ export function CreateLoopModal({
       open={open}
       onOpenChange={onOpenChange}
       title="Create loop"
-      description="Start with the basics: name, role, location. You can fine-tune in My Loop settings later."
+      description="Start with the basics: name, role, location. You can fine-tune in loop settings later."
     >
       {error ? (
         <div className="mb-3 rounded-xl border border-border bg-background p-3 text-sm">

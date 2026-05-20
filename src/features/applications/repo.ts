@@ -1,25 +1,18 @@
 import type { Firestore } from 'firebase/firestore';
 
+import { ApiError } from 'src/shared/api/rest/restClient';
+
 import {
-  addComment,
   autoMarkGhosting,
-  changeStatus,
-  createApplication,
-  ensureUserDoc,
-  getApplication,
-  getApplicationHistory,
-  queryAllActiveApplications,
   queryFollowUpsDue,
-  queryPipelineByStatus,
   queryTodayTopPriority,
   subscribeAllActiveApplications,
   subscribeFollowUpsDue,
   subscribePipelineByStatus,
   subscribeTodayTopPriority,
-  updateApplicationWithHistory,
 } from './firestore/api';
-import type { ApplicationsSubscriber, SubscribeError } from './firestore/subscriptions';
 import type { ApplicationRow } from './firestore/queries.types';
+import type { ApplicationsSubscriber, SubscribeError } from './firestore/subscriptions';
 import type {
   ApplicationDoc,
   FeedbackType,
@@ -28,6 +21,16 @@ import type {
   RejectionReasonCode,
   Sentiment,
 } from './firestore/types';
+import {
+  changeApplicationStatusViaRest,
+  createApplicationCommentViaRest,
+  createApplicationViaRest,
+  getApplicationByIdViaRest,
+  getApplicationHistoryViaRest,
+  getCurrentUserViaRest,
+  listApplicationsViaRest,
+  updateApplicationViaRest,
+} from './rest/queries';
 
 export type ApplicationsRepo = ReturnType<typeof createApplicationsRepo>;
 
@@ -47,49 +50,81 @@ export interface AddApplicationCommentInput {
  */
 export function createApplicationsRepo(db: Firestore) {
   return {
-    ensureUserDoc: (userId: string) => ensureUserDoc(db, userId),
+    ensureUserDoc: async (_userId: string) => {
+      await getCurrentUserViaRest();
+    },
 
     createApplication: (
       userId: string,
-      payload: Parameters<typeof createApplication>[2],
-    ) => createApplication(db, userId, payload),
+      payload: Parameters<typeof createApplicationViaRest>[1],
+    ) => createApplicationViaRest(userId, payload),
 
     queryPipelineByStatus: (
       userId: string,
       status: ProcessStatus,
       limit: number,
-    ) => queryPipelineByStatus(db, userId, status, limit),
+    ) =>
+      listApplicationsViaRest(userId, {
+        archived: false,
+        status,
+        limit,
+        offset: 0,
+        sort: 'last_status_change_at_desc',
+      }).then((result) => result.items),
 
     queryAllActiveApplications: (userId: string, limit: number) =>
-      queryAllActiveApplications(db, userId, limit),
+      listApplicationsViaRest(userId, {
+        archived: false,
+        limit,
+        offset: 0,
+        sort: 'updated_at_desc',
+      }).then((result) => result.items),
 
     queryTodayTopPriority: (userId: string, limit: number) =>
       queryTodayTopPriority(db, userId, limit),
 
-    getApplication: (userId: string, appId: string) =>
-      getApplication(db, userId, appId),
+    getApplication: async (userId: string, appId: string) => {
+      try {
+        const row = await getApplicationByIdViaRest(userId, appId);
+        return row.data;
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
 
-    updateApplicationWithHistory: (
+    updateApplicationWithHistory: async (
       userId: string,
       appId: string,
-      patch: Parameters<typeof updateApplicationWithHistory>[3],
-      buildHistory?: Parameters<typeof updateApplicationWithHistory>[4],
-    ) => updateApplicationWithHistory(db, userId, appId, patch, buildHistory ?? (() => [])),
+      patch: Parameters<typeof updateApplicationViaRest>[2],
+      _buildHistory?: (current: ApplicationDoc) => HistoryEventDoc[],
+    ) => {
+      await updateApplicationViaRest(userId, appId, patch);
+    },
 
-    changeStatus: (
+    changeStatus: async (
       userId: string,
       appId: string,
       toStatus: ProcessStatus,
-    ) => changeStatus(db, userId, appId, toStatus),
+    ) => {
+      await changeApplicationStatusViaRest(userId, appId, { toStatus });
+    },
 
-    addComment: (
-      userId: string,
+    addComment: async (
+      _userId: string,
       appId: string,
       comment: AddApplicationCommentInput | string,
-    ) => addComment(db, userId, appId, typeof comment === 'string' ? { text: comment } : comment),
+    ) => {
+      await createApplicationCommentViaRest(
+        appId,
+        typeof comment === 'string' ? { text: comment } : comment,
+      );
+    },
 
-    getApplicationHistory: (userId: string, appId: string, take: number) =>
-      getApplicationHistory(db, userId, appId, take),
+    getApplicationHistory: (_userId: string, appId: string, take: number) =>
+      getApplicationHistoryViaRest(appId, take),
 
     queryFollowUpsDue: (userId: string, limit: number) =>
       queryFollowUpsDue(db, userId, limit),

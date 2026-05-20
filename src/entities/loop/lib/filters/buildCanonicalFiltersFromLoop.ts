@@ -33,7 +33,7 @@ function pickFrom<T extends readonly (string | number)[]>(
  * Делает CanonicalFilters безопасными и полными.
  *
  * Важно:
- * - Firestore/URL/localStorage -> всегда unknown
+ * - external persisted/input values -> всегда unknown
  * - UI и RTK store -> только CanonicalFilters
  */
 export function buildCanonicalFiltersFromLoop(loop: unknown): CanonicalFilters {

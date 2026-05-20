@@ -1,39 +1,8 @@
-import { doc, getDoc, setDoc, type Firestore } from "firebase/firestore";
-
-import { nowTs } from "./lib/time";
 import type {
   ApplicationDoc,
   ProcessStage,
   ProcessStatus,
 } from "./types";
-
-export async function ensureManualLoopDoc(
-  db: Firestore,
-  userId: string,
-  loopId: string,
-): Promise<void> {
-  const manualLoopRef = doc(db, "users", userId, "loops", loopId);
-  const manualLoopSnap = await getDoc(manualLoopRef);
-
-  if (manualLoopSnap.exists()) {
-    return;
-  }
-
-  const createdAt = nowTs();
-  await setDoc(manualLoopRef, {
-    name: "Manual",
-    titles: [],
-    location: "",
-    radiusKm: 0,
-    remoteMode: "manual",
-    platforms: [],
-    filters: {},
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdAtTs: createdAt,
-    updatedAtTs: createdAt,
-  });
-}
 
 export function mapLegacyStatusToStageSubStatus(
   status: ProcessStatus,

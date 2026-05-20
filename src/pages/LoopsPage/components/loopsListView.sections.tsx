@@ -33,7 +33,7 @@ interface LoopsListContentProps {
 export function LoopsListHeader({ onCreateClick, t }: LoopsListHeaderProps) {
   return (
     <PageHeader
-      title={t("loops.listTitle", "My Loops")}
+      title={t("loops.listTitle", "Loops")}
       subtitle={t("loops.listSubtitle", "Create a loop and track matches.")}
       right={
         <Button

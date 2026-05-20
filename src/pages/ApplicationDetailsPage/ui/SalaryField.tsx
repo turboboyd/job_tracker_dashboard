@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Edit2, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 // TODO(backend-migration): Replace with REST API call when migrating from Firebase.
 // Currently uses Firestore direct SDK (firebase/firestore).
-// Migration target: POST /api/applications/:appId (PATCH semantics)
+// Migration target: PATCH /api/v1/applications/{app_id}
 
 export type SalaryFieldProps = {
   salary?: { currency?: string; min?: number; max?: number };

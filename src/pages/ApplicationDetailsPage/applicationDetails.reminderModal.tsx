@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { classNames } from "src/shared/lib";
 import { Button } from "src/shared/ui/Button";

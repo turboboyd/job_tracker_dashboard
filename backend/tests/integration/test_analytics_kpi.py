@@ -85,17 +85,19 @@ async def client_b(db_session):
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
-async def _create_cycle(client: AsyncClient, title: str = "Analytics Cycle") -> str:
+async def _create_loop(client: AsyncClient, title: str = "Analytics Loop") -> str:
     r = await client.post(
-        "/api/v1/cycles", json={"title": title, "target_role": "Backend Engineer"}, headers=_BEARER
+        "/api/v1/loops",
+        json={"title": title, "target_role": "Backend Engineer"},
+        headers=_BEARER,
     )
     assert r.status_code == 201, r.text
     return r.json()["id"]
 
 
 async def _create_app(client: AsyncClient, overrides: dict | None = None) -> str:
-    cycle_id = await _create_cycle(client)
-    payload = {**_MINIMAL_APP, "cycle_id": cycle_id, **(overrides or {})}
+    loop_id = await _create_loop(client)
+    payload = {**_MINIMAL_APP, "loop_id": loop_id, **(overrides or {})}
     r = await client.post("/api/v1/applications", json=payload, headers=_BEARER)
     assert r.status_code == 201, r.text
     return r.json()["id"]
@@ -178,7 +180,9 @@ async def test_kpi_total_active_archived_counts(client_a):
 
     kpi = await _kpi(client_a)
 
-    assert kpi["total_applications"] == kpi["active_applications"] + kpi["archived_applications"]
+    assert kpi["total_applications"] == (
+        kpi["active_applications"] + kpi["archived_applications"]
+    )
     assert kpi["archived_applications"] >= 1
 
 
