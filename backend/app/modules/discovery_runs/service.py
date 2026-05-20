@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import logging
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.loop import Loop
 from app.db.models.user import User
@@ -18,6 +22,11 @@ from app.modules.discovery_adapters.schemas import (
     DiscoveryAdapterOptions,
     DiscoveryAdapterResult,
 )
+from app.modules.discovery_runs.cache_repository import (
+    get_fresh_cache,
+    result_from_cache,
+    upsert_cache,
+)
 from app.modules.discovery_runs.schemas import (
     DiscoveryRunItem,
     DiscoveryRunPreviewItem,
@@ -27,15 +36,19 @@ from app.modules.discovery_runs.schemas import (
 from app.modules.discovery_sources.registry import get_discovery_source
 from app.modules.loops.service import InvalidLoopError, LoopsService
 
+logger = logging.getLogger(__name__)
+
 
 class DiscoveryRunsService:
     def __init__(
         self,
         loops: LoopsService,
         adapter_registry: DiscoveryAdapterRegistry | None = None,
+        db: AsyncSession | None = None,
     ) -> None:
         self._loops = loops
         self._adapter_registry = adapter_registry or get_discovery_adapter_registry()
+        self._db = db
 
     async def run(
         self,
@@ -189,6 +202,36 @@ class DiscoveryRunsService:
                 0,
             )
 
+        # ── Cache lookup ──────────────────────────────────────────────────────
+        if self._db is not None:
+            now = datetime.now(timezone.utc)
+            cached = await get_fresh_cache(
+                self._db,
+                loop_id=loop.id,
+                source_id=source_id,
+                search_scope=payload.search_scope,
+                page=payload.page,
+                now=now,
+            )
+            if cached is not None:
+                logger.debug(
+                    "Cache HIT: loop=%s source=%s scope=%s page=%s expires=%s",
+                    loop.id,
+                    source_id,
+                    payload.search_scope,
+                    payload.page,
+                    cached.expires_at,
+                )
+                result = result_from_cache(cached)
+                item = self._item_from_adapter_result(
+                    loop_id=loop_id,
+                    result=result,
+                    dry_run=payload.dry_run,
+                    max_results=payload.page_size,
+                )
+                return item, 1
+
+        # ── Live adapter call ─────────────────────────────────────────────────
         try:
             result = await adapter.discover(
                 loop=loop,
@@ -221,6 +264,27 @@ class DiscoveryRunsService:
             dry_run=payload.dry_run,
             max_results=payload.page_size,
         )
+
+        # ── Cache write (only on completed results) ───────────────────────────
+        if self._db is not None and result.status == "completed":
+            try:
+                await upsert_cache(
+                    self._db,
+                    loop_id=loop.id,
+                    source_id=source_id,
+                    search_scope=payload.search_scope,
+                    page=payload.page,
+                    result=result,
+                    now=datetime.now(timezone.utc),
+                )
+            except Exception:
+                logger.warning(
+                    "Cache write failed (non-fatal): loop=%s source=%s",
+                    loop.id,
+                    source_id,
+                    exc_info=True,
+                )
+
         return item, 1
 
     @staticmethod

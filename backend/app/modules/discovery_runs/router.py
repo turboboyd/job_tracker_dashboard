@@ -14,7 +14,7 @@ router = APIRouter(prefix="/discovery-runs", tags=["discovery-runs"])
 
 
 def get_discovery_runs_service(db: DbSession) -> DiscoveryRunsService:
-    return DiscoveryRunsService(LoopsService(db))
+    return DiscoveryRunsService(LoopsService(db), db=db)
 
 
 DiscoveryRunsSvc = Annotated[
