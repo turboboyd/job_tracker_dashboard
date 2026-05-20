@@ -2,6 +2,7 @@ import { restDelete, restGet, restPatch, restPost } from "src/shared/api";
 import { getBackendConfig } from "src/shared/config";
 
 import {
+  mapApplicationFromPreviewResponseDto,
   mapCreateApplicationFromMatchInputToDto,
   mapCreateApplicationFromMatchResponseDto,
   mapIgnoreDiscoveryPreviewInputToDto,
@@ -13,6 +14,7 @@ import {
   mapVacancyMatchFromPreviewResponseDto,
   mapVacancyMatchDto,
   mapVacancyMatchPreviewDto,
+  type ApplicationFromPreviewResponseDto,
   type CreateApplicationFromMatchInput,
   type CreateApplicationFromMatchResponseDto,
   type CreateApplicationFromMatchResult,
@@ -20,6 +22,7 @@ import {
   type IgnoreDiscoveryPreviewInput,
   type IgnoreDiscoveryPreviewResult,
   type PatchVacancyMatchInput,
+  type SaveDiscoveryPreviewAsApplicationResult,
   type SaveDiscoveryPreviewMatchInput,
   type SaveDiscoveryPreviewMatchResult,
   type SaveVacancyMatchInput,
@@ -57,6 +60,10 @@ export function buildLoopMatchImportPreviewUrl(apiBaseUrl: string, loopId: strin
 
 export function buildLoopMatchFromPreviewUrl(apiBaseUrl: string, loopId: string): string {
   return `${loopMatchesBaseUrl(apiBaseUrl, loopId)}/from-preview`;
+}
+
+export function buildLoopApplicationFromPreviewUrl(apiBaseUrl: string, loopId: string): string {
+  return `${apiBaseUrl}/loops/${encodeURIComponent(loopId)}/applications/from-preview`;
 }
 
 export function buildLoopMatchPreviewIgnoresUrl(apiBaseUrl: string, loopId: string): string {
@@ -135,6 +142,18 @@ export async function saveDiscoveryPreviewAsMatchViaRest(
     mapSaveDiscoveryPreviewMatchInputToDto(input),
   );
   return mapVacancyMatchFromPreviewResponseDto(dto);
+}
+
+export async function saveDiscoveryPreviewAsApplicationViaRest(
+  loopId: string,
+  input: SaveDiscoveryPreviewMatchInput,
+): Promise<SaveDiscoveryPreviewAsApplicationResult> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restPost<ApplicationFromPreviewResponseDto>(
+    buildLoopApplicationFromPreviewUrl(apiBaseUrl, loopId),
+    mapSaveDiscoveryPreviewMatchInputToDto(input),
+  );
+  return mapApplicationFromPreviewResponseDto(dto);
 }
 
 export async function ignoreDiscoveryPreviewViaRest(

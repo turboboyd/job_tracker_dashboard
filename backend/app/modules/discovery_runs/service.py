@@ -230,6 +230,13 @@ class DiscoveryRunsService:
                     max_results=payload.page_size,
                 )
                 return item, 1
+            logger.debug(
+                "Cache MISS: loop=%s source=%s scope=%s page=%s",
+                loop.id,
+                source_id,
+                payload.search_scope,
+                payload.page,
+            )
 
         # ── Live adapter call ─────────────────────────────────────────────────
         try:

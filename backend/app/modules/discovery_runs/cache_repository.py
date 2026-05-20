@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.discovery_preview_cache import DiscoveryPreviewCache
+from app.modules.discovery_adapters.safety import MAX_RESULTS_PER_SOURCE
 from app.modules.discovery_adapters.schemas import DiscoveryAdapterItem, DiscoveryAdapterResult
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ async def upsert_cache(
     ttl_seconds = get_ttl_seconds(source_id)
     expires_at = now + timedelta(seconds=ttl_seconds)
     items_json = [item.model_dump() for item in result.items]
-    has_more = len(result.items) >= 5  # MAX_RESULTS_PER_SOURCE cap
+    has_more = len(result.items) >= MAX_RESULTS_PER_SOURCE
 
     stmt = (
         pg_insert(DiscoveryPreviewCache)

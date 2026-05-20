@@ -14,6 +14,7 @@ from app.modules.vacancy_import.schemas import (
 )
 from app.modules.vacancy_import.service import VacancyImportService, get_vacancy_import_service
 from app.modules.vacancy_matches.schemas import (
+    ApplicationFromPreviewResponse,
     ConvertMatchResponse,
     CreateApplicationFromMatchRequest,
     CreateApplicationFromMatchResponse,
@@ -278,4 +279,37 @@ async def convert_match_to_application(
     return ConvertMatchResponse(
         application_id=app.id,
         match=VacancyMatchRead.model_validate(match),
+    )
+
+
+loop_applications_router = APIRouter(
+    prefix="/loops/{loop_id}/applications",
+    tags=["loop-applications"],
+)
+
+
+@loop_applications_router.post(
+    "/from-preview",
+    response_model=ApplicationFromPreviewResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Save a discovery preview item directly as an Application with status Saved",
+)
+async def save_preview_as_application(
+    loop_id: str,
+    payload: VacancyMatchFromPreviewRequest,
+    current_user: CurrentUser,
+    svc: VacancyMatchesSvc,
+) -> ApplicationFromPreviewResponse:
+    try:
+        app, match, created, duplicate = await svc.save_preview_as_application(
+            current_user, loop_id, payload
+        )
+    except VacancyMatchError as error:
+        raise _match_http_error(error) from error
+    return ApplicationFromPreviewResponse(
+        application=ApplicationRead.model_validate(app),
+        match_id=match.id if match is not None else None,
+        application_id=app.id,
+        created=created,
+        duplicate=duplicate,
     )
