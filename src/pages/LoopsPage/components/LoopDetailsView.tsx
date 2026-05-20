@@ -7,15 +7,6 @@ import { joinTitles } from "src/entities/loop/lib";
 import type { Loop } from "src/entities/loop/model";
 import { LoopSearchLinks } from "src/entities/loop/ui/LoopSearchLinks/LoopSearchLinks";
 import { getLoopViaRest, updateLoopViaRest } from "src/features/loops";
-import { db } from "src/shared/config/firebase/firebase";
-import {
-  setLastLoopsUrl,
-  setLoopDetailsPage,
-} from "src/pages/LoopsPage/model/loopsUiSlice";
-import { getErrorMessage } from "src/shared/lib";
-import { updateURLParams } from "src/shared/lib/url/updateURLParams";
-import { Modal } from "src/shared/ui";
-
 import { createApplicationsRepo } from "src/pages/ApplicationsPage/api/applicationsRepo";
 import {
   buildCreateApplicationPayload,
@@ -27,11 +18,19 @@ import {
   type CreateFormState,
 } from "src/pages/ApplicationsPage/model/types";
 import { CreateApplicationDialog } from "src/pages/ApplicationsPage/ui/CreateApplicationDialog";
-import { CardText } from "./Header";
+import {
+  setLastLoopsUrl,
+  setLoopDetailsPage,
+} from "src/pages/LoopsPage/model/loopsUiSlice";
+import { db } from "src/shared/config/firebase/firebase";
+import { getErrorMessage } from "src/shared/lib";
+import { updateURLParams } from "src/shared/lib/url/updateURLParams";
+
 import { ArbeitsagenturDiscoveryPreviewPanel } from "./ArbeitsagenturDiscoveryPreviewPanel";
+import { CardText } from "./Header";
 import { LoopSettingsPanel } from "./LoopSettingsPanel";
-import { VacancyMatchesSection } from "./VacancyMatchesSection";
 import { isBackendLoopId } from "./loopsPage.helpers";
+import { VacancyMatchesSection } from "./VacancyMatchesSection";
 
 export function LoopDetailsView({
   userId,
@@ -54,7 +53,7 @@ export function LoopDetailsView({
   const [loop, setLoop] = useState<Loop | null>(null);
   const [isLoadingLoop, setIsLoadingLoop] = useState(false);
   const [loopError, setLoopError] = useState<string | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "matches" | "settings">("overview");
   const [isCreateApplicationOpen, setIsCreateApplicationOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateFormState>(EMPTY_CREATE_FORM);
   const [isCreatingApplication, setIsCreatingApplication] = useState(false);
@@ -228,8 +227,42 @@ export function LoopDetailsView({
       return <CardText>{t("loops.notFound", "Loop not found.")}</CardText>;
     }
 
+    if (activeTab === "settings") {
+      return (
+        <LoopSettingsPanel
+          loop={loop}
+          onSave={async (patch) => {
+            const updated = await updateLoopViaRest(loop.id, patch);
+            setLoop(updated);
+            return updated;
+          }}
+        />
+      );
+    }
+
+    if (activeTab === "matches") {
+      return (
+        <>
+          {isBackendLoopId(loop.id) ? (
+            <ArbeitsagenturDiscoveryPreviewPanel
+              loopId={loop.id}
+              selectedSources={loop.selectedSources}
+              onMatchSaved={() => setMatchesRefreshKey((current) => current + 1)}
+            />
+          ) : null}
+          {isBackendLoopId(loop.id) ? (
+            <VacancyMatchesSection
+              loopId={loop.id}
+              reloadKey={matchesRefreshKey}
+              onAddVacancy={openCreateApplicationDialog}
+              onOpenSources={() => setActiveTab("overview")}
+            />
+          ) : null}
+        </>
+      );
+    }
+
     return (
-      <>
       <LoopSearchLinks
         userId={userId}
         page={detailsPage}
@@ -258,24 +291,9 @@ export function LoopDetailsView({
         }}
         onAddVacancy={openCreateApplicationDialog}
       />
-      {isBackendLoopId(loop.id) ? (
-        <ArbeitsagenturDiscoveryPreviewPanel
-          loopId={loop.id}
-          selectedSources={loop.selectedSources}
-          onMatchSaved={() => setMatchesRefreshKey((current) => current + 1)}
-        />
-      ) : null}
-      {isBackendLoopId(loop.id) ? (
-        <VacancyMatchesSection
-          loopId={loop.id}
-          reloadKey={matchesRefreshKey}
-          onAddVacancy={openCreateApplicationDialog}
-          onOpenSources={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        />
-      ) : null}
-      </>
     );
   }, [
+    activeTab,
     isLoadingLoop,
     loopError,
     loop,
@@ -292,9 +310,9 @@ export function LoopDetailsView({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border bg-background px-7 py-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
+      <div className="shrink-0 border-b border-border bg-background">
+        <div className="flex items-center justify-between gap-4 px-7 pt-5 pb-0">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
               <span>Loopboard</span>
               <span>/</span>
@@ -306,33 +324,24 @@ export function LoopDetailsView({
                 {t("loops.listTitle", "Loops")}
               </button>
               <span>/</span>
-              <span className="text-muted-foreground">{title}</span>
+              <span className="text-muted-foreground truncate">{title}</span>
             </div>
-            <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
+            <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none truncate">
               {title}
             </h1>
             {subtitle ? (
-              <p className="mt-1 text-[13px] text-muted-foreground">{subtitle}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground truncate">{subtitle}</p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {loop ? (
-              <>
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-                  onClick={() => setIsSettingsOpen(true)}
-                >
-                  Настройки направления поиска
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                  onClick={openCreateApplicationDialog}
-                >
-                  Добавить вакансию
-                </button>
-              </>
+              <button
+                type="button"
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                onClick={openCreateApplicationDialog}
+              >
+                {t("loops.addVacancy", "Add vacancy")}
+              </button>
             ) : null}
             <button
               type="button"
@@ -342,6 +351,31 @@ export function LoopDetailsView({
               ← {t("loops.back", "Back")}
             </button>
           </div>
+        </div>
+
+        {/* Tab bar */}
+        <div className="mt-4 flex items-end gap-0 px-7">
+          {(
+            [
+              { key: "overview", label: t("loops.tabOverview", "Overview") },
+              { key: "matches",  label: t("loops.tabMatches",  "Matches")  },
+              { key: "settings", label: t("loops.tabSettings", "Settings") },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={[
+                "inline-flex items-center px-4 py-2.5 text-[13px] border-b-2 transition-colors whitespace-nowrap",
+                activeTab === tab.key
+                  ? "border-primary text-foreground font-medium"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              ].join(" ")}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -355,25 +389,6 @@ export function LoopDetailsView({
           ) : null}
         </div>
       </div>
-
-      <Modal
-        open={isSettingsOpen && Boolean(loop)}
-        onOpenChange={setIsSettingsOpen}
-        title="Настройки направления поиска"
-        description="Параметры сохраняются в backend. Автоматический поиск вакансий пока не подключён."
-        size="lg"
-      >
-        {loop ? (
-          <LoopSettingsPanel
-            loop={loop}
-            onSave={async (patch) => {
-              const updated = await updateLoopViaRest(loop.id, patch);
-              setLoop(updated);
-              return updated;
-            }}
-          />
-        ) : null}
-      </Modal>
 
       {loop ? (
         <CreateApplicationDialog
