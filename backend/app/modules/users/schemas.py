@@ -1,7 +1,10 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+
+PlanName = Literal["free", "basic", "premium"]
 
 
 class UserRead(BaseModel):
@@ -15,10 +18,18 @@ class UserRead(BaseModel):
     language: str
     timezone: str
     date_format: str
+    analysis_plan: PlanName
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("analysis_plan", mode="before")
+    @classmethod
+    def default_analysis_plan(cls, value: object) -> str:
+        if value in ("free", "basic", "premium"):
+            return str(value)
+        return "free"
 
 
 class UserPatch(BaseModel):
@@ -35,3 +46,22 @@ class UserPatch(BaseModel):
     date_format: str | None = None
 
     model_config = ConfigDict(extra="forbid")
+
+
+class AnalysisPlanLimits(BaseModel):
+    basic_daily_limit: int
+    ai_daily_limit: int
+
+
+class AnalysisPlanFeatures(BaseModel):
+    cover_letter: Literal["disabled", "short_template", "enabled"]
+    interview_questions: bool
+    cv_keywords: bool
+    multi_match_comparison: bool
+    priority: Literal["normal", "high"]
+
+
+class AnalysisPlanRead(BaseModel):
+    plan: PlanName
+    limits: AnalysisPlanLimits
+    features: AnalysisPlanFeatures

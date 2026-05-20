@@ -1,0 +1,1 @@
+"""Vacancy matches module."""

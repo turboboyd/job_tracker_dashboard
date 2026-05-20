@@ -1,7 +1,9 @@
 import React from "react";
 
-import { useGetLoopsQuery, type Loop } from "src/entities/loop";
+import type { Loop } from "src/entities/loop";
 import { useGetAllMatchesQuery, type LoopMatch } from "src/entities/loopMatch";
+import { useAuthSelectors } from "src/features/auth/model";
+import { useBackendLoopsQuery } from "src/features/loops";
 
 import type { BoardMatchesQueryState } from "./types";
 
@@ -13,7 +15,11 @@ export type BoardQueries = Readonly<{
 
 
 export function useBoardQueries(): BoardQueries {
-  const loopsQ = useGetLoopsQuery();
+  const { isAuthReady, isAuthenticated } = useAuthSelectors();
+  const loopsQ = useBackendLoopsQuery({
+    includeArchived: true,
+    skip: !isAuthReady || !isAuthenticated,
+  });
   const matchesQ = useGetAllMatchesQuery();
 
   const loops = React.useMemo(() => loopsQ.data ?? [], [loopsQ.data]);

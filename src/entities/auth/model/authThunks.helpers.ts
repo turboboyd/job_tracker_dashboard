@@ -51,21 +51,11 @@ export async function ensureBrowserLocalPersistence() {
   }
 }
 
-async function seedDemoDataForUser(uid: string) {
-  const [{ db }, { seedDemoDataIfNeeded }] = await Promise.all([
-    import("src/shared/config/firebase/firestore"),
-    import("src/shared/lib/seed"),
-  ]);
-
-  await seedDemoDataIfNeeded({ db, uid });
-}
-
 export async function signInWithGoogleFlow() {
   const { GoogleAuthProvider, auth, signInWithPopup } = await loadFirebaseAuth();
   const provider = new GoogleAuthProvider();
-  const credential = await signInWithPopup(auth, provider);
 
-  await seedDemoDataForUser(credential.user.uid);
+  await signInWithPopup(auth, provider);
 }
 
 export async function signInWithEmailFlow(email: string, password: string) {
@@ -76,9 +66,8 @@ export async function signInWithEmailFlow(email: string, password: string) {
 
 export async function signUpWithEmailFlow(email: string, password: string) {
   const { auth, createUserWithEmailAndPassword } = await loadFirebaseAuth();
-  const credential = await createUserWithEmailAndPassword(auth, email, password);
 
-  await seedDemoDataForUser(credential.user.uid);
+  await createUserWithEmailAndPassword(auth, email, password);
 }
 
 export async function signOutFlow() {

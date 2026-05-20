@@ -15,6 +15,7 @@ export function buildPlugins(
   const { isDev, isProd, paths } = options;
 
   const defineEnv = buildEnv(isProd);
+  const shouldRunWebpackLint = isDev || process.env.WEBPACK_LINT === "true";
 
   const plugins: webpack.WebpackPluginInstance[] = [
     new HtmlWebpackPlugin({
@@ -37,14 +38,19 @@ export function buildPlugins(
     new webpack.DefinePlugin(defineEnv),
 
     new ForkTsCheckerWebpackPlugin(),
-
-    new ESLintWebpackPlugin({
-      extensions: ["js", "jsx", "ts", "tsx"],
-      failOnError: isProd,
-      emitWarning: isDev,
-      emitError: isProd,
-    }),
   ];
+
+  if (shouldRunWebpackLint) {
+    plugins.push(
+      new ESLintWebpackPlugin({
+        cache: false,
+        extensions: ["js", "jsx", "ts", "tsx"],
+        failOnError: isProd,
+        emitWarning: isDev,
+        emitError: isProd,
+      })
+    );
+  }
 
   if (isDev) {
     plugins.push(new ReactRefreshWebpackPlugin());

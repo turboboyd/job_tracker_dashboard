@@ -1,5 +1,12 @@
 import type { Loop, LoopPlatform } from "../../model";
 
+export type UpdateLoopSearchLinksInput = Partial<
+  Pick<
+    Loop,
+    "name" | "titles" | "location" | "radiusKm" | "remoteMode" | "platforms" | "filters"
+  >
+>;
+
 export interface LoopSearchLinksProps {
   loop: Pick<
     Loop,
@@ -13,6 +20,8 @@ export interface LoopSearchLinksProps {
     | "filters"
   >;
   onPageChange: (page: number) => void;
+  onUpdateLoop?: (patch: UpdateLoopSearchLinksInput) => Promise<void>;
+  onAddVacancy?: () => void;
   page: number;
   userId: string | null;
 }

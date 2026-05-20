@@ -2,9 +2,8 @@ import assert from "node:assert/strict";
 
 import { buildAuthedRequest } from "src/shared/api";
 
-function test(name: string, run: () => void) {
+function test(_name: string, run: () => void) {
   run();
-  void name;
 }
 
 test("buildAuthedRequest includes Authorization Bearer header", () => {

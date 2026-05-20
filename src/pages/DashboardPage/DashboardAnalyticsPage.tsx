@@ -1,9 +1,14 @@
 import { ArrowUpRight, Download, SlidersHorizontal } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { toMillis } from "src/shared/lib/firestore/toMillis";
 
+import {
+  getAnalyticsKpiViaRest,
+  type DashboardKpiModel,
+  type DashboardKpiRange,
+} from "./api/dashboardRest";
 import { useDashboardData } from "./model/useDashboardData";
 import {
   DashboardLoopsFilterModal,
@@ -247,6 +252,17 @@ function RangeToggle({
   );
 }
 
+
+function logRestError(context: string, error: unknown): void {
+  const restError = error as { status?: unknown; code?: unknown; requestId?: unknown } | null;
+
+  console.error(context, {
+    code: restError?.code,
+    requestId: restError?.requestId,
+    status: restError?.status,
+  });
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function DashboardAnalyticsPage() {
@@ -254,12 +270,38 @@ export function DashboardAnalyticsPage() {
   const [loopsModalOpen, setLoopsModalOpen] = useState(false);
   const [nowMs] = useState(() => Date.now());
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
+  const [kpi, setKpi] = useState<DashboardKpiModel | null>(null);
+  const [kpiError, setKpiError] = useState<string | null>(null);
   const [range, setRange] = useState<RangeKey>("7d");
   const [mode, setMode] = useState<ModeKey>("created");
   const [customRange, setCustomRange] = useState<CustomRange>(null);
 
   const { loops, loopsFilter, setLoopsFilter, chartMatches, pipelineSummary, matchesAll } =
     useDashboardData();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadKpi() {
+      try {
+        setKpiError(null);
+        const nextKpi = await getAnalyticsKpiViaRest(timeRange as DashboardKpiRange);
+        if (!cancelled) setKpi(nextKpi);
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setKpi(null);
+          setKpiError(error instanceof Error ? error.message : "Не удалось загрузить KPI.");
+        }
+        logRestError("Dashboard KPI load failed", error);
+      }
+    }
+
+    void loadKpi();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [timeRange]);
 
   // ── Time range bounds ───────────────────────────────────────────────────────
 
@@ -281,28 +323,25 @@ export function DashboardAnalyticsPage() {
 
   // ── KPI — real ──────────────────────────────────────────────────────────────
 
-  const totalApplied = rangeMatches.filter((m) => (m.status as string) !== "SAVED").length;
+  const fallbackTotalApplied = rangeMatches.filter((m) => (m.status as string) !== "SAVED").length;
 
   const hrScreenCount =
+    kpi?.interviewCount ??
     (pipelineSummary.byColumn["INTERVIEW"] ?? 0) +
-    (pipelineSummary.byColumn["OFFER"] ?? 0) +
-    (pipelineSummary.byColumn["HIRED"] ?? 0);
+      (pipelineSummary.byColumn["OFFER"] ?? 0) +
+      (pipelineSummary.byColumn["HIRED"] ?? 0);
 
   const offerCount =
+    kpi?.offerCount ??
     (pipelineSummary.byColumn["OFFER"] ?? 0) + (pipelineSummary.byColumn["HIRED"] ?? 0);
 
-  const replyRate =
-    pipelineSummary.total > 0
-      ? Math.round((hrScreenCount / pipelineSummary.total) * 100)
-      : 0;
-  const interviewRate =
-    pipelineSummary.total > 0
-      ? Math.round((offerCount / pipelineSummary.total) * 100)
-      : 0;
+  const totalApplied = kpi?.appliedCount ?? fallbackTotalApplied;
+  const replyRate = kpi ? Math.round(kpi.responseRate * 100) : pipelineSummary.total > 0 ? Math.round((hrScreenCount / pipelineSummary.total) * 100) : 0;
+  const offerRate = kpi ? Math.round(kpi.offerRate * 100) : pipelineSummary.total > 0 ? Math.round((offerCount / pipelineSummary.total) * 100) : 0;
 
-  // ── Median cycle time ───────────────────────────────────────────────────────
+  // ── Median pipeline time ────────────────────────────────────────────────────
 
-  const cycleDays = useMemo(() => {
+  const pipelineDays = useMemo(() => {
     const durations: number[] = [];
     for (const m of matchesAll as MatchLike[]) {
       const s = m.status as string;
@@ -346,15 +385,15 @@ export function DashboardAnalyticsPage() {
     },
     {
       l: "Дошли до оффера",
-      v: interviewRate > 0 ? `${interviewRate}%` : "—",
+      v: offerRate > 0 ? `${offerRate}%` : "—",
       d: null as string | null,
       // TODO(backend-migration): needs historical aggregation from GET /api/v1/analytics/kpi
       trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       color: "#f59e0b",
     },
     {
-      l: "Среднее время цикла",
-      v: cycleDays > 0 ? `${cycleDays}д` : "—",
+      l: "Среднее время в pipeline",
+      v: pipelineDays > 0 ? `${pipelineDays}д` : "—",
       d: null as string | null,
       // TODO(backend-migration): needs per-period median from GET /api/v1/analytics/kpi
       trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -364,10 +403,10 @@ export function DashboardAnalyticsPage() {
 
   // ── Funnel (real from pipelineSummary.byColumn) ────────────────────────────
 
-  const fTotal = pipelineSummary.total;
+  const fTotal = kpi?.appliedCount ?? pipelineSummary.total;
   const fHr = hrScreenCount;
   const fOffer = offerCount;
-  const fHired = pipelineSummary.byColumn["HIRED"] ?? 0;
+  const fHired = kpi?.statusCounts["HIRED"] ?? pipelineSummary.byColumn["HIRED"] ?? 0;
 
   const funnelSteps = [
     {
@@ -529,7 +568,7 @@ export function DashboardAnalyticsPage() {
                 className="flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-                {t("loopsFilter.button", "Циклы")}
+                {t("loopsFilter.button", "Направления")}
               </button>
             </div>
           </div>
@@ -547,6 +586,11 @@ export function DashboardAnalyticsPage() {
       {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto bg-background">
         <div className="flex flex-col gap-3.5 p-7">
+          {kpiError ? (
+            <div className="rounded-lg border border-border bg-card px-4 py-3 text-[12.5px] text-muted-foreground">
+              {kpiError}
+            </div>
+          ) : null}
           {/* ── KPI cards ── */}
           <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
             {kpis.map((k) => (

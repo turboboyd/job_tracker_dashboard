@@ -16,6 +16,12 @@ import type {
   ProcessStatus,
   ReminderEntry,
   WorkMode,
+  FeedbackType,
+  HistoryActor,
+  HistoryEventDoc,
+  HistoryType,
+  RejectionReasonCode,
+  Sentiment,
 } from "src/entities/application";
 
 // ── Backend DTO types ──────────────────────────────────────────────────────────
@@ -37,6 +43,7 @@ export interface ApplicationReadDto {
   id: string;
   user_id: string;
   archived: boolean;
+  is_favorite: boolean;
   // Job
   company_name: string;
   role_title: string;
@@ -77,9 +84,61 @@ export interface ApplicationReadDto {
   has_loop: boolean;
   cv_version_id: string | null;
   profile_version_id: string | null;
+  // Derived metrics
+  days_in_pipeline?: number | null;
+  days_since_applied?: number | null;
+  days_in_current_status?: number | null;
   // Timestamps
   created_at: string;
   updated_at: string;
+}
+
+
+/** Shape returned by GET /applications/{id}/history and POST /applications/{id}/comments. */
+export interface HistoryItemReadDto {
+  id: string;
+  application_id: string;
+  user_id: string;
+  actor: string;
+  type: string;
+  from_status: string | null;
+  to_status: string | null;
+  field_path: string | null;
+  old_value: unknown;
+  new_value: unknown;
+  comment: string | null;
+  feedback_type: string | null;
+  sentiment: string | null;
+  rejection_reason_code: string | null;
+  correlation_id: string | null;
+  created_at: string;
+}
+
+
+export interface DocumentReadDto {
+  id: string;
+  application_id: string;
+  kind: string;
+  original_filename: string;
+  content_type: string;
+  size_bytes: number;
+  sha256_hash: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApplicationDocument {
+  id: string;
+  applicationId: string;
+  kind: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256Hash: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ── Timestamp helpers ──────────────────────────────────────────────────────────
@@ -109,6 +168,7 @@ export function mapDtoToDoc(dto: ApplicationReadDto, userId: string): Applicatio
     updatedAt: isoToTs(dto.updated_at),
     createdBy: userId,
     archived: dto.archived,
+    isFavorite: dto.is_favorite,
 
     job: {
       companyName: dto.company_name,
@@ -175,6 +235,16 @@ export function mapDtoToDoc(dto: ApplicationReadDto, userId: string): Applicatio
 
     hasLoop: dto.has_loop,
 
+    ...(dto.days_in_pipeline !== null && dto.days_in_pipeline !== undefined
+      ? { daysInPipeline: dto.days_in_pipeline }
+      : {}),
+    ...(dto.days_since_applied !== null && dto.days_since_applied !== undefined
+      ? { daysSinceApplied: dto.days_since_applied }
+      : {}),
+    ...(dto.days_in_current_status !== null && dto.days_in_current_status !== undefined
+      ? { daysInCurrentStatus: dto.days_in_current_status }
+      : {}),
+
     ...(dto.cv_version_id !== null || dto.profile_version_id !== null
       ? {
           cvLinkage: {
@@ -196,6 +266,7 @@ export function mapCreateInputToDto(input: CreateApplicationInput): Record<strin
   return {
     company_name: input.companyName,
     role_title: input.roleTitle,
+    ...(input.isFavorite !== undefined ? { is_favorite: input.isFavorite } : {}),
     ...(input.vacancyUrl !== undefined ? { vacancy_url: input.vacancyUrl } : {}),
     ...(input.source !== undefined ? { source: input.source } : {}),
     ...(input.status !== undefined ? { status: input.status } : {}),
@@ -214,6 +285,7 @@ export function mapCreateInputToDto(input: CreateApplicationInput): Record<strin
 // Maps dot-path or nested Firestore patch keys to REST snake_case fields.
 const DOT_PATH_MAP: Readonly<Record<string, string>> = {
   archived: "archived",
+  isFavorite: "is_favorite",
   "job.companyName": "company_name",
   "job.roleTitle": "role_title",
   "job.locationText": "location_text",
@@ -301,4 +373,45 @@ export function mapPatchToDto(
   }
 
   return result;
+}
+
+
+// ── History DTO → HistoryEventDoc ─────────────────────────────────────────────
+
+export function mapHistoryDtoToDoc(dto: HistoryItemReadDto): HistoryEventDoc {
+  return {
+    createdAt: isoToTs(dto.created_at),
+    actor: dto.actor as HistoryActor,
+    type: dto.type as HistoryType,
+    ...(dto.from_status !== null ? { fromStatus: dto.from_status as ProcessStatus } : {}),
+    ...(dto.to_status !== null ? { toStatus: dto.to_status as ProcessStatus } : {}),
+    ...(dto.field_path !== null ? { fieldPath: dto.field_path } : {}),
+    ...(dto.old_value !== null ? { oldValue: dto.old_value } : {}),
+    ...(dto.new_value !== null ? { newValue: dto.new_value } : {}),
+    ...(dto.comment !== null ? { comment: dto.comment } : {}),
+    ...(dto.feedback_type !== null ? { feedbackType: dto.feedback_type as FeedbackType } : {}),
+    ...(dto.sentiment !== null ? { sentiment: dto.sentiment as Sentiment } : {}),
+    ...(dto.rejection_reason_code !== null
+      ? { rejectionReasonCode: dto.rejection_reason_code as RejectionReasonCode }
+      : {}),
+    ...(dto.correlation_id !== null ? { correlationId: dto.correlation_id } : {}),
+  };
+}
+
+
+// ── Document DTO → UI model ─────────────────────────────────────────────────
+
+export function mapDocumentDtoToModel(dto: DocumentReadDto): ApplicationDocument {
+  return {
+    id: dto.id,
+    applicationId: dto.application_id,
+    kind: dto.kind,
+    originalFilename: dto.original_filename,
+    contentType: dto.content_type,
+    sizeBytes: dto.size_bytes,
+    sha256Hash: dto.sha256_hash,
+    status: dto.status,
+    createdAt: dto.created_at,
+    updatedAt: dto.updated_at,
+  };
 }

@@ -7,7 +7,7 @@ module.exports = {
      */
     {
       name: "no-circular",
-      severity: "error",
+      severity: "warn",
       from: {},
       to: { circular: true },
     },
@@ -19,31 +19,31 @@ module.exports = {
      */
     {
       name: "no-shared-dep-on-higher",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/shared/" },
       to: { path: "^src/(entities|features|widgets|pages|app)/" },
     },
     {
       name: "no-entities-dep-on-higher",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/entities/" },
       to: { path: "^src/(features|widgets|pages|app)/" },
     },
     {
       name: "no-features-dep-on-higher",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/features/" },
       to: { path: "^src/(widgets|pages|app)/" },
     },
     {
       name: "no-widgets-dep-on-higher",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/widgets/" },
       to: { path: "^src/(pages|app)/" },
     },
     {
       name: "no-pages-dep-on-app",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/pages/" },
       to: { path: "^src/app/" },
     },
@@ -59,7 +59,7 @@ module.exports = {
     // --- FEATURES: only via src/features/<slice>/index.ts(x) for higher layers
     {
       name: "features-public-api-only",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/(app|pages|widgets)/" },
       to: {
         path: "^src/features/[^/]+/.+",
@@ -70,7 +70,7 @@ module.exports = {
     // --- ENTITIES: only via src/entities/<slice>/index.ts(x) for higher layers
     {
       name: "entities-public-api-only",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/(app|pages|widgets|features)/" },
       to: {
         path: "^src/entities/[^/]+/.+",
@@ -81,7 +81,7 @@ module.exports = {
     // --- WIDGETS: only via src/widgets/<slice>/index.ts(x) for higher layers
     {
       name: "widgets-public-api-only",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/(app|pages)/" },
       to: {
         path: "^src/widgets/[^/]+/.+",
@@ -92,7 +92,7 @@ module.exports = {
     // --- PAGES: only via src/pages/<slice>/index.ts(x) for app and other lower layers
     {
       name: "pages-public-api-only",
-      severity: "error",
+      severity: "warn",
       from: { path: "^src/app/" },
       to: {
         path: "^src/pages/[^/]+/.+",

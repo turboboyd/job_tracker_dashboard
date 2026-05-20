@@ -13,6 +13,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import APIError
 from app.db.models.application import Application
 from app.db.models.user import User
 from app.modules.activity.service import ActivityService
@@ -24,20 +25,44 @@ from app.modules.applications.schemas import (
     StatusTransitionRequest,
 )
 from app.modules.history.service import HistoryService
+from app.modules.loops.service import LoopsService
 
 # Fields that are user-settable and worth tracking per-field on PATCH.
 # Derived/system fields (stage, needs_follow_up, last_status_change_at, …)
 # are intentionally excluded — they are recomputed automatically.
-_TRACKED_PATCH_FIELDS = frozenset({
-    "company_name", "role_title", "location_text", "vacancy_url", "source",
-    "employment_type", "work_mode", "salary", "posted_at",
-    "status", "sub_status", "applied_at", "applied_via",
-    "next_action_at", "next_action_text", "contact_attempts",
-    "last_contact_at", "last_follow_up_at", "follow_up_level",
-    "reapply_reason", "reminders", "current_note", "tags",
-    "vacancy_description", "loop_id", "has_loop",
-    "cv_version_id", "profile_version_id",
-})
+_TRACKED_PATCH_FIELDS = frozenset(
+    {
+        "company_name",
+        "role_title",
+        "location_text",
+        "vacancy_url",
+        "source",
+        "employment_type",
+        "work_mode",
+        "salary",
+        "posted_at",
+        "status",
+        "is_favorite",
+        "sub_status",
+        "applied_at",
+        "applied_via",
+        "next_action_at",
+        "next_action_text",
+        "contact_attempts",
+        "last_contact_at",
+        "last_follow_up_at",
+        "follow_up_level",
+        "reapply_reason",
+        "reminders",
+        "current_note",
+        "tags",
+        "vacancy_description",
+        "loop_id",
+        "has_loop",
+        "cv_version_id",
+        "profile_version_id",
+    }
+)
 
 
 def _jsonb_safe(value: object) -> object:
@@ -53,11 +78,28 @@ def _jsonb_safe(value: object) -> object:
     )
 
 
+def _normalize_tags(tags: list[str] | None) -> list[str] | None:
+    if tags is None:
+        return None
+
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for tag in tags:
+        value = tag.strip()
+        key = value.casefold()
+        if not value or key in seen:
+            continue
+        seen.add(key)
+        normalized.append(value)
+    return normalized
+
+
 class ApplicationsService:
     def __init__(self, db: AsyncSession) -> None:
         self._repo = ApplicationsRepository(db)
         self._history = HistoryService(db)
         self._activity = ActivityService(db)
+        self._loops = LoopsService(db)
 
     async def list_for_user(
         self,
@@ -67,28 +109,43 @@ class ApplicationsService:
         statuses: list[str] | None = None,
         stage: str | None = None,
         search: str | None = None,
+        loop_id: str | None = None,
+        is_favorite: bool | None = None,
         sort: str = "updated_at_desc",
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[Application], int]:
+        if loop_id is not None:
+            try:
+                await self._loops.require_owned_for_read(user, loop_id)
+            except APIError:
+                return [], 0
+
         return await self._repo.list_for_user(
             user.id,
             archived=archived,
             statuses=statuses,
             stage=stage,
             search=search,
+            loop_id=loop_id,
+            is_favorite=is_favorite,
             sort=sort,
             limit=limit,
             offset=offset,
         )
 
     async def create(self, user: User, payload: ApplicationCreate) -> Application:
+        await self._loops.require_owned_active(user, payload.loop_id)
+
         data = payload.model_dump(exclude_none=True)
+        data["has_loop"] = True
 
         if "salary" in data:
             data["salary"] = _jsonb_safe(data["salary"])
         if "reminders" in data:
             data["reminders"] = _jsonb_safe(data["reminders"])
+        if "tags" in data:
+            data["tags"] = _normalize_tags(data["tags"])
 
         data["user_id"] = user.id
         data["last_status_change_at"] = datetime.now(UTC)
@@ -122,6 +179,11 @@ class ApplicationsService:
             updates["salary"] = _jsonb_safe(updates["salary"])
         if "reminders" in updates:
             updates["reminders"] = _jsonb_safe(updates["reminders"])
+        if "tags" in updates:
+            updates["tags"] = _normalize_tags(updates["tags"])
+        if "loop_id" in updates:
+            await self._loops.require_owned_active_by_user_id(user_id, updates["loop_id"])
+            updates["has_loop"] = True
 
         if "status" in updates and updates["status"] != app.status:
             updates["last_status_change_at"] = datetime.now(UTC)
@@ -133,8 +195,13 @@ class ApplicationsService:
             "applied_at": updates.get("applied_at", app.applied_at),
         }
         apply_derived(merged_inputs)
-        for key in ("stage", "needs_follow_up", "follow_up_due_at",
-                    "needs_reapply_suggestion", "reapply_eligible_at"):
+        for key in (
+            "stage",
+            "needs_follow_up",
+            "follow_up_due_at",
+            "needs_reapply_suggestion",
+            "reapply_eligible_at",
+        ):
             updates[key] = merged_inputs[key]
 
         # Snapshot old values of explicitly-sent trackable fields before mutation
@@ -202,9 +269,7 @@ class ApplicationsService:
             comment=payload.comment,
             correlation_id=payload.correlation_id,
         )
-        await self._activity.record_status_changed(
-            updated, user_id, from_status, payload.to_status
-        )
+        await self._activity.record_status_changed(updated, user_id, from_status, payload.to_status)
 
         return updated
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { ProcessStatus } from "../api/applicationsRepo";
@@ -53,7 +53,7 @@ function ListHeader() {
     { label: "Должность · Компания" },
     { label: "Локация" },
     { label: "Статус" },
-    { label: "Цикл" },
+    { label: "Направление" },
     { label: "Матч", title: "AI match score: ≥85 strong, ≥70 good, <70 weak" },
     { label: "" },
   ];
@@ -86,10 +86,15 @@ export function ApplicationsListCard(props: {
   query?: string;
   sortBy?: "newest" | "oldest" | "company" | "score";
   onChangeStatus?: (appId: string, status: ProcessStatus) => void;
+  onToggleFavorite?: (appId: string, nextValue: boolean) => void;
+  onArchiveApplication?: (appId: string) => void;
+  onRestoreApplication?: (appId: string) => void;
+  isArchivedView?: boolean;
   displayMode?: DisplayMode;
   onDisplayModeChange?: (v: DisplayMode) => void;
   selectedCompanies?: string[];
   onFilteredCount?: (count: number) => void;
+  loopTitleById: ReadonlyMap<string, string>;
 }) {
   const { t } = useTranslation();
   const {
@@ -98,14 +103,16 @@ export function ApplicationsListCard(props: {
     query = "",
     sortBy = "newest",
     onChangeStatus,
+    onToggleFavorite,
+    onArchiveApplication,
+    onRestoreApplication,
+    isArchivedView = false,
     displayMode: displayModeProp,
-    onDisplayModeChange,
     selectedCompanies,
     onFilteredCount,
+    loopTitleById,
   } = props;
-  const [displayModeInternal, setDisplayModeInternal] = useState<DisplayMode>("list");
-  const displayMode = displayModeProp ?? displayModeInternal;
-  const setDisplayMode = onDisplayModeChange ?? setDisplayModeInternal;
+  const displayMode = displayModeProp ?? "list";
 
   const filteredSorted = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -194,6 +201,11 @@ export function ApplicationsListCard(props: {
                 key={row.id}
                 row={row}
                 onChangeStatus={onChangeStatus}
+                onToggleFavorite={onToggleFavorite}
+                onArchiveApplication={onArchiveApplication}
+                onRestoreApplication={onRestoreApplication}
+                isArchivedView={isArchivedView}
+                loopTitleById={loopTitleById}
               />
             ))}
           </div>
@@ -201,7 +213,15 @@ export function ApplicationsListCard(props: {
       ) : (
         <div className="grid gap-3 p-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
           {filteredSorted.map((row) => (
-            <ApplicationCardTile key={row.id} row={row} />
+            <ApplicationCardTile
+              key={row.id}
+              row={row}
+              onToggleFavorite={onToggleFavorite}
+              onArchiveApplication={onArchiveApplication}
+              onRestoreApplication={onRestoreApplication}
+              isArchivedView={isArchivedView}
+              loopTitleById={loopTitleById}
+            />
           ))}
         </div>
       )}

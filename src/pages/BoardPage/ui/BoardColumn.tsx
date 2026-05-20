@@ -1,5 +1,5 @@
-import { Plus } from "lucide-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { Plus } from "lucide-react";
 import React from "react";
 
 import type { BoardColumnKey } from "src/entities/application/model/status";

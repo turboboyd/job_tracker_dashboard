@@ -4,6 +4,7 @@ Covers:
 - GET /api/v1/activity/feed
 - Activity events created by application CRUD and status transitions
 """
+
 from __future__ import annotations
 
 import pytest
@@ -11,11 +12,11 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-from app.auth.firebase import DecodedFirebaseToken, IFirebaseVerifier, get_verifier
+from app.auth.firebase import DecodedFirebaseToken, get_verifier
 from app.db.session import get_db
 from app.main import create_app
+
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 # ── Mock helpers ────────────────────────────────────────────────────────────────
 
@@ -77,9 +78,24 @@ async def client_b(db_session):
 # ── Helper ──────────────────────────────────────────────────────────────────────
 
 
-async def _create_app(client) -> str:
-    r = await client.post("/api/v1/applications", json=_MINIMAL_APP, headers=_BEARER)
-    assert r.status_code == 201
+async def _create_loop(client: AsyncClient, title: str = "Default Loop") -> str:
+    r = await client.post(
+        "/api/v1/loops",
+        json={"title": title, "target_role": "Backend Engineer"},
+        headers=_BEARER,
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+async def _create_app(client: AsyncClient) -> str:
+    loop_id = await _create_loop(client)
+    r = await client.post(
+        "/api/v1/applications",
+        json={**_MINIMAL_APP, "loop_id": loop_id},
+        headers=_BEARER,
+    )
+    assert r.status_code == 201, r.text
     return r.json()["id"]
 
 
@@ -191,7 +207,10 @@ async def test_archive_creates_activity_event(client_a):
 
 async def test_feed_requires_auth(db_session):
     app_obj = _make_app(db_session, _USER_A)
-    async with AsyncClient(transport=ASGITransport(app=app_obj), base_url="http://test") as c:
+    async with AsyncClient(
+        transport=ASGITransport(app=app_obj),
+        base_url="http://test",
+    ) as c:
         r = await c.get("/api/v1/activity/feed")
     assert r.status_code == 401
 
@@ -230,7 +249,8 @@ async def test_feed_kind_filter(client_a):
     )
 
     r = await client_a.get(
-        "/api/v1/activity/feed?kind=APPLICATION_CREATED", headers=_BEARER
+        "/api/v1/activity/feed?kind=APPLICATION_CREATED",
+        headers=_BEARER,
     )
     assert r.status_code == 200
     kinds = [e["kind"] for e in r.json()["items"]]

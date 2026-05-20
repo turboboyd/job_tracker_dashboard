@@ -34,6 +34,8 @@ class ApplicationsRepository:
         statuses: list[str] | None = None,
         stage: str | None = None,
         search: str | None = None,
+        loop_id: str | None = None,
+        is_favorite: bool | None = None,
         sort: str = "updated_at_desc",
         limit: int = 50,
         offset: int = 0,
@@ -56,12 +58,12 @@ class ApplicationsRepository:
                     Application.source.ilike(pattern),
                 )
             )
+        if loop_id is not None:
+            conditions.append(Application.loop_id == loop_id)
+        if is_favorite is not None:
+            conditions.append(Application.is_favorite == is_favorite)
 
-        count_q = (
-            select(func.count())
-            .select_from(Application)
-            .where(*conditions)
-        )
+        count_q = select(func.count()).select_from(Application).where(*conditions)
         total: int = (await self._db.execute(count_q)).scalar_one()
 
         q = (

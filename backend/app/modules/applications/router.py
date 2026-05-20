@@ -28,13 +28,24 @@ async def list_applications(
     ),
     stage: str | None = Query(
         default=None,
-        description="Filter by stage (ACTIVE | INTERVIEW | OFFER | REJECTED | NO_RESPONSE | ARCHIVED)",
+        description=(
+            "Filter by stage "
+            "(ACTIVE | INTERVIEW | OFFER | REJECTED | NO_RESPONSE | ARCHIVED)"
+        ),
     ),
     search: str | None = Query(
         default=None,
-        description="Case-insensitive substring search over company_name, role_title, location_text, source",
+        description=(
+            "Case-insensitive substring search over company_name, "
+            "role_title, location_text, source"
+        ),
     ),
-    limit: int = Query(default=50, ge=1, le=100, description="Items per page (1–100)"),
+    loop_id: str | None = Query(default=None, description="Filter by loop id"),
+    is_favorite: bool | None = Query(
+        default=None,
+        description="Filter favorite applications",
+    ),
+    limit: int = Query(default=20, ge=1, le=100, description="Items per page (1–100)"),
     offset: int = Query(default=0, ge=0, description="Number of items to skip"),
     sort: SortParam = Query(
         default="updated_at_desc",
@@ -49,6 +60,8 @@ async def list_applications(
         statuses=statuses,
         stage=stage,
         search=search,
+        loop_id=loop_id,
+        is_favorite=is_favorite,
         sort=sort,
         limit=limit,
         offset=offset,

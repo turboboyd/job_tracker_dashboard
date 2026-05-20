@@ -1,0 +1,1 @@
+"""Static discovery source registry."""

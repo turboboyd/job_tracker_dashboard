@@ -1,0 +1,1 @@
+"""Manual discovery preview module."""

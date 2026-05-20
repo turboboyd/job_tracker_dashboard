@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
 import { Loader2, Plus, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 // TODO(backend-migration): Replace with REST API call when migrating from Firebase.
 // Currently uses Firestore direct SDK (firebase/firestore).
-// Migration target: POST /api/applications/:appId (PATCH semantics)
+// Migration target: PATCH /api/v1/applications/{app_id}
 
 export type TagsFieldProps = {
   tags: string[];

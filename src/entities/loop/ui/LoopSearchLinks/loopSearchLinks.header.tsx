@@ -115,7 +115,7 @@ function LoopSearchHeaderActions({
         disabled={isSaving}
         className="w-full sm:w-auto"
       >
-        {t("loops.myLoopSettings", "My Loop settings")}
+        {t("loops.myLoopSettings", "Настройки направления поиска")}
       </Button>
 
       <Button
@@ -136,9 +136,8 @@ function LoopSearchHeaderActions({
         disabled={!userId}
         className="w-full sm:w-auto"
       >
-        {t("loops.addMatch", "Add match")}
+        {t("loops.addMatch", "Добавить вакансию")}
       </Button>
     </div>
   );
 }
-

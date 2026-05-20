@@ -54,12 +54,14 @@ export default (_env: unknown, argv: { mode?: BuildMode }): Configuration => {
 
     devtool: isProd ? "source-map" : "eval-cheap-module-source-map",
 
-    cache: {
-      type: "filesystem",
-      buildDependencies: {
-        config: [__filename],
-      },
-    },
+    cache: isDev
+      ? {
+          type: "filesystem",
+          buildDependencies: {
+            config: [__filename],
+          },
+        }
+      : false,
 
     resolve: buildResolvers(options),
 

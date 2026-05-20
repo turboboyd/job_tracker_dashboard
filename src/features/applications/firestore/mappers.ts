@@ -27,22 +27,6 @@ export interface CreateApplicationInput {
   legacyMatchId?: string;
 }
 
-export function buildManualLoopDoc(t: Timestamp) {
-  return {
-    name: "Manual",
-    titles: [],
-    location: "",
-    radiusKm: 0,
-    remoteMode: "manual",
-    platforms: [],
-    filters: {},
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdAtTs: t,
-    updatedAtTs: t,
-  };
-}
-
 export function buildCreateApplicationDoc(
   userId: string,
   input: CreateApplicationInput,

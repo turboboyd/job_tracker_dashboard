@@ -36,6 +36,12 @@ class User(Base):
     date_format: Mapped[str] = mapped_column(
         String, nullable=False, default="DD.MM.YYYY", server_default="DD.MM.YYYY"
     )
+    analysis_plan: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default="free",
+        server_default="free",
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

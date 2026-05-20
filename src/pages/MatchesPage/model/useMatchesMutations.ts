@@ -12,8 +12,8 @@ import { getErrorMessage, notify } from "src/shared/lib";
 /**
  * All match mutations.
  *
- * NOTE: we do NOT pass `userId` anymore.
- * Firestore ownership is derived from the document path: users/{uid}/loopMatches/...
+ * NOTE: we do NOT pass `userId` anymore; ownership is handled inside the
+ * mutation layer.
  */
 export function useMatchesMutations() {
   const { isAuthReady, isAuthenticated } = useAuthSelectors();

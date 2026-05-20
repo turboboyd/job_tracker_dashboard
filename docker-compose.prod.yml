@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-job_tracker}
+      POSTGRES_USER: ${POSTGRES_USER:-job_tracker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/backend.env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - app_net
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME:-job-tracker-api}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in deploy/backend.env}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Set CORS_ALLOWED_ORIGINS in deploy/backend.env}
+      FIREBASE_CREDENTIALS_JSON_PATH: ${FIREBASE_CREDENTIALS_JSON_PATH:-/run/secrets/firebase-service-account.json}
+      DOCUMENT_STORAGE_ROOT: ${DOCUMENT_STORAGE_ROOT:-/app/storage/documents}
+      AI_ANALYSIS_PROVIDER: ${AI_ANALYSIS_PROVIDER:-deterministic}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://localhost:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-60}
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
+      GREENHOUSE_BOARD_TOKENS: ${GREENHOUSE_BOARD_TOKENS:-}
+      LEVER_SITE_NAMES: ${LEVER_SITE_NAMES:-}
+    volumes:
+      - documents_data:/app/storage/documents
+      - type: bind
+        source: ${FIREBASE_SERVICE_ACCOUNT_HOST_PATH:?Set FIREBASE_SERVICE_ACCOUNT_HOST_PATH in deploy/backend.env}
+        target: /run/secrets/firebase-service-account.json
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5)\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - app_net
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - type: bind
+        source: ${CADDYFILE_HOST_PATH:?Set CADDYFILE_HOST_PATH in deploy/backend.env}
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: false
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - app_net
+
+volumes:
+  postgres_data:
+  documents_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  app_net:

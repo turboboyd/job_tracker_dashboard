@@ -1,0 +1,270 @@
+from __future__ import annotations
+
+from uuid import UUID, uuid4
+
+from app.db.models.loop import Loop
+from app.db.models.user import User
+from app.modules.discovery_adapters.base import DiscoveryAdapterError
+from app.modules.discovery_adapters.registry import (
+    DiscoveryAdapterRegistry,
+    get_discovery_adapter_registry,
+)
+from app.modules.discovery_adapters.safety import (
+    MAX_RESULTS_PER_SOURCE,
+    REQUEST_TIMEOUT_SECONDS,
+    limit_preview_items,
+)
+from app.modules.discovery_adapters.schemas import (
+    DiscoveryAdapterOptions,
+    DiscoveryAdapterResult,
+)
+from app.modules.discovery_runs.schemas import (
+    DiscoveryRunItem,
+    DiscoveryRunPreviewItem,
+    DiscoveryRunRequest,
+    DiscoveryRunResponse,
+)
+from app.modules.discovery_sources.registry import get_discovery_source
+from app.modules.loops.service import InvalidLoopError, LoopsService
+
+
+class DiscoveryRunsService:
+    def __init__(
+        self,
+        loops: LoopsService,
+        adapter_registry: DiscoveryAdapterRegistry | None = None,
+    ) -> None:
+        self._loops = loops
+        self._adapter_registry = adapter_registry or get_discovery_adapter_registry()
+
+    async def run(
+        self,
+        user: User,
+        payload: DiscoveryRunRequest,
+    ) -> DiscoveryRunResponse:
+        loops = await self._load_loops(user, payload.loop_id)
+        items: list[DiscoveryRunItem] = []
+        warnings: list[str] = []
+        sources_checked = 0
+        matches_previewed = 0
+
+        for loop in loops:
+            loop_id = str(loop.id)
+            if loop.status != "active":
+                items.append(
+                    DiscoveryRunItem(
+                        loop_id=loop_id,
+                        status="skipped",
+                        reason="loop_not_eligible",
+                        message="Loop is not active.",
+                    )
+                )
+                warnings.append(f"Loop {loop_id} is not active.")
+                continue
+
+            selected_sources = self._source_ids_for_loop(loop, payload.source_ids)
+            if not selected_sources:
+                items.append(
+                    DiscoveryRunItem(
+                        loop_id=loop_id,
+                        status="skipped",
+                        reason="no_sources_selected",
+                        message="No discovery sources selected for this Loop.",
+                    )
+                )
+                warnings.append(f"Loop {loop_id} has no discovery sources selected.")
+                continue
+
+            for source_id in selected_sources:
+                item, source_checked = await self._evaluate_source(
+                    loop,
+                    source_id,
+                    payload,
+                )
+                sources_checked += source_checked
+                matches_previewed += item.items_previewed
+                items.append(item)
+                if item.status != "would_run":
+                    warnings.append(f"{loop_id}:{source_id}:{item.reason}")
+                warnings.extend(
+                    f"{loop_id}:{source_id}:{warning}" for warning in item.warnings
+                )
+
+        return DiscoveryRunResponse(
+            run_id=str(uuid4()),
+            status="completed_with_warnings" if warnings else "completed",
+            dry_run=payload.dry_run,
+            page=payload.page,
+            page_size=payload.page_size,
+            loops_checked=len(loops),
+            sources_checked=sources_checked,
+            matches_created=0,
+            matches_previewed=matches_previewed,
+            warnings=warnings,
+            items=items,
+        )
+
+    async def _load_loops(self, user: User, loop_id: str | None) -> list[Loop]:
+        if loop_id is not None:
+            try:
+                parsed = UUID(loop_id)
+            except ValueError as exc:
+                raise InvalidLoopError("Loop id must be a valid UUID") from exc
+            return [await self._loops.get_owned(user, parsed)]
+
+        items, _total = await self._loops.list_for_user(
+            user,
+            include_archived=False,
+            limit=100,
+            offset=0,
+        )
+        return [
+            loop
+            for loop in items
+            if loop.status == "active" and loop.auto_discovery_enabled
+        ]
+
+    @staticmethod
+    def _source_ids_for_loop(
+        loop: Loop,
+        requested_source_ids: list[str] | None,
+    ) -> list[str]:
+        selected = [str(source_id) for source_id in (loop.selected_sources or [])]
+        if requested_source_ids is None:
+            return selected
+        return requested_source_ids
+
+    async def _evaluate_source(
+        self,
+        loop: Loop,
+        source_id: str,
+        payload: DiscoveryRunRequest,
+    ) -> tuple[DiscoveryRunItem, int]:
+        loop_id = str(loop.id)
+        source = get_discovery_source(source_id)
+        if source is None:
+            return (
+                DiscoveryRunItem(
+                    loop_id=loop_id,
+                    source_id=source_id,
+                    status="skipped",
+                    reason="source_not_found",
+                    message="Discovery source is not registered.",
+                ),
+                0,
+            )
+        if not source.enabled:
+            return (
+                DiscoveryRunItem(
+                    loop_id=loop_id,
+                    source_id=source_id,
+                    status="skipped",
+                    reason="source_disabled",
+                    message="Discovery source is disabled.",
+                ),
+                0,
+            )
+        if not source.capabilities.automatic_discovery:
+            return (
+                DiscoveryRunItem(
+                    loop_id=loop_id,
+                    source_id=source_id,
+                    status="skipped",
+                    reason="automatic_discovery_not_available",
+                    message="Automatic discovery is not available for this source.",
+                ),
+                0,
+            )
+
+        adapter = self._adapter_registry.get_adapter(source_id)
+        if adapter is None:
+            return (
+                DiscoveryRunItem(
+                    loop_id=loop_id,
+                    source_id=source_id,
+                    status="unsupported",
+                    reason="source_adapter_not_implemented",
+                    message="Source is marked runnable, but no safe adapter is implemented.",
+                ),
+                0,
+            )
+
+        try:
+            result = await adapter.discover(
+                loop=loop,
+                source=source,
+                options=DiscoveryAdapterOptions(
+                    dry_run=payload.dry_run,
+                    max_results=min(payload.page_size, MAX_RESULTS_PER_SOURCE),
+                    timeout_seconds=REQUEST_TIMEOUT_SECONDS,
+                    search_scope=payload.search_scope,
+                    page=payload.page,
+                    page_size=payload.page_size,
+                ),
+            )
+        except DiscoveryAdapterError:
+            return (
+                DiscoveryRunItem(
+                    loop_id=loop_id,
+                    source_id=source_id,
+                    status="failed",
+                    reason="source_adapter_failed",
+                    message="Source adapter failed safely.",
+                    errors=["source_adapter_failed"],
+                ),
+                1,
+            )
+
+        item = self._item_from_adapter_result(
+            loop_id=loop_id,
+            result=result,
+            dry_run=payload.dry_run,
+            max_results=payload.page_size,
+        )
+        return item, 1
+
+    @staticmethod
+    def _item_from_adapter_result(
+        *,
+        loop_id: str,
+        result: DiscoveryAdapterResult,
+        dry_run: bool,
+        max_results: int,
+    ) -> DiscoveryRunItem:
+        limited_items = limit_preview_items(
+            result.items,
+            max_results=min(max_results, MAX_RESULTS_PER_SOURCE),
+        )
+        preview_items = [
+            DiscoveryRunPreviewItem(**item.model_dump()) for item in limited_items
+        ]
+        status = "would_run"
+        reason = "adapter_preview_ready"
+        message = "Source adapter returned preview items. No records were created."
+        warnings = list(result.warnings)
+
+        if result.status == "failed":
+            status = "failed"
+            reason = "source_adapter_failed"
+            message = "Source adapter failed safely."
+        elif result.status == "skipped":
+            status = "skipped"
+            reason = result.warnings[0] if result.warnings else "source_adapter_skipped"
+            message = "Source adapter skipped this source safely."
+        elif not dry_run:
+            reason = "automatic_match_persistence_not_enabled"
+            message = "Automatic match persistence is not enabled."
+            warnings.append("automatic_match_persistence_not_enabled")
+
+        return DiscoveryRunItem(
+            loop_id=loop_id,
+            source_id=result.source_id,
+            status=status,
+            reason=reason,
+            message=message,
+            items_previewed=len(preview_items),
+            has_more=len(preview_items) >= min(max_results, MAX_RESULTS_PER_SOURCE),
+            preview_items=preview_items,
+            warnings=warnings,
+            errors=result.errors,
+        )

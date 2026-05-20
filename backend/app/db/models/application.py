@@ -2,7 +2,8 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, text
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -26,6 +27,9 @@ class Application(Base):
     )
     archived: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
+    )
+    is_favorite: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false", index=True
     )
 
     # ── Job ───────────────────────────────────────────────────────────────────
@@ -54,18 +58,24 @@ class Application(Base):
         Integer, nullable=False, default=0, server_default="0"
     )
     last_contact_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_follow_up_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_follow_up_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     follow_up_level: Mapped[int] = mapped_column(
         Integer, nullable=False, default=0, server_default="0"
     )
     needs_follow_up: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
-    follow_up_due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    follow_up_due_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     needs_reapply_suggestion: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
-    reapply_eligible_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reapply_eligible_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     reapply_reason: Mapped[str | None] = mapped_column(String, nullable=True)
     reminders: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
@@ -94,7 +104,4 @@ class Application(Base):
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<Application id={self.id} "
-            f"company={self.company_name!r} status={self.status!r}>"
-        )
+        return f"<Application id={self.id} company={self.company_name!r} status={self.status!r}>"

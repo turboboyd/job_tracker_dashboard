@@ -2,18 +2,28 @@ import { Timestamp } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { getContactFullName } from "src/entities/contact";
 import {
   type ApplicationDoc,
   type ProcessStatus,
-  addComment,
-  changeStatus,
-  getApplication,
-  getApplicationHistory,
   setReminders,
 } from "src/features/applications";
+import type { ApplicationDocument } from "src/features/applications/rest/adapter";
+import {
+  changeApplicationStatusViaRest,
+  createApplicationCommentViaRest,
+  deleteDocumentViaRest,
+  downloadDocumentViaRest,
+  getApplicationByIdViaRest,
+  getApplicationHistoryViaRest,
+  listApplicationDocumentsViaRest,
+  uploadApplicationDocumentViaRest,
+  validateApplicationDocumentUploadFile,
+  type DocumentKind,
+} from "src/features/applications/rest/queries";
 import { useAuthSelectors } from "src/features/auth/model";
 import { getContactsByApplication } from "src/features/contacts";
-import { getContactFullName } from "src/entities/contact";
+import { ApiError } from "src/shared/api/rest/restClient";
 import { db } from "src/shared/config/firebase/firestore";
 import { AppRoutes, RoutePath } from "src/shared/config/routes";
 
@@ -28,7 +38,6 @@ import {
   type HistoryFilter,
 } from "./applicationDetails.helpers";
 import {
-  findOutcome,
   resolveFollowUpDate,
   type OutcomeOption,
 } from "./applicationDetails.outcomes";
@@ -46,6 +55,16 @@ export interface ReminderRow {
 
 function makeRowId(): string {
   return `r-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+}
+
+function logRestError(context: string, e: unknown): void {
+  if (e instanceof ApiError && e.requestId) {
+    console.error(context, {
+      status: e.status,
+      code: e.code,
+      requestId: e.requestId,
+    });
+  }
 }
 
 function tomorrowAt9(): { date: string; time: string } {
@@ -92,13 +111,18 @@ export function useApplicationDetailsController() {
 
   const [app, setApp] = useState<ApplicationDoc | null>(null);
   const [history, setHistory] = useState<ApplicationHistoryItem[]>([]);
+  const [documents, setDocuments] = useState<ApplicationDocument[]>([]);
+  const [documentsTotal, setDocumentsTotal] = useState(0);
+  const [isDocumentsLoading, setIsDocumentsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [reminderRows, setReminderRows] = useState<ReminderRow[]>([]);
-  const [contactOptions, setContactOptions] = useState<{ id: string; label: string }[]>([]);
+  const [contactOptions, setContactOptions] = useState<
+    { id: string; label: string }[]
+  >([]);
 
   const loadApplication = useCallback(async () => {
     if (!userId || !appId) {
@@ -109,14 +133,18 @@ export function useApplicationDetailsController() {
     setError(null);
 
     try {
-      const [nextApp, nextHistory] = await Promise.all([
-        getApplication(db, userId, appId),
-        getApplicationHistory(db, userId, appId, HISTORY_LIMIT),
+      const [nextApp, nextHistory, nextDocuments] = await Promise.all([
+        getApplicationByIdViaRest(userId, appId),
+        getApplicationHistoryViaRest(appId, HISTORY_LIMIT),
+        listApplicationDocumentsViaRest(appId),
       ]);
 
-      setApp(nextApp);
+      setApp(nextApp.data);
       setHistory(nextHistory);
+      setDocuments(nextDocuments.items);
+      setDocumentsTotal(nextDocuments.total);
     } catch (nextError: unknown) {
+      logRestError("ApplicationDetailsPage core load failed", nextError);
       setError(errorMessage(nextError));
     } finally {
       setIsLoading(false);
@@ -154,6 +182,104 @@ export function useApplicationDetailsController() {
     };
   }, [appId, isAuthReady, userId]);
 
+  const refreshDocuments = useCallback(async () => {
+    if (!appId) return;
+
+    setIsDocumentsLoading(true);
+    setError(null);
+    try {
+      const nextDocuments = await listApplicationDocumentsViaRest(appId);
+      setDocuments(nextDocuments.items);
+      setDocumentsTotal(nextDocuments.total);
+    } catch (nextError: unknown) {
+      logRestError("ApplicationDetailsPage documents load failed", nextError);
+      setError(errorMessage(nextError));
+    } finally {
+      setIsDocumentsLoading(false);
+    }
+  }, [appId]);
+
+  const downloadDocument = useCallback(
+    async (documentId: string) => {
+      setIsMutating(true);
+      setError(null);
+      try {
+        const response = await downloadDocumentViaRest(documentId);
+        const filename =
+          response.filename ??
+          documents.find((item) => item.id === documentId)?.originalFilename ??
+          "document";
+        const objectUrl = URL.createObjectURL(response.blob);
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(objectUrl);
+      } catch (nextError: unknown) {
+        logRestError(
+          "ApplicationDetailsPage document download failed",
+          nextError,
+        );
+        setError(errorMessage(nextError));
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [documents],
+  );
+
+  const deleteDocument = useCallback(async (documentId: string) => {
+    setIsMutating(true);
+    setError(null);
+    try {
+      await deleteDocumentViaRest(documentId);
+      setDocuments((prev) => prev.filter((item) => item.id !== documentId));
+      setDocumentsTotal((prev) => Math.max(0, prev - 1));
+    } catch (nextError: unknown) {
+      logRestError("ApplicationDetailsPage document delete failed", nextError);
+      setError(errorMessage(nextError));
+    } finally {
+      setIsMutating(false);
+    }
+  }, []);
+
+  const uploadDocument = useCallback(
+    async (file: File, kind: DocumentKind) => {
+      if (!appId) return;
+
+      const validation = validateApplicationDocumentUploadFile(file);
+      if (!validation.ok) {
+        setError(validation.message ?? "Файл нельзя загрузить.");
+        return;
+      }
+
+      setIsMutating(true);
+      setError(null);
+      try {
+        const uploadedDocument = await uploadApplicationDocumentViaRest(appId, {
+          file,
+          kind,
+        });
+        setDocuments((prev) => [
+          uploadedDocument,
+          ...prev.filter((item) => item.id !== uploadedDocument.id),
+        ]);
+        setDocumentsTotal((prev) => prev + 1);
+      } catch (nextError: unknown) {
+        logRestError(
+          "ApplicationDetailsPage document upload failed",
+          nextError,
+        );
+        setError(errorMessage(nextError));
+      } finally {
+        setIsMutating(false);
+      }
+    },
+    [appId],
+  );
+
   const title = useMemo(() => buildApplicationTitle(app), [app]);
   const filteredHistory = useMemo(
     () => filterApplicationHistory(history, historyFilter),
@@ -165,7 +291,11 @@ export function useApplicationDetailsController() {
     setReminderRows(rowsFromApp(app));
     // We intentionally key only on the reminders + legacy fields so user edits
     // aren't blown away by unrelated app state changes.
-  }, [app?.process.reminders, app?.process.nextActionAt, app?.process.nextActionText]);
+  }, [
+    app?.process.reminders,
+    app?.process.nextActionAt,
+    app?.process.nextActionText,
+  ]);
 
   const goBack = useCallback(() => {
     Promise.resolve(navigate(RoutePath[AppRoutes.APPLICATIONS])).catch(
@@ -210,15 +340,18 @@ export function useApplicationDetailsController() {
       }
 
       try {
-        await changeStatus(db, userId, appId, nextStatus);
+        await changeApplicationStatusViaRest(userId, appId, {
+          toStatus: nextStatus,
+        });
         // Silent refetch in background — no isLoading flicker, just reconcile data
         const [nextApp, nextHistory] = await Promise.all([
-          getApplication(db, userId, appId),
-          getApplicationHistory(db, userId, appId, HISTORY_LIMIT),
+          getApplicationByIdViaRest(userId, appId),
+          getApplicationHistoryViaRest(appId, HISTORY_LIMIT),
         ]);
-        setApp(nextApp);
+        setApp(nextApp.data);
         setHistory(nextHistory);
       } catch (nextError: unknown) {
+        logRestError("ApplicationDetailsPage status change failed", nextError);
         // Revert optimistic update on failure
         setApp(previousApp);
         setHistory(previousHistory);
@@ -258,11 +391,15 @@ export function useApplicationDetailsController() {
     setCommentText("");
 
     try {
-      await addComment(db, userId, appId, { text });
+      await createApplicationCommentViaRest(appId, text);
       // Silent reconcile
-      const nextHistory = await getApplicationHistory(db, userId, appId, HISTORY_LIMIT);
+      const nextHistory = await getApplicationHistoryViaRest(
+        appId,
+        HISTORY_LIMIT,
+      );
       setHistory(nextHistory);
     } catch (nextError: unknown) {
+      logRestError("ApplicationDetailsPage comment creation failed", nextError);
       setHistory(previousHistory);
       setCommentText(text);
       setError(errorMessage(nextError));
@@ -284,7 +421,10 @@ export function useApplicationDetailsController() {
             ? { id: row.id, at: result.date, text: row.text.trim() }
             : null;
         })
-        .filter((entry): entry is { id: string; at: Date; text: string } => entry !== null);
+        .filter(
+          (entry): entry is { id: string; at: Date; text: string } =>
+            entry !== null,
+        );
 
       setIsMutating(true);
       setError(null);
@@ -292,6 +432,10 @@ export function useApplicationDetailsController() {
         await setReminders(db, userId, appId, valid);
         await loadApplication();
       } catch (nextError: unknown) {
+        logRestError(
+          "ApplicationDetailsPage reminder outcome status change failed",
+          nextError,
+        );
         setError(errorMessage(nextError));
       } finally {
         setIsMutating(false);
@@ -357,9 +501,15 @@ export function useApplicationDetailsController() {
       });
 
       if (userId && appId) {
-        Promise.resolve(addComment(db, userId, appId, { text: commentBody }))
+        Promise.resolve(createApplicationCommentViaRest(appId, commentBody))
           .then(() => loadApplication())
-          .catch((nextError: unknown) => setError(errorMessage(nextError)));
+          .catch((nextError: unknown) => {
+            logRestError(
+              "ApplicationDetailsPage reminder comment creation failed",
+              nextError,
+            );
+            setError(errorMessage(nextError));
+          });
       }
     },
     [appId, loadApplication, persistRows, reminderRows, userId],
@@ -448,9 +598,11 @@ export function useApplicationDetailsController() {
       const sourceRow = reminderRows.find((r) => r.id === params.sourceRowId);
       if (!sourceRow) return;
 
-      const baseComment = (params.commentOverride?.trim() ||
+      const baseComment = (
+        params.commentOverride?.trim() ||
         params.text[params.outcome.commentKey] ||
-        params.text.reminderHistoryDoneTitle).toString();
+        params.text.reminderHistoryDoneTitle
+      ).toString();
 
       const sourceNote = sourceRow.text.trim();
       const contactSuffix = params.contactLabel?.trim()
@@ -485,10 +637,9 @@ export function useApplicationDetailsController() {
         return resolveFollowUpDate(params.outcome.followUp.timing);
       })();
 
-      const followUpNote =
-        params.outcome.followUp?.noteKey
-          ? String(params.text[params.outcome.followUp.noteKey] ?? "")
-          : "";
+      const followUpNote = params.outcome.followUp?.noteKey
+        ? String(params.text[params.outcome.followUp.noteKey] ?? "")
+        : "";
 
       let nextRows = reminderRows.filter((r) => r.id !== params.sourceRowId);
       if (followUpDate) {
@@ -510,19 +661,24 @@ export function useApplicationDetailsController() {
 
         // Status change (optional) — tagged with correlationId for grouping
         if (params.outcome.statusChange) {
-          await changeStatus(db, userId, appId, params.outcome.statusChange, {
+          await changeApplicationStatusViaRest(userId, appId, {
+            toStatus: params.outcome.statusChange,
             correlationId,
           });
         }
 
         // Real comment (optimistic comment was UI-only) — same correlation id
-        await addComment(db, userId, appId, {
+        await createApplicationCommentViaRest(appId, {
           text: commentBody,
           correlationId,
         });
 
         await loadApplication();
       } catch (nextError: unknown) {
+        logRestError(
+          "ApplicationDetailsPage reminder outcome status change failed",
+          nextError,
+        );
         setError(errorMessage(nextError));
       } finally {
         setIsMutating(false);
@@ -539,6 +695,9 @@ export function useApplicationDetailsController() {
     filteredHistory,
     historyTotalCount: history.length,
     historyHasMore,
+    documents,
+    documentsTotal,
+    isDocumentsLoading,
     isLoading,
     isMutating,
     error,
@@ -558,6 +717,10 @@ export function useApplicationDetailsController() {
     goBack,
     changeApplicationStatus,
     addApplicationComment,
+    refreshDocuments,
+    downloadDocument,
+    deleteDocument,
+    uploadDocument,
     appId,
   };
 }

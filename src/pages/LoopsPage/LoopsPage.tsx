@@ -20,13 +20,27 @@ export default function LoopsPage() {
   const goBack = () => navigate(`/dashboard/loops${location.search}`);
   const openLoop = (id: string) =>
     navigate(`/dashboard/loops/${id}${location.search}`);
+  const openLoopApplications = (id: string) =>
+    navigate(`/dashboard/applications?loopId=${encodeURIComponent(id)}`);
+  const openLoopMatches = (id: string) =>
+    navigate(`/dashboard/matches?loopId=${encodeURIComponent(id)}`);
+  const addLoopApplication = (id: string) =>
+    navigate(
+      `/dashboard/applications?loopId=${encodeURIComponent(id)}&create=1&mode=manual`,
+    );
+  const importLoopVacancy = (id: string) =>
+    navigate(
+      `/dashboard/applications?loopId=${encodeURIComponent(id)}&create=1&mode=import`,
+    );
 
   if (!userId) {
     return (
       <div className="flex h-full flex-col overflow-hidden">
         <div className="shrink-0 border-b border-border bg-background px-7 py-5">
           <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
-            {isDetails ? t("loops.detailsTitle", "Loop") : t("loops.listTitle", "My Loops")}
+            {isDetails
+              ? t("loops.detailsTitle", "Loop")
+              : t("loops.listTitle", "Loops")}
           </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
             {t("loops.signInSubtitle", "Sign in to continue.")}
@@ -44,6 +58,13 @@ export default function LoopsPage() {
   return isDetails ? (
     <LoopDetailsView userId={userId} loopId={loopId!} onBack={goBack} />
   ) : (
-    <LoopsListView userId={userId} onOpenLoop={openLoop} />
+    <LoopsListView
+      userId={userId}
+      onOpenLoop={openLoop}
+      onOpenApplications={openLoopApplications}
+      onOpenMatches={openLoopMatches}
+      onAddApplication={addLoopApplication}
+      onImportVacancy={importLoopVacancy}
+    />
   );
 }

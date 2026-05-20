@@ -33,12 +33,15 @@ export {
 } from "./searchFilters";
 export type {
   CanonicalFilters,
+  CreateLoopInput,
   Loop,
   LoopPlatform,
   PlatformGroupId,
   PlatformMeta,
   RemoteMode,
+  LoopStatus,
   SearchFilters,
+  UpdateLoopInput,
   ValidationResult,
 } from "./types";
 export { LOOP_PLATFORM_VALUES } from "./types";

@@ -2,9 +2,9 @@ import { RefreshCw, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { useDashboardData } from "src/pages/DashboardPage/model/useDashboardData";
 import { toMillis } from "src/shared/lib/firestore/toMillis";
 
-import { useDashboardData } from "src/pages/DashboardPage/model/useDashboardData";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,10 +108,10 @@ function buildInsights(staleCount: number, totalApplied: number): Insight[] {
       impact: "+40%",
       area: "Заявки",
       title: "Нет активных заявок — начни поиск прямо сейчас",
-      body: "Запусти поисковый цикл или добавь заявку вручную, чтобы отслеживать прогресс и получать рекомендации.",
+      body: "Создай направление поиска или добавь заявку вручную, чтобы отслеживать прогресс и получать рекомендации.",
       actions: [
         { label: "Добавить заявку", primary: true, href: "/dashboard/applications" },
-        { label: "Запустить цикл", primary: false, href: "/dashboard/loops" },
+        { label: "Создать направление", primary: false, href: "/dashboard/loops" },
       ],
     });
   }

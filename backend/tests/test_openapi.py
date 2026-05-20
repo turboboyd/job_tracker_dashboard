@@ -3,6 +3,7 @@
 No database required — these tests inspect the schema object only.
 All paths checked here are required by docs/backend-api-contract.md.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -32,7 +33,25 @@ _REQUIRED_PATHS = [
     "/api/v1/health",
     "/api/v1/health/ready",
     "/api/v1/users/me",
+    "/api/v1/users/me/analysis-plan",
+    "/api/v1/dev/users/me/analysis-plan",
     "/api/v1/applications",
+    "/api/v1/vacancy-import/preview",
+    "/api/v1/discovery-sources",
+    "/api/v1/discovery-sources/runtime-status",
+    "/api/v1/discovery-preview",
+    "/api/v1/discovery-runs",
+    "/api/v1/loops",
+    "/api/v1/loops/{loop_id}",
+    "/api/v1/loops/{loop_id}/matches/import-preview",
+    "/api/v1/loops/{loop_id}/matches",
+    "/api/v1/loops/{loop_id}/matches/from-preview",
+    "/api/v1/loops/{loop_id}/matches/{match_id}",
+    "/api/v1/loops/{loop_id}/matches/{match_id}/create-application",
+    "/api/v1/loops/{loop_id}/matches/{match_id}/evaluate",
+    "/api/v1/loops/{loop_id}/matches/{match_id}/analyses",
+    "/api/v1/loops/{loop_id}/matches/{match_id}/analyses/latest",
+    "/api/v1/loops/{loop_id}/matches/{match_id}/convert-to-application",
     "/api/v1/applications/{app_id}",
     "/api/v1/applications/{app_id}/status",
     "/api/v1/applications/{app_id}/comments",
@@ -46,6 +65,16 @@ _REQUIRED_PATHS = [
 def test_required_path_present(paths, path):
     assert path in paths, f"Path missing from OpenAPI schema: {path}"
 
+
+
+def test_removed_search_direction_paths_absent(paths):
+    removed_prefix = "/api/v1/" + "cycles"
+    assert not any(path.startswith(removed_prefix) for path in paths)
+
+
+def test_removed_search_direction_schemas_absent(components):
+    removed_prefix = "Cy" + "cle"
+    assert not any(name.startswith(removed_prefix) for name in components)
 
 # ── HTTP methods per endpoint ──────────────────────────────────────────────
 
@@ -61,6 +90,20 @@ def test_health_ready_has_get(paths):
 def test_users_me_has_get_and_patch(paths):
     assert "get" in paths["/api/v1/users/me"]
     assert "patch" in paths["/api/v1/users/me"]
+
+
+def test_users_me_analysis_plan_has_get_only(paths):
+    ops = paths["/api/v1/users/me/analysis-plan"]
+    assert "get" in ops
+    assert "post" not in ops
+    assert "patch" not in ops
+
+
+def test_dev_analysis_plan_has_patch_only(paths):
+    ops = paths["/api/v1/dev/users/me/analysis-plan"]
+    assert "patch" in ops
+    assert "get" not in ops
+    assert "post" not in ops
 
 
 def test_applications_has_get_and_post(paths):
@@ -160,6 +203,364 @@ def test_status_transition_has_comment_and_correlation_id(components):
     assert "correlation_id" in props
 
 
+# ── Vacancy import preview schema ───────────────────────────────────────────
+
+def test_vacancy_import_preview_has_post(paths):
+    ops = paths["/api/v1/vacancy-import/preview"]
+    assert "post" in ops
+    assert "get" not in ops
+
+
+def test_vacancy_import_preview_schemas_exist(components):
+    assert "VacancyImportPreviewRequest" in components
+    assert "VacancyImportPreviewResponse" in components
+
+
+def test_vacancy_import_preview_request_requires_url(components):
+    schema = components["VacancyImportPreviewRequest"]
+    assert "url" in schema.get("required", [])
+    assert schema.get("additionalProperties") is False
+
+
+def test_vacancy_import_preview_response_fields(components):
+    props = components["VacancyImportPreviewResponse"].get("properties", {})
+    for field in (
+        "source_url",
+        "source",
+        "company_name",
+        "role_title",
+        "location_text",
+        "vacancy_description",
+        "confidence",
+        "warnings",
+    ):
+        assert field in props
+
+
+
+def test_vacancy_match_paths_have_expected_methods(paths):
+    assert "post" in paths["/api/v1/loops/{loop_id}/matches/import-preview"]
+    assert "get" in paths["/api/v1/loops/{loop_id}/matches"]
+    assert "post" in paths["/api/v1/loops/{loop_id}/matches"]
+    assert "post" in paths["/api/v1/loops/{loop_id}/matches/from-preview"]
+    assert "patch" in paths["/api/v1/loops/{loop_id}/matches/{match_id}"]
+    assert "post" in paths[
+        "/api/v1/loops/{loop_id}/matches/{match_id}/create-application"
+    ]
+    assert "post" in paths["/api/v1/loops/{loop_id}/matches/{match_id}/evaluate"]
+    assert "post" in paths[
+        "/api/v1/loops/{loop_id}/matches/{match_id}/convert-to-application"
+    ]
+
+
+def test_vacancy_analysis_paths_have_expected_methods(paths):
+    history = paths["/api/v1/loops/{loop_id}/matches/{match_id}/analyses"]
+    latest = paths["/api/v1/loops/{loop_id}/matches/{match_id}/analyses/latest"]
+    assert "post" in history
+    assert "get" in history
+    assert "get" in latest
+    assert "post" not in latest
+
+
+def test_vacancy_match_schemas_exist(components):
+    assert "VacancyMatchCreate" in components
+    assert "VacancyMatchPatch" in components
+    assert "VacancyMatchRead" in components
+    assert "VacancyMatchFromPreviewRequest" in components
+    assert "VacancyMatchFromPreviewResponse" in components
+    assert "VacancyMatchListResponse" in components
+    assert "ConvertMatchResponse" in components
+    assert "CreateApplicationFromMatchRequest" in components
+    assert "CreateApplicationFromMatchResponse" in components
+    assert "VacancyMatchEvaluationResponse" in components
+
+
+def test_vacancy_analysis_schemas_exist(components):
+    assert "VacancyAnalysisCreate" in components
+    assert "VacancyAnalysisRead" in components
+    assert "VacancyAnalysisResponse" in components
+    assert "VacancyAnalysisListResponse" in components
+    assert "VacancyAnalysisQuota" in components
+
+
+def test_vacancy_analysis_response_fields(components):
+    props = components["VacancyAnalysisResponse"].get("properties", {})
+    for field in (
+        "id",
+        "loop_id",
+        "match_id",
+        "analysis_type",
+        "provider",
+        "model",
+        "plan",
+        "resume_hash",
+        "vacancy_snapshot",
+        "overall_score",
+        "summary",
+        "strengths",
+        "gaps",
+        "risks",
+        "recommended_cv_keywords",
+        "application_angle",
+        "cover_letter_draft",
+        "interview_questions",
+        "model_info",
+        "quota_day",
+        "quota",
+        "created_at",
+    ):
+        assert field in props
+    assert "resume_text" not in props
+    removed_field = "cycle" + "_id"
+    assert removed_field not in props
+
+
+def test_vacancy_match_list_response_has_pagination(components):
+    props = components["VacancyMatchListResponse"].get("properties", {})
+    assert "items" in props
+    assert "total" in props
+    assert "limit" in props
+    assert "offset" in props
+
+
+def test_vacancy_match_from_preview_schema_fields(components):
+    request_props = components["VacancyMatchFromPreviewRequest"].get("properties", {})
+    for field in (
+        "source_id",
+        "external_id",
+        "source_url",
+        "title",
+        "company",
+        "location",
+        "description",
+        "posted_at",
+        "raw_metadata",
+        "confidence",
+    ):
+        assert field in request_props
+    assert components["VacancyMatchFromPreviewRequest"].get("additionalProperties") is False
+
+    response_props = components["VacancyMatchFromPreviewResponse"].get("properties", {})
+    for field in ("match", "created", "duplicate"):
+        assert field in response_props
+
+
+def test_create_application_from_match_schema_fields(components):
+    request_props = components["CreateApplicationFromMatchRequest"].get("properties", {})
+    for field in ("status", "notes", "favorite"):
+        assert field in request_props
+    assert components["CreateApplicationFromMatchRequest"].get("additionalProperties") is False
+
+    response_props = components["CreateApplicationFromMatchResponse"].get("properties", {})
+    for field in ("application", "match", "created", "already_linked"):
+        assert field in response_props
+    removed_field = "cycle" + "_id"
+    assert removed_field not in response_props
+
+
+def test_vacancy_match_evaluation_response_fields(components):
+    props = components["VacancyMatchEvaluationResponse"].get("properties", {})
+    for field in (
+        "match_id",
+        "loop_id",
+        "total_score",
+        "title_match_score",
+        "location_match_score",
+        "employment_type_match_score",
+        "work_mode_match_score",
+        "keyword_score",
+        "excluded_keyword_penalty",
+        "source_score",
+        "reasons",
+        "penalties",
+        "duplicate_status",
+        "duplicate_of_match_id",
+        "duplicate_application_id",
+        "duplicate_reasons",
+    ):
+        assert field in props
+    removed_field = "cycle" + "_id"
+    assert removed_field not in props
+
+
+def test_discovery_sources_path_has_get_only(paths):
+    ops = paths["/api/v1/discovery-sources"]
+    assert "get" in ops
+    assert "post" not in ops
+
+
+def test_discovery_source_schemas_exist(components):
+    assert "DiscoverySource" in components
+    assert "DiscoverySourceCapabilities" in components
+    assert "DiscoverySourceListResponse" in components
+
+
+def test_discovery_source_schema_has_expected_fields(components):
+    props = components["DiscoverySource"].get("properties", {})
+    for field in (
+        "id",
+        "name",
+        "type",
+        "enabled",
+        "description",
+        "countries",
+        "base_url",
+        "capabilities",
+    ):
+        assert field in props
+
+
+def test_discovery_source_capabilities_keep_runtime_work_disabled(components):
+    props = components["DiscoverySourceCapabilities"].get("properties", {})
+    for field in (
+        "manual_import",
+        "automatic_discovery",
+        "requires_credentials",
+        "supports_filters",
+    ):
+        assert field in props
+
+
+def test_discovery_preview_path_has_post_only(paths):
+    ops = paths["/api/v1/discovery-preview"]
+    assert "post" in ops
+    assert "get" not in ops
+
+
+def test_discovery_preview_schemas_exist(components):
+    assert "DiscoveryPreviewRequest" in components
+    assert "DiscoveryPreviewResponse" in components
+    assert "DiscoveryPreviewMatchPayload" in components
+
+
+def test_discovery_preview_request_requires_loop_source_and_url(components):
+    schema = components["DiscoveryPreviewRequest"]
+    required = set(schema.get("required", []))
+    assert {"loop_id", "source_id", "url"}.issubset(required)
+    assert schema.get("additionalProperties") is False
+
+
+def test_discovery_preview_response_fields(components):
+    props = components["DiscoveryPreviewResponse"].get("properties", {})
+    for field in (
+        "loop_id",
+        "source_id",
+        "status",
+        "normalized_url",
+        "title",
+        "company",
+        "location",
+        "snippet",
+        "external_id",
+        "warnings",
+        "can_create_match",
+        "match",
+    ):
+        assert field in props
+
+    removed_field = "cycle" + "_id"
+    assert removed_field not in props
+
+
+def test_discovery_runs_path_has_post_only(paths):
+    ops = paths["/api/v1/discovery-runs"]
+    assert "post" in ops
+    assert "get" not in ops
+
+
+def test_discovery_run_schemas_exist(components):
+    assert "DiscoveryRunRequest" in components
+    assert "DiscoveryRunResponse" in components
+    assert "DiscoveryRunItem" in components
+    assert "DiscoveryRunPreviewItem" in components
+
+
+def test_discovery_run_request_fields(components):
+    props = components["DiscoveryRunRequest"].get("properties", {})
+    for field in ("loop_id", "dry_run", "source_ids"):
+        assert field in props
+    assert props["dry_run"].get("default") is True
+    assert components["DiscoveryRunRequest"].get("additionalProperties") is False
+
+
+def test_discovery_run_response_fields(components):
+    props = components["DiscoveryRunResponse"].get("properties", {})
+    for field in (
+        "run_id",
+        "status",
+        "dry_run",
+        "loops_checked",
+        "sources_checked",
+        "matches_created",
+        "matches_previewed",
+        "warnings",
+        "items",
+    ):
+        assert field in props
+    removed_field = "cycle" + "_id"
+    assert removed_field not in props
+
+
+def test_discovery_run_item_has_preview_fields(components):
+    props = components["DiscoveryRunItem"].get("properties", {})
+    for field in (
+        "items_previewed",
+        "preview_items",
+        "warnings",
+        "errors",
+    ):
+        assert field in props
+
+    preview_props = components["DiscoveryRunPreviewItem"].get("properties", {})
+    for field in (
+        "external_id",
+        "source_url",
+        "title",
+        "company",
+        "location",
+        "snippet",
+        "raw_metadata",
+        "confidence",
+    ):
+        assert field in preview_props
+
+    removed_field = "cycle" + "_id"
+    assert removed_field not in props
+    assert removed_field not in preview_props
+
+
+def test_loops_paths_have_expected_methods(paths):
+    assert "get" in paths["/api/v1/loops"]
+    assert "post" in paths["/api/v1/loops"]
+    assert "get" in paths["/api/v1/loops/{loop_id}"]
+    assert "patch" in paths["/api/v1/loops/{loop_id}"]
+    assert "delete" in paths["/api/v1/loops/{loop_id}"]
+
+
+def test_loop_schemas_exist(components):
+    assert "LoopCreate" in components
+    assert "LoopUpdate" in components
+    assert "LoopRead" in components
+    assert "LoopListResponse" in components
+
+
+def test_loop_search_setting_schemas_exist(components):
+    expected = {
+        "keywords",
+        "excluded_keywords",
+        "employment_types",
+        "work_modes",
+        "selected_sources",
+        "auto_discovery_enabled",
+        "discovery_radius_km",
+    }
+    for schema_name in ("LoopCreate", "LoopUpdate"):
+        props = components[schema_name].get("properties", {})
+        assert expected.issubset(props)
+
+    read_props = components["LoopRead"].get("properties", {})
+    assert expected.union({"last_discovery_at"}).issubset(read_props)
+
 # ── ApplicationCreate schema ───────────────────────────────────────────────
 
 
@@ -167,10 +568,18 @@ def test_application_create_schema_exists(components):
     assert "ApplicationCreate" in components
 
 
-def test_application_create_requires_company_name_and_role_title(components):
+def test_application_create_requires_loop_company_name_and_role_title(components):
     required = components["ApplicationCreate"].get("required", [])
+    assert "loop_id" in required
     assert "company_name" in required
     assert "role_title" in required
+
+
+def test_application_create_has_loop_id(components):
+    props = components["ApplicationCreate"].get("properties", {})
+    assert "loop_id" in props
+    removed_field = "cycle" + "_id"
+    assert removed_field not in props
 
 
 def test_application_create_rejects_extra_fields(components):
@@ -184,12 +593,70 @@ def test_application_read_schema_exists(components):
     assert "ApplicationRead" in components
 
 
+def test_application_read_has_loop_fields_and_favorite(components):
+    props = components["ApplicationRead"].get("properties", {})
+    assert "loop_id" in props
+    assert "has_loop" in props
+    assert "is_favorite" in props
+    removed_field = "cycle" + "_id"
+    assert removed_field not in props
+
+
 def test_user_read_schema_exists(components):
     assert "UserRead" in components
 
 
+def test_analysis_plan_schemas_exist(components):
+    assert "AnalysisPlanRead" in components
+    assert "AnalysisPlanLimits" in components
+    assert "AnalysisPlanFeatures" in components
+    assert "DevAnalysisPlanPatch" in components
+    assert "DevAnalysisPlanUpdateResponse" in components
+
+
+def test_analysis_plan_response_fields(components):
+    props = components["AnalysisPlanRead"].get("properties", {})
+    assert "plan" in props
+    assert "limits" in props
+    assert "features" in props
+
+    limit_props = components["AnalysisPlanLimits"].get("properties", {})
+    assert "basic_daily_limit" in limit_props
+    assert "ai_daily_limit" in limit_props
+
+    feature_props = components["AnalysisPlanFeatures"].get("properties", {})
+    for field in (
+        "cover_letter",
+        "interview_questions",
+        "cv_keywords",
+        "multi_match_comparison",
+        "priority",
+    ):
+        assert field in feature_props
+
+
 def test_history_list_response_schema_exists(components):
     assert "HistoryListResponse" in components
+
+
+def test_history_list_response_has_pagination(components):
+    props = components["HistoryListResponse"].get("properties", {})
+    assert "items" in props
+    assert "total" in props
+    assert "limit" in props
+    assert "offset" in props
+
+
+def test_history_list_has_filter_params(paths):
+    params = {
+        p["name"]
+        for p in paths["/api/v1/applications/{app_id}/history"]["get"].get(
+            "parameters", []
+        )
+    }
+    assert "limit" in params
+    assert "offset" in params
+    assert "type" in params
 
 
 def test_activity_feed_response_schema_exists(components):
@@ -212,7 +679,7 @@ def test_openapi_version_present(schema):
 
 
 def test_openapi_path_count(paths):
-    assert len(paths) == 13, f"Expected 13 paths, got {len(paths)}: {sorted(paths)}"
+    assert len(paths) == 33, f"Expected 33 paths, got {len(paths)}: {sorted(paths)}"
 
 
 # ── ApplicationListResponse envelope ──────────────────────────────────────────
@@ -240,6 +707,10 @@ def test_applications_list_has_new_query_params(paths):
     assert "offset" in params, "offset param missing"
     assert "search" in params, "search param missing"
     assert "stage" in params, "stage param missing"
+    assert "loop_id" in params, "loop_id param missing"
+    removed_field = "cycle" + "_id"
+    assert removed_field not in params, "removed search-direction param must not be exposed"
+    assert "is_favorite" in params, "is_favorite param missing"
 
 
 def test_applications_list_sort_param_has_enum(paths):
@@ -250,9 +721,12 @@ def test_applications_list_sort_param_has_enum(paths):
     # FastAPI inlines Literal as allOf or enum depending on version
     enum_values = schema.get("enum") or schema.get("allOf", [{}])[0].get("enum", [])
     for expected in (
-        "updated_at_desc", "updated_at_asc",
-        "created_at_desc", "created_at_asc",
-        "last_status_change_at_desc", "last_status_change_at_asc",
+        "updated_at_desc",
+        "updated_at_asc",
+        "created_at_desc",
+        "created_at_asc",
+        "last_status_change_at_desc",
+        "last_status_change_at_asc",
     ):
         assert expected in enum_values, f"Sort value missing: {expected}"
 
@@ -317,6 +791,14 @@ def test_document_list_response_has_items_and_total(components):
 
 def test_document_read_has_required_fields(components):
     props = components["DocumentRead"].get("properties", {})
-    for field in ("id", "application_id", "kind", "original_filename",
-                  "content_type", "size_bytes", "sha256_hash", "status"):
+    for field in (
+        "id",
+        "application_id",
+        "kind",
+        "original_filename",
+        "content_type",
+        "size_bytes",
+        "sha256_hash",
+        "status",
+    ):
         assert field in props, f"DocumentRead missing field: {field}"

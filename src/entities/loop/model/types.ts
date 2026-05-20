@@ -1,4 +1,5 @@
 export type RemoteMode = "any" | "remote_only";
+export type LoopStatus = "active" | "paused" | "archived";
 export type ValidationResult = { ok: true } | { ok: false; message: string };
 export const LOOP_PLATFORM_VALUES = [
   "linkedin",
@@ -16,6 +17,8 @@ export const LOOP_PLATFORM_VALUES = [
   "gigajob",
   "jooble",
   "adzuna",
+  "greenhouse",
+  "lever",
   "glassdoor",
   "germantechjobs",
   "honeypot",
@@ -42,15 +45,51 @@ export type LoopPlatform = (typeof LOOP_PLATFORM_VALUES)[number];
 
 export interface Loop {
   id: string;
+  title?: string;
+  name: string;
+  targetRole?: string;
+  titles: string[];
+  location: string;
+  radiusKm: number;
+  sources?: string[];
+  keywords?: string[];
+  excludedKeywords?: string[];
+  employmentTypes?: string[];
+  workModes?: string[];
+  selectedSources?: string[];
+  autoDiscoveryEnabled?: boolean;
+  discoveryRadiusKm?: number | null;
+  lastDiscoveryAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  filters?: CanonicalFilters;
+  remoteMode: RemoteMode;
+  platforms: LoopPlatform[];
+  status?: LoopStatus;
+  createdAtTs?: number | null;
+  updatedAtTs?: number | null;
+}
+
+export interface CreateLoopInput {
   name: string;
   titles: string[];
   location: string;
   radiusKm: number;
-  filters?: CanonicalFilters;
   remoteMode: RemoteMode;
   platforms: LoopPlatform[];
-  createdAtTs?: number | null;
-  updatedAtTs?: number | null;
+  filters?: CanonicalFilters;
+}
+
+export interface UpdateLoopInput {
+  loopId: string;
+  name?: string;
+  titles?: string[];
+  location?: string;
+  radiusKm?: number;
+  remoteMode?: RemoteMode;
+  platforms?: LoopPlatform[];
+  status?: LoopStatus;
+  filters?: CanonicalFilters;
 }
 
 export interface CanonicalFilters {

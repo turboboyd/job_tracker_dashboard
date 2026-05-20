@@ -11,8 +11,11 @@ export type {
   Loop,
   LoopPlatform,
   CanonicalFilters,
+  CreateLoopInput,
   SearchFilters,
   RemoteMode,
+  LoopStatus,
+  UpdateLoopInput,
   PlatformMeta,
   PlatformGroupId,
 } from "./model";
@@ -41,18 +44,6 @@ export {
   validateRequiredText,
 } from "./model";
 export type { ValidationResult } from "./model";
-
-export {
-  loopApi,
-  useGetLoopsQuery,
-  useLazyGetLoopsQuery,
-  useGetLoopsPageQuery,
-  useLazyGetLoopsPageQuery,
-  useGetLoopQuery,
-  useCreateLoopMutation,
-  useUpdateLoopMutation,
-  useDeleteLoopMutation,
-} from "./api/loopApi";
 
 export { CreateLoopModal } from "./ui/CreateLoopModal/CreateLoopModal";
 export { LoopSearchLinks } from "./ui/LoopSearchLinks";

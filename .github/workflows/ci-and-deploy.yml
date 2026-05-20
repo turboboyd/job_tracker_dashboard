@@ -7,13 +7,53 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: "gh-pages"
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'src/**'
+              - 'public/**'
+              - 'config/**'
+              - 'scripts/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig*.json'
+              - '.eslint*'
+              - 'eslint.config.*'
+              - '.prettier*'
+              - 'prettier.config.*'
+              - 'tailwind.config.*'
+              - 'postcss.config.*'
+              - '.github/workflows/ci-and-deploy.yml'
+            backend:
+              - 'backend/**'
+              - 'docs/backend-api-contract.md'
+              - 'docs/backend-roadmap.md'
+              - 'docs/openapi/**'
+              - '.github/workflows/ci-and-deploy.yml'
+
   lint:
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -39,6 +79,8 @@ jobs:
         run: npm test --if-present
 
   backend-test:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
 
     services:
@@ -87,11 +129,11 @@ jobs:
           # FIREBASE_CREDENTIALS_JSON_PATH intentionally omitted — tests mock Firebase auth
 
   deploy:
-    needs: lint
+    needs: [changes, lint]
     runs-on: ubuntu-latest
 
 
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.frontend == 'true' && needs.lint.result == 'success' }}
 
     env:
       PUBLIC_URL: /job_tracker_dashboard

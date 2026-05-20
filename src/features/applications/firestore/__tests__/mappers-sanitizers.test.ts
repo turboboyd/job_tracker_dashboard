@@ -4,7 +4,6 @@ import { Timestamp } from "firebase/firestore";
 
 import {
   buildCreateApplicationDoc,
-  buildManualLoopDoc,
   mapLegacyStatusToStageSub,
 } from "../mappers";
 import {
@@ -28,19 +27,6 @@ function test(_name: string, run: () => void | Promise<void>) {
 function ts(value = "2026-01-02T03:04:05.000Z") {
   return Timestamp.fromDate(new Date(value));
 }
-
-test("buildManualLoopDoc creates the canonical manual loop document", () => {
-  const timestamp = ts();
-  const doc = buildManualLoopDoc(timestamp);
-
-  assert.equal(doc.name, "Manual");
-  assert.equal(doc.remoteMode, "manual");
-  assert.deepEqual(doc.titles, []);
-  assert.deepEqual(doc.platforms, []);
-  assert.deepEqual(doc.filters, {});
-  assert.equal(doc.createdAtTs, timestamp);
-  assert.equal(doc.updatedAtTs, timestamp);
-});
 
 test("buildCreateApplicationDoc builds a minimal manual application document", () => {
   const timestamp = ts();

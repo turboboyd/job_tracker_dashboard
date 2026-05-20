@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # ── Database ───────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/job_tracker"
+    DATABASE_URL: str
 
     # ── CORS ───────────────────────────────────────────────────────────────────
     CORS_ALLOWED_ORIGINS: list[str] = [
@@ -32,6 +32,20 @@ class Settings(BaseSettings):
     # ── Document Storage ───────────────────────────────────────────────────────
     # Local filesystem root for uploaded documents (dev/test only).
     DOCUMENT_STORAGE_ROOT: str = "storage/documents"
+
+    # AI analysis provider. Deterministic is the safe default and performs no
+    # network calls. Ollama is optional and must be explicitly enabled.
+    AI_ANALYSIS_PROVIDER: Literal["deterministic", "ollama"] = "deterministic"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.1:8b"
+    OLLAMA_TIMEOUT_SECONDS: int = 60
+
+    # Optional safe job source adapters. Keep empty to skip provider-specific
+    # sources without failing discovery runs.
+    ADZUNA_APP_ID: str = ""
+    ADZUNA_APP_KEY: str = ""
+    GREENHOUSE_BOARD_TOKENS: str = ""
+    LEVER_SITE_NAMES: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -56,6 +70,13 @@ class Settings(BaseSettings):
     def normalise_log_level(cls, v: str) -> str:
         return v.upper()
 
+    @field_validator("OLLAMA_TIMEOUT_SECONDS")
+    @classmethod
+    def validate_ollama_timeout(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("OLLAMA_TIMEOUT_SECONDS must be greater than 0")
+        return value
+
     @model_validator(mode="after")
     def validate_production_settings(self) -> "Settings":
         """Refuse to start in production with unsafe defaults."""
@@ -65,6 +86,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 "DATABASE_URL points to localhost — this must be overridden in production. "
                 "Set DATABASE_URL to a non-local PostgreSQL connection string."
+            )
+        if "*" in self.CORS_ALLOWED_ORIGINS:
+            raise ValueError(
+                "CORS_ALLOWED_ORIGINS must list explicit origins in production. "
+                'Remove "*" and set the deployed frontend origin instead.'
             )
         if not self.FIREBASE_CREDENTIALS_JSON_PATH:
             raise ValueError(

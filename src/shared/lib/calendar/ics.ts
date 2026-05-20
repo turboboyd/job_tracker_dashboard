@@ -60,7 +60,7 @@ export function sanitizeIcsFileName(fileName: string): string {
     .replace(/\.ics$/i, "")
     .replace(/[^a-z0-9._-]+/gi, "-")
     .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
+    .replace(/(?:^-)|(?:-$)/g, "")
     .toLowerCase();
 
   return `${cleaned || "application-plan"}.ics`;

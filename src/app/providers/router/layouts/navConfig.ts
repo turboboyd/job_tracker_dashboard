@@ -47,6 +47,7 @@ export const sidebarItems: SidebarItem[] = [
     path: RoutePath[AppRoutes.MATCHES],
     Icon: Share2,
   },
+
   {
     labelKey: "common.nav.myApplications",
     labelDefault: "My Applications",

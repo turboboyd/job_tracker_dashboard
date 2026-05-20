@@ -17,6 +17,8 @@ function test(name: string, run: () => void) {
 }
 
 function makeDto(overrides: Partial<ApplicationReadDto> = {}): ApplicationReadDto {
+  const { loop_id: loopIdOverride, is_favorite: isFavoriteOverride, ...restOverrides } = overrides;
+
   return {
     id: "app-1",
     user_id: "user-1",
@@ -52,13 +54,14 @@ function makeDto(overrides: Partial<ApplicationReadDto> = {}): ApplicationReadDt
     tags: null,
     vacancy_description: null,
     role_fingerprint: null,
-    loop_id: null,
     has_loop: false,
     cv_version_id: null,
     profile_version_id: null,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-02T00:00:00.000Z",
-    ...overrides,
+    ...restOverrides,
+    loop_id: loopIdOverride ?? null,
+    is_favorite: isFavoriteOverride ?? false,
   };
 }
 
@@ -68,6 +71,15 @@ test("mapDtoToDoc maps company name and role title", () => {
   const doc = mapDtoToDoc(makeDto(), "user-1");
   assert.equal(doc.job.companyName, "Acme GmbH");
   assert.equal(doc.job.roleTitle, "Frontend Engineer");
+});
+
+
+test("makeDto normalizes undefined loop_id override to null", () => {
+  const dto = makeDto({ loop_id: undefined });
+  const doc = mapDtoToDoc(dto, "user-1");
+
+  assert.equal(dto.loop_id, null);
+  assert.equal(doc.loopLinkage, undefined);
 });
 
 test("mapDtoToDoc converts ISO timestamps to Firestore Timestamps", () => {
@@ -155,6 +167,21 @@ test("mapDtoToDoc sets archived and hasLoop flags", () => {
   assert.equal(doc.hasLoop, true);
 });
 
+test("mapDtoToDoc preserves backend-derived day metrics", () => {
+  const doc = mapDtoToDoc(
+    makeDto({
+      days_in_pipeline: 40,
+      days_since_applied: 12,
+      days_in_current_status: 5,
+    }),
+    "user-1",
+  );
+
+  assert.equal(doc.daysInPipeline, 40);
+  assert.equal(doc.daysSinceApplied, 12);
+  assert.equal(doc.daysInCurrentStatus, 5);
+});
+
 // ── mapCreateInputToDto ──────────────────────────────────────────────────────
 
 test("mapCreateInputToDto maps required fields", () => {
@@ -240,4 +267,22 @@ test("mapPatchToDto skips unknown keys silently", () => {
 
 test("mapPatchToDto returns empty object for empty patch", () => {
   assert.deepEqual(mapPatchToDto({}), {});
+});
+
+test("mapCreateInputToDto maps frontend loopId to backend loop_id", () => {
+  const dto = mapCreateInputToDto({
+    companyName: "Acme",
+    roleTitle: "Engineer",
+    loopId: "loop-frontend-1",
+  });
+
+  assert.equal(dto["loop_id"], "loop-frontend-1");
+  assert.equal("loopId" in dto, false);
+});
+
+test("mapDtoToDoc maps backend loop_id to frontend loopId", () => {
+  const doc = mapDtoToDoc(makeDto({ loop_id: "loop-backend-1", has_loop: true }), "user-1");
+
+  assert.equal(doc.loopLinkage?.loopId, "loop-backend-1");
+  assert.equal(doc.hasLoop, true);
 });

@@ -11,7 +11,7 @@ import {
   Sparkles,
   UserPlus,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -21,36 +21,20 @@ import {
 import { toMillis } from "src/shared/lib/firestore/toMillis";
 import { Button } from "src/shared/ui";
 
+import {
+  getActivityFeedViaRest,
+  type DashboardActivityFeedItem,
+} from "./api/dashboardRest";
 import { useDashboardData } from "./model/useDashboardData";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type ActivityType =
-  | "view"
-  | "match"
-  | "loop"
-  | "system"
-  | "note"
-  | "message"
-  | "file"
-  | "apply"
-  | "move"
-  | "interview"
-  | "contact";
+type ActivityType = DashboardActivityFeedItem["type"];
+type ActivityItem = DashboardActivityFeedItem;
 
 type FilterKey = "all" | "apply" | "interview" | "match" | "loop" | "note";
-
-interface ActivityItem {
-  id: string;
-  timeMs: number;
-  time: string;
-  who: string;
-  action: string;
-  target: string;
-  type: ActivityType;
-}
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -61,22 +45,46 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "apply", label: "Отклики" },
   { key: "interview", label: "Интервью" },
   { key: "match", label: "Матчи" },
-  { key: "loop", label: "Циклы" },
+  { key: "loop", label: "Направления" },
   { key: "note", label: "Заметки" },
 ];
 
-const ACT_ICONS: Record<ActivityType, { icon: React.ReactNode; color: string }> = {
-  view:      { icon: <Eye className="h-3.5 w-3.5" />,          color: "hsl(var(--muted-foreground))" },
-  match:     { icon: <Sparkles className="h-3.5 w-3.5" />,     color: "var(--primary)" },
-  loop:      { icon: <RefreshCw className="h-3.5 w-3.5" />,    color: "#6366f1" },
-  system:    { icon: <Bell className="h-3.5 w-3.5" />,         color: "hsl(var(--muted-foreground))" },
-  note:      { icon: <Pencil className="h-3.5 w-3.5" />,       color: "hsl(var(--muted-foreground))" },
-  message:   { icon: <Mail className="h-3.5 w-3.5" />,         color: "#6366f1" },
-  file:      { icon: <FileText className="h-3.5 w-3.5" />,     color: "hsl(var(--muted-foreground))" },
-  apply:     { icon: <Send className="h-3.5 w-3.5" />,         color: "#10b981" },
-  move:      { icon: <ArrowUpRight className="h-3.5 w-3.5" />, color: "var(--primary)" },
-  interview: { icon: <CalendarDays className="h-3.5 w-3.5" />, color: "var(--primary)" },
-  contact:   { icon: <UserPlus className="h-3.5 w-3.5" />,     color: "#10b981" },
+const ACT_ICONS: Record<
+  ActivityType,
+  { icon: React.ReactNode; color: string }
+> = {
+  view: {
+    icon: <Eye className="h-3.5 w-3.5" />,
+    color: "hsl(var(--muted-foreground))",
+  },
+  match: {
+    icon: <Sparkles className="h-3.5 w-3.5" />,
+    color: "var(--primary)",
+  },
+  loop: { icon: <RefreshCw className="h-3.5 w-3.5" />, color: "#6366f1" },
+  system: {
+    icon: <Bell className="h-3.5 w-3.5" />,
+    color: "hsl(var(--muted-foreground))",
+  },
+  note: {
+    icon: <Pencil className="h-3.5 w-3.5" />,
+    color: "hsl(var(--muted-foreground))",
+  },
+  message: { icon: <Mail className="h-3.5 w-3.5" />, color: "#6366f1" },
+  file: {
+    icon: <FileText className="h-3.5 w-3.5" />,
+    color: "hsl(var(--muted-foreground))",
+  },
+  apply: { icon: <Send className="h-3.5 w-3.5" />, color: "#10b981" },
+  move: {
+    icon: <ArrowUpRight className="h-3.5 w-3.5" />,
+    color: "var(--primary)",
+  },
+  interview: {
+    icon: <CalendarDays className="h-3.5 w-3.5" />,
+    color: "var(--primary)",
+  },
+  contact: { icon: <UserPlus className="h-3.5 w-3.5" />, color: "#10b981" },
 };
 
 // ---------------------------------------------------------------------------
@@ -101,30 +109,30 @@ function deriveActivity(matches: MatchLike[]): ActivityItem[] {
       const role = m.title ?? "";
       const target = role ? `${company} · ${role}` : company;
 
-      const type: ActivityType =
-        ["INTERVIEW_1", "INTERVIEW_2"].includes(status)
-          ? "interview"
-          : status === "TEST_TASK"
+      const type: ActivityType = ["INTERVIEW_1", "INTERVIEW_2"].includes(status)
+        ? "interview"
+        : status === "TEST_TASK"
           ? "note"
           : status === "OFFER" || status === "HIRED"
-          ? "match"
-          : status === "REJECTED" || status === "NO_RESPONSE"
-          ? "system"
-          : "apply";
+            ? "match"
+            : status === "REJECTED" || status === "NO_RESPONSE"
+              ? "system"
+              : "apply";
 
       const action =
         type === "interview"
           ? "прошёл интервью"
           : type === "match"
-          ? "получил оффер от"
-          : type === "system"
-          ? "получил отказ от"
-          : "обновил статус в";
+            ? "получил оффер от"
+            : type === "system"
+              ? "получил отказ от"
+              : "обновил статус в";
 
       const timeMs = toMillis(m.updatedAt) ?? 0;
 
       return {
         id: m.id,
+        applicationId: m.id,
         timeMs,
         time: new Date(timeMs).toLocaleTimeString("ru-RU", {
           hour: "2-digit",
@@ -134,6 +142,11 @@ function deriveActivity(matches: MatchLike[]): ActivityItem[] {
         action,
         target,
         type,
+        title: `${action} ${target}`.trim(),
+        description: null,
+        kind: "LOCAL_DERIVED",
+        payload: null,
+        createdAt: new Date(timeMs).toISOString(),
       };
     });
 }
@@ -153,8 +166,7 @@ function groupByDay(
     let key: string;
     if (d.getTime() === today.getTime()) key = "Сегодня";
     else if (d.getTime() === yesterday.getTime()) key = "Вчера";
-    else
-      key = d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    else key = d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
 
     const arr = groups.get(key) ?? [];
     arr.push(item);
@@ -164,9 +176,10 @@ function groupByDay(
   return [...groups.entries()].map(([d, its]) => ({ d, items: its }));
 }
 
-function computeStreak(
-  matches: MatchLike[],
-): { streak: number; activeDays: Set<number> } {
+function computeStreak(matches: MatchLike[]): {
+  streak: number;
+  activeDays: Set<number>;
+} {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -192,13 +205,7 @@ function computeStreak(
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function DayGroupHeader({
-  label,
-  count,
-}: {
-  label: string;
-  count: number;
-}) {
+function DayGroupHeader({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-center gap-2.5 mb-2 text-[11px] font-medium text-muted-foreground uppercase tracking-[0.06em]">
       <span>{label}</span>
@@ -266,6 +273,20 @@ function StatRow({
   );
 }
 
+function logRestError(context: string, error: unknown): void {
+  const restError = error as {
+    status?: unknown;
+    code?: unknown;
+    requestId?: unknown;
+  } | null;
+
+  console.error(context, {
+    code: restError?.code,
+    requestId: restError?.requestId,
+    status: restError?.status,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -275,10 +296,46 @@ export default function DashboardActivityPage() {
   const { matchesAll } = useDashboardData();
 
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
+  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
+  const [activityFeedError, setActivityFeedError] = useState<string | null>(
+    null,
+  );
 
   const nowMs = Date.now();
 
-  const allActivity = useMemo(() => deriveActivity(matchesAll), [matchesAll]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadActivityFeed() {
+      try {
+        setActivityFeedError(null);
+        const items = await getActivityFeedViaRest({ limit: 50 });
+        if (!cancelled) setActivityFeed(items);
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setActivityFeed([]);
+          setActivityFeedError(
+            error instanceof Error
+              ? error.message
+              : "Не удалось загрузить активность.",
+          );
+        }
+        logRestError("Dashboard activity feed load failed", error);
+      }
+    }
+
+    void loadActivityFeed();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const fallbackActivity = useMemo(
+    () => deriveActivity(matchesAll),
+    [matchesAll],
+  );
+  const allActivity = activityFeed.length > 0 ? activityFeed : fallbackActivity;
 
   const filtered = useMemo(() => {
     if (activeFilter === "all") return allActivity;
@@ -306,18 +363,13 @@ export default function DashboardActivityPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // TODO(backend-migration): Real activity log needs GET /api/v1/activity/feed
-  // Current data is derived from matchesAll.updatedAt as a proxy.
-
   return (
     <div className="min-h-full bg-background">
       {/* Page header */}
       <div className="border-b border-border bg-background px-6 py-5">
         <div className="mb-1 text-[11.5px] text-muted-foreground">
-          Loopboard{" "}
-          <span className="mx-1 text-border">/</span>
-          Воркспейс{" "}
-          <span className="mx-1 text-border">/</span>
+          Loopboard <span className="mx-1 text-border">/</span>
+          Воркспейс <span className="mx-1 text-border">/</span>
           <span className="text-foreground">Активность</span>
         </div>
         <div className="flex items-start justify-between gap-4">
@@ -376,6 +428,11 @@ export default function DashboardActivityPage() {
 
           {/* ── Center: activity feed ── */}
           <div className="flex-1 min-w-[360px]">
+            {activityFeedError ? (
+              <div className="mb-3 rounded-lg border border-border bg-card px-4 py-3 text-[12.5px] text-muted-foreground">
+                {activityFeedError}
+              </div>
+            ) : null}
             {groups.length === 0 ? (
               <div className="rounded-lg border border-border bg-card px-6 py-12 text-center text-[13px] text-muted-foreground">
                 Нет событий для выбранного фильтра.
@@ -397,9 +454,7 @@ export default function DashboardActivityPage() {
           </div>
 
           {/* ── Right: stats sidebar ── */}
-          <div
-            className="flex-1 min-w-[260px] max-w-[340px] flex flex-col gap-3"
-          >
+          <div className="flex-1 min-w-[260px] max-w-[340px] flex flex-col gap-3">
             {/* Card 1: За 7 дней */}
             <div className="rounded-lg border border-border bg-card p-4">
               <div className="mb-3 text-[12px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -421,11 +476,7 @@ export default function DashboardActivityPage() {
                   count={stats7.interview}
                   max={stats7Max}
                 />
-                <StatRow
-                  label="Матчей"
-                  count={stats7.match}
-                  max={stats7Max}
-                />
+                <StatRow label="Матчей" count={stats7.match} max={stats7Max} />
               </div>
             </div>
 
@@ -439,7 +490,11 @@ export default function DashboardActivityPage() {
                   {streak}
                 </span>
                 <span className="text-[13px] text-muted-foreground">
-                  {streak === 1 ? "день подряд" : streak >= 2 && streak <= 4 ? "дня подряд" : "дней подряд"}
+                  {streak === 1
+                    ? "день подряд"
+                    : streak >= 2 && streak <= 4
+                      ? "дня подряд"
+                      : "дней подряд"}
                 </span>
               </div>
               <p className="text-[12px] text-muted-foreground mb-3">

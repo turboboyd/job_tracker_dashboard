@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -28,8 +28,22 @@ class HistoryItemRead(BaseModel):
     created_at: datetime
 
 
+HistoryTypeFilter = Literal[
+    "APPLICATION_CREATED",
+    "STATUS_CHANGE",
+    "FIELD_CHANGE",
+    "COMMENT",
+    "APPLICATION_ARCHIVED",
+    "DOCUMENT_UPLOADED",
+    "DOCUMENT_DELETED",
+]
+
+
 class HistoryListResponse(BaseModel):
     items: list[HistoryItemRead]
+    total: int
+    limit: int
+    offset: int
 
 
 class CommentRequest(BaseModel):

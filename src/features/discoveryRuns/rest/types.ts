@@ -1,0 +1,132 @@
+export type DiscoveryRunStatus = "completed" | "completed_with_warnings" | "failed" | "skipped";
+export type DiscoveryRunItemStatus = "skipped" | "unsupported" | "would_run" | "failed";
+export type DiscoverySearchScope = "focused" | "normal" | "broad";
+
+export interface DiscoveryRunRequestDto {
+  loop_id: string;
+  dry_run: boolean;
+  source_ids: string[];
+  search_scope?: DiscoverySearchScope;
+  page?: number;
+  page_size?: number;
+}
+
+export interface DiscoveryRunPreviewItemDto {
+  external_id: string | null;
+  source_url: string;
+  title: string | null;
+  company: string | null;
+  location: string | null;
+  snippet: string | null;
+  posted_at: string | null;
+  raw_metadata: Record<string, unknown>;
+  confidence: Record<string, number>;
+}
+
+export interface DiscoveryRunItemDto {
+  loop_id: string;
+  source_id: string | null;
+  status: DiscoveryRunItemStatus;
+  reason: string;
+  message: string;
+  items_previewed: number;
+  has_more?: boolean;
+  preview_items: DiscoveryRunPreviewItemDto[];
+  warnings: string[];
+  errors: string[];
+}
+
+export interface DiscoveryRunResponseDto {
+  run_id: string;
+  status: DiscoveryRunStatus;
+  dry_run: boolean;
+  page?: number;
+  page_size?: number;
+  loops_checked: number;
+  sources_checked: number;
+  matches_created: number;
+  matches_previewed: number;
+  warnings: string[];
+  items: DiscoveryRunItemDto[];
+}
+
+export interface DiscoveryRunPreviewInput {
+  loopId: string;
+  dryRun: true;
+  sourceIds: string[];
+  searchScope?: DiscoverySearchScope;
+  page?: number;
+  pageSize?: number;
+}
+
+export type DiscoverySourceConfigurationStatus =
+  | "ready"
+  | "not_configured"
+  | "not_runnable";
+
+export interface DiscoverySourceRuntimeStatusDto {
+  source_id: string;
+  name: string;
+  automatic_discovery: boolean;
+  configured: boolean;
+  runnable: boolean;
+  configuration_status: DiscoverySourceConfigurationStatus;
+  message_code: string;
+}
+
+export interface DiscoverySourceRuntimeStatusResponseDto {
+  items: DiscoverySourceRuntimeStatusDto[];
+}
+
+export interface DiscoverySourceRuntimeStatus {
+  sourceId: string;
+  name: string;
+  automaticDiscovery: boolean;
+  configured: boolean;
+  runnable: boolean;
+  configurationStatus: DiscoverySourceConfigurationStatus;
+  messageCode: string;
+}
+
+export interface DiscoverySourceRuntimeStatusResponse {
+  items: DiscoverySourceRuntimeStatus[];
+}
+
+export interface DiscoveryRunPreviewItem {
+  externalId: string | null;
+  sourceUrl: string;
+  title: string | null;
+  company: string | null;
+  location: string | null;
+  snippet: string | null;
+  postedAt: string | null;
+  rawMetadata: Record<string, unknown>;
+  confidence: Record<string, number>;
+}
+
+export interface DiscoveryRunItem {
+  loopId: string;
+  sourceId: string | null;
+  status: DiscoveryRunItemStatus;
+  reason: string;
+  message: string;
+  itemsPreviewed: number;
+  hasMore?: boolean;
+  previewItems: DiscoveryRunPreviewItem[];
+  warnings: string[];
+  errors: string[];
+}
+
+export interface DiscoveryRunResponse {
+  runId: string;
+  status: DiscoveryRunStatus;
+  dryRun: boolean;
+  page?: number;
+  pageSize?: number;
+  loopsChecked: number;
+  sourcesChecked: number;
+  matchesCreated: number;
+  matchesPreviewed: number;
+  warnings: string[];
+  items: DiscoveryRunItem[];
+}

@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useAuthSelectors } from "src/entities/auth";
 import {
-  queryAllActiveApplications,
+  createApplicationsRepo,
   type ApplicationDoc,
-} from "src/features/applications/firestoreApplications";
+} from "src/features/applications";
 import { db } from "src/shared/config/firebase/firebase";
 import { toMillis } from "src/shared/lib/firestore/toMillis";
 
@@ -477,7 +477,9 @@ export function CalendarPage() {
   const [curYear,  setCurYear]  = useState(today.getFullYear());
   const [curMonth, setCurMonth] = useState(today.getMonth());
 
-  // ── Load from Firebase ────────────────────────────────────────────────────
+  const repo = useMemo(() => createApplicationsRepo(db), []);
+
+  // ── Load active applications via REST-backed shared repo ───────────────────
   const [rows, setRows]       = useState<Array<{ id: string; data: ApplicationDoc }>>([]);
   const [loading, setLoading] = useState(false);
 
@@ -485,12 +487,12 @@ export function CalendarPage() {
     if (!isAuthReady || !userId) return;
     let cancelled = false;
     setLoading(true);
-    queryAllActiveApplications(db, userId, 500)
+    repo.queryAllActiveApplications(userId, 500)
       .then((data) => { if (!cancelled) setRows(data); })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [isAuthReady, userId]);
+  }, [isAuthReady, repo, userId]);
 
   // ── Derive events ─────────────────────────────────────────────────────────
   const allEvents = useMemo(() => deriveEvents(rows), [rows]);

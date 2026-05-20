@@ -15,18 +15,22 @@ export type PipelineFilterStatus = "ALL" | ProcessStatus;
  * Create form state for creating new application
  */
 export interface CreateFormState {
+  loopId: string;
   companyName: string;
   roleTitle: string;
   vacancyUrl: string;
   source: string;
+  locationText: string;
   rawDescription: string;
 }
 
 export const EMPTY_CREATE_FORM: CreateFormState = {
+  loopId: "",
   companyName: "",
   roleTitle: "",
   vacancyUrl: "",
   source: "",
+  locationText: "",
   rawDescription: "",
 };
 

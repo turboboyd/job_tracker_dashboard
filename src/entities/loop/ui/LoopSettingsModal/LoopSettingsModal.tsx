@@ -32,7 +32,7 @@ export function LoopSettingsModal({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title={t("loops.myLoopSettings", "My Loop settings")}
+      title={t("loops.myLoopSettings", "Loop settings")}
       description={t(
         "loops.myLoopSettingsDescription",
         "Update filters, click Apply to refresh links and save settings to your loop."

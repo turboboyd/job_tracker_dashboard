@@ -1,49 +1,42 @@
-import { skipToken } from "@reduxjs/toolkit/query";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "src/app/store/hooks";
-import { CreateLoopModal } from "src/entities/loop";
+import { type Loop, CreateLoopModal } from "src/entities/loop";
 import {
-  useGetLoopsPageQuery,
-  useLazyGetLoopsPageQuery,
-} from "src/entities/loop/api/loopApi";
+  archiveLoopViaRest,
+  createLoopViaRest,
+  listLoopsViaRest,
+  updateLoopViaRest,
+} from "src/features/loops";
 import { joinTitles } from "src/entities/loop/lib/format";
+import { listApplicationsViaRest } from "src/features/applications/rest/queries";
+import { listLoopVacancyMatchesViaRest, type VacancyMatch } from "src/features/vacancyMatches";
+import type { AppRow } from "src/pages/ApplicationsPage/model/types";
 import {
   setLastLoopsUrl,
   setLoopsListPage,
 } from "src/pages/LoopsPage/model/loopsUiSlice";
-import { getErrorMessage, clampPage} from "src/shared/lib";
+import { clampPage, getErrorMessage } from "src/shared/lib";
 import { Button, Pagination } from "src/shared/ui";
 
-const PAGE_SIZE = 7;
+import {
+  buildLoopStatsById,
+  countLoopStats,
+  filterLoopsByArchiveTab,
+  getLoopStats,
+  getLoopStatus,
+  getBackendLoopIdsForMatchLoading,
+  isLoopPaused,
+  shouldShowLoopsPagination,
+  type LoopStats,
+} from "./loopsPage.helpers";
 
-type CursorMap = Record<number, string | null | undefined>; // page -> cursorId
+const PAGE_SIZE = 10;
+const APPLICATIONS_PAGE_SIZE = 100;
 
-
-function readPageParam(search: string): number | null {
-  const sp = new URLSearchParams(search);
-  const raw = sp.get("page");
-  if (!raw) return null;
-  const n = Number(raw);
-  return clampPage(n);
-}
-
-function writePageToSearch(search: string, page: number): string {
-  const sp = new URLSearchParams(search);
-  sp.set("page", String(clampPage(page)));
-  const s = sp.toString();
-  return s ? `?${s}` : "";
-}
-
-// ─── Stat tile (matches StatCard style) ──────────────────────────────────────
+type LoopsTab = "active" | "archive";
 
 type StatTileProps = {
   label: string;
@@ -53,455 +46,597 @@ type StatTileProps = {
   green?: boolean;
 };
 
+function readPageParam(search: string): number | null {
+  const sp = new URLSearchParams(search);
+  const raw = sp.get("page");
+  if (!raw) return null;
+
+  return clampPage(Number(raw));
+}
+
+function readTabParam(search: string): LoopsTab {
+  const tab = new URLSearchParams(search).get("tab");
+  if (tab === "archive") return "archive";
+  return "active";
+}
+
+function writeLoopsSearch(
+  search: string,
+  patch: { page?: number; tab?: LoopsTab },
+): string {
+  const sp = new URLSearchParams(search);
+  if (patch.page !== undefined) sp.set("page", String(clampPage(patch.page)));
+  if (patch.tab !== undefined) {
+    if (patch.tab === "archive") sp.set("tab", "archive");
+    else sp.delete("tab");
+  }
+
+  const next = sp.toString();
+  return next ? `?${next}` : "";
+}
+
+function getMetricValueClass(params: { accent?: boolean; green?: boolean }): string {
+  if (params.accent) return "text-primary";
+  if (params.green) return "text-emerald-600";
+  return "text-foreground";
+}
+
 function StatTile({ label, value, sub, accent, green }: StatTileProps) {
-  const valueClass = accent
-    ? "text-primary"
-    : green
-    ? "text-emerald-600"
-    : "text-foreground";
+  const valueClass = getMetricValueClass({ accent, green });
 
   return (
     <div className="rounded-[14px] border border-border bg-card p-[18px]">
-      <div className="text-[11px] font-medium uppercase tracking-[0.07em] text-subtle-foreground truncate">
+      <div className="truncate text-[11px] font-medium uppercase tracking-[0.07em] text-subtle-foreground">
         {label}
       </div>
       <div
-        className={`text-[28px] font-semibold tracking-[-0.025em] mt-2 tabular-nums leading-none ${valueClass}`}
+        className={`mt-2 text-[28px] font-semibold leading-none tracking-[-0.025em] tabular-nums ${valueClass}`}
       >
         {value}
       </div>
       {sub ? (
-        <div className="text-[11.5px] text-subtle-foreground mt-1">{sub}</div>
+        <div className="mt-1 text-[11.5px] text-subtle-foreground">{sub}</div>
       ) : null}
     </div>
   );
 }
 
-// ─── Loop card ────────────────────────────────────────────────────────────────
+function getLoopStatusClassName(status: ReturnType<typeof getLoopStatus>): string {
+  if (status === "archived") return "bg-muted text-muted-foreground";
+  if (status === "paused") {
+    return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
+  }
+  return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+}
 
-type LoopCardItem = {
-  id: string;
-  name: string;
-  location: string;
-  titles: string[];
-  remoteMode: string;
-  radiusKm: number;
-  platforms: string[];
-  // stats are stubs — Loop model has no counters yet
-  matchCount?: number;
-  appliedCount?: number;
-  todayCount?: number;
-};
+function getLoopStatusLabel(
+  status: ReturnType<typeof getLoopStatus>,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  if (status === "archived") return t("loops.archived", "Archived");
+  if (status === "paused") return t("loops.paused", "Paused");
+  return t("loops.active", "Active");
+}
+
+function LoopStatusBadge({ loop }: { loop: Loop }) {
+  const { t } = useTranslation();
+  const status = getLoopStatus(loop);
+  const className = getLoopStatusClassName(status);
+  const label = getLoopStatusLabel(status, t);
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 type LoopCardProps = {
-  loop: LoopCardItem;
+  loop: Loop;
+  stats: LoopStats;
+  busy: boolean;
+  onArchive: (id: string) => void;
   onOpen: (id: string) => void;
+  onOpenApplications: (id: string) => void;
+  onOpenMatches: (id: string) => void;
+  onAddApplication: (id: string) => void;
+  onImportVacancy: (id: string) => void;
+  onRestore: (id: string) => void;
+  onTogglePause: (loop: Loop) => void;
 };
 
-function LoopCard({ loop, onOpen }: LoopCardProps) {
+function LoopCard({
+  loop,
+  stats,
+  busy,
+  onArchive,
+  onOpen,
+  onOpenApplications,
+  onOpenMatches,
+  onAddApplication,
+  onImportVacancy,
+  onRestore,
+  onTogglePause,
+}: LoopCardProps) {
   const { t } = useTranslation();
-
-  const titlesText = joinTitles(loop.titles) || t("loops.dash", "—");
-  const remoteText =
-    loop.remoteMode === "remote_only"
-      ? t("loops.remoteOnly", "Remote")
-      : t("loops.any", "Any");
-
-  const matchCount = loop.matchCount ?? 0;
-  const appliedCount = loop.appliedCount ?? 0;
-  const todayCount = loop.todayCount ?? 0;
+  const titlesText =
+    joinTitles(Array.isArray(loop.titles) ? loop.titles : []) ||
+    t("loops.dash", "—");
+  let remoteText = t("loops.any", "Any");
+  if (loop.remoteMode === "remote_only") {
+    remoteText = t("loops.remoteOnly", "Remote");
+  }
+  const archived = getLoopStatus(loop) === "archived";
+  let sourceLabel = t("loops.sources", "sources");
+  if (loop.platforms.length === 1) {
+    sourceLabel = t("loops.source", "source");
+  }
 
   return (
     <div
       tabIndex={0}
       role="button"
       onClick={() => onOpen(loop.id)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
           onOpen(loop.id);
         }
       }}
-      className="rounded-[14px] border border-border bg-card p-5 hover:bg-muted transition-[background] duration-[120ms] cursor-pointer focus:outline-none focus:ring-2 focus:ring-border select-none"
+      className="cursor-pointer select-none rounded-[14px] border border-border bg-card p-5 transition-[background] duration-[120ms] hover:bg-muted focus:outline-none focus:ring-2 focus:ring-border"
     >
       <div className="grid grid-cols-[1fr_auto_auto] items-start gap-5">
-        {/* Left: status pill + name + role */}
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-              {t("loops.active", "Active")}
-            </span>
+          <div className="mb-1.5 flex items-center gap-2">
+            <LoopStatusBadge loop={loop} />
             {loop.platforms.length > 0 ? (
               <span className="text-[11px] text-muted-foreground">
-                {loop.platforms.length} {loop.platforms.length === 1 ? t("loops.source", "source") : t("loops.sources", "sources")}
+                {loop.platforms.length} {sourceLabel}
               </span>
             ) : null}
           </div>
-          <div className="text-[15px] font-semibold text-foreground truncate leading-snug">
+          <div className="truncate text-[15px] font-semibold leading-snug text-foreground">
             {loop.name}
           </div>
-          <div className="text-[12px] text-muted-foreground truncate mt-0.5">
+          <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
             {titlesText}
           </div>
         </div>
 
-        {/* Middle: parameter pills */}
-        <div className="flex flex-col gap-1.5 min-w-0 pt-0.5">
+        <div className="flex min-w-0 flex-col gap-1.5 pt-0.5">
           {loop.location ? (
-            <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground whitespace-nowrap">
+            <span className="inline-flex items-center whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
               {loop.location}
             </span>
           ) : null}
           {loop.radiusKm > 0 ? (
-            <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground whitespace-nowrap">
+            <span className="inline-flex items-center whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
               {loop.radiusKm} km
             </span>
           ) : null}
-          <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground whitespace-nowrap">
+          <span className="inline-flex items-center whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
             {remoteText}
           </span>
         </div>
 
-        {/* Right: stats + open button */}
         <div className="flex flex-col items-end gap-2 pt-0.5">
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-center">
-              <span className="text-[18px] font-bold tabular-nums leading-none text-foreground">
-                {matchCount}
-              </span>
-              <span className="text-[10.5px] text-muted-foreground mt-0.5">
-                {t("loops.statMatches", "Matches")}
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="text-[18px] font-bold tabular-nums leading-none text-primary">
-                {appliedCount}
-              </span>
-              <span className="text-[10.5px] text-muted-foreground mt-0.5">
-                {t("loops.statApplied", "Applied")}
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span
-                className={`text-[18px] font-bold tabular-nums leading-none ${
-                  todayCount > 0 ? "text-emerald-600" : "text-muted-foreground"
-                }`}
-              >
-                {todayCount}
-              </span>
-              <span className="text-[10.5px] text-muted-foreground mt-0.5">
-                {t("loops.statToday", "Today")}
-              </span>
-            </div>
+            <LoopMetric label="Applications" value={stats.applications} />
+            <LoopMetric label="Saved" value={stats.saved} />
+            <LoopMetric
+              label={t("loops.statApplied", "Applied")}
+              value={stats.applied}
+              accent
+            />
+            <LoopMetric label="Interview" value={stats.interview} />
+            <LoopMetric label="Offer" value={stats.offer} />
+            <LoopMetric label="Rejected" value={stats.rejected} />
+            <LoopMetric
+              label={t("loops.statToday", "Today")}
+              value={stats.today}
+              green={stats.today > 0}
+            />
+            <LoopMetric
+              label="Follow-ups"
+              value={stats.followUps}
+              green={stats.followUps > 0}
+            />
+            <LoopMetric
+              label={t("loops.statMatches", "Matches")}
+              value={stats.matches}
+            />
           </div>
 
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onOpen(loop.id); }}
-            className="border border-border rounded-[6px] px-2.5 py-1.5 text-[11.5px] text-muted-foreground hover:bg-muted transition-colors"
-          >
-            {t("loops.open", "Open")} →
-          </button>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <LoopActionButton onClick={() => onOpen(loop.id)}>
+              {t("loops.open", "Open")}
+            </LoopActionButton>
+            <LoopActionButton onClick={() => onOpenApplications(loop.id)}>
+              View applications
+            </LoopActionButton>
+            {!archived ? (
+              <>
+                <LoopActionButton onClick={() => onAddApplication(loop.id)}>
+                  Add application
+                </LoopActionButton>
+                <LoopActionButton onClick={() => onImportVacancy(loop.id)}>
+                  Import URL as application
+                </LoopActionButton>
+              </>
+            ) : null}
+            <LoopActionButton onClick={() => onOpenMatches(loop.id)}>
+              Matches
+            </LoopActionButton>
+            {!archived ? (
+              <LoopActionButton
+                disabled={busy}
+                onClick={() => onTogglePause(loop)}
+              >
+                {getPauseActionLabel(loop)}
+              </LoopActionButton>
+            ) : null}
+            {archived ? (
+              <LoopActionButton
+                disabled={busy}
+                onClick={() => onRestore(loop.id)}
+              >
+                Восстановить
+              </LoopActionButton>
+            ) : null}
+            {!archived ? (
+              <LoopActionButton
+                disabled={busy}
+                onClick={() => onArchive(loop.id)}
+              >
+                Архивировать
+              </LoopActionButton>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── LoopsListView ────────────────────────────────────────────────────────────
+function LoopMetric({
+  accent,
+  green,
+  label,
+  value,
+}: {
+  accent?: boolean;
+  green?: boolean;
+  label: string;
+  value: number;
+}) {
+  const valueClass = getMetricValueClass({ accent, green });
+
+  return (
+    <div className="flex flex-col items-center">
+      <span
+        className={`text-[18px] font-bold leading-none tabular-nums ${valueClass}`}
+      >
+        {value}
+      </span>
+      <span className="mt-0.5 text-[10.5px] text-muted-foreground">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function getPauseActionLabel(loop: Loop): string {
+  if (isLoopPaused(loop)) return "Resume";
+  return "Pause";
+}
+
+function LoopActionButton({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      className="rounded-[6px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {children}
+    </button>
+  );
+}
 
 export function LoopsListView({
   userId,
   onOpenLoop,
+  onOpenApplications,
+  onOpenMatches,
+  onAddApplication,
+  onImportVacancy,
 }: {
   userId: string;
   onOpenLoop: (id: string) => void;
+  onOpenApplications: (id: string) => void;
+  onOpenMatches: (id: string) => void;
+  onAddApplication: (id: string) => void;
+  onImportVacancy: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
-
-  const savedListPage = useAppSelector((s) => s.loopsUi.listPage);
+  const savedListPage = useAppSelector((state) => state.loopsUi.listPage);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [applications, setApplications] = useState<AppRow[]>([]);
+  const [matches, setMatches] = useState<VacancyMatch[]>([]);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+  const [loops, setLoops] = useState<Loop[]>([]);
+  const [isLoadingLoops, setIsLoadingLoops] = useState(false);
+  const [isUpdatingLoop, setIsUpdatingLoop] = useState(false);
+  const [loopsError, setLoopsError] = useState<string | null>(null);
 
+  const activeTab = readTabParam(location.search);
   const page = useMemo(() => {
     const fromUrl = readPageParam(location.search);
     return fromUrl ?? clampPage(savedListPage);
   }, [location.search, savedListPage]);
 
-  const cursorByPageRef = useRef<CursorMap>({ 1: null });
-
-  const [cursorId, setCursorId] = useState<string | null>(null);
-
-  const [fetchLoopsPage] = useLazyGetLoopsPageQuery();
-
-  const syncCursorForPage = useCallback(
-    async (targetPage: number) => {
-      if (!userId) {
-        setCursorId(null);
-        return;
-      }
-
-      if (targetPage <= 1) {
-        cursorByPageRef.current[1] = null;
-        setCursorId(null);
-        return;
-      }
-
-      const cache = cursorByPageRef.current;
-
-      if (cache[targetPage] !== undefined) {
-        setCursorId(cache[targetPage] ?? null);
-        return;
-      }
-
-      if (cache[1] === undefined) cache[1] = null;
-
-      for (let p = 1; p < targetPage; p += 1) {
-        if (cache[p] === undefined) break;
-
-        const cur = cache[p] ?? null;
-
-        const res = await fetchLoopsPage({
-          pageSize: PAGE_SIZE,
-          cursorId: cur,
-        }).unwrap();
-
-        cache[p + 1] = res.nextCursor ?? null;
-
-        if (!res.nextCursor) break;
-      }
-
-      setCursorId(cache[targetPage] ?? null);
-    },
-    [fetchLoopsPage, userId],
+  const statsLoops = useMemo(
+    () => filterLoopsByArchiveTab(loops, "active"),
+    [loops],
   );
+  const visibleLoops = useMemo(
+    () => filterLoopsByArchiveTab(loops, activeTab),
+    [activeTab, loops],
+  );
+  const totalPages = Math.max(1, Math.ceil(visibleLoops.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedLoops = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return visibleLoops.slice(start, start + PAGE_SIZE);
+  }, [safePage, visibleLoops]);
+
+  const backendLoopIdsKey = useMemo(
+    () => getBackendLoopIdsForMatchLoading(loops).join("|"),
+    [loops],
+  );
+
+  const statsById = useMemo(
+    () => buildLoopStatsById({ loops, applications, matches }),
+    [applications, loops, matches],
+  );
+  const activeTotals = useMemo(
+    () =>
+      countLoopStats(
+        statsById,
+        statsLoops.map((loop) => loop.id),
+      ),
+    [statsById, statsLoops],
+  );
+
+  const loadLoops = useCallback(async () => {
+    if (!userId) {
+      setLoops([]);
+      return;
+    }
+
+    setIsLoadingLoops(true);
+    setLoopsError(null);
+    try {
+      const response = await listLoopsViaRest({ includeArchived: true, limit: 100 });
+      setLoops(response.items);
+    } catch (error: unknown) {
+      setLoops([]);
+      setLoopsError(getErrorMessage(error));
+    } finally {
+      setIsLoadingLoops(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void loadLoops();
+  }, [loadLoops]);
+
+
+  useEffect(() => {
+    let cancelled = false;
+    const loopIds = backendLoopIdsKey ? backendLoopIdsKey.split("|") : [];
+
+    async function loadMatches() {
+      if (!userId || loopIds.length === 0) {
+        setMatches([]);
+        return;
+      }
+
+      try {
+        const pages = await Promise.all(
+          loopIds.map((loopId) =>
+            listLoopVacancyMatchesViaRest(loopId, { limit: 100, offset: 0 }),
+          ),
+        );
+        if (!cancelled) setMatches(pages.flatMap((page) => page.items));
+      } catch {
+        if (!cancelled) setMatches([]);
+      }
+    }
+
+    loadMatches().catch(() => {
+      if (!cancelled) setMatches([]);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [backendLoopIdsKey, userId]);
 
   useEffect(() => {
     let cancelled = false;
 
-    const run = async () => {
-      try {
-        await syncCursorForPage(page);
-      } catch {
-        // cursorId как есть; ошибки loopsPageQ
+    async function loadApplications() {
+      if (!userId || !backendLoopIdsKey) {
+        setApplications([]);
+        return;
       }
-    };
 
-    run().catch(() => {});
+      setIsLoadingApplications(true);
+      setStatsError(null);
+
+      try {
+        const rows = await loadAllActiveApplications(userId);
+        if (!cancelled) setApplications(rows);
+      } catch {
+        if (!cancelled) setApplications([]);
+      } finally {
+        if (!cancelled) setIsLoadingApplications(false);
+      }
+    }
+
+    loadApplications().catch(() => {
+      if (!cancelled) setApplications([]);
+    });
 
     return () => {
       cancelled = true;
-      if (cancelled) return;
     };
-  }, [page, syncCursorForPage]);
-
-  const loopsPageQ = useGetLoopsPageQuery(
-    userId ? { pageSize: PAGE_SIZE, cursorId } : skipToken,
-  );
-
-  const data = loopsPageQ.data;
-
-  const items = useMemo(() => data?.items ?? [], [data]);
-  const total = data?.total ?? 0;
-
-  const nextCursor = loopsPageQ.data?.nextCursor ?? null;
-
-  const totalPages = useMemo(() => {
-    const n = Math.ceil(total / PAGE_SIZE);
-    return n <= 0 ? 1 : n;
-  }, [total]);
-
+  }, [backendLoopIdsKey, userId]);
 
   useEffect(() => {
-    if (!loopsPageQ.data) return;
-    const nextPage = page + 1;
-
-    const cache = cursorByPageRef.current;
-    if (cache[nextPage] === undefined) {
-      cache[nextPage] = nextCursor;
-    }
-  }, [loopsPageQ.data, page, nextCursor]);
-
-
-  useEffect(() => {
-    if (!loopsPageQ.data) return;
     const clamped = Math.max(1, Math.min(totalPages, page));
-    if (clamped !== page) {
-      const nextSearch = writePageToSearch(location.search, clamped);
-      navigate(
-        { pathname: location.pathname, search: nextSearch },
-        { replace: true },
-      );
-    }
-  }, [
-    loopsPageQ.data,
-    page,
-    totalPages,
-    navigate,
-    location.pathname,
-    location.search,
-  ]);
+    if (clamped === page) return;
 
-  // ✅ sync Redux
+    navigate(
+      {
+        pathname: location.pathname,
+        search: writeLoopsSearch(location.search, { page: clamped }),
+      },
+      { replace: true },
+    );
+  }, [location.pathname, location.search, navigate, page, totalPages]);
+
   useEffect(() => {
-    dispatch(setLoopsListPage(page));
+    dispatch(setLoopsListPage(safePage));
     dispatch(setLastLoopsUrl(`${location.pathname}${location.search}`));
-  }, [dispatch, page, location.pathname, location.search]);
+  }, [dispatch, location.pathname, location.search, safePage]);
 
-  const goToPage = useCallback(
-    async (p: number) => {
-      const next = clampPage(p);
-
-      await syncCursorForPage(next);
-
-      const nextSearch = writePageToSearch(location.search, next);
+  const setTab = useCallback(
+    (tab: LoopsTab) => {
       navigate(
-        { pathname: location.pathname, search: nextSearch },
+        {
+          pathname: location.pathname,
+          search: writeLoopsSearch(location.search, { page: 1, tab }),
+        },
         { replace: false },
       );
     },
-    [navigate, location.pathname, location.search, syncCursorForPage],
+    [location.pathname, location.search, navigate],
   );
 
-  const showFrom = useMemo(() => {
-    if (total === 0) return 0;
-    return (page - 1) * PAGE_SIZE + 1;
-  }, [page, total]);
-
-  const showTo = useMemo(() => {
-    if (total === 0) return 0;
-    return (page - 1) * PAGE_SIZE + items.length;
-  }, [page, total, items.length]);
-
-  // Aggregate stat tiles values from current page
-  const totalMatches = useMemo(() => items.reduce((acc, l) => acc + ((l as LoopCardItem).matchCount ?? 0), 0), [items]);
-  const totalApplied = useMemo(() => items.reduce((acc, l) => acc + ((l as LoopCardItem).appliedCount ?? 0), 0), [items]);
-  const totalToday = useMemo(() => items.reduce((acc, l) => acc + ((l as LoopCardItem).todayCount ?? 0), 0), [items]);
-
-  const content = useMemo(() => {
-    if (loopsPageQ.isLoading) {
-      return (
-        <div className="text-sm text-muted-foreground">
-          {t("loops.loading", "Loading…")}
-        </div>
+  const goToPage = useCallback(
+    (nextPage: number) => {
+      navigate(
+        {
+          pathname: location.pathname,
+          search: writeLoopsSearch(location.search, { page: nextPage }),
+        },
+        { replace: false },
       );
-    }
+    },
+    [location.pathname, location.search, navigate],
+  );
 
-    if (loopsPageQ.isError) {
-      return (
-        <div className="text-sm text-muted-foreground">
-          {getErrorMessage(loopsPageQ.error)}
-        </div>
-      );
-    }
+  const setLoopStatus = useCallback(
+    async (loopId: string, status: "active" | "paused" | "archived") => {
+      setIsUpdatingLoop(true);
+      try {
+        if (status === "archived") {
+          await archiveLoopViaRest(loopId);
+        } else {
+          await updateLoopViaRest(loopId, { status });
+        }
+        await loadLoops();
+      } finally {
+        setIsUpdatingLoop(false);
+      }
+    },
+    [loadLoops],
+  );
 
-    if (total === 0) {
-      return (
-        <div className="text-sm text-muted-foreground">
-          {t("loops.empty", "No loops yet. Create your first loop.")}
-        </div>
-      );
-    }
+  const showFrom =
+    visibleLoops.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const showTo =
+    visibleLoops.length === 0 ? 0 : showFrom + pagedLoops.length - 1;
+  const isLoading = isLoadingLoops || isLoadingApplications;
+  const isFetching = isLoadingLoops || isUpdatingLoop;
+  const error = loopsError ?? statsError;
 
-    return (
-      <div className="space-y-4">
-        {/* Stat tiles */}
-        <div className="grid grid-cols-4 gap-4">
-          <StatTile
-            label={t("loops.statLoops", "Loops")}
-            value={total}
-            sub={t("loops.statLoopsSub", "Total active")}
-          />
-          <StatTile
-            label={t("loops.statMatches", "Matches")}
-            value={totalMatches}
-            sub={t("loops.statMatchesSub", "Across all loops")}
-          />
-          <StatTile
-            label={t("loops.statApplied", "Applied")}
-            value={totalApplied}
-            sub={t("loops.statAppliedSub", "Responded")}
-            accent
-          />
-          <StatTile
-            label={t("loops.statToday", "Today")}
-            value={totalToday}
-            sub={t("loops.statTodaySub", "New today")}
-            green={totalToday > 0}
-          />
-        </div>
-
-        {/* Loop cards */}
-        <div className="space-y-3">
-          {items.map((l) => (
-            <LoopCard
-              key={l.id}
-              loop={l as LoopCardItem}
-              onOpen={onOpenLoop}
-            />
-          ))}
-        </div>
-
-        <div className="grid grid-cols-3 items-center">
-          <div className="text-xs text-muted-foreground">
-            {t("loops.showing", "Showing {{from}}–{{to}} of {{total}}", {
-              from: showFrom,
-              to: showTo,
-              total,
-            })}
-          </div>
-
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={goToPage}
-            disabled={loopsPageQ.isFetching}
-            siblingCount={1}
-          />
-        </div>
-      </div>
-    );
-  }, [
-    loopsPageQ.isLoading,
-    loopsPageQ.isError,
-    loopsPageQ.error,
-    loopsPageQ.isFetching,
-    items,
+  const content = renderContent({
+    activeTab,
+    error,
+    isFetching,
+    isLoading,
+    onArchive: (id) => {
+      setLoopStatus(id, "archived").catch((error: unknown) => {
+        setStatsError(getErrorMessage(error));
+      });
+    },
+    onOpenApplications,
     onOpenLoop,
-    page,
+    onOpenMatches,
+    onAddApplication,
+    onImportVacancy,
+    onPageChange: goToPage,
+    onRestore: (id) => {
+      setLoopStatus(id, "active").catch((error: unknown) => {
+        setStatsError(getErrorMessage(error));
+      });
+    },
+    onTogglePause: (loop) => {
+      setLoopStatus(loop.id, isLoopPaused(loop) ? "active" : "paused").catch(
+        (error: unknown) => {
+          setStatsError(getErrorMessage(error));
+        },
+      );
+    },
+    page: safePage,
+    pagedLoops,
     showFrom,
     showTo,
+    statsById,
     t,
-    total,
+    total: visibleLoops.length,
     totalPages,
-    totalMatches,
-    totalApplied,
-    totalToday,
-    goToPage,
-  ]);
+  });
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Page header */}
       <div className="shrink-0 border-b border-border bg-background px-7 py-5">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
+            <div className="mb-1 flex items-center gap-2 text-[11.5px] text-subtle-foreground">
               <span>Loopboard</span>
               <span>/</span>
-              <span className="text-muted-foreground">{t("loops.listTitle", "Loops")}</span>
+              <span className="text-muted-foreground">
+                {t("loops.listTitle", "Loops")}
+              </span>
             </div>
-            <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
-              {t("loops.listTitle", "My Loops")}
+            <h1 className="text-[22px] font-semibold leading-none tracking-[-0.025em] text-foreground">
+              {t("loops.listTitle", "Loops")}
             </h1>
-            {t("loops.listSubtitle") ? (
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                {t("loops.listSubtitle", "Create a loop and track matches.")}
-              </p>
-            ) : null}
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              {t("loops.listSubtitle", "Create a loop and track matches.")}
+            </p>
           </div>
           <Button
             variant="default"
@@ -512,10 +647,65 @@ export function LoopsListView({
             {t("loops.newLoop", "New loop")}
           </Button>
         </div>
+
+        <div className="mt-4 flex w-fit items-center gap-1 rounded-lg bg-muted/50 p-1">
+          <TabButton
+            active={activeTab === "active"}
+            onClick={() => setTab("active")}
+          >
+            Active
+          </TabButton>
+          <TabButton
+            active={activeTab === "archive"}
+            onClick={() => setTab("archive")}
+          >
+            Archive
+          </TabButton>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-background">
-        <div className="p-7">
+        <div className="space-y-4 p-7">
+          <div className="grid grid-cols-4 gap-4">
+            <StatTile
+              label={t("loops.statLoops", "Loops")}
+              value={statsLoops.length}
+              sub="Active and paused"
+            />
+            <StatTile
+              label="Applications"
+              value={activeTotals.applications}
+              sub="Linked to visible active loops"
+            />
+            <StatTile
+              label={t("loops.statApplied", "Applied")}
+              value={activeTotals.applied}
+              sub="Applied status only"
+              accent
+            />
+            <StatTile
+              label="Interviews"
+              value={activeTotals.interview}
+              sub="Interview pipeline"
+            />
+            <StatTile
+              label={t("loops.statToday", "Today")}
+              value={activeTotals.today}
+              sub={t("loops.statTodaySub", "Due today")}
+              green={activeTotals.today > 0}
+            />
+            <StatTile
+              label="Follow-ups"
+              value={activeTotals.followUps}
+              sub="Due now"
+              green={activeTotals.followUps > 0}
+            />
+            <StatTile
+              label={t("loops.statMatches", "Matches")}
+              value={activeTotals.matches}
+              sub={t("loops.statMatchesSub", "Actionable system matches")}
+            />
+          </div>
           {content}
         </div>
       </div>
@@ -523,19 +713,181 @@ export function LoopsListView({
       <CreateLoopModal
         open={createOpen}
         onOpenChange={setCreateOpen}
+        onCreateLoop={createLoopViaRest}
         onCreated={(id) => {
-          cursorByPageRef.current = { 1: null };
-          setCursorId(null);
-
-          const nextSearch = writePageToSearch(location.search, 1);
+          void loadLoops();
           navigate(
-            { pathname: location.pathname, search: nextSearch },
+            {
+              pathname: location.pathname,
+              search: writeLoopsSearch(location.search, {
+                page: 1,
+                tab: "active",
+              }),
+            },
             { replace: true },
           );
-
           onOpenLoop(id);
         }}
       />
     </div>
   );
+}
+
+function TabButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: string;
+  onClick: () => void;
+}) {
+  const activeClass = active
+    ? "bg-background text-foreground shadow-sm"
+    : "text-muted-foreground hover:text-foreground";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors",
+        activeClass,
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
+
+function renderContent(params: {
+  activeTab: LoopsTab;
+  error: string | null;
+  isFetching: boolean;
+  isLoading: boolean;
+  onArchive: (id: string) => void;
+  onOpenApplications: (id: string) => void;
+  onOpenLoop: (id: string) => void;
+  onOpenMatches: (id: string) => void;
+  onAddApplication: (id: string) => void;
+  onImportVacancy: (id: string) => void;
+  onPageChange: (nextPage: number) => void;
+  onRestore: (id: string) => void;
+  onTogglePause: (loop: Loop) => void;
+  page: number;
+  pagedLoops: Loop[];
+  showFrom: number;
+  showTo: number;
+  statsById: ReturnType<typeof buildLoopStatsById>;
+  t: ReturnType<typeof useTranslation>["t"];
+  total: number;
+  totalPages: number;
+}) {
+  const {
+    activeTab,
+    error,
+    isFetching,
+    isLoading,
+    onArchive,
+    onOpenApplications,
+    onOpenLoop,
+    onOpenMatches,
+    onAddApplication,
+    onImportVacancy,
+    onPageChange,
+    onRestore,
+    onTogglePause,
+    page,
+    pagedLoops,
+    showFrom,
+    showTo,
+    statsById,
+    t,
+    total,
+    totalPages,
+  } = params;
+
+  if (isLoading) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        {t("loops.loading", "Loading…")}
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-sm text-muted-foreground">{error}</div>;
+  }
+
+  if (total === 0) {
+    let message = t("loops.empty", "No loops yet. Create your first loop.");
+    if (activeTab === "archive") message = "Архив пуст.";
+    return <div className="text-sm text-muted-foreground">{message}</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-3">
+        {pagedLoops.map((loop) => (
+          <LoopCard
+            key={loop.id}
+            loop={loop}
+            stats={getLoopStats(statsById, loop.id)}
+            busy={isFetching}
+            onArchive={onArchive}
+            onOpen={onOpenLoop}
+            onOpenApplications={onOpenApplications}
+            onOpenMatches={onOpenMatches}
+            onAddApplication={onAddApplication}
+            onImportVacancy={onImportVacancy}
+            onRestore={onRestore}
+            onTogglePause={onTogglePause}
+          />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-3 items-center">
+        <div className="text-xs text-muted-foreground">
+          {t("loops.showing", "Showing {{from}}–{{to}} of {{total}}", {
+            from: showFrom,
+            to: showTo,
+            total,
+          })}
+        </div>
+        {shouldShowLoopsPagination(total, PAGE_SIZE) ? (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+            disabled={isFetching}
+            siblingCount={1}
+          />
+        ) : (
+          <div />
+        )}
+      </div>
+    </div>
+  );
+}
+
+async function loadAllActiveApplications(userId: string): Promise<AppRow[]> {
+  const rows: AppRow[] = [];
+  let offset = 0;
+  let total = 0;
+
+  do {
+    const page = await listApplicationsViaRest(userId, {
+      archived: false,
+      limit: APPLICATIONS_PAGE_SIZE,
+      offset,
+      sort: "updated_at_desc",
+    });
+    rows.push(...page.items);
+    total = page.total;
+    offset = page.offset + page.limit;
+
+    if (page.items.length === 0) break;
+  } while (offset < total);
+
+  return rows;
 }

@@ -1,0 +1,1 @@
+"""Saved vacancy analysis module."""

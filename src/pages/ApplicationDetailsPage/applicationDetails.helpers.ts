@@ -220,6 +220,12 @@ export function errorMessage(error: unknown): string {
   }
 }
 
+export function getApplicationVacancyDescription(
+  app: ApplicationDoc | null,
+): string {
+  return app?.vacancy?.rawDescription?.trim() ?? "";
+}
+
 export function buildApplicationTitle(app: ApplicationDoc | null) {
   if (!app) {
     return "";

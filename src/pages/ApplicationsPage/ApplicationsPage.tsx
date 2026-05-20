@@ -1,11 +1,17 @@
 import { ChevronDown, Filter, Plus, Search } from "lucide-react";
 import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuthSelectors } from "src/entities/auth/model/hooks/useAuthSelectors";
 import { db } from "src/shared/config/firebase/firebase";
 
 import { createApplicationsRepo } from "./api/applicationsRepo";
+import {
+  readStoredApplicationsDisplayMode,
+  writeStoredApplicationsDisplayMode,
+  type ApplicationsDisplayMode,
+} from "./model/applicationsPage.helpers";
 import { useApplicationsPage } from "./model/useApplicationsPage";
 import { ApplicationsListCard, ViewToggle } from "./ui/ApplicationsListCard";
 import { ApplicationsToolbar } from "./ui/ApplicationsToolbar";
@@ -23,10 +29,17 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
 export default function ApplicationsPage() {
   const { t } = useTranslation();
   const { userId, isAuthReady } = useAuthSelectors();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const loopFilterId = searchParams.get("loopId");
+  const initialCreateMode = searchParams.get("mode");
+  const shouldOpenCreateDialog = searchParams.get("create") === "1";
   const repo = useMemo(() => createApplicationsRepo(db), []);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [displayMode, setDisplayMode] = useState<"list" | "cards">("list");
+  const [displayMode, setDisplayModeState] = useState<ApplicationsDisplayMode>(() =>
+    readStoredApplicationsDisplayMode() ?? "list",
+  );
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("newest");
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -51,15 +64,51 @@ export default function ApplicationsPage() {
     canSubmit,
     isCreating,
     onCreate,
+    activeLoops,
+    loopFilter,
+    loopTitleById,
+    isLoadingLoops,
+    selectLoopById,
 
     allList,
     list,
     statusCounts,
+    viewCounts,
+    pageTotal,
+    pageLimit,
+    pageOffset,
+    favoriteOnly,
+    setFavoriteOnly,
+    showArchived,
+    setShowArchived,
+    goToPreviousPage,
+    goToNextPage,
     isLoadingList,
     error,
 
     onChangeStatus,
-  } = useApplicationsPage({ userId, isAuthReady, repo });
+    onToggleFavorite,
+    onArchiveApplication,
+    onRestoreApplication,
+  } = useApplicationsPage({ userId, isAuthReady, repo, loopFilterId });
+
+
+  function setDisplayMode(mode: ApplicationsDisplayMode) {
+    setDisplayModeState(mode);
+    writeStoredApplicationsDisplayMode(mode);
+  }
+
+  function closeCreateDialog() {
+    setIsCreateOpen(false);
+    const next = new URLSearchParams(searchParams);
+    next.delete("create");
+    next.delete("mode");
+    setSearchParams(next, { replace: true });
+  }
+
+  useEffect(() => {
+    if (shouldOpenCreateDialog) setIsCreateOpen(true);
+  }, [shouldOpenCreateDialog]);
 
   // Close sort dropdown on outside click
   useEffect(() => {
@@ -105,6 +154,12 @@ export default function ApplicationsPage() {
     { key: "today" as const, label: t("applicationsPage.view.today", "Today") },
     { key: "followups" as const, label: t("applicationsPage.view.followups", "Follow-ups") },
   ];
+
+  function clearLoopFilter() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("loopId");
+    setSearchParams(next, { replace: true });
+  }
 
   function toggleCompany(name: string) {
     setSelectedCompanies((prev) =>
@@ -207,6 +262,19 @@ export default function ApplicationsPage() {
                 )}
               </div>
 
+              <button
+                type="button"
+                onClick={() => setFavoriteOnly(!favoriteOnly)}
+                className={[
+                  "flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12.5px] font-medium transition-colors",
+                  favoriteOnly
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:bg-muted",
+                ].join(" ")}
+              >
+                ★ Избранные
+              </button>
+
               {/* Sort dropdown */}
               <div ref={sortRef} className="relative">
                 <button
@@ -253,6 +321,48 @@ export default function ApplicationsPage() {
             </div>
           </div>
 
+          {view === "pipeline" ? (
+            <div className="mt-3 flex items-center gap-1 rounded-lg bg-muted/50 p-1 w-fit">
+              <button
+                type="button"
+                onClick={() => setShowArchived(false)}
+                className={[
+                  "rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors",
+                  !showArchived
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                Активные
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowArchived(true)}
+                className={[
+                  "rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors",
+                  showArchived
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                Архив
+              </button>
+            </div>
+          ) : null}
+
+          {loopFilterId ? (
+            <div className="mt-3 flex w-fit items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-[12.5px] text-primary">
+              <span>Направление поиска: {loopFilter?.name ?? (isLoadingLoops ? "загружается…" : "Unknown loop")}</span>
+              <button
+                type="button"
+                onClick={clearLoopFilter}
+                className="rounded px-1.5 py-0.5 text-[11px] hover:bg-primary/10"
+              >
+                Сбросить
+              </button>
+            </div>
+          ) : null}
+
           {/* View mode switcher — underline tab style */}
           <div className="flex items-center gap-0.5 mt-3 mb-0">
             {VIEW_MODES.map((vm) => {
@@ -271,6 +381,14 @@ export default function ApplicationsPage() {
                   ].join(" ")}
                 >
                   {vm.label}
+                  <span
+                    className={[
+                      "rounded-full border border-border bg-muted px-1.5 py-px text-[10.5px] tabular-nums",
+                      isActive ? "text-foreground" : "text-muted-foreground/70",
+                    ].join(" ")}
+                  >
+                    {viewCounts[vm.key]}
+                  </span>
                 </button>
               );
             })}
@@ -282,16 +400,46 @@ export default function ApplicationsPage() {
             onChangeStatus={setActiveStatus}
             isLoading={isLoadingList}
             statusCounts={statusCounts}
+            viewCount={list.length}
           />
         </div>
       </div>
 
       {/* Meta bar: between header and list */}
       <div className="flex items-center justify-between gap-3 px-7 py-3 border-b border-border bg-background shrink-0">
-        <span className="text-[13px] text-muted-foreground">
-          Показано <span className="font-semibold tabular-nums text-foreground">{filteredCount}</span> из {list.length}
-        </span>
-        <ViewToggle value={displayMode} onChange={setDisplayMode} />
+        <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
+          <span>
+            Показано <span className="font-semibold tabular-nums text-foreground">{filteredCount}</span> из {view === "pipeline" ? pageTotal : list.length}
+          </span>
+          {view === "pipeline" && pageTotal > 0 ? (
+            <span className="text-[12px]">
+              {pageOffset + 1}–{Math.min(pageOffset + pageLimit, pageTotal)} из {pageTotal}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          {view === "pipeline" ? (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={pageOffset <= 0 || isLoadingList}
+                onClick={goToPreviousPage}
+                className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground disabled:opacity-40"
+              >
+                Назад
+              </button>
+              <button
+                type="button"
+                disabled={pageOffset + pageLimit >= pageTotal || isLoadingList}
+                onClick={goToNextPage}
+                className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground disabled:opacity-40"
+              >
+                Вперёд
+              </button>
+            </div>
+          ) : null}
+          <ViewToggle value={displayMode} onChange={setDisplayMode} />
+        </div>
       </div>
 
       {/* Scrollable content */}
@@ -309,10 +457,15 @@ export default function ApplicationsPage() {
             query={query}
             sortBy={sortBy}
             onChangeStatus={onChangeStatus}
+            onToggleFavorite={onToggleFavorite}
+            onArchiveApplication={showArchived ? undefined : onArchiveApplication}
+            onRestoreApplication={showArchived ? onRestoreApplication : undefined}
+            isArchivedView={showArchived}
             displayMode={displayMode}
             onDisplayModeChange={setDisplayMode}
             selectedCompanies={selectedCompanies}
             onFilteredCount={setFilteredCount}
+            loopTitleById={loopTitleById}
           />
         </div>
       </div>
@@ -320,12 +473,21 @@ export default function ApplicationsPage() {
       {/* Create application dialog */}
       <CreateApplicationDialog
         isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+        onClose={closeCreateDialog}
         form={form}
         onChange={updateForm}
         onCreate={onCreate}
         canSubmit={canSubmit}
         isCreating={isCreating}
+        activeLoops={activeLoops}
+        isLoadingLoops={isLoadingLoops}
+        onSelectLoop={selectLoopById}
+        initialLoopId={loopFilterId}
+        initialMode={initialCreateMode}
+        onCreateLoopRequested={() => {
+          setIsCreateOpen(false);
+          navigate("/dashboard/loops");
+        }}
       />
     </div>
   );

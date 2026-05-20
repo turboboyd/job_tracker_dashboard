@@ -74,6 +74,12 @@ export const PLATFORM_REGISTRY = [
   p("gigajob", "Gigajob", "germany", buildGigajobUrl),
   p("jooble", "Jooble", "germany", buildJoobleUrl),
   p("adzuna", "Adzuna", "germany", buildAdzunaUrl),
+  p("greenhouse", "Greenhouse company boards", "germany", (f) =>
+    buildGoogleSiteUrl("boards.greenhouse.io", f)
+  ),
+  p("lever", "Lever company boards", "germany", (f) =>
+    buildGoogleSiteUrl("jobs.lever.co", f)
+  ),
   p("glassdoor", "Glassdoor", "germany", (f) =>
     buildGoogleSiteUrl("glassdoor.de", f)
   ),

@@ -3,7 +3,7 @@ export const LOOPS_COLLECTION = "loops";
 export const APPLICATIONS_COLLECTION = "applications";
 
 export const DEMO_LOOP_ID = "demoLoop";
-export const DEMO_LOOP_NAME = "Demo loop (autocreated)";
+export const DEMO_LOOP_NAME = "Example loop";
 export const DEMO_SOURCE = "loop";
 
 export const LOCATION_FRANKFURT = "Frankfurt am Main";

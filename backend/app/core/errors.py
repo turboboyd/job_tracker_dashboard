@@ -44,7 +44,11 @@ async def http_exception_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
-        content=_error_body(str(exc.status_code), exc.detail or "HTTP error", _rid(request)),
+        content=_error_body(
+            str(exc.status_code),
+            exc.detail or "HTTP error",
+            _rid(request),
+        ),
     )
 
 
@@ -73,6 +77,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     # via its own transport send, bypassing the send_with_rid wrapper.
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=_error_body("INTERNAL_ERROR", "An unexpected error occurred", request_id),
+        content=_error_body(
+            "INTERNAL_ERROR",
+            "An unexpected error occurred",
+            request_id,
+        ),
         headers={"X-Request-ID": request_id},
     )

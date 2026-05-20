@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   type ApplicationDoc,
   type ProcessStatus,
+  createApplicationsRepo,
   queryFollowUpsDue,
-  queryPipelineByStatus,
   queryTodayTopPriority,
 } from "src/features/applications";
 import { db } from "src/shared/config/firebase/firestore";
@@ -23,11 +23,12 @@ async function fetchList(params: {
   view: ViewMode;
   activeStatus: ProcessStatus;
   limit: number;
+  repo: ReturnType<typeof createApplicationsRepo>;
 }): Promise<ListResult> {
-  const { userId, view, activeStatus, limit } = params;
+  const { userId, view, activeStatus, limit, repo } = params;
 
   if (view === "pipeline") {
-    return { rows: await queryPipelineByStatus(db, userId, activeStatus, limit) };
+    return { rows: await repo.queryPipelineByStatus(userId, activeStatus, limit) };
   }
 
   if (view === "today") {
@@ -54,6 +55,8 @@ export function useApplicationsList(params: {
     onError,
   } = params;
 
+  const repo = useMemo(() => createApplicationsRepo(db), []);
+
   const [list, setList] = useState<AppRow[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
 
@@ -62,7 +65,7 @@ export function useApplicationsList(params: {
 
     setIsLoadingList(true);
     try {
-      const res = await fetchList({ userId, view, activeStatus, limit });
+      const res = await fetchList({ userId, view, activeStatus, limit, repo });
       setList(res.rows);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
@@ -70,7 +73,7 @@ export function useApplicationsList(params: {
     } finally {
       setIsLoadingList(false);
     }
-  }, [userId, view, activeStatus, limit, onError]);
+  }, [userId, view, activeStatus, limit, onError, repo]);
 
   useEffect(() => {
     if (!isAuthReady || !userId) return;

@@ -3,6 +3,7 @@
 Uses a real PostgreSQL database. Firebase auth and storage are mocked via
 dependency_overrides — no credentials or real filesystem outside tmp_path.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,13 +14,12 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-pytestmark = pytest.mark.asyncio(loop_scope="session")
-
-from app.auth.firebase import DecodedFirebaseToken, IFirebaseVerifier, get_verifier
+from app.auth.firebase import DecodedFirebaseToken, get_verifier
 from app.db.session import get_db
 from app.main import create_app
 from app.modules.documents.storage import LocalStorageAdapter, get_storage_adapter
 
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 # ── Mock helpers ────────────────────────────────────────────────────────────────
 
@@ -66,7 +66,9 @@ def _make_app(
 
     app.dependency_overrides[get_db] = _db
     app.dependency_overrides[get_verifier] = lambda: _MockVerifier(user_data)
-    app.dependency_overrides[get_storage_adapter] = lambda: LocalStorageAdapter(storage_dir)
+    app.dependency_overrides[get_storage_adapter] = (
+        lambda: LocalStorageAdapter(storage_dir)
+    )
     return app
 
 
@@ -96,9 +98,19 @@ async def client_b(db_session, tmp_path):
 @pytest_asyncio.fixture
 async def app_id_a(client_a):
     """Application owned by User A."""
+    loop = await client_a.post(
+        "/api/v1/loops",
+        json={"title": "Documents Loop", "target_role": "Backend Engineer"},
+        headers=_BEARER,
+    )
+    assert loop.status_code == 201
     r = await client_a.post(
         "/api/v1/applications",
-        json={"company_name": "Acme", "role_title": "Engineer"},
+        json={
+            "company_name": "Acme",
+            "role_title": "Engineer",
+            "loop_id": loop.json()["id"],
+        },
         headers=_BEARER,
     )
     assert r.status_code == 201
@@ -264,7 +276,12 @@ async def test_delete_then_get_returns_404(client_a, app_id_a):
 # ── Ownership isolation ───────────────────────────────────────────────────────────
 
 
-async def test_other_user_cannot_get_document(client_a, client_b, app_id_a, uploaded_doc):
+async def test_other_user_cannot_get_document(
+    client_a,
+    client_b,
+    app_id_a,
+    uploaded_doc,
+):
     doc_id = uploaded_doc["id"]
     r = await client_b.get(f"/api/v1/documents/{doc_id}", headers=_BEARER)
     assert r.status_code == 404

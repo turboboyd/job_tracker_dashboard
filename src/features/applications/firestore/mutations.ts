@@ -17,7 +17,6 @@ import {
   buildStatusUpdatePatch,
   resolveEffectiveLoopId,
 } from "./mutations.builders";
-import { ensureManualLoopDoc } from "./mutations.helpers";
 import type { CreateApplicationInput } from "./mutations.types";
 import { getApplication } from "./queries";
 import { applicationsColRef, applicationDocRef } from "./refs";
@@ -25,6 +24,7 @@ import type {
   ApplicationDoc,
   FeedbackType,
   HistoryEventDoc,
+  ReminderEntry,
   ProcessStatus,
   RejectionReasonCode,
   Sentiment,
@@ -59,10 +59,6 @@ export async function createApplication(
   await ensureUserDoc(db, userId);
 
   const effectiveLoopId = resolveEffectiveLoopId(input.loopId);
-
-  if (!input.loopId) {
-    await ensureManualLoopDoc(db, userId, effectiveLoopId);
-  }
 
   const appId = doc(applicationsColRef(db, userId)).id;
   const appRef = applicationDocRef(db, userId, appId);
@@ -212,6 +208,17 @@ interface ReminderInput {
  * Also syncs `nextActionAt`/`nextActionText` to the earliest reminder for backward compat.
  * Pass an empty array to clear all reminders.
  */
+
+function buildReminderHistoryComment(
+  earliest: ReminderEntry | undefined,
+): string {
+  if (!earliest) return "All reminders cleared";
+
+  const reminderAt = earliest.at.toDate().toLocaleString();
+  const reminderText = earliest.text ? ` — ${earliest.text}` : "";
+  return `Next: ${reminderAt}${reminderText}`;
+}
+
 export async function setReminders(
   db: Firestore,
   userId: string,
@@ -249,9 +256,7 @@ export async function setReminders(
       fieldPath: "process.reminders",
       oldValue: (current.process.reminders ?? []).length,
       newValue: sorted.length,
-      comment: earliest
-        ? `Next: ${earliest.at.toDate().toLocaleString()}${earliest.text ? ` — ${earliest.text}` : ""}`
-        : "All reminders cleared",
+      comment: buildReminderHistoryComment(earliest),
     },
   ]);
 }
