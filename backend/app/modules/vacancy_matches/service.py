@@ -195,6 +195,111 @@ class VacancyMatchesService:
         )
         return await self._repo.create(match), True
 
+    async def save_preview_as_application(
+        self,
+        user: User,
+        loop_id: str,
+        payload: VacancyMatchFromPreviewRequest,
+    ) -> tuple[Application, VacancyMatch | None, bool, bool]:
+        await self._loops.require_owned_active(user, loop_id)
+
+        source = get_discovery_source(payload.source_id)
+        if source is None:
+            raise VacancyMatchPreviewValidationError("source_id is not registered")
+        if not source.enabled:
+            raise VacancyMatchPreviewValidationError("source_id is disabled")
+
+        normalized_url = normalize_source_url(payload.source_url)
+        external_id = payload.external_id.strip() if payload.external_id else None
+
+        # Dedup level 1: source + external_id
+        if external_id:
+            existing_match = await self._repo.get_by_source_external_id(
+                user_id=user.id,
+                loop_id=loop_id,
+                source=payload.source_id,
+                external_id=external_id,
+            )
+            if existing_match is not None:
+                if existing_match.application_id is not None:
+                    existing_app = await self._apps_repo.get_by_id(existing_match.application_id)
+                    if existing_app is not None and existing_app.user_id == user.id:
+                        return existing_app, existing_match, False, True
+                app = await self._make_application(user, loop_id, payload, normalized_url)
+                match = await self._repo.patch(
+                    existing_match, {"status": "converted", "application_id": app.id}
+                )
+                return app, match, True, False
+
+        # Dedup level 2: normalized source_url
+        source_matches = await self._repo.list_for_source(
+            user_id=user.id,
+            loop_id=loop_id,
+            source=payload.source_id,
+        )
+        for existing_match in source_matches:
+            try:
+                existing_normalized = normalize_source_url(existing_match.source_url)
+            except VacancyMatchPreviewValidationError:
+                existing_normalized = existing_match.source_url
+            if existing_normalized == normalized_url:
+                if existing_match.application_id is not None:
+                    existing_app = await self._apps_repo.get_by_id(existing_match.application_id)
+                    if existing_app is not None and existing_app.user_id == user.id:
+                        return existing_app, existing_match, False, True
+                app = await self._make_application(user, loop_id, payload, normalized_url)
+                match = await self._repo.patch(
+                    existing_match, {"status": "converted", "application_id": app.id}
+                )
+                return app, match, True, False
+
+        # No duplicate — create application and link a new match
+        app = await self._make_application(user, loop_id, payload, normalized_url)
+        match = VacancyMatch(
+            user_id=user.id,
+            loop_id=loop_id,
+            source_url=normalized_url,
+            source=payload.source_id,
+            external_id=external_id,
+            company_name=payload.company,
+            role_title=payload.title or "Вакансия из предварительного просмотра",
+            location_text=payload.location,
+            vacancy_description=payload.description,
+            raw_metadata=sanitize_raw_metadata(
+                {
+                    **payload.raw_metadata,
+                    **({"posted_at": payload.posted_at} if payload.posted_at else {}),
+                }
+            ),
+            confidence=payload.confidence,
+            warnings=[],
+            status="converted",
+            application_id=app.id,
+        )
+        return app, await self._repo.create(match), True, False
+
+    async def _make_application(
+        self,
+        user: User,
+        loop_id: str,
+        payload: VacancyMatchFromPreviewRequest,
+        normalized_url: str,
+    ) -> Application:
+        return await self._apps.create(
+            user,
+            ApplicationCreate(
+                company_name=payload.company or "Компания не указана",
+                role_title=payload.title or "Вакансия из предварительного просмотра",
+                location_text=payload.location,
+                vacancy_url=normalized_url,
+                source=payload.source_id,
+                vacancy_description=payload.description,
+                loop_id=loop_id,
+                has_loop=True,
+                status="SAVED",
+            ),
+        )
+
     async def create_preview_ignore(
         self,
         user: User,

@@ -130,6 +130,14 @@ class VacancyMatchFromPreviewResponse(BaseModel):
     duplicate: bool
 
 
+class ApplicationFromPreviewResponse(BaseModel):
+    application: ApplicationRead
+    match_id: UUID | None = None
+    application_id: UUID
+    created: bool
+    duplicate: bool
+
+
 class VacancyPreviewIgnoreRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -12,7 +12,7 @@ import {
 import {
   ignoreDiscoveryPreviewViaRest,
   listDiscoveryPreviewIgnoresViaRest,
-  saveDiscoveryPreviewAsMatchViaRest,
+  saveDiscoveryPreviewAsApplicationViaRest,
   unignoreDiscoveryPreviewViaRest,
   type VacancyPreviewIgnore,
 } from "src/features/vacancyMatches";
@@ -707,7 +707,7 @@ export function MatchesDiscoveryPreviewPanel({
     setSaveErrors((current) => ({ ...current, [key]: null }));
 
     try {
-      const response = await saveDiscoveryPreviewAsMatchViaRest(loopId, {
+      const response = await saveDiscoveryPreviewAsApplicationViaRest(loopId, {
         sourceId,
         externalId: item.externalId,
         sourceUrl: item.sourceUrl,

@@ -679,7 +679,7 @@ def test_openapi_version_present(schema):
 
 
 def test_openapi_path_count(paths):
-    assert len(paths) == 33, f"Expected 33 paths, got {len(paths)}: {sorted(paths)}"
+    assert len(paths) == 34, f"Expected 34 paths, got {len(paths)}: {sorted(paths)}"
 
 
 # ── ApplicationListResponse envelope ──────────────────────────────────────────

@@ -62,6 +62,21 @@ export interface VacancyMatchFromPreviewResponseDto {
   duplicate: boolean;
 }
 
+export interface ApplicationFromPreviewResponseDto {
+  application: { id: string; [key: string]: unknown };
+  match_id: string | null;
+  application_id: string;
+  created: boolean;
+  duplicate: boolean;
+}
+
+export interface SaveDiscoveryPreviewAsApplicationResult {
+  applicationId: string;
+  matchId: string | null;
+  created: boolean;
+  duplicate: boolean;
+}
+
 export interface VacancyPreviewIgnoreDto {
   id: string;
   user_id: string;
@@ -363,5 +378,16 @@ export function mapPatchVacancyMatchInputToDto(input: PatchVacancyMatchInput): R
       ? { vacancy_description: input.vacancyDescription }
       : {}),
     ...(input.status !== undefined ? { status: input.status } : {}),
+  };
+}
+
+export function mapApplicationFromPreviewResponseDto(
+  dto: ApplicationFromPreviewResponseDto,
+): SaveDiscoveryPreviewAsApplicationResult {
+  return {
+    applicationId: dto.application_id,
+    matchId: dto.match_id,
+    created: dto.created,
+    duplicate: dto.duplicate,
   };
 }
