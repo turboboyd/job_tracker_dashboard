@@ -3,15 +3,22 @@
 from app.db.models.activity_event import ActivityEvent  # noqa: F401
 from app.db.models.application import Application  # noqa: F401
 from app.db.models.application_history import ApplicationHistory  # noqa: F401
-from app.db.models.cycle import Cycle  # noqa: F401
 from app.db.models.firestore_migration_log import FirestoreMigrationLog  # noqa: F401
+from app.db.models.loop import Loop  # noqa: F401
 from app.db.models.user import User  # noqa: F401
+from app.db.models.vacancy_analysis import AnalysisUsageDaily, VacancyMatchAnalysis  # noqa: F401
+from app.db.models.vacancy_match import VacancyMatch  # noqa: F401
+from app.db.models.vacancy_preview_ignore import VacancyPreviewIgnore  # noqa: F401
 
 __all__ = [
     "ActivityEvent",
+    "AnalysisUsageDaily",
     "Application",
     "ApplicationHistory",
-    "Cycle",
     "FirestoreMigrationLog",
+    "Loop",
     "User",
+    "VacancyMatchAnalysis",
+    "VacancyMatch",
+    "VacancyPreviewIgnore",
 ]
