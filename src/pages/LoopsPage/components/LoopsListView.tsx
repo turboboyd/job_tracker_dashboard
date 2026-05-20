@@ -4,14 +4,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "src/app/store/hooks";
 import { type Loop, CreateLoopModal } from "src/entities/loop";
+import { joinTitles } from "src/entities/loop/lib/format";
+import { listApplicationsViaRest } from "src/features/applications/rest/queries";
 import {
   archiveLoopViaRest,
   createLoopViaRest,
   listLoopsViaRest,
   updateLoopViaRest,
 } from "src/features/loops";
-import { joinTitles } from "src/entities/loop/lib/format";
-import { listApplicationsViaRest } from "src/features/applications/rest/queries";
 import { listLoopVacancyMatchesViaRest, type VacancyMatch } from "src/features/vacancyMatches";
 import type { AppRow } from "src/pages/ApplicationsPage/model/types";
 import {
@@ -153,10 +153,10 @@ function LoopCard({
   busy,
   onArchive,
   onOpen,
-  onOpenApplications,
+  onOpenApplications: _onOpenApplications,
   onOpenMatches,
-  onAddApplication,
-  onImportVacancy,
+  onAddApplication: _onAddApplication,
+  onImportVacancy: _onImportVacancy,
   onRestore,
   onTogglePause,
 }: LoopCardProps) {
@@ -187,7 +187,8 @@ function LoopCard({
       }}
       className="cursor-pointer select-none rounded-[14px] border border-border bg-card p-5 transition-[background] duration-[120ms] hover:bg-muted focus:outline-none focus:ring-2 focus:ring-border"
     >
-      <div className="grid grid-cols-[1fr_auto_auto] items-start gap-5">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_minmax(0,1fr)] items-center gap-6">
+        {/* Col 1: status + name + role */}
         <div className="min-w-0">
           <div className="mb-1.5 flex items-center gap-2">
             <LoopStatusBadge loop={loop} />
@@ -205,7 +206,8 @@ function LoopCard({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-1.5 pt-0.5">
+        {/* Col 2: location tags */}
+        <div className="flex min-w-0 flex-wrap gap-1.5">
           {loop.location ? (
             <span className="inline-flex items-center whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
               {loop.location}
@@ -221,53 +223,40 @@ function LoopCard({
           </span>
         </div>
 
-        <div className="flex flex-col items-end gap-2 pt-0.5">
-          <div className="flex items-center gap-4">
-            <LoopMetric label="Applications" value={stats.applications} />
-            <LoopMetric label="Saved" value={stats.saved} />
-            <LoopMetric
-              label={t("loops.statApplied", "Applied")}
-              value={stats.applied}
-              accent
-            />
-            <LoopMetric label="Interview" value={stats.interview} />
-            <LoopMetric label="Offer" value={stats.offer} />
-            <LoopMetric label="Rejected" value={stats.rejected} />
-            <LoopMetric
-              label={t("loops.statToday", "Today")}
-              value={stats.today}
-              green={stats.today > 0}
-            />
-            <LoopMetric
-              label="Follow-ups"
-              value={stats.followUps}
-              green={stats.followUps > 0}
-            />
-            <LoopMetric
-              label={t("loops.statMatches", "Matches")}
-              value={stats.matches}
-            />
+        {/* Col 3: metrics + actions */}
+        <div className="flex flex-col items-end gap-3">
+          {/* 3 key metrics */}
+          <div className="flex items-start gap-5">
+            <div className="flex flex-col items-center">
+              <span className="text-[18px] font-semibold leading-none tabular-nums text-foreground">
+                {stats.matches}
+              </span>
+              <span className="mt-0.5 text-[10.5px] text-muted-foreground">
+                {t("loops.statMatches", "Matches")}
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className="text-[18px] font-semibold leading-none tabular-nums text-primary">
+                {stats.applied}
+              </span>
+              <span className="mt-0.5 text-[10.5px] text-muted-foreground">
+                {t("loops.statApplied", "Applied")}
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <span className={`text-[18px] font-semibold leading-none tabular-nums ${stats.today > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+                +{stats.today}
+              </span>
+              <span className="mt-0.5 text-[10.5px] text-muted-foreground">
+                {t("loops.statToday", "Today")}
+              </span>
+            </div>
           </div>
 
+          {/* Primary actions */}
           <div className="flex flex-wrap justify-end gap-1.5">
-            <LoopActionButton onClick={() => onOpen(loop.id)}>
-              {t("loops.open", "Open")}
-            </LoopActionButton>
-            <LoopActionButton onClick={() => onOpenApplications(loop.id)}>
-              View applications
-            </LoopActionButton>
-            {!archived ? (
-              <>
-                <LoopActionButton onClick={() => onAddApplication(loop.id)}>
-                  Add application
-                </LoopActionButton>
-                <LoopActionButton onClick={() => onImportVacancy(loop.id)}>
-                  Import URL as application
-                </LoopActionButton>
-              </>
-            ) : null}
             <LoopActionButton onClick={() => onOpenMatches(loop.id)}>
-              Matches
+              {t("loops.statMatches", "Matches")}
             </LoopActionButton>
             {!archived ? (
               <LoopActionButton
@@ -282,7 +271,7 @@ function LoopCard({
                 disabled={busy}
                 onClick={() => onRestore(loop.id)}
               >
-                Восстановить
+                Restore
               </LoopActionButton>
             ) : null}
             {!archived ? (
@@ -290,7 +279,7 @@ function LoopCard({
                 disabled={busy}
                 onClick={() => onArchive(loop.id)}
               >
-                Архивировать
+                Archive
               </LoopActionButton>
             ) : null}
           </div>
@@ -300,32 +289,6 @@ function LoopCard({
   );
 }
 
-function LoopMetric({
-  accent,
-  green,
-  label,
-  value,
-}: {
-  accent?: boolean;
-  green?: boolean;
-  label: string;
-  value: number;
-}) {
-  const valueClass = getMetricValueClass({ accent, green });
-
-  return (
-    <div className="flex flex-col items-center">
-      <span
-        className={`text-[18px] font-bold leading-none tabular-nums ${valueClass}`}
-      >
-        {value}
-      </span>
-      <span className="mt-0.5 text-[10.5px] text-muted-foreground">
-        {label}
-      </span>
-    </div>
-  );
-}
 
 function getPauseActionLabel(loop: Loop): string {
   if (isLoopPaused(loop)) return "Resume";
@@ -666,44 +629,28 @@ export function LoopsListView({
 
       <div className="flex-1 overflow-y-auto bg-background">
         <div className="space-y-4 p-7">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-3.5">
             <StatTile
               label={t("loops.statLoops", "Loops")}
               value={statsLoops.length}
-              sub="Active and paused"
-            />
-            <StatTile
-              label="Applications"
-              value={activeTotals.applications}
-              sub="Linked to visible active loops"
-            />
-            <StatTile
-              label={t("loops.statApplied", "Applied")}
-              value={activeTotals.applied}
-              sub="Applied status only"
-              accent
-            />
-            <StatTile
-              label="Interviews"
-              value={activeTotals.interview}
-              sub="Interview pipeline"
-            />
-            <StatTile
-              label={t("loops.statToday", "Today")}
-              value={activeTotals.today}
-              sub={t("loops.statTodaySub", "Due today")}
-              green={activeTotals.today > 0}
-            />
-            <StatTile
-              label="Follow-ups"
-              value={activeTotals.followUps}
-              sub="Due now"
-              green={activeTotals.followUps > 0}
+              sub={`Active: ${statsLoops.filter((l) => getLoopStatus(l) === "active").length}`}
             />
             <StatTile
               label={t("loops.statMatches", "Matches")}
               value={activeTotals.matches}
-              sub={t("loops.statMatchesSub", "Actionable system matches")}
+              sub={t("loops.statMatchesSub", "System matches")}
+            />
+            <StatTile
+              label={t("loops.statApplied", "Applied")}
+              value={activeTotals.applied}
+              sub="From all loops"
+              accent
+            />
+            <StatTile
+              label={t("loops.statToday", "Today")}
+              value={activeTotals.today}
+              sub={t("loops.statTodaySub", "Fresh today")}
+              green={activeTotals.today > 0}
             />
           </div>
           {content}

@@ -1,21 +1,14 @@
 import type { ReactNode } from "react";
 
-import { Card } from "src/shared/ui";
-
 interface MatchesFiltersCardProps {
   children: ReactNode;
 }
 
 export function MatchesFiltersCard({ children }: MatchesFiltersCardProps) {
   return (
-    <Card
-      variant="default"
-      padding="sm"
-      shadow="sm"
-      className="space-y-md overflow-visible"
-    >
+    <div className="shrink-0 border-b border-border bg-background px-7 py-3 space-y-3">
       {children}
-    </Card>
+    </div>
   );
 }
 

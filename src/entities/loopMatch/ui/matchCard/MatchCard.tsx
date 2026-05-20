@@ -17,16 +17,10 @@ type MatchCardProps = {
   onEdit?: (matchId: LoopMatch["id"]) => void;
 };
 
-function scoreColor(score: number): string {
-  if (score >= 85) return "bg-emerald-500";
-  if (score >= 70) return "bg-primary";
-  return "bg-muted-foreground/40";
-}
-
-function scoreTextColor(score: number): string {
-  if (score >= 85) return "text-emerald-600";
-  if (score >= 70) return "text-primary";
-  return "text-muted-foreground";
+function scoreBadgeClass(score: number): string {
+  if (score >= 85) return "border-primary/30 bg-primary/10 text-primary";
+  if (score >= 70) return "border-border bg-muted text-foreground";
+  return "border-border bg-muted text-muted-foreground";
 }
 
 export function MatchCard({
@@ -76,8 +70,6 @@ export function MatchCard({
     return 50 + (h % 51); // 50–100
   }, [match.id]);
 
-  const scoreWidth = Math.round((score / 100) * 36);
-
   return (
     <div
       className="flex items-center gap-3.5 px-[18px] py-3.5 border-b border-border last:border-b-0 hover:bg-muted transition-[background] duration-[120ms] cursor-pointer"
@@ -107,17 +99,9 @@ export function MatchCard({
         {salaryText}
       </div>
 
-      {/* Match bar + score */}
-      <div className="shrink-0 flex flex-col items-center gap-0.5">
-        <div className="w-9 h-1 rounded-full bg-muted overflow-hidden">
-          <div
-            className={`h-full rounded-full ${scoreColor(score)}`}
-            style={{ width: `${scoreWidth}px` }}
-          />
-        </div>
-        <span className={`text-[11px] font-medium tabular-nums ${scoreTextColor(score)}`}>
-          {score}
-        </span>
+      {/* Match score badge */}
+      <div className={`shrink-0 flex h-9 w-9 items-center justify-center rounded-[7px] border text-[13px] font-semibold tabular-nums leading-none ${scoreBadgeClass(score)}`}>
+        {score}
       </div>
 
       {/* Status menu (inline, compact) */}
