@@ -1,5 +1,5 @@
 import { RefreshCw, Sparkles } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useDashboardData } from "src/pages/DashboardPage/model/useDashboardData";

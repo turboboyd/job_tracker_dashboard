@@ -24,7 +24,6 @@ import {
   getRunnableDiscoverySourceLabel,
   type MatchesDiscoveryLoopOption,
   type MatchesDiscoverySaveState,
-  type RunnableDiscoverySourceId,
 } from "./components/matchesDiscoveryPreview.helpers";
 import { useMatchesPageController } from "./model/useMatchesPageController";
 
@@ -46,6 +45,10 @@ type DiscoveryStatusTab = "all" | "new" | "saved" | "hidden";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+const DISPLAY_PAGE_SIZE = 20;
+const BACKEND_PAGE_SIZE = 5;
+const DEFAULT_SOURCE_IDS = getDefaultMatchesDiscoverySourceIds();
+
 const STATUS_TABS: Array<{ key: DiscoveryStatusTab; label: string }> = [
   { key: "all",    label: "All"    },
   { key: "new",    label: "New"    },
@@ -54,6 +57,18 @@ const STATUS_TABS: Array<{ key: DiscoveryStatusTab; label: string }> = [
 ];
 
 // ─── Module-level helpers ─────────────────────────────────────────────────────
+
+function extractSourceHasMore(
+  resp: DiscoveryRunResponse,
+  loopId: string,
+): Record<string, boolean> {
+  const result: Record<string, boolean> = {};
+  for (const runItem of resp.items) {
+    const sid = runItem.sourceId ?? "unknown";
+    result[`${loopId}:${sid}`] = runItem.hasMore ?? false;
+  }
+  return result;
+}
 
 function buildEntriesFromResponse(
   response: DiscoveryRunResponse,
@@ -81,33 +96,84 @@ function buildEntriesFromResponse(
   });
 }
 
-async function loadDiscoveryData(
+async function loadDiscoveryPage1(
   loopOptions: MatchesDiscoveryLoopOption[],
   loopIds: string[],
-  sourceIds: RunnableDiscoverySourceId[],
-): Promise<{ entries: DiscoveryPageEntry[]; ignoredKeys: Set<string> }> {
+): Promise<{ entries: DiscoveryPageEntry[]; ignoredKeys: Set<string>; sourceHasMore: Record<string, boolean> }> {
   const [discoveryGroups, ignoreEnvelopes] = await Promise.all([
     Promise.all(
       loopOptions.map(async (opt) => {
         const resp = await runDiscoveryPreviewViaRest({
           loopId: opt.id,
           dryRun: true,
-          sourceIds,
+          sourceIds: DEFAULT_SOURCE_IDS,
+          pageSize: BACKEND_PAGE_SIZE,
         });
-        return buildEntriesFromResponse(resp, opt.id, opt.name);
+        return {
+          entries: buildEntriesFromResponse(resp, opt.id, opt.name),
+          hasMore: extractSourceHasMore(resp, opt.id),
+        };
       }),
     ),
     Promise.all(loopIds.map((id) => listDiscoveryPreviewIgnoresViaRest(id))),
   ]);
 
-  const entries = dedupeMatchesDiscoveryPreviewEntries(discoveryGroups.flat());
-  const keys = new Set<string>();
+  const entries = dedupeMatchesDiscoveryPreviewEntries(
+    discoveryGroups.flatMap((g) => g.entries),
+  );
+
+  const sourceHasMore: Record<string, boolean> = {};
+  for (const { hasMore } of discoveryGroups) {
+    Object.assign(sourceHasMore, hasMore);
+  }
+
+  const ignoredKeys = new Set<string>();
   for (const envelope of ignoreEnvelopes) {
     for (const ignore of envelope.items) {
-      keys.add(getMatchesDiscoverySavedPreviewKey(ignore));
+      ignoredKeys.add(getMatchesDiscoverySavedPreviewKey(ignore));
     }
   }
-  return { entries, ignoredKeys: keys };
+
+  return { entries, ignoredKeys, sourceHasMore };
+}
+
+async function loadDiscoveryNextPage(
+  loopOptions: MatchesDiscoveryLoopOption[],
+  currentHasMore: Record<string, boolean>,
+  page: number,
+): Promise<{ entries: DiscoveryPageEntry[]; nextHasMore: Record<string, boolean> }> {
+  const results = await Promise.all(
+    loopOptions.map(async (opt) => {
+      const activeSrcIds = DEFAULT_SOURCE_IDS.filter(
+        (sid) => currentHasMore[`${opt.id}:${sid}`] !== false,
+      );
+      if (activeSrcIds.length === 0) {
+        return { entries: [] as DiscoveryPageEntry[], hasMore: {} as Record<string, boolean> };
+      }
+      const resp = await runDiscoveryPreviewViaRest({
+        loopId: opt.id,
+        dryRun: true,
+        sourceIds: activeSrcIds,
+        page,
+        pageSize: BACKEND_PAGE_SIZE,
+      });
+      return {
+        entries: buildEntriesFromResponse(resp, opt.id, opt.name),
+        hasMore: extractSourceHasMore(resp, opt.id),
+      };
+    }),
+  );
+
+  const entries = dedupeMatchesDiscoveryPreviewEntries(
+    results.flatMap((r) => r.entries),
+  );
+
+  const nextHasMore = { ...currentHasMore };
+  for (const { hasMore } of results) {
+    Object.assign(nextHasMore, hasMore);
+  }
+
+  return { entries, nextHasMore };
 }
 
 function getScoreBadgeClass(score: number): string {
@@ -423,27 +489,35 @@ function PreviewDetailPane({
 function MatchesBody({
   isLoading,
   allEntries,
+  filteredAll,
   filtered,
   selectedEntry,
   saveStates,
   ignoredKeys,
   savingKey,
   ignoringKey,
+  canLoadMore,
+  isLoadingMore,
   onSelectKey,
   onSave,
   onIgnore,
+  onLoadMore,
 }: {
   isLoading: boolean;
   allEntries: DiscoveryPageEntry[];
+  filteredAll: DiscoveryPageEntry[];
   filtered: DiscoveryPageEntry[];
   selectedEntry: DiscoveryPageEntry | null;
   saveStates: Record<string, MatchesDiscoverySaveState>;
   ignoredKeys: Set<string>;
   savingKey: string | null;
   ignoringKey: string | null;
+  canLoadMore: boolean;
+  isLoadingMore: boolean;
   onSelectKey: (key: string) => void;
   onSave: (entry: DiscoveryPageEntry) => void;
   onIgnore: (entry: DiscoveryPageEntry) => void;
+  onLoadMore: () => void;
 }) {
   if (isLoading) {
     return (
@@ -482,12 +556,16 @@ function MatchesBody({
   if (detailEntry) detailSaveState = saveStates[detailEntry.key] ?? "idle";
   const detailIsIgnored = detailEntry ? ignoredKeys.has(detailEntry.stableKey) : false;
 
+  const showingLabel = filtered.length < filteredAll.length
+    ? `${filtered.length} of ${filteredAll.length}`
+    : String(filtered.length);
+
   return (
     <div className="grid h-full grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-4">
       <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
         <div className="shrink-0 flex items-center border-b border-border px-4 py-2.5">
           <span className="text-[12px] text-muted-foreground">
-            <strong className="font-semibold text-foreground tabular-nums">{filtered.length}</strong> vacancies
+            <strong className="font-semibold text-foreground tabular-nums">{showingLabel}</strong> vacancies
           </span>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -497,16 +575,32 @@ function MatchesBody({
               <p className="mt-1 text-[12px] text-muted-foreground">Try a different filter or source.</p>
             </div>
           ) : (
-            filtered.map((entry) => (
-              <PreviewEntryRow
-                key={entry.key}
-                entry={entry}
-                saveState={saveStates[entry.key] ?? "idle"}
-                isIgnored={ignoredKeys.has(entry.stableKey)}
-                isActive={detailEntry?.key === entry.key}
-                onClick={() => onSelectKey(entry.key)}
-              />
-            ))
+            <>
+              {filtered.map((entry) => (
+                <PreviewEntryRow
+                  key={entry.key}
+                  entry={entry}
+                  saveState={saveStates[entry.key] ?? "idle"}
+                  isIgnored={ignoredKeys.has(entry.stableKey)}
+                  isActive={detailEntry?.key === entry.key}
+                  onClick={() => onSelectKey(entry.key)}
+                />
+              ))}
+              {canLoadMore ? (
+                <button
+                  type="button"
+                  disabled={isLoadingMore}
+                  onClick={onLoadMore}
+                  className="w-full border-t border-border py-3 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground disabled:opacity-50"
+                >
+                  {isLoadingMore ? "Loading…" : `Load ${DISPLAY_PAGE_SIZE} more`}
+                </button>
+              ) : (
+                <div className="border-t border-border py-3 text-center text-[11.5px] text-muted-foreground/50">
+                  All vacancies loaded
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -533,10 +627,14 @@ export default function MatchesPage() {
 
   const [allEntries, setAllEntries] = useState<DiscoveryPageEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [saveStates, setSaveStates] = useState<Record<string, MatchesDiscoverySaveState>>({});
   const [ignoredKeys, setIgnoredKeys] = useState<Set<string>>(new Set());
+  const [sourceHasMore, setSourceHasMore] = useState<Record<string, boolean>>({});
+  const [backendPage, setBackendPage] = useState(1);
+  const [displayCount, setDisplayCount] = useState(DISPLAY_PAGE_SIZE);
 
   const [activeSource, setActiveSource] = useState("all");
   const [activeStatus, setActiveStatus] = useState<DiscoveryStatusTab>("all");
@@ -544,36 +642,63 @@ export default function MatchesPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [ignoringKey, setIgnoringKey] = useState<string | null>(null);
 
+  const activeLoops = useMemo(
+    () => vm.loops.filter((l) => l.status !== "archived"),
+    [vm.loops],
+  );
+
+  const loopOptions = useMemo(
+    () => getMatchesDiscoveryLoopOptions(activeLoops),
+    [activeLoops],
+  );
+
+  const loopIds = useMemo(
+    () => activeLoops.map((l) => l.id),
+    [activeLoops],
+  );
+
+  const loopKey = loopIds.join(",");
+
   useEffect(() => {
     if (loopsQ.isLoading) return;
 
-    const activeLoops = vm.loops.filter((l) => l.status !== "archived");
-    if (activeLoops.length === 0) {
-      setAllEntries([]);
-      setIgnoredKeys(new Set());
-      setIsLoading(false);
-      return;
-    }
-
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
+    void (async () => {
+      if (loopOptions.length === 0) {
+        setAllEntries([]);
+        setIgnoredKeys(new Set());
+        setSourceHasMore({});
+        setBackendPage(1);
+        setDisplayCount(DISPLAY_PAGE_SIZE);
+        setIsLoading(false);
+        return;
+      }
 
-    const loopOptions = getMatchesDiscoveryLoopOptions(activeLoops);
-    const sourceIds = getDefaultMatchesDiscoverySourceIds();
-    const loopIds = activeLoops.map((l) => l.id);
+      setIsLoading(true);
+      setError(null);
+      setAllEntries([]);
+      setSourceHasMore({});
+      setBackendPage(1);
+      setDisplayCount(DISPLAY_PAGE_SIZE);
 
-    loadDiscoveryData(loopOptions, loopIds, sourceIds)
-      .then(({ entries, ignoredKeys: keys }) => {
+      try {
+        const { entries, ignoredKeys: keys, sourceHasMore: hm } =
+          await loadDiscoveryPage1(loopOptions, loopIds);
         if (cancelled) return;
         setAllEntries(entries);
         setIgnoredKeys(keys);
-      })
-      .catch((err: unknown) => { if (!cancelled) setError(getErrorMessage(err)); })
-      .finally(() => { if (!cancelled) setIsLoading(false); });
+        setSourceHasMore(hm);
+      } catch (err: unknown) {
+        if (!cancelled) setError(getErrorMessage(err));
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
 
     return () => { cancelled = true; };
-  }, [vm.loops, loopsQ.isLoading, reloadKey]);
+  // loopOptions/loopIds are stable memos derived from loopKey; listing loopKey avoids stale closure
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loopsQ.isLoading, loopKey, reloadKey]);
 
   const sources = useMemo(() => {
     const counts = new Map<string, number>();
@@ -584,6 +709,32 @@ export default function MatchesPage() {
       key, label: getRunnableDiscoverySourceLabel(key), count,
     }));
   }, [allEntries]);
+
+  const filteredAll = useMemo(
+    () => allEntries.filter((entry) => {
+      if (activeSource !== "all" && entry.sourceId !== activeSource) return false;
+      const saveState = saveStates[entry.key] ?? "idle";
+      const isIgnored = ignoredKeys.has(entry.stableKey);
+      if (activeStatus === "hidden") return isIgnored;
+      if (isIgnored) return false;
+      if (activeStatus === "new") return !isMatchesDiscoverySavedState(saveState);
+      if (activeStatus === "saved") return isMatchesDiscoverySavedState(saveState);
+      return true;
+    }),
+    [allEntries, activeSource, activeStatus, saveStates, ignoredKeys],
+  );
+
+  const filtered = useMemo(
+    () => filteredAll.slice(0, displayCount),
+    [filteredAll, displayCount],
+  );
+
+  const anyHasMore = useMemo(
+    () => Object.values(sourceHasMore).some(Boolean),
+    [sourceHasMore],
+  );
+
+  const canLoadMore = displayCount < filteredAll.length || anyHasMore;
 
   const statusCounts = useMemo((): Record<DiscoveryStatusTab, number> => {
     const base = activeSource === "all"
@@ -607,24 +758,48 @@ export default function MatchesPage() {
     return { all, new: newCount, saved: savedCount, hidden: hiddenCount };
   }, [allEntries, activeSource, saveStates, ignoredKeys]);
 
-  const filtered = useMemo(
-    () => allEntries.filter((entry) => {
-      if (activeSource !== "all" && entry.sourceId !== activeSource) return false;
-      const saveState = saveStates[entry.key] ?? "idle";
-      const isIgnored = ignoredKeys.has(entry.stableKey);
-      if (activeStatus === "hidden") return isIgnored;
-      if (isIgnored) return false;
-      if (activeStatus === "new") return !isMatchesDiscoverySavedState(saveState);
-      if (activeStatus === "saved") return isMatchesDiscoverySavedState(saveState);
-      return true;
-    }),
-    [allEntries, activeSource, activeStatus, saveStates, ignoredKeys],
-  );
-
   const selectedEntry = useMemo(
     () => filtered.find((e) => e.key === selectedKey) ?? null,
     [filtered, selectedKey],
   );
+
+  function handleSetSource(src: string) {
+    setActiveSource(src);
+    setDisplayCount(DISPLAY_PAGE_SIZE);
+  }
+
+  function handleSetStatus(status: DiscoveryStatusTab) {
+    setActiveStatus(status);
+    setDisplayCount(DISPLAY_PAGE_SIZE);
+  }
+
+  async function handleLoadMore() {
+    if (displayCount < filteredAll.length) {
+      setDisplayCount((c) => c + DISPLAY_PAGE_SIZE);
+      return;
+    }
+    if (!anyHasMore) return;
+
+    const nextPage = backendPage + 1;
+    setIsLoadingMore(true);
+    try {
+      const { entries: newEntries, nextHasMore } = await loadDiscoveryNextPage(
+        loopOptions,
+        sourceHasMore,
+        nextPage,
+      );
+      setAllEntries((prev) =>
+        dedupeMatchesDiscoveryPreviewEntries([...prev, ...newEntries]),
+      );
+      setSourceHasMore(nextHasMore);
+      setBackendPage(nextPage);
+      setDisplayCount((c) => c + DISPLAY_PAGE_SIZE);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
 
   async function handleSave(entry: DiscoveryPageEntry) {
     setSavingKey(entry.key);
@@ -670,6 +845,7 @@ export default function MatchesPage() {
     }
   }
 
+  const totalLoaded = allEntries.length;
   const title = t("matches.list.title", "Matches");
 
   return (
@@ -685,9 +861,9 @@ export default function MatchesPage() {
             <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
               {title}
             </h1>
-            {!isLoading && allEntries.length > 0 ? (
+            {!isLoading && totalLoaded > 0 ? (
               <p className="mt-1 text-[13px] text-muted-foreground">
-                {allEntries.length} vacancies · {sources.length} source{sources.length === 1 ? "" : "s"}
+                {totalLoaded}{anyHasMore ? "+" : ""} vacancies · {sources.length} source{sources.length === 1 ? "" : "s"}
               </p>
             ) : null}
           </div>
@@ -704,15 +880,15 @@ export default function MatchesPage() {
 
       <SourcesStrip
         sources={sources}
-        totalCount={allEntries.length}
+        totalCount={totalLoaded}
         activeSource={activeSource}
-        onSetSource={setActiveSource}
+        onSetSource={handleSetSource}
       />
 
       <StatusTabBar
         counts={statusCounts}
         activeStatus={activeStatus}
-        onSetStatus={setActiveStatus}
+        onSetStatus={handleSetStatus}
       />
 
       {error ? (
@@ -725,15 +901,19 @@ export default function MatchesPage() {
         <MatchesBody
           isLoading={isLoading}
           allEntries={allEntries}
+          filteredAll={filteredAll}
           filtered={filtered}
           selectedEntry={selectedEntry}
           saveStates={saveStates}
           ignoredKeys={ignoredKeys}
           savingKey={savingKey}
           ignoringKey={ignoringKey}
+          canLoadMore={canLoadMore}
+          isLoadingMore={isLoadingMore}
           onSelectKey={setSelectedKey}
           onSave={(entry) => { void handleSave(entry); }}
           onIgnore={(entry) => { void handleIgnore(entry); }}
+          onLoadMore={() => { void handleLoadMore(); }}
         />
       </div>
     </div>
