@@ -70,12 +70,13 @@ function bucketByPeriod(
   fromMs: number,
   toMs: number,
   buckets: number,
-): Array<{ applied: number; replied: number; hired: number }> {
+): Array<{ applied: number; replied: number; hired: number; offered: number }> {
   const step = (toMs - fromMs) / buckets;
   const result = Array.from({ length: buckets }, () => ({
     applied: 0,
     replied: 0,
     hired: 0,
+    offered: 0,
   }));
   for (const m of items) {
     if ((m.status as string) === "SAVED") continue;
@@ -84,10 +85,8 @@ function bucketByPeriod(
     const idx = Math.min(Math.floor((ms - fromMs) / step), buckets - 1);
     result[idx].applied++;
     const s = m.status as string;
-    if (
-      ["INTERVIEW_1", "INTERVIEW_2", "TEST_TASK", "OFFER", "HIRED"].includes(s)
-    )
-      result[idx].replied++;
+    if (["INTERVIEW_1", "INTERVIEW_2", "TEST_TASK", "OFFER", "HIRED"].includes(s)) result[idx].replied++;
+    if (s === "OFFER" || s === "HIRED") result[idx].offered++;
     if (s === "HIRED") result[idx].hired++;
   }
   return result;
@@ -253,6 +252,101 @@ function RangeToggle({
 }
 
 
+function getRangeDays(timeRange: TimeRange): number {
+  if (timeRange === "7d") return 7;
+  if (timeRange === "30d") return 30;
+  if (timeRange === "90d") return 90;
+  return 3650;
+}
+
+function getWeekCount(timeRange: TimeRange): number {
+  if (timeRange === "7d") return 2;
+  if (timeRange === "30d") return 5;
+  if (timeRange === "90d") return 13;
+  return 26;
+}
+
+function computeRatePercent(
+  kpiValue: number | undefined,
+  fallbackNumerator: number,
+  fallbackDenominator: number,
+): number {
+  if (kpiValue !== undefined) return Math.round(kpiValue * 100);
+  if (fallbackDenominator === 0) return 0;
+  return Math.round((fallbackNumerator / fallbackDenominator) * 100);
+}
+
+function computeWeeklyChartData(
+  matchesAll: MatchLike[],
+  fromMs: number,
+  nowMs: number,
+  timeRange: TimeRange,
+): { data: number[]; labels: string[] } {
+  const weekCount = getWeekCount(timeRange);
+  const map = new Map<string, number>();
+  for (const m of matchesAll) {
+    if ((m.status as string) === "SAVED") continue;
+    const ms = toMillis(m.createdAt) ?? 0;
+    if (ms < fromMs) continue;
+    const key = getISOWeek(new Date(ms));
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
+  const rawKeys: string[] = [];
+  for (let i = weekCount - 1; i >= 0; i--) {
+    const d = new Date(nowMs - i * 7 * 86400000);
+    rawKeys.push(getISOWeek(d));
+  }
+  const deduped = [...new Set(rawKeys)].slice(-weekCount);
+  return {
+    data: deduped.map((k) => map.get(k) ?? 0),
+    labels: deduped.map(weekStartLabel),
+  };
+}
+
+function computeLossBreakdown(
+  matchesAll: MatchLike[],
+  pipelineSummary: { byColumn: Record<string, number> },
+): Array<{ l: string; v: number; p: number }> {
+  const noResp = pipelineSummary.byColumn["NO_RESPONSE"] ?? 0;
+  const rejTotal = pipelineSummary.byColumn["REJECTED"] ?? 0;
+  let afterHr = 0;
+  let afterTech = 0;
+  const stageRank = ["SAVED", "ACTIVE", "INTERVIEW_1", "INTERVIEW_2", "TEST_TASK", "OFFER", "HIRED"];
+  for (const m of matchesAll) {
+    if ((m.status as string) !== "REJECTED") continue;
+    const maxStage = (m.statusHistory ?? []).reduce((best, h) => {
+      const rank = stageRank.indexOf(h.status as string);
+      return rank > best ? rank : best;
+    }, 0);
+    if (maxStage >= 4) afterTech++;
+    else if (maxStage >= 2) afterHr++;
+  }
+  const rows = [
+    { l: "Нет ответа > 14д", v: noResp },
+    { l: "Отказ после HR", v: afterHr },
+    { l: "Отказ после тех.", v: afterTech },
+    { l: "Другой отказ", v: Math.max(0, rejTotal - afterHr - afterTech) },
+  ];
+  const tot = rows.reduce((s, x) => s + x.v, 0);
+  return rows.map((r) => ({ ...r, p: tot > 0 ? Math.round((r.v / tot) * 100) : 0 }));
+}
+
+function computeTopLoops(
+  matches: MatchLike[],
+  loops: Array<{ id: string; name: string }>,
+): Array<{ id: string; name: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const m of matches) {
+    if (!m.loopId) continue;
+    counts.set(m.loopId, (counts.get(m.loopId) ?? 0) + 1);
+  }
+  const loopMap = new Map(loops.map((l) => [l.id, l.name]));
+  return Array.from(counts.entries())
+    .map(([id, count]) => ({ id, name: loopMap.get(id) ?? id, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+}
+
 function logRestError(context: string, error: unknown): void {
   const restError = error as { status?: unknown; code?: unknown; requestId?: unknown } | null;
 
@@ -276,7 +370,7 @@ export function DashboardAnalyticsPage() {
   const [mode, setMode] = useState<ModeKey>("created");
   const [customRange, setCustomRange] = useState<CustomRange>(null);
 
-  const { loops, loopsFilter, setLoopsFilter, chartMatches, pipelineSummary, matchesAll } =
+  const { loops, loopsFilter, setLoopsFilter, chartMatches, pipelineSummary, matchesAll, matches } =
     useDashboardData();
 
   useEffect(() => {
@@ -305,9 +399,8 @@ export function DashboardAnalyticsPage() {
 
   // ── Time range bounds ───────────────────────────────────────────────────────
 
-  const rangeDays =
-    timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : timeRange === "90d" ? 90 : 3650;
-  const fromMs = timeRange === "all" ? nowMs - 3650 * 86400000 : nowMs - rangeDays * 86400000;
+  const rangeDays = getRangeDays(timeRange);
+  const fromMs = nowMs - rangeDays * 86400000;
   const toMs = nowMs;
 
   // ── rangeMatches — matches within selected time window ──────────────────────
@@ -336,8 +429,8 @@ export function DashboardAnalyticsPage() {
     (pipelineSummary.byColumn["OFFER"] ?? 0) + (pipelineSummary.byColumn["HIRED"] ?? 0);
 
   const totalApplied = kpi?.appliedCount ?? fallbackTotalApplied;
-  const replyRate = kpi ? Math.round(kpi.responseRate * 100) : pipelineSummary.total > 0 ? Math.round((hrScreenCount / pipelineSummary.total) * 100) : 0;
-  const offerRate = kpi ? Math.round(kpi.offerRate * 100) : pipelineSummary.total > 0 ? Math.round((offerCount / pipelineSummary.total) * 100) : 0;
+  const replyRate = computeRatePercent(kpi?.responseRate, hrScreenCount, pipelineSummary.total);
+  const offerRate = computeRatePercent(kpi?.offerRate, offerCount, pipelineSummary.total);
 
   // ── Median pipeline time ────────────────────────────────────────────────────
 
@@ -365,6 +458,9 @@ export function DashboardAnalyticsPage() {
   const sparkReply = sparkBuckets.map((b) =>
     b.applied > 0 ? Math.round((b.replied / b.applied) * 100) : 0,
   );
+  const sparkOffer = sparkBuckets.map((b) =>
+    b.applied > 0 ? Math.round((b.offered / b.applied) * 100) : 0,
+  );
 
   // ── KPI cards ──────────────────────────────────────────────────────────────
 
@@ -387,15 +483,13 @@ export function DashboardAnalyticsPage() {
       l: "Дошли до оффера",
       v: offerRate > 0 ? `${offerRate}%` : "—",
       d: null as string | null,
-      // TODO(backend-migration): needs historical aggregation from GET /api/v1/analytics/kpi
-      trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      trend: sparkOffer.some((x) => x > 0) ? sparkOffer : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       color: "#f59e0b",
     },
     {
       l: "Среднее время в pipeline",
       v: pipelineDays > 0 ? `${pipelineDays}д` : "—",
       d: null as string | null,
-      // TODO(backend-migration): needs per-period median from GET /api/v1/analytics/kpi
       trend: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       color: "#10b981",
     },
@@ -437,67 +531,17 @@ export function DashboardAnalyticsPage() {
 
   // ── Weekly activity chart (real, bucketed by ISO week) ─────────────────────
 
-  const weeklyChartData = useMemo(() => {
-    const weekCount =
-      timeRange === "7d" ? 2 : timeRange === "30d" ? 5 : timeRange === "90d" ? 13 : 26;
-    const map = new Map<string, number>();
-    for (const m of matchesAll as MatchLike[]) {
-      if ((m.status as string) === "SAVED") continue;
-      const ms = toMillis(m.createdAt) ?? 0;
-      if (ms < fromMs) continue;
-      const key = getISOWeek(new Date(ms));
-      map.set(key, (map.get(key) ?? 0) + 1);
-    }
-    const rawKeys: string[] = [];
-    for (let i = weekCount - 1; i >= 0; i--) {
-      const d = new Date(nowMs - i * 7 * 86400000);
-      rawKeys.push(getISOWeek(d));
-    }
-    const deduped = [...new Set(rawKeys)].slice(-weekCount);
-    return {
-      data: deduped.map((k) => map.get(k) ?? 0),
-      labels: deduped.map(weekStartLabel),
-    };
-  }, [matchesAll, fromMs, nowMs, timeRange]);
+  const weeklyChartData = useMemo(
+    () => computeWeeklyChartData(matchesAll as MatchLike[], fromMs, nowMs, timeRange),
+    [matchesAll, fromMs, nowMs, timeRange],
+  );
 
   // ── Loss breakdown (real where possible) ──────────────────────────────────
 
-  const lossBreakdown = useMemo(() => {
-    const noResp = pipelineSummary.byColumn["NO_RESPONSE"] ?? 0;
-    const rejTotal = pipelineSummary.byColumn["REJECTED"] ?? 0;
-    let afterHr = 0;
-    let afterTech = 0;
-    for (const m of matchesAll as MatchLike[]) {
-      if ((m.status as string) !== "REJECTED") continue;
-      const hist = m.statusHistory ?? [];
-      const maxStage = hist.reduce((best, h) => {
-        const s = h.status as string;
-        const rank = [
-          "SAVED",
-          "ACTIVE",
-          "INTERVIEW_1",
-          "INTERVIEW_2",
-          "TEST_TASK",
-          "OFFER",
-          "HIRED",
-        ].indexOf(s);
-        return rank > best ? rank : best;
-      }, 0);
-      if (maxStage >= 4) afterTech++;
-      else if (maxStage >= 2) afterHr++;
-    }
-    const rows = [
-      { l: "Нет ответа > 14д", v: noResp },
-      { l: "Отказ после HR", v: afterHr },
-      { l: "Отказ после тех.", v: afterTech },
-      { l: "Другой отказ", v: Math.max(0, rejTotal - afterHr - afterTech) },
-    ];
-    const tot = rows.reduce((s, x) => s + x.v, 0);
-    return rows.map((r) => ({
-      ...r,
-      p: tot > 0 ? Math.round((r.v / tot) * 100) : 0,
-    }));
-  }, [matchesAll, pipelineSummary]);
+  const lossBreakdown = useMemo(
+    () => computeLossBreakdown(matchesAll as MatchLike[], pipelineSummary),
+    [matchesAll, pipelineSummary],
+  );
 
   const topLoss = [...lossBreakdown].sort((a, b) => b.v - a.v)[0];
   const insightText =
@@ -505,9 +549,14 @@ export function DashboardAnalyticsPage() {
       ? `Чаще всего теряешь заявки из-за «${topLoss.l}» — ${topLoss.p}% от всех потерь.`
       : "Недостаточно данных для анализа.";
 
-  // ── Sources: no platform field in Firebase — placeholder ──────────────────
-  // TODO(backend-migration): platform field not tracked in current Firebase schema
-  // Needs GET /api/v1/analytics/sources — see doc-backend/Аналитика_backend.md
+  // ── Top loops by application count ────────────────────────────────────────
+
+  const topLoops = useMemo(
+    () => computeTopLoops(matches as MatchLike[], loops),
+    [matches, loops],
+  );
+
+  const topLoopsTotal = topLoops.reduce((s, l) => s + l.count, 0);
 
   // ── filteredMatches for DashboardTrendsCard ────────────────────────────────
 
@@ -604,7 +653,6 @@ export function DashboardAnalyticsPage() {
                     <span className="text-[12px] font-medium text-emerald-500">{k.d}</span>
                   )}
                 </div>
-                {/* TODO(backend-migration): precise sparklines from GET /api/v1/analytics/kpi?range=... */}
                 <Sparkline data={k.trend} color={k.color} />
               </Card>
             ))}
@@ -654,20 +702,35 @@ export function DashboardAnalyticsPage() {
               </div>
             </Card>
 
-            {/* Sources — placeholder, no platform field in Firebase */}
+            {/* Top loops by application count — real from matchesAll.loopId */}
             <Card>
-              <SLabel>Источники заявок</SLabel>
-              {/* TODO(backend-migration): platform field not tracked in current Firebase schema
-                  Needs GET /api/v1/analytics/sources — see doc-backend/Аналитика_backend.md */}
-              <div className="flex flex-col items-center justify-center h-[160px] gap-2 text-center">
-                <ArrowUpRight className="h-6 w-6 text-muted-foreground/40" />
-                <p className="text-[13px] text-muted-foreground leading-snug">
-                  Данные появятся после подключения бэкенда
-                </p>
-                <p className="text-[11px] text-muted-foreground/60">
-                  Поле <code className="font-mono">platform</code> не отслеживается в Firebase
-                </p>
-              </div>
+              <SLabel>По направлениям (Loops)</SLabel>
+              {topLoops.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[160px] gap-2 text-center">
+                  <ArrowUpRight className="h-6 w-6 text-muted-foreground/40" />
+                  <p className="text-[13px] text-muted-foreground">Нет данных</p>
+                </div>
+              ) : (
+                <div className="flex flex-col mt-3 gap-2.5">
+                  {topLoops.map((l) => {
+                    const pct = topLoopsTotal > 0 ? Math.round((l.count / topLoopsTotal) * 100) : 0;
+                    return (
+                      <div key={l.id}>
+                        <div className="flex items-baseline justify-between text-[12px] mb-1">
+                          <span className="truncate text-foreground max-w-[70%]">{l.name}</span>
+                          <span className="text-muted-foreground tabular-nums shrink-0 ml-2">{l.count} · {pct}%</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-primary/70 transition-[width]"
+                            style={{ width: `${Math.max(pct, 2)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </Card>
           </div>
 
