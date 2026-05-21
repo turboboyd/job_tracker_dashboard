@@ -34,6 +34,7 @@ export default function DashboardPage() {
     isLoading,
     error,
     hasMatches,
+    matches,
     recent,
     pipelineSummary,
   } = useDashboardData();
@@ -155,7 +156,7 @@ export default function DashboardPage() {
 
           {/* Row 2: Trends + Funnel */}
           <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
-            <DashboardTrendsWidget />
+            <DashboardTrendsWidget matches={matches} />
             <DashboardPipelineCard summary={pipelineSummary} size={180} stroke={16} />
           </div>
 
@@ -168,13 +169,13 @@ export default function DashboardPage() {
               onGoLoop={goLoop}
               onGoJobs={goMatches}
             />
-            <DashboardGoalsWidget />
+            <DashboardGoalsWidget matches={matches} />
           </div>
 
           {/* Row 4: Recent jobs + Insights */}
           <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
             <DashboardRecentJobsCard jobs={recent} onViewAll={goMatches} />
-            <DashboardInsightsWidget />
+            <DashboardInsightsWidget matches={matches} />
           </div>
         </div>
       </div>
