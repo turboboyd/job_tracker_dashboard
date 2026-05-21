@@ -1,76 +1,113 @@
-import { Plus } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
-import type { Loop } from "src/entities/loop";
-import { VacancyAnalysisPanel } from "src/features/vacancyAnalysis";
+import type { DiscoveryRunPreviewItem, DiscoveryRunResponse } from "src/features/discoveryRuns";
+import { runDiscoveryPreviewViaRest } from "src/features/discoveryRuns";
 import {
-  createApplicationFromVacancyMatchViaRest,
-  listLoopVacancyMatchesViaRest,
-  patchLoopVacancyMatchViaRest,
-  type VacancyMatch,
-  type VacancyMatchStatus,
+  ignoreDiscoveryPreviewViaRest,
+  listDiscoveryPreviewIgnoresViaRest,
+  saveDiscoveryPreviewAsApplicationViaRest,
 } from "src/features/vacancyMatches";
 import { getErrorMessage } from "src/shared/lib";
 
 import {
-  getApplicationDetailsRoute,
-  MATCHES_SAVED_MATCHES_COPY,
-  type MatchApplicationFeedback,
-} from "./components/matchesSavedVacancyMatches.helpers";
+  dedupeMatchesDiscoveryPreviewEntries,
+  getDefaultMatchesDiscoverySourceIds,
+  getMatchesDiscoveryLoopOptions,
+  getMatchesDiscoveryPreviewItemKey,
+  getMatchesDiscoverySavedPreviewKey,
+  getMatchesDiscoverySaveButtonLabel,
+  isMatchesDiscoverySaveDisabled,
+  isMatchesDiscoverySavedState,
+  MATCHES_DISCOVERY_COPY,
+  getRunnableDiscoverySourceLabel,
+  type MatchesDiscoveryLoopOption,
+  type MatchesDiscoverySaveState,
+  type RunnableDiscoverySourceId,
+} from "./components/matchesDiscoveryPreview.helpers";
 import { useMatchesPageController } from "./model/useMatchesPageController";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type StatusTab = "all" | VacancyMatchStatus;
-
-interface VacancyMatchWithLoop {
-  match: VacancyMatch;
+interface DiscoveryPageEntry {
+  item: DiscoveryRunPreviewItem;
+  key: string;
+  stableKey: string;
+  loopId: string;
   loopName: string;
+  sourceId: string;
+  sourceLabel: string;
+  externalId: string | null;
+  sourceUrl: string;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+type DiscoveryStatusTab = "all" | "new" | "saved" | "hidden";
 
-const STATUS_TABS: Array<{ key: StatusTab; label: string }> = [
-  { key: "all",       label: "All"       },
-  { key: "new",       label: "New"       },
-  { key: "saved",     label: "Saved"     },
-  { key: "converted", label: "Applied"   },
-  { key: "ignored",   label: "Hidden"    },
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const STATUS_TABS: Array<{ key: DiscoveryStatusTab; label: string }> = [
+  { key: "all",    label: "All"    },
+  { key: "new",    label: "New"    },
+  { key: "saved",  label: "Added"  },
+  { key: "hidden", label: "Hidden" },
 ];
 
-const SOURCE_LABEL_MAP: Record<string, string> = {
-  arbeitsagentur: "Arbeitsagentur",
-  linkedin: "LinkedIn",
-  stepstone: "StepStone",
-  indeed: "Indeed",
-  xing: "XING",
-  glassdoor: "Glassdoor",
-  angellist: "AngelList",
-  other: "Other",
-};
+// ─── Module-level helpers ─────────────────────────────────────────────────────
 
-function normalizeSource(source: string | null): string {
-  return source?.trim().toLowerCase() ?? "other";
+function buildEntriesFromResponse(
+  response: DiscoveryRunResponse,
+  loopId: string,
+  loopName: string,
+): DiscoveryPageEntry[] {
+  return response.items.flatMap((runItem) => {
+    const sourceId = runItem.sourceId ?? "unknown";
+    const sourceLabel = getRunnableDiscoverySourceLabel(sourceId);
+    return runItem.previewItems.map((item) => {
+      const { externalId, sourceUrl } = item;
+      const itemKey = getMatchesDiscoveryPreviewItemKey(item);
+      return {
+        item,
+        key: `${loopId}:${sourceId}:${itemKey}`,
+        stableKey: getMatchesDiscoverySavedPreviewKey({ loopId, sourceId, externalId, sourceUrl }),
+        loopId,
+        loopName,
+        sourceId,
+        sourceLabel,
+        externalId,
+        sourceUrl,
+      };
+    });
+  });
 }
 
-function formatSourceLabel(source: string): string {
-  return SOURCE_LABEL_MAP[source] ?? source.charAt(0).toUpperCase() + source.slice(1);
-}
+async function loadDiscoveryData(
+  loopOptions: MatchesDiscoveryLoopOption[],
+  loopIds: string[],
+  sourceIds: RunnableDiscoverySourceId[],
+): Promise<{ entries: DiscoveryPageEntry[]; ignoredKeys: Set<string> }> {
+  const [discoveryGroups, ignoreEnvelopes] = await Promise.all([
+    Promise.all(
+      loopOptions.map(async (opt) => {
+        const resp = await runDiscoveryPreviewViaRest({
+          loopId: opt.id,
+          dryRun: true,
+          sourceIds,
+        });
+        return buildEntriesFromResponse(resp, opt.id, opt.name);
+      }),
+    ),
+    Promise.all(loopIds.map((id) => listDiscoveryPreviewIgnoresViaRest(id))),
+  ]);
 
-function getStatusBadgeClass(status: VacancyMatchStatus): string {
-  if (status === "new")       return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
-  if (status === "converted") return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-  if (status === "ignored")   return "bg-muted text-muted-foreground/60";
-  return "bg-muted text-muted-foreground";
-}
-
-function getStatusLabel(status: VacancyMatchStatus): string {
-  if (status === "new")       return "New";
-  if (status === "saved")     return "Saved";
-  if (status === "converted") return "Applied";
-  return "Hidden";
+  const entries = dedupeMatchesDiscoveryPreviewEntries(discoveryGroups.flat());
+  const keys = new Set<string>();
+  for (const envelope of ignoreEnvelopes) {
+    for (const ignore of envelope.items) {
+      keys.add(getMatchesDiscoverySavedPreviewKey(ignore));
+    }
+  }
+  return { entries, ignoredKeys: keys };
 }
 
 function getScoreBadgeClass(score: number): string {
@@ -82,25 +119,6 @@ function getScoreBadgeClass(score: number): string {
 function getConfidenceScore(confidence: Record<string, number>): number | null {
   const val = confidence?.overall ?? confidence?.score ?? confidence?.match ?? null;
   return typeof val === "number" ? Math.round(val) : null;
-}
-
-function isActionable(match: VacancyMatch): boolean {
-  return match.status === "new" || match.status === "saved";
-}
-
-async function loadMatchesFromLoops(
-  loops: Loop[],
-): Promise<VacancyMatchWithLoop[]> {
-  const envelopes = await Promise.all(
-    loops.map(async (loop) => {
-      const envelope = await listLoopVacancyMatchesViaRest(loop.id, { limit: 100, offset: 0 });
-      return envelope.items.map((match) => ({
-        match,
-        loopName: loop.name || loop.id,
-      }));
-    }),
-  );
-  return envelopes.flat().sort((a, b) => b.match.updatedAt.localeCompare(a.match.updatedAt));
 }
 
 // ─── SourcesStrip ────────────────────────────────────────────────────────────
@@ -135,12 +153,7 @@ function SourcesStrip({
       </button>
       <div className="h-4 w-px shrink-0 bg-border" />
       {sources.map(({ key, label, count }) => (
-        <button
-          key={key}
-          type="button"
-          onClick={() => onSetSource(key)}
-          className={pillClass(activeSource === key)}
-        >
+        <button key={key} type="button" onClick={() => onSetSource(key)} className={pillClass(activeSource === key)}>
           {label}
           <span className="tabular-nums">{count}</span>
         </button>
@@ -156,9 +169,9 @@ function StatusTabBar({
   activeStatus,
   onSetStatus,
 }: {
-  counts: Record<StatusTab, number>;
-  activeStatus: StatusTab;
-  onSetStatus: (s: StatusTab) => void;
+  counts: Record<DiscoveryStatusTab, number>;
+  activeStatus: DiscoveryStatusTab;
+  onSetStatus: (s: DiscoveryStatusTab) => void;
 }) {
   return (
     <div className="shrink-0 flex items-end border-b border-border bg-background px-7">
@@ -184,21 +197,24 @@ function StatusTabBar({
   );
 }
 
-// ─── VacancyMatchRow ─────────────────────────────────────────────────────────
+// ─── PreviewEntryRow ──────────────────────────────────────────────────────────
 
-function VacancyMatchRow({
-  item,
+function PreviewEntryRow({
+  entry,
+  saveState,
+  isIgnored,
   isActive,
   onClick,
 }: {
-  item: VacancyMatchWithLoop;
+  entry: DiscoveryPageEntry;
+  saveState: MatchesDiscoverySaveState;
+  isIgnored: boolean;
   isActive: boolean;
   onClick: () => void;
 }) {
-  const { match, loopName } = item;
-  const avatarLetter = (match.companyName || match.roleTitle || "?").charAt(0).toUpperCase();
-  const score = getConfidenceScore(match.confidence);
-  const srcLabel = match.source ? formatSourceLabel(normalizeSource(match.source)) : null;
+  const { item, loopName, sourceLabel } = entry;
+  const avatarLetter = (item.company || item.title || "?").charAt(0).toUpperCase();
+  const score = getConfidenceScore(item.confidence);
 
   return (
     <div
@@ -217,15 +233,21 @@ function VacancyMatchRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="truncate text-[13px] font-medium text-foreground leading-tight">
-            {match.roleTitle || "—"}
+            {item.title || MATCHES_DISCOVERY_COPY.titleMissing}
           </span>
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium ${getStatusBadgeClass(match.status)}`}>
-            {getStatusLabel(match.status)}
-          </span>
+          {isIgnored ? (
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground/60">
+              Hidden
+            </span>
+          ) : null}
+          {!isIgnored && isMatchesDiscoverySavedState(saveState) ? (
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              Added
+            </span>
+          ) : null}
         </div>
         <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
-          {[match.companyName, match.locationText, srcLabel]
-            .filter(Boolean).join(" · ")}
+          {[item.company, item.location, sourceLabel].filter(Boolean).join(" · ")}
         </div>
         {loopName ? (
           <div className="mt-0.5 text-[11px] text-muted-foreground/60 truncate">{loopName}</div>
@@ -240,72 +262,75 @@ function VacancyMatchRow({
   );
 }
 
-// ─── VacancyMatchDetailPane ───────────────────────────────────────────────────
+// ─── PreviewDetailPane ────────────────────────────────────────────────────────
 
-function VacancyMatchDetailActions({
-  match,
-  convertingId,
-  ignoringId,
-  onConvert,
+function PreviewDetailActions({
+  entry,
+  saveState,
+  isIgnored,
+  isSaving,
+  isIgnoring,
+  onSave,
   onIgnore,
 }: {
-  match: VacancyMatch;
-  convertingId: string | null;
-  ignoringId: string | null;
-  onConvert: (m: VacancyMatch) => void;
-  onIgnore: (m: VacancyMatch) => void;
+  entry: DiscoveryPageEntry;
+  saveState: MatchesDiscoverySaveState;
+  isIgnored: boolean;
+  isSaving: boolean;
+  isIgnoring: boolean;
+  onSave: () => void;
+  onIgnore: () => void;
 }) {
-  const actionable = isActionable(match);
-  if (!actionable) return null;
-
   return (
     <div className="flex flex-wrap gap-2">
       <button
         type="button"
-        disabled={convertingId === match.id}
-        onClick={() => onConvert(match)}
+        disabled={isMatchesDiscoverySaveDisabled(saveState)}
+        onClick={onSave}
         className="rounded-[7px] bg-primary px-3.5 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {convertingId === match.id ? "Creating…" : MATCHES_SAVED_MATCHES_COPY.createApplication}
+        {isSaving ? MATCHES_DISCOVERY_COPY.saving : getMatchesDiscoverySaveButtonLabel(saveState)}
       </button>
       <a
-        href={match.sourceUrl}
+        href={entry.sourceUrl}
         target="_blank"
         rel="noreferrer"
         className="rounded-[7px] border border-border px-3.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted"
       >
-        Open ↗
+        {MATCHES_DISCOVERY_COPY.openVacancy} ↗
       </a>
-      <button
-        type="button"
-        disabled={ignoringId === match.id}
-        onClick={() => onIgnore(match)}
-        className="rounded-[7px] border border-border px-3.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
-      >
-        {ignoringId === match.id ? "…" : MATCHES_SAVED_MATCHES_COPY.ignore}
-      </button>
+      {!isIgnored ? (
+        <button
+          type="button"
+          disabled={isIgnoring}
+          onClick={onIgnore}
+          className="rounded-[7px] border border-border px-3.5 py-1.5 text-[12.5px] text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+        >
+          {isIgnoring ? "…" : MATCHES_DISCOVERY_COPY.notInterested}
+        </button>
+      ) : null}
     </div>
   );
 }
 
-function VacancyMatchDetailPane({
-  item,
-  convertingId,
-  ignoringId,
-  feedbackById,
-  onConvert,
+function PreviewDetailPane({
+  entry,
+  saveState,
+  isIgnored,
+  savingKey,
+  ignoringKey,
+  onSave,
   onIgnore,
-  onNavigate,
 }: {
-  item: VacancyMatchWithLoop | null;
-  convertingId: string | null;
-  ignoringId: string | null;
-  feedbackById: Record<string, MatchApplicationFeedback>;
-  onConvert: (m: VacancyMatch) => void;
-  onIgnore: (m: VacancyMatch) => void;
-  onNavigate: (appId: string) => void;
+  entry: DiscoveryPageEntry | null;
+  saveState: MatchesDiscoverySaveState;
+  isIgnored: boolean;
+  savingKey: string | null;
+  ignoringKey: string | null;
+  onSave: (e: DiscoveryPageEntry) => void;
+  onIgnore: (e: DiscoveryPageEntry) => void;
 }) {
-  if (!item) {
+  if (!entry) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-border bg-card text-[12.5px] text-muted-foreground">
         Select a vacancy to see details
@@ -313,18 +338,14 @@ function VacancyMatchDetailPane({
     );
   }
 
-  const { match, loopName } = item;
-  const avatarLetter = (match.companyName || match.roleTitle || "?").charAt(0).toUpperCase();
-  const score = getConfidenceScore(match.confidence);
-  const srcLabel = match.source ? formatSourceLabel(normalizeSource(match.source)) : null;
-  const feedback = feedbackById[match.id] ?? (match.applicationId ? {
-    applicationId: match.applicationId,
-    message: MATCHES_SAVED_MATCHES_COPY.applicationAlreadyCreated,
-  } : null);
+  const { item, sourceLabel } = entry;
+  const avatarLetter = (item.company || item.title || "?").charAt(0).toUpperCase();
+  const score = getConfidenceScore(item.confidence);
+  const isSaving = savingKey === entry.key;
+  const isIgnoring = ignoringKey === entry.key;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
-      {/* Header */}
       <div className="shrink-0 border-b border-border px-5 py-4">
         <div className="flex gap-3 items-start mb-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[9px] border border-border bg-muted text-[15px] font-semibold text-foreground select-none">
@@ -332,14 +353,9 @@ function VacancyMatchDetailPane({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium ${getStatusBadgeClass(match.status)}`}>
-                {getStatusLabel(match.status)}
+              <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
+                {sourceLabel}
               </span>
-              {srcLabel ? (
-                <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
-                  {srcLabel}
-                </span>
-              ) : null}
               {score !== null ? (
                 <span className={`inline-flex h-6 w-6 items-center justify-center rounded border text-[11px] font-semibold tabular-nums ${getScoreBadgeClass(score)}`}>
                   {score}
@@ -347,62 +363,54 @@ function VacancyMatchDetailPane({
               ) : null}
             </div>
             <div className="text-[16px] font-semibold leading-snug text-foreground tracking-tight">
-              {match.roleTitle || "—"}
+              {item.title || MATCHES_DISCOVERY_COPY.titleMissing}
             </div>
             <div className="text-[12.5px] text-muted-foreground mt-0.5">
-              {[match.companyName, match.locationText].filter(Boolean).join(" · ")}
-              {loopName ? <span className="ml-1.5 text-muted-foreground/60">· {loopName}</span> : null}
+              {[item.company, item.location].filter(Boolean).join(" · ") || MATCHES_DISCOVERY_COPY.companyMissing}
             </div>
           </div>
         </div>
-
-        <VacancyMatchDetailActions
-          match={match}
-          convertingId={convertingId}
-          ignoringId={ignoringId}
-          onConvert={onConvert}
-          onIgnore={onIgnore}
+        <PreviewDetailActions
+          entry={entry}
+          saveState={saveState}
+          isIgnored={isIgnored}
+          isSaving={isSaving}
+          isIgnoring={isIgnoring}
+          onSave={() => onSave(entry)}
+          onIgnore={() => onIgnore(entry)}
         />
       </div>
 
-      {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {/* Source URL */}
         <a
-          href={match.sourceUrl}
+          href={entry.sourceUrl}
           target="_blank"
           rel="noreferrer"
           className="block truncate text-[12px] text-primary hover:underline"
         >
-          {match.sourceUrl}
+          {entry.sourceUrl}
         </a>
 
-        {/* AI analysis */}
-        <VacancyAnalysisPanel loopId={match.loopId} matchId={match.id} />
-
-        {/* Description */}
-        {match.vacancyDescription ? (
+        {item.snippet ? (
           <div>
             <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
               Description
             </div>
             <div className="text-[12.5px] leading-relaxed text-muted-foreground whitespace-pre-wrap line-clamp-[20]">
-              {match.vacancyDescription}
+              {item.snippet}
             </div>
           </div>
         ) : null}
 
-        {/* Application feedback */}
-        {feedback ? (
-          <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
-            <span>{feedback.message}</span>
-            <button
-              type="button"
-              className="rounded-md border border-border bg-card px-3 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-muted"
-              onClick={() => onNavigate(feedback.applicationId)}
-            >
-              {MATCHES_SAVED_MATCHES_COPY.openApplication}
-            </button>
+        {isIgnored ? (
+          <div className="rounded-[10px] border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
+            {MATCHES_DISCOVERY_COPY.notInterested} — скрыто вами
+          </div>
+        ) : null}
+
+        {isMatchesDiscoverySavedState(saveState) ? (
+          <div className="rounded-[10px] border border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/40 dark:bg-emerald-900/10 p-3 text-[12px] text-emerald-700 dark:text-emerald-400">
+            {MATCHES_DISCOVERY_COPY.refreshAfterSave}
           </div>
         ) : null}
       </div>
@@ -414,28 +422,28 @@ function VacancyMatchDetailPane({
 
 function MatchesBody({
   isLoading,
-  allMatches,
+  allEntries,
   filtered,
-  selectedItem,
-  convertingId,
-  ignoringId,
-  feedbackById,
-  onSelectId,
-  onConvert,
+  selectedEntry,
+  saveStates,
+  ignoredKeys,
+  savingKey,
+  ignoringKey,
+  onSelectKey,
+  onSave,
   onIgnore,
-  onNavigate,
 }: {
   isLoading: boolean;
-  allMatches: VacancyMatchWithLoop[];
-  filtered: VacancyMatchWithLoop[];
-  selectedItem: VacancyMatchWithLoop | null;
-  convertingId: string | null;
-  ignoringId: string | null;
-  feedbackById: Record<string, MatchApplicationFeedback>;
-  onSelectId: (id: string) => void;
-  onConvert: (m: VacancyMatch) => void;
-  onIgnore: (m: VacancyMatch) => void;
-  onNavigate: (appId: string) => void;
+  allEntries: DiscoveryPageEntry[];
+  filtered: DiscoveryPageEntry[];
+  selectedEntry: DiscoveryPageEntry | null;
+  saveStates: Record<string, MatchesDiscoverySaveState>;
+  ignoredKeys: Set<string>;
+  savingKey: string | null;
+  ignoringKey: string | null;
+  onSelectKey: (key: string) => void;
+  onSave: (entry: DiscoveryPageEntry) => void;
+  onIgnore: (entry: DiscoveryPageEntry) => void;
 }) {
   if (isLoading) {
     return (
@@ -456,18 +464,23 @@ function MatchesBody({
     );
   }
 
-  if (allMatches.length === 0) {
+  if (allEntries.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <p className="text-[14px] font-medium text-foreground">No vacancies yet</p>
           <p className="mt-1 text-[12.5px] text-muted-foreground">
-            Vacancies will appear here when your loops find matches.
+            {MATCHES_DISCOVERY_COPY.empty}
           </p>
         </div>
       </div>
     );
   }
+
+  const detailEntry = selectedEntry ?? filtered[0] ?? null;
+  let detailSaveState: MatchesDiscoverySaveState = "idle";
+  if (detailEntry) detailSaveState = saveStates[detailEntry.key] ?? "idle";
+  const detailIsIgnored = detailEntry ? ignoredKeys.has(detailEntry.stableKey) : false;
 
   return (
     <div className="grid h-full grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-4">
@@ -484,26 +497,28 @@ function MatchesBody({
               <p className="mt-1 text-[12px] text-muted-foreground">Try a different filter or source.</p>
             </div>
           ) : (
-            filtered.map((item) => (
-              <VacancyMatchRow
-                key={item.match.id}
-                item={item}
-                isActive={selectedItem?.match.id === item.match.id}
-                onClick={() => onSelectId(item.match.id)}
+            filtered.map((entry) => (
+              <PreviewEntryRow
+                key={entry.key}
+                entry={entry}
+                saveState={saveStates[entry.key] ?? "idle"}
+                isIgnored={ignoredKeys.has(entry.stableKey)}
+                isActive={detailEntry?.key === entry.key}
+                onClick={() => onSelectKey(entry.key)}
               />
             ))
           )}
         </div>
       </div>
 
-      <VacancyMatchDetailPane
-        item={selectedItem}
-        convertingId={convertingId}
-        ignoringId={ignoringId}
-        feedbackById={feedbackById}
-        onConvert={onConvert}
+      <PreviewDetailPane
+        entry={detailEntry}
+        saveState={detailSaveState}
+        isIgnored={detailIsIgnored}
+        savingKey={savingKey}
+        ignoringKey={ignoringKey}
+        onSave={onSave}
         onIgnore={onIgnore}
-        onNavigate={onNavigate}
       />
     </div>
   );
@@ -513,34 +528,47 @@ function MatchesBody({
 
 export default function MatchesPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const vm = useMatchesPageController();
   const { loopsQ } = vm.queries;
 
-  const [allMatches, setAllMatches] = useState<VacancyMatchWithLoop[]>([]);
+  const [allEntries, setAllEntries] = useState<DiscoveryPageEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [saveStates, setSaveStates] = useState<Record<string, MatchesDiscoverySaveState>>({});
+  const [ignoredKeys, setIgnoredKeys] = useState<Set<string>>(new Set());
 
   const [activeSource, setActiveSource] = useState("all");
-  const [activeStatus, setActiveStatus] = useState<StatusTab>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [convertingId, setConvertingId] = useState<string | null>(null);
-  const [ignoringId, setIgnoringId] = useState<string | null>(null);
-  const [feedbackById, setFeedbackById] = useState<Record<string, MatchApplicationFeedback>>({});
+  const [activeStatus, setActiveStatus] = useState<DiscoveryStatusTab>("all");
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [ignoringKey, setIgnoringKey] = useState<string | null>(null);
 
-  // Load VacancyMatches from all active loops
   useEffect(() => {
     if (loopsQ.isLoading) return;
-    if (vm.loops.length === 0) { setAllMatches([]); return; }
+
+    const activeLoops = vm.loops.filter((l) => l.status !== "archived");
+    if (activeLoops.length === 0) {
+      setAllEntries([]);
+      setIgnoredKeys(new Set());
+      setIsLoading(false);
+      return;
+    }
 
     let cancelled = false;
     setIsLoading(true);
     setError(null);
 
-    const activeLoops = vm.loops.filter((l) => l.status !== "archived");
-    loadMatchesFromLoops(activeLoops)
-      .then((items) => { if (!cancelled) setAllMatches(items); })
+    const loopOptions = getMatchesDiscoveryLoopOptions(activeLoops);
+    const sourceIds = getDefaultMatchesDiscoverySourceIds();
+    const loopIds = activeLoops.map((l) => l.id);
+
+    loadDiscoveryData(loopOptions, loopIds, sourceIds)
+      .then(({ entries, ignoredKeys: keys }) => {
+        if (cancelled) return;
+        setAllEntries(entries);
+        setIgnoredKeys(keys);
+      })
       .catch((err: unknown) => { if (!cancelled) setError(getErrorMessage(err)); })
       .finally(() => { if (!cancelled) setIsLoading(false); });
 
@@ -549,72 +577,96 @@ export default function MatchesPage() {
 
   const sources = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const { match } of allMatches) {
-      const src = normalizeSource(match.source);
-      counts.set(src, (counts.get(src) ?? 0) + 1);
+    for (const entry of allEntries) {
+      counts.set(entry.sourceId, (counts.get(entry.sourceId) ?? 0) + 1);
     }
     return Array.from(counts.entries()).map(([key, count]) => ({
-      key, label: formatSourceLabel(key), count,
+      key, label: getRunnableDiscoverySourceLabel(key), count,
     }));
-  }, [allMatches]);
+  }, [allEntries]);
 
-  const statusCounts = useMemo(() => {
-    const base = allMatches.filter(
-      ({ match }) => activeSource === "all" || normalizeSource(match.source) === activeSource,
-    );
-    const counts: Record<StatusTab, number> = { all: base.length, new: 0, saved: 0, converted: 0, ignored: 0 };
-    for (const { match } of base) counts[match.status] = (counts[match.status] ?? 0) + 1;
-    return counts;
-  }, [allMatches, activeSource]);
+  const statusCounts = useMemo((): Record<DiscoveryStatusTab, number> => {
+    const base = activeSource === "all"
+      ? allEntries
+      : allEntries.filter((e) => e.sourceId === activeSource);
+
+    let all = 0;
+    let newCount = 0;
+    let savedCount = 0;
+    let hiddenCount = 0;
+
+    for (const entry of base) {
+      const saveState = saveStates[entry.key] ?? "idle";
+      const isIgnored = ignoredKeys.has(entry.stableKey);
+      if (isIgnored) { hiddenCount++; continue; }
+      all++;
+      if (isMatchesDiscoverySavedState(saveState)) savedCount++;
+      else newCount++;
+    }
+
+    return { all, new: newCount, saved: savedCount, hidden: hiddenCount };
+  }, [allEntries, activeSource, saveStates, ignoredKeys]);
 
   const filtered = useMemo(
-    () => allMatches.filter(({ match }) => {
-      if (activeSource !== "all" && normalizeSource(match.source) !== activeSource) return false;
-      if (activeStatus !== "all" && match.status !== activeStatus) return false;
+    () => allEntries.filter((entry) => {
+      if (activeSource !== "all" && entry.sourceId !== activeSource) return false;
+      const saveState = saveStates[entry.key] ?? "idle";
+      const isIgnored = ignoredKeys.has(entry.stableKey);
+      if (activeStatus === "hidden") return isIgnored;
+      if (isIgnored) return false;
+      if (activeStatus === "new") return !isMatchesDiscoverySavedState(saveState);
+      if (activeStatus === "saved") return isMatchesDiscoverySavedState(saveState);
       return true;
     }),
-    [allMatches, activeSource, activeStatus],
+    [allEntries, activeSource, activeStatus, saveStates, ignoredKeys],
   );
 
-  const selectedItem = useMemo(
-    () => filtered.find(({ match }) => match.id === selectedId) ?? filtered[0] ?? null,
-    [filtered, selectedId],
+  const selectedEntry = useMemo(
+    () => filtered.find((e) => e.key === selectedKey) ?? null,
+    [filtered, selectedKey],
   );
 
-  async function handleConvert(match: VacancyMatch) {
-    setConvertingId(match.id);
+  async function handleSave(entry: DiscoveryPageEntry) {
+    setSavingKey(entry.key);
+    setSaveStates((prev) => ({ ...prev, [entry.key]: "saving" }));
     try {
-      const result = await createApplicationFromVacancyMatchViaRest(match.loopId, match.id);
-      setAllMatches((cur) => cur.map((item) =>
-        item.match.id === match.id ? { ...item, match: result.match } : item,
-      ));
-      setFeedbackById((cur) => ({
-        ...cur,
-        [match.id]: {
-          applicationId: result.applicationId,
-          message: result.alreadyLinked
-            ? MATCHES_SAVED_MATCHES_COPY.applicationAlreadyCreated
-            : MATCHES_SAVED_MATCHES_COPY.applicationCreated,
-        },
-      }));
+      const result = await saveDiscoveryPreviewAsApplicationViaRest(entry.loopId, {
+        sourceId: entry.sourceId,
+        externalId: entry.item.externalId,
+        sourceUrl: entry.item.sourceUrl,
+        title: entry.item.title,
+        company: entry.item.company,
+        location: entry.item.location,
+        description: entry.item.snippet,
+        postedAt: entry.item.postedAt,
+        rawMetadata: entry.item.rawMetadata,
+        confidence: entry.item.confidence,
+      });
+      const nextState: MatchesDiscoverySaveState = result.duplicate ? "duplicate" : "saved";
+      setSaveStates((prev) => ({ ...prev, [entry.key]: nextState }));
     } catch (err: unknown) {
+      setSaveStates((prev) => ({ ...prev, [entry.key]: "idle" }));
       setError(getErrorMessage(err));
     } finally {
-      setConvertingId(null);
+      setSavingKey(null);
     }
   }
 
-  async function handleIgnore(match: VacancyMatch) {
-    setIgnoringId(match.id);
+  async function handleIgnore(entry: DiscoveryPageEntry) {
+    setIgnoringKey(entry.key);
     try {
-      const updated = await patchLoopVacancyMatchViaRest(match.loopId, match.id, { status: "ignored" });
-      setAllMatches((cur) => cur.map((item) =>
-        item.match.id === match.id ? { ...item, match: updated } : item,
-      ));
+      await ignoreDiscoveryPreviewViaRest(entry.loopId, {
+        sourceId: entry.sourceId,
+        externalId: entry.item.externalId,
+        sourceUrl: entry.item.sourceUrl,
+        title: entry.item.title,
+        company: entry.item.company,
+      });
+      setIgnoredKeys((prev) => new Set([...prev, entry.stableKey]));
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
-      setIgnoringId(null);
+      setIgnoringKey(null);
     }
   }
 
@@ -622,7 +674,6 @@ export default function MatchesPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
       <div className="shrink-0 border-b border-border bg-background px-7 py-5">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -634,59 +685,55 @@ export default function MatchesPage() {
             <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
               {title}
             </h1>
-            {!isLoading && allMatches.length > 0 ? (
+            {!isLoading && allEntries.length > 0 ? (
               <p className="mt-1 text-[13px] text-muted-foreground">
-                {allMatches.length} vacancies · {sources.length} source{sources.length === 1 ? "" : "s"}
+                {allEntries.length} vacancies · {sources.length} source{sources.length === 1 ? "" : "s"}
               </p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
           >
-            <Plus className="h-3.5 w-3.5" />
-            {t("matches.list.addManual", "Add vacancy")}
+            <RefreshCw className="h-3.5 w-3.5" />
+            {MATCHES_DISCOVERY_COPY.runButton}
           </button>
         </div>
       </div>
 
-      {/* Sources strip */}
       <SourcesStrip
         sources={sources}
-        totalCount={allMatches.length}
+        totalCount={allEntries.length}
         activeSource={activeSource}
         onSetSource={setActiveSource}
       />
 
-      {/* Status tabs */}
       <StatusTabBar
         counts={statusCounts}
         activeStatus={activeStatus}
         onSetStatus={setActiveStatus}
       />
 
-      {/* Error */}
       {error ? (
         <div className="shrink-0 mx-7 mt-3 rounded-[10px] border border-destructive/30 bg-destructive/5 p-3 text-[12.5px] text-destructive">
           {error}
         </div>
       ) : null}
 
-      {/* Body */}
       <div className="flex-1 min-h-0 overflow-hidden bg-background p-6">
         <MatchesBody
           isLoading={isLoading}
-          allMatches={allMatches}
+          allEntries={allEntries}
           filtered={filtered}
-          selectedItem={selectedItem}
-          convertingId={convertingId}
-          ignoringId={ignoringId}
-          feedbackById={feedbackById}
-          onSelectId={setSelectedId}
-          onConvert={(match) => { void handleConvert(match); }}
-          onIgnore={(match) => { void handleIgnore(match); }}
-          onNavigate={(appId) => navigate(getApplicationDetailsRoute(appId))}
+          selectedEntry={selectedEntry}
+          saveStates={saveStates}
+          ignoredKeys={ignoredKeys}
+          savingKey={savingKey}
+          ignoringKey={ignoringKey}
+          onSelectKey={setSelectedKey}
+          onSave={(entry) => { void handleSave(entry); }}
+          onIgnore={(entry) => { void handleIgnore(entry); }}
         />
       </div>
     </div>
