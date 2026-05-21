@@ -286,6 +286,107 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
+// ─── Pipeline funnel ──────────────────────────────────────────────────────────
+
+interface FunnelEntry {
+  label: string;
+  sublabel: string;
+  count: number;
+  pct: number;
+  barClass: string;
+}
+
+function buildFunnelEntries(byColumn: Record<string, number>, total: number): FunnelEntry[] {
+  const interview = (byColumn["INTERVIEW"] ?? 0) + (byColumn["OFFER"] ?? 0) + (byColumn["HIRED"] ?? 0);
+  const offer     = (byColumn["OFFER"] ?? 0) + (byColumn["HIRED"] ?? 0);
+  const hired     = byColumn["HIRED"] ?? 0;
+  const pct       = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+
+  return [
+    { label: "Всего отправлено",  sublabel: "все заявки",           count: total,     pct: 100,         barClass: "bg-muted-foreground/25" },
+    { label: "Получили ответ",    sublabel: "HR или рекрутер",       count: interview, pct: pct(interview), barClass: "bg-primary/50" },
+    { label: "Дошли до интервью", sublabel: "техническое или оффер", count: offer,     pct: pct(offer),     barClass: "bg-primary/75" },
+    { label: "Получили оффер",    sublabel: "конечная конверсия",    count: hired,     pct: pct(hired),     barClass: "bg-primary" },
+  ];
+}
+
+function PipelineFunnel({ byColumn, total }: { byColumn: Record<string, number>; total: number }) {
+  const rejected   = byColumn["REJECTED"]    ?? 0;
+  const noResponse = byColumn["NO_RESPONSE"] ?? 0;
+  const active     = byColumn["ACTIVE"]      ?? 0;
+
+  if (total === 0) {
+    return (
+      <div className="rounded-[14px] border border-border bg-card px-6 py-6">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-subtle-foreground mb-2">
+          Воронка поиска
+        </div>
+        <div className="text-[12.5px] text-muted-foreground">
+          Добавь первые заявки, чтобы увидеть конверсию по этапам
+        </div>
+      </div>
+    );
+  }
+
+  const entries = buildFunnelEntries(byColumn, total);
+
+  return (
+    <div className="rounded-[14px] border border-border bg-card px-6 py-5">
+      <div className="flex items-start justify-between mb-5 gap-4">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-subtle-foreground">
+            Воронка поиска
+          </div>
+          <div className="mt-0.5 text-[12.5px] text-muted-foreground">
+            Прохождение по этапам отбора
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-muted-foreground justify-end">
+          {active > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-orange-400/70 shrink-0" />
+              В процессе: <strong className="text-foreground font-semibold ml-0.5">{active}</strong>
+            </span>
+          )}
+          {rejected > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-destructive/50 shrink-0" />
+              Отклонено: <strong className="text-foreground font-semibold ml-0.5">{rejected}</strong>
+            </span>
+          )}
+          {noResponse > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
+              Нет ответа: <strong className="text-foreground font-semibold ml-0.5">{noResponse}</strong>
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3.5">
+        {entries.map((entry) => (
+          <div key={entry.label} className="flex items-center gap-3">
+            <div className="w-[180px] shrink-0">
+              <div className="text-[12.5px] font-medium text-foreground leading-tight">{entry.label}</div>
+              <div className="text-[11px] text-muted-foreground">{entry.sublabel}</div>
+            </div>
+            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${entry.barClass}`}
+                style={{ width: `${Math.max(entry.pct, entry.count > 0 ? 2 : 0)}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-2 w-[72px] justify-end shrink-0 tabular-nums">
+              <span className="text-[14px] font-semibold text-foreground">{entry.count}</span>
+              <span className="text-[11px] text-muted-foreground">{entry.pct}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function OptimizationPage() {
@@ -297,6 +398,7 @@ export default function OptimizationPage() {
                  + (pipelineSummary.byColumn["HIRED"]     ?? 0);
   const offered  = (pipelineSummary.byColumn["OFFER"] ?? 0)
                  + (pipelineSummary.byColumn["HIRED"] ?? 0);
+  const offerPct = total > 0 ? Math.round((offered / total) * 100) : 0;
 
   const replyRate     = total > 0 ? replied / total : 0;
   const interviewRate = total > 0 ? offered / total : 0;
@@ -306,15 +408,17 @@ export default function OptimizationPage() {
     [replyRate, interviewRate, hasMatches],
   );
 
+  const [nowMs] = useState(() => Date.now());
+
   // Stale applications — ACTIVE/APPLIED, not updated in 14+ days
   const staleCount = useMemo(() => {
     return matchesAll.filter((m) => {
       const s = m.status as string;
       if (s !== "ACTIVE" && s !== "APPLIED" && s !== "SAVED") return false;
       const ms = toMillis(m.updatedAt) ?? 0;
-      return ms > 0 && Date.now() - ms > 14 * 86_400_000;
+      return ms > 0 && nowMs - ms > 14 * 86_400_000;
     }).length;
-  }, [matchesAll]);
+  }, [matchesAll, nowMs]);
 
   const insights = useMemo(
     () => buildInsights(staleCount, total),
@@ -332,8 +436,6 @@ export default function OptimizationPage() {
     medCount  > 0 && `${medCount} средних`,
   ].filter(Boolean).join(" · ") || "нет критичных";
 
-  // TODO(backend-migration): replace with GET /api/v1/optimization/insights
-
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* ── Header ── */}
@@ -341,10 +443,8 @@ export default function OptimizationPage() {
         <div className="px-7 pt-5 pb-4">
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
+              <div className="flex items-center gap-2 text-[11.5px] text-muted-foreground/60 mb-1">
                 <span>Loopboard</span>
-                <span>/</span>
-                <span className="text-muted-foreground">Воркспейс</span>
                 <span>/</span>
                 <span className="text-muted-foreground">Оптимизация</span>
               </div>
@@ -400,13 +500,16 @@ export default function OptimizationPage() {
               sub={sevLabel}
             />
 
-            {/* Применено */}
+            {/* Конверсия в оффер */}
             <StatCard
-              label="Применено за неделю"
-              value="—"
-              sub="нет данных"
+              label="Конверсия в оффер"
+              value={`${offerPct}%`}
+              sub={`${offered} из ${total} заявок`}
             />
           </div>
+
+          {/* ── Pipeline funnel ── */}
+          <PipelineFunnel byColumn={pipelineSummary.byColumn} total={total} />
 
           {/* ── Insights list ── */}
           <div className="flex flex-col gap-2.5">
