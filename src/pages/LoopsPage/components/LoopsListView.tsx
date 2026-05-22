@@ -9,7 +9,6 @@ import { listApplicationsViaRest } from "src/features/applications/rest/queries"
 import {
   archiveLoopViaRest,
   createLoopViaRest,
-  duplicateLoopViaRest,
   listLoopsViaRest,
   updateLoopViaRest,
 } from "src/features/loops";
@@ -139,7 +138,6 @@ type LoopCardProps = {
   stats: LoopStats;
   busy: boolean;
   onArchive: (id: string) => void;
-  onDuplicate: (id: string) => void;
   onOpen: (id: string) => void;
   onOpenApplications: (id: string) => void;
   onOpenMatches: (id: string) => void;
@@ -154,7 +152,6 @@ function LoopCard({
   stats,
   busy,
   onArchive,
-  onDuplicate,
   onOpen,
   onOpenApplications: _onOpenApplications,
   onOpenMatches,
@@ -228,7 +225,7 @@ function LoopCard({
 
         {/* Col 3: metrics + actions */}
         <div className="flex flex-col items-end gap-3">
-          {/* 3 key metrics */}
+          {/* 2 key metrics */}
           <div className="flex items-start gap-5">
             <div className="flex flex-col items-center">
               <span className="text-[18px] font-semibold leading-none tabular-nums text-foreground">
@@ -240,18 +237,10 @@ function LoopCard({
             </div>
             <div className="flex flex-col items-center">
               <span className="text-[18px] font-semibold leading-none tabular-nums text-primary">
-                {stats.applied}
+                {stats.applications}
               </span>
               <span className="mt-0.5 text-[10.5px] text-muted-foreground">
-                {t("loops.statApplied", "Applied")}
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className={`text-[18px] font-semibold leading-none tabular-nums ${stats.today > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
-                +{stats.today}
-              </span>
-              <span className="mt-0.5 text-[10.5px] text-muted-foreground">
-                {t("loops.statToday", "Today")}
+                {t("loops.statApplications", "Applications")}
               </span>
             </div>
           </div>
@@ -275,14 +264,6 @@ function LoopCard({
                 onClick={() => onRestore(loop.id)}
               >
                 Restore
-              </LoopActionButton>
-            ) : null}
-            {!archived ? (
-              <LoopActionButton
-                disabled={busy}
-                onClick={() => onDuplicate(loop.id)}
-              >
-                Duplicate
               </LoopActionButton>
             ) : null}
             {!archived ? (
@@ -552,22 +533,6 @@ export function LoopsListView({
     [loadLoops],
   );
 
-  const handleDuplicate = useCallback(
-    async (loopId: string) => {
-      setIsUpdatingLoop(true);
-      try {
-        const newLoop = await duplicateLoopViaRest(loopId);
-        await loadLoops();
-        onOpenLoop(newLoop.id);
-      } catch (error: unknown) {
-        setStatsError(getErrorMessage(error));
-      } finally {
-        setIsUpdatingLoop(false);
-      }
-    },
-    [loadLoops, onOpenLoop],
-  );
-
   const showFrom =
     visibleLoops.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const showTo =
@@ -586,7 +551,6 @@ export function LoopsListView({
         setStatsError(getErrorMessage(error));
       });
     },
-    onDuplicate: handleDuplicate,
     onOpenApplications,
     onOpenLoop,
     onOpenMatches,
@@ -776,7 +740,6 @@ function renderContent(params: {
   isFetching: boolean;
   isLoading: boolean;
   onArchive: (id: string) => void;
-  onDuplicate: (id: string) => Promise<void>;
   onCreateLoop: () => void;
   onOpenApplications: (id: string) => void;
   onOpenLoop: (id: string) => void;
@@ -801,7 +764,6 @@ function renderContent(params: {
     isFetching,
     isLoading,
     onArchive,
-    onDuplicate,
     onCreateLoop,
     onOpenApplications,
     onOpenLoop,
@@ -869,7 +831,6 @@ function renderContent(params: {
             stats={getEffectiveStats(statsById, loop)}
             busy={isFetching}
             onArchive={onArchive}
-            onDuplicate={(id) => { onDuplicate(id).catch(() => undefined); }}
             onOpen={onOpenLoop}
             onOpenApplications={onOpenApplications}
             onOpenMatches={onOpenMatches}

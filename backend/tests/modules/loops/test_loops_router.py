@@ -122,21 +122,6 @@ class FakeLoopsService:
             for lid in loop_ids
         }
 
-    async def duplicate(self, user: User, loop_id: UUID):
-        source = await self.get_owned(user, loop_id)
-        new_loop = make_loop(
-            id=uuid4(),
-            user_id=user.id,
-            title=f"{source.title} (copy)",
-            target_role=source.target_role,
-            location=source.location,
-            radius_km=source.radius_km,
-            sources=list(source.sources),
-            status="active",
-        )
-        self.loops.append(new_loop)
-        return new_loop
-
 
 def make_client(service: FakeLoopsService) -> TestClient:
     app = create_app()
@@ -328,33 +313,6 @@ def test_create_loop_rejects_too_many_keywords() -> None:
         )
 
     assert response.status_code == 422
-
-
-def test_duplicate_loop() -> None:
-    service = FakeLoopsService()
-    with make_client(service) as client:
-        response = client.post(
-            f"/api/v1/loops/{LOOP_ID}/duplicate",
-            headers={"Authorization": "Bearer test"},
-        )
-
-    assert response.status_code == 201
-    body = response.json()
-    assert body["title"] == "Frontend Ausbildung (copy)"
-    assert body["status"] == "active"
-    assert body["id"] != str(LOOP_ID)
-    assert len(service.loops) == 2
-
-
-def test_duplicate_nonexistent_loop_returns_404() -> None:
-    service = FakeLoopsService(loops=[])
-    with make_client(service) as client:
-        response = client.post(
-            f"/api/v1/loops/{LOOP_ID}/duplicate",
-            headers={"Authorization": "Bearer test"},
-        )
-
-    assert response.status_code == 404
 
 
 def test_list_loops_includes_metrics() -> None:

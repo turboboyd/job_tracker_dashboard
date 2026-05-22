@@ -195,5 +195,9 @@ export function shouldShowLoopsPagination(totalLoops: number, pageSize = 10): bo
 export function getEffectiveStats(statsById: LoopStatsById, loop: Loop): LoopStats {
   const base = getLoopStats(statsById, loop.id);
   if (loop.metrics == null) return base;
-  return { ...base, matches: loop.metrics.matches_saved };
+  return {
+    ...base,
+    matches: loop.metrics.matches_saved,
+    applications: loop.metrics.applications_total,
+  };
 }

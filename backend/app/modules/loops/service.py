@@ -94,26 +94,6 @@ class LoopsService:
     ) -> dict[str, dict[str, int]]:
         return await self._repo.get_metrics_by_loop_ids(loop_ids)
 
-    async def duplicate(self, user: User, loop_id: UUID) -> Loop:
-        source = await self.get_owned(user, loop_id)
-        new_loop = Loop(
-            user_id=user.id,
-            title=f"{source.title} (copy)",
-            target_role=source.target_role,
-            location=source.location,
-            radius_km=source.radius_km,
-            sources=list(source.sources),
-            keywords=list(source.keywords),
-            excluded_keywords=list(source.excluded_keywords),
-            employment_types=list(source.employment_types),
-            work_modes=list(source.work_modes),
-            selected_sources=list(source.selected_sources),
-            auto_discovery_enabled=False,
-            discovery_radius_km=source.discovery_radius_km,
-            status="active",
-        )
-        return await self._repo.create(new_loop)
-
     async def require_owned_for_read(self, user: User, loop_id: str) -> Loop:
         try:
             parsed = UUID(loop_id)
