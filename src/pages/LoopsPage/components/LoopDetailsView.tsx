@@ -4,9 +4,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "src/app/store/hooks";
 import { joinTitles } from "src/entities/loop/lib";
-import type { Loop } from "src/entities/loop/model";
+import type { Loop, LoopStatus } from "src/entities/loop/model";
 import { LoopSearchLinks } from "src/entities/loop/ui/LoopSearchLinks/LoopSearchLinks";
-import { getLoopViaRest, updateLoopViaRest } from "src/features/loops";
+import {
+  archiveLoopViaRest,
+  duplicateLoopViaRest,
+  getLoopViaRest,
+  updateLoopViaRest,
+} from "src/features/loops";
 import { createApplicationsRepo } from "src/pages/ApplicationsPage/api/applicationsRepo";
 import {
   buildCreateApplicationPayload,
@@ -29,17 +34,40 @@ import { updateURLParams } from "src/shared/lib/url/updateURLParams";
 import { ArbeitsagenturDiscoveryPreviewPanel } from "./ArbeitsagenturDiscoveryPreviewPanel";
 import { CardText } from "./Header";
 import { LoopSettingsPanel } from "./LoopSettingsPanel";
-import { isBackendLoopId } from "./loopsPage.helpers";
+import { getLoopStatus, isBackendLoopId } from "./loopsPage.helpers";
 import { VacancyMatchesSection } from "./VacancyMatchesSection";
+
+function getStatusBadgeClass(status: LoopStatus): string {
+  if (status === "archived") return "bg-muted text-muted-foreground";
+  if (status === "paused") return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
+  return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+}
+
+const STATUS_LABEL: Record<LoopStatus, string> = {
+  active: "Active",
+  paused: "Paused",
+  archived: "Archived",
+};
+
+function LoopStatusBadge({ status }: { status: LoopStatus }) {
+  const label = STATUS_LABEL[status];
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium ${getStatusBadgeClass(status)}`}>
+      {label}
+    </span>
+  );
+}
 
 export function LoopDetailsView({
   userId,
   loopId,
   onBack,
+  onOpenLoop,
 }: {
   userId: string;
   loopId: string;
   onBack: () => void;
+  onOpenLoop?: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -59,6 +87,8 @@ export function LoopDetailsView({
   const [isCreatingApplication, setIsCreatingApplication] = useState(false);
   const [createApplicationError, setCreateApplicationError] = useState<string | null>(null);
   const [matchesRefreshKey, setMatchesRefreshKey] = useState(0);
+  const [isActionBusy, setIsActionBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const readPageFromSearch = (search: string): number | null => {
     try {
@@ -124,6 +154,51 @@ export function LoopDetailsView({
       cancelled = true;
     };
   }, [loopId, t]);
+
+  const handlePauseResume = useCallback(async () => {
+    if (!loop) return;
+    const nextStatus = getLoopStatus(loop) === "paused" ? "active" : "paused";
+    setIsActionBusy(true);
+    setActionError(null);
+    try {
+      const updated = await updateLoopViaRest(loop.id, { status: nextStatus });
+      setLoop(updated);
+    } catch (error: unknown) {
+      setActionError(getErrorMessage(error));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }, [loop]);
+
+  const handleArchive = useCallback(async () => {
+    if (!loop) return;
+    setIsActionBusy(true);
+    setActionError(null);
+    try {
+      await archiveLoopViaRest(loop.id);
+      onBack();
+    } catch (error: unknown) {
+      setActionError(getErrorMessage(error));
+      setIsActionBusy(false);
+    }
+  }, [loop, onBack]);
+
+  const handleDuplicate = useCallback(async () => {
+    if (!loop) return;
+    setIsActionBusy(true);
+    setActionError(null);
+    try {
+      const newLoop = await duplicateLoopViaRest(loop.id);
+      if (onOpenLoop) {
+        onOpenLoop(newLoop.id);
+      } else {
+        onBack();
+      }
+    } catch (error: unknown) {
+      setActionError(getErrorMessage(error));
+      setIsActionBusy(false);
+    }
+  }, [loop, onBack, onOpenLoop]);
 
   const title = useMemo(
     () => loop?.name ?? t("loops.detailsTitle", "Loop"),
@@ -335,13 +410,44 @@ export function LoopDetailsView({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {loop ? (
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                onClick={openCreateApplicationDialog}
-              >
-                {t("loops.addVacancy", "Add vacancy")}
-              </button>
+              <>
+                <LoopStatusBadge status={getLoopStatus(loop)} />
+                <button
+                  type="button"
+                  disabled={isActionBusy}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                  onClick={() => { void handlePauseResume(); }}
+                >
+                  {getLoopStatus(loop) === "paused"
+                    ? t("loops.resume", "Resume")
+                    : t("loops.pause", "Pause")}
+                </button>
+                <button
+                  type="button"
+                  disabled={isActionBusy}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                  onClick={() => { void handleDuplicate(); }}
+                >
+                  {t("loops.duplicate", "Duplicate")}
+                </button>
+                {getLoopStatus(loop) !== "archived" ? (
+                  <button
+                    type="button"
+                    disabled={isActionBusy}
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                    onClick={() => { void handleArchive(); }}
+                  >
+                    {t("loops.archive", "Archive")}
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                  onClick={openCreateApplicationDialog}
+                >
+                  {t("loops.addVacancy", "Add vacancy")}
+                </button>
+              </>
             ) : null}
             <button
               type="button"
@@ -381,6 +487,11 @@ export function LoopDetailsView({
 
       <div className="flex-1 overflow-y-auto bg-background">
         <div className="p-7">
+          {actionError ? (
+            <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {actionError}
+            </div>
+          ) : null}
           {content}
           {createApplicationError ? (
             <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">

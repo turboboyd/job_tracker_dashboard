@@ -94,3 +94,18 @@ async def delete_loop(
 ) -> LoopRead:
     loop = await svc.archive(current_user, loop_id)
     return LoopRead.model_validate(loop)
+
+
+@router.post(
+    "/{loop_id}/duplicate",
+    response_model=LoopRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Duplicate loop",
+)
+async def duplicate_loop(
+    loop_id: UUID,
+    current_user: CurrentUser,
+    svc: LoopsSvc,
+) -> LoopRead:
+    loop = await svc.duplicate(current_user, loop_id)
+    return LoopRead.model_validate(loop)
