@@ -207,6 +207,17 @@ export async function listLoopVacancyMatchesViaRest(
   };
 }
 
+export async function getLoopVacancyMatchViaRest(
+  loopId: string,
+  matchId: string,
+): Promise<VacancyMatch> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restGet<VacancyMatchDto>(
+    buildLoopMatchDetailUrl(apiBaseUrl, loopId, matchId),
+  );
+  return mapVacancyMatchDto(dto);
+}
+
 export async function patchLoopVacancyMatchViaRest(
   loopId: string,
   matchId: string,

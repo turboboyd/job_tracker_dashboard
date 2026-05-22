@@ -16,23 +16,24 @@ export interface BackendLoopMetricsDto {
 
 export interface BackendLoopDto {
   id: string;
-  user_id: string;
-  title: string;
+  user_id?: string;
+  title?: string | null;
+  name?: string | null;
   target_role: string | null;
   location: string | null;
-  radius_km: number | null;
-  sources: string[];
-  status: LoopStatus;
-  keywords: string[];
-  excluded_keywords: string[];
-  employment_types: string[];
-  work_modes: string[];
-  selected_sources: string[];
-  auto_discovery_enabled: boolean;
-  discovery_radius_km: number | null;
-  last_discovery_at: string | null;
-  created_at: string;
-  updated_at: string;
+  radius_km?: number | null;
+  sources?: string[];
+  status?: LoopStatus;
+  keywords?: string[];
+  excluded_keywords?: string[];
+  employment_types?: string[];
+  work_modes?: string[];
+  selected_sources?: string[];
+  auto_discovery_enabled?: boolean;
+  discovery_radius_km?: number | null;
+  last_discovery_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
   metrics?: BackendLoopMetricsDto | null;
 }
 
@@ -100,15 +101,20 @@ function splitKeywords(value: string | undefined): string[] {
 }
 
 function buildFilters(dto: BackendLoopDto): CanonicalFilters {
+  const keywords = normalizeStringList(dto.keywords);
+  const excludedKeywords = normalizeStringList(dto.excluded_keywords);
+  const employmentTypes = normalizeStringList(dto.employment_types);
+  const workModes = normalizeStringList(dto.work_modes);
+
   return {
     ...DEFAULT_CANONICAL_FILTERS,
     role: dto.target_role ?? "",
     location: dto.location ?? "",
-    radiusKm: normalizeRadius(dto.radius_km),
-    workMode: mapWorkModesToRemoteMode(dto.work_modes),
-    includeKeywords: dto.keywords.join(", "),
-    excludeKeywords: dto.excluded_keywords.join(", "),
-    employmentType: mapEmploymentType(dto.employment_types),
+    radiusKm: normalizeRadius(dto.radius_km ?? null),
+    workMode: mapWorkModesToRemoteMode(workModes),
+    includeKeywords: keywords.join(", "),
+    excludeKeywords: excludedKeywords.join(", "),
+    employmentType: mapEmploymentType(employmentTypes),
   };
 }
 
@@ -143,12 +149,18 @@ function mapMetrics(dto: BackendLoopDto): LoopMetrics | null {
 
 export function mapBackendLoopDtoToLoop(dto: BackendLoopDto): Loop {
   const targetRole = normalizeString(dto.target_role);
-  const title = normalizeString(dto.title, targetRole || "Untitled loop");
+  const title = normalizeString(dto.title ?? dto.name, targetRole || "Untitled loop");
   const selectedSources = normalizeStringList(dto.selected_sources);
   const sources = normalizeStringList(dto.sources);
   const effectiveSources = selectedSources.length > 0 ? selectedSources : sources;
   const platforms = mapSourcesToPlatforms(effectiveSources);
   const radiusKm = dto.radius_km ?? 30;
+  const keywords = normalizeStringList(dto.keywords);
+  const excludedKeywords = normalizeStringList(dto.excluded_keywords);
+  const employmentTypes = normalizeStringList(dto.employment_types);
+  const workModes = normalizeStringList(dto.work_modes);
+  const createdAt = dto.created_at ?? "";
+  const updatedAt = dto.updated_at ?? createdAt;
 
   return {
     id: dto.id,
@@ -159,21 +171,21 @@ export function mapBackendLoopDtoToLoop(dto: BackendLoopDto): Loop {
     location: dto.location ?? "",
     radiusKm,
     sources,
-    status: dto.status,
-    keywords: normalizeStringList(dto.keywords),
-    excludedKeywords: normalizeStringList(dto.excluded_keywords),
-    employmentTypes: normalizeStringList(dto.employment_types),
-    workModes: normalizeStringList(dto.work_modes),
+    status: dto.status ?? "active",
+    keywords,
+    excludedKeywords,
+    employmentTypes,
+    workModes,
     selectedSources,
-    autoDiscoveryEnabled: dto.auto_discovery_enabled,
-    discoveryRadiusKm: dto.discovery_radius_km,
-    lastDiscoveryAt: dto.last_discovery_at,
-    createdAt: dto.created_at,
-    updatedAt: dto.updated_at,
-    createdAtTs: Date.parse(dto.created_at),
-    updatedAtTs: Date.parse(dto.updated_at),
+    autoDiscoveryEnabled: dto.auto_discovery_enabled ?? false,
+    discoveryRadiusKm: dto.discovery_radius_km ?? null,
+    lastDiscoveryAt: dto.last_discovery_at ?? null,
+    createdAt,
+    updatedAt,
+    createdAtTs: createdAt ? Date.parse(createdAt) : null,
+    updatedAtTs: updatedAt ? Date.parse(updatedAt) : null,
     filters: buildFilters(dto),
-    remoteMode: mapWorkModesToRemoteMode(dto.work_modes),
+    remoteMode: mapWorkModesToRemoteMode(workModes),
     platforms,
     metrics: mapMetrics(dto),
   };

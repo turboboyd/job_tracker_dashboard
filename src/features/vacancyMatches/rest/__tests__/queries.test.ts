@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   buildLoopMatchCreateApplicationUrl,
   buildLoopMatchConvertUrl,
+  buildLoopMatchDetailUrl,
   buildLoopMatchFromPreviewUrl,
   buildLoopMatchImportPreviewUrl,
   buildLoopMatchPreviewIgnoreUrl,
@@ -36,6 +37,11 @@ assert.equal(
 assert.equal(
   buildLoopMatchConvertUrl(apiBaseUrl, "loop-1", "match/1"),
   "https://api.example.test/api/v1/loops/loop-1/matches/match%2F1/convert-to-application",
+);
+
+assert.equal(
+  buildLoopMatchDetailUrl(apiBaseUrl, "loop-1", "match/1"),
+  "https://api.example.test/api/v1/loops/loop-1/matches/match%2F1",
 );
 
 assert.equal(

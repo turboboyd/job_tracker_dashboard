@@ -196,6 +196,24 @@ async def list_matches(
     )
 
 
+@router.get(
+    "/{match_id}",
+    response_model=VacancyMatchRead,
+    summary="Get one vacancy match for a loop",
+)
+async def get_match(
+    loop_id: str,
+    match_id: UUID,
+    current_user: CurrentUser,
+    svc: VacancyMatchesSvc,
+) -> VacancyMatchRead:
+    try:
+        match = await svc.get_owned_in_loop(current_user, loop_id, match_id)
+    except VacancyMatchError as error:
+        raise _match_http_error(error) from error
+    return VacancyMatchRead.model_validate(match)
+
+
 @router.patch(
     "/{match_id}",
     response_model=VacancyMatchRead,

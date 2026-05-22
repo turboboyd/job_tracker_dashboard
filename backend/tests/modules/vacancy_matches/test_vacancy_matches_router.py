@@ -265,6 +265,12 @@ class FakeVacancyMatchesService:
             items = [item for item in items if item.status == status]
         return items[offset : offset + limit], len(items)
 
+    async def get_owned_in_loop(self, user: User, loop_id: str, match_id: UUID):
+        for item in self.matches:
+            if item.id == match_id and item.user_id == user.id and item.loop_id == loop_id:
+                return item
+        raise VacancyMatchNotFoundError("Vacancy match not found")
+
     async def patch(self, user: User, loop_id: str, match_id: UUID, payload):
         for item in self.matches:
             if (
@@ -551,6 +557,21 @@ def test_list_matches_scoped_to_current_user_and_status() -> None:
     data = response.json()
     assert data["total"] == 1
     assert data["items"][0]["status"] == "saved"
+
+
+def test_get_match_scoped_to_loop_and_current_user() -> None:
+    service = FakeVacancyMatchesService(matches=[make_match()])
+    with make_client(service) as client:
+        response = client.get(
+            f"/api/v1/loops/loop-1/matches/{MATCH_ID}",
+            headers={"Authorization": "Bearer test"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == str(MATCH_ID)
+    assert data["loop_id"] == "loop-1"
+    assert data["role_title"] == "Frontend Developer"
 
 
 def test_patch_match() -> None:

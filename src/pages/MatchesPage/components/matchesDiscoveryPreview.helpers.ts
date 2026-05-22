@@ -54,7 +54,7 @@ export const MATCHES_DISCOVERY_COPY = {
     "Сейчас подключены Arbeitsagentur, Arbeitnow, Adzuna, Remotive, RemoteJobs.org, Himalayas, Remote OK, Greenhouse и Lever. Источники с ключами или списками компаний могут вернуть подсказку настройки.",
   noAutoApplication: "Заявка не создаётся автоматически.",
   saveBoundary:
-    "Выберите подходящую вакансию и добавьте её в Мои заявки.",
+    "Выберите подходящую вакансию и сохраните её как совпадение.",
   loopLabel: "Направление поиска",
   allLoops: "Все направления",
   sourceLabel: "Источник",
@@ -104,14 +104,14 @@ export const MATCHES_DISCOVERY_COPY = {
   previewCountPrefix: "Найдено для предварительного просмотра",
   notSaved: "Не сохранено",
   openVacancy: "Открыть вакансию",
-  saveAsMatch: "Добавить в заявки",
+  saveAsMatch: "Сохранить как совпадение",
   saving: "Сохраняем...",
   saved: "Сохранено",
   duplicate: "Уже сохранено",
   companyMissing: "Компания не указана",
   titleMissing: "Вакансия без названия",
   refreshAfterSave:
-    "После добавления вакансия появится в разделе Мои заявки со статусом Saved.",
+    "После сохранения вакансия появится в списке сохранённых совпадений.",
 } as const;
 
 export const MATCHES_DISCOVERY_SEARCH_SCOPE_OPTIONS: ReadonlyArray<{

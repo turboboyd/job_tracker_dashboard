@@ -13,6 +13,7 @@ import {
   LoopsPage,
   WhatsNewPage,
   MatchesPage,
+  MatchDetailsPage,
   BoardPage,
   ApplicationsPage,
   ApplicationDetailsPage,
@@ -66,6 +67,7 @@ export enum AppRoutes {
   LOOPS = "loops",
   LOOP_DETAILS = "loop_details",
   MATCHES = "matches",
+  MATCH_DETAILS = "match_details",
   NOT_FOUND = "not_found",
   BOARD = "board",
   CALENDAR = "calendar",
@@ -111,6 +113,7 @@ export const RoutePath: Record<AppRoutes, string> = {
   [AppRoutes.LOOPS]: "/dashboard/loops",
   [AppRoutes.LOOP_DETAILS]: "/dashboard/loops/:loopId",
   [AppRoutes.MATCHES]: "/dashboard/matches",
+  [AppRoutes.MATCH_DETAILS]: "/dashboard/matches/:matchId",
   [AppRoutes.NOT_FOUND]: "/*",
 };
 
@@ -160,6 +163,7 @@ export const privateRoutes: RouteItem[] = [
 
   { path: RoutePath[AppRoutes.LOOPS], element: <LoopsPage /> },
   { path: RoutePath[AppRoutes.LOOP_DETAILS], element: <LoopsPage /> },
+  { path: RoutePath[AppRoutes.MATCH_DETAILS], element: <MatchDetailsPage /> },
   { path: RoutePath[AppRoutes.MATCHES], element: <MatchesPage /> },
 
   {

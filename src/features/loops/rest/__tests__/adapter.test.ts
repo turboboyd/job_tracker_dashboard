@@ -65,6 +65,35 @@ test("mapBackendLoopDtoToLoop falls back to sources when selected_sources is emp
   assert.deepEqual(loop.platforms, ["linkedin", "indeed"]);
 });
 
+test("mapBackendLoopDtoToLoop tolerates compact list response DTO", () => {
+  const loop = mapBackendLoopDtoToLoop({
+    id: "a5d87695-8fde-48e8-8cba-7b3a38c8e284",
+    title: "New loop",
+    target_role: "Frontend Developer",
+    location: "Berlin",
+    status: "active",
+    metrics: {
+      matches_saved: 0,
+      applications_total: 8,
+    },
+  });
+
+  assert.equal(loop.id, "a5d87695-8fde-48e8-8cba-7b3a38c8e284");
+  assert.equal(loop.name, "New loop");
+  assert.equal(loop.title, "New loop");
+  assert.equal(loop.targetRole, "Frontend Developer");
+  assert.equal(loop.location, "Berlin");
+  assert.equal(loop.status, "active");
+  assert.deepEqual(loop.selectedSources, []);
+  assert.deepEqual(loop.keywords, []);
+  assert.equal(loop.filters?.role, "Frontend Developer");
+  assert.equal(loop.filters?.location, "Berlin");
+  assert.deepEqual(loop.metrics, {
+    matches_saved: 0,
+    applications_total: 8,
+  });
+});
+
 test("mapCreateLoopInputToDto maps camelCase create input to snake_case payload", () => {
   const payload = mapCreateLoopInputToDto({
     name: "Backend Search",

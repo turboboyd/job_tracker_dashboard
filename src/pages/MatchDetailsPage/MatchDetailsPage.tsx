@@ -1,323 +1,311 @@
-import React from "react";
-import { useTranslation } from "react-i18next";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ExternalLink, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import { AppRoutes, RoutePath } from "src/app/providers/router/routeConfig/routeConfig";
-import { StatusBadge } from "src/entities/application/ui/StatusBadge/StatusBadge";
-import { StatusMenu } from "src/entities/application/ui/StatusKit";
-import type { LoopMatchStatus, UpdateMatchInput } from "src/entities/loopMatch";
-import { formatMatchedAt, normalizePlatform } from "src/entities/loopMatch";
+import type { Loop } from "src/entities/loop";
+import { useBackendLoopsQuery } from "src/features/loops";
+import { VacancyAnalysisPanel } from "src/features/vacancyAnalysis";
+import {
+  createApplicationFromVacancyMatchViaRest,
+  getLoopVacancyMatchViaRest,
+  listLoopVacancyMatchesViaRest,
+  patchLoopVacancyMatchViaRest,
+  type VacancyMatch,
+  type VacancyMatchStatus,
+} from "src/features/vacancyMatches";
 import { getErrorMessage } from "src/shared/lib";
-import { Button, Card, PageMessage } from "src/shared/ui";
 
-import { EditMatchModal } from "../MatchesPage/components/EditMatchModal";
-import { useMatchesDerived } from "../MatchesPage/model/useMatchesDerived";
-import { useMatchesMutations } from "../MatchesPage/model/useMatchesMutations";
-import { useMatchesQueries } from "../MatchesPage/model/useMatchesQueries";
+function getLoopName(loop: Loop | null | undefined): string {
+  return loop?.name || loop?.title || loop?.id || "";
+}
 
+function getScore(match: VacancyMatch): number | null {
+  const raw = match.confidence?.score ?? match.confidence?.overall ?? match.confidence?.match;
+  return typeof raw === "number" ? Math.round(raw) : null;
+}
 
-export default function MatchDetailsPage() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const params = useParams();
-  const matchId = String(params.matchId ?? "");
+function getStatusLabel(status: VacancyMatchStatus): string {
+  if (status === "new") return "New";
+  if (status === "saved") return "Saved";
+  if (status === "ignored") return "Hidden";
+  return "Converted";
+}
 
-  const backTo = React.useMemo(() => {
-    const from = location?.state?.from;
-    if (from?.pathname) {
-      return `${from.pathname}${from.search ?? ""}`;
-    }
-    return RoutePath[AppRoutes.MATCHES];
-  }, [location]);
+function getStatusClass(status: VacancyMatchStatus): string {
+  if (status === "converted") return "bg-blue-100 text-blue-700";
+  if (status === "ignored") return "bg-muted text-muted-foreground";
+  if (status === "saved") return "bg-emerald-100 text-emerald-700";
+  return "bg-primary/10 text-primary";
+}
 
-  const { matchesQ, loopsQ, matches, loops } = useMatchesQueries();
-  const { busy, actions } = useMatchesMutations();
-  const { loopIdToName } = useMatchesDerived(matches, loops);
+function getApplicationDetailsRoute(applicationId: string): string {
+  return `/dashboard/applications/${encodeURIComponent(applicationId)}`;
+}
 
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-
-  const match = React.useMemo(() => {
-    if (!matchId) return null;
-    return matches.find((m) => m.id === matchId) ?? null;
-  }, [matches, matchId]);
-
-  const loopName = React.useMemo(() => {
-    if (!match) return "";
-    return loopIdToName.get(match.loopId) ?? "";
-  }, [match, loopIdToName]);
-
-  const editingMatch = React.useMemo(() => {
-    if (!editingId) return null;
-    return matches.find((m) => m.id === editingId) ?? null;
-  }, [editingId, matches]);
-
-  const onDelete = React.useCallback(async () => {
-    if (!match) return;
-    await actions.onDelete(match.id, match.loopId);
-    navigate(RoutePath[AppRoutes.MATCHES], { replace: true });
-  }, [actions, match, navigate]);
-
-  const onUpdateStatus = React.useCallback(
-    async (status: LoopMatchStatus) => {
-      if (!match) return;
-      await actions.onUpdateStatus(match.id, match.loopId, status);
-    },
-    [actions, match],
-  );
-
-  const onSaveEdit = React.useCallback(
-    async (id: string, patch: UpdateMatchInput["patch"]) => {
-      await actions.onSaveEdit(id, patch);
-      setEditingId(null);
-    },
-    [actions],
-  );
-
-  const loading = matchesQ.isLoading || loopsQ.isLoading;
-  const error = matchesQ.isError ? matchesQ.error : null;
-  const loopsError = loopsQ.isError ? loopsQ.error : null;
-  const mergedError = error ?? loopsError;
-
-  const matchedAt = match?.matchedAt ? formatMatchedAt(match.matchedAt) : "";
-  const platform = (() => {
-    const p = normalizePlatform(match?.platform);
-    return p ? p.toUpperCase() : "";
-  })();
-  const meta = (() => {
-    const parts = [match?.location, platform, matchedAt, loopName]
-      .map((v) => String(v ?? "").trim())
-      .filter(Boolean);
-    return parts.join(" • ");
-  })();
-
-  const pageHeader = (
-    <div className="shrink-0 border-b border-border bg-background px-7 py-5">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
-            <span>Loopboard</span>
-            <span>/</span>
-            <Link to={RoutePath[AppRoutes.MATCHES]} className="hover:text-foreground transition-colors">
-              {t("matches.list.title", "Matches")}
-            </Link>
-            <span>/</span>
-            <span className="text-muted-foreground">{match?.title ?? t("matches.details.title", "Match details")}</span>
-          </div>
-          <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
-            {match?.title ?? t("matches.details.title", "Match details")}
-          </h1>
-          {meta ? (
-            <p className="mt-1 text-[13px] text-muted-foreground">{meta}</p>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            to={backTo}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            ← {t("matches.details.backToFiltered", "Back")}
-          </Link>
-          {match?.url ? (
-            <a
-              href={match.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-            >
-              {t("matches.details.openLink", "Open job")}
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
-            </a>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div className="flex h-full flex-col overflow-hidden">
-        {pageHeader}
-        <div className="flex-1 overflow-y-auto bg-background p-7">
-          <PageMessage>{t("matches.common.loading")}</PageMessage>
-        </div>
-      </div>
-    );
+async function findMatchAcrossLoops(
+  loops: readonly Loop[],
+  matchId: string,
+): Promise<VacancyMatch | null> {
+  for (const loop of loops) {
+    if (loop.status === "archived") continue;
+    const response = await listLoopVacancyMatchesViaRest(loop.id, { limit: 100, offset: 0 });
+    const found = response.items.find((item) => item.id === matchId);
+    if (found) return found;
   }
-
-  if (mergedError) {
-    return (
-      <div className="flex h-full flex-col overflow-hidden">
-        {pageHeader}
-        <div className="flex-1 overflow-y-auto bg-background p-7">
-          <PageMessage>{getErrorMessage(mergedError)}</PageMessage>
-        </div>
-      </div>
-    );
-  }
-
-  if (!match) {
-    return (
-      <div className="flex h-full flex-col overflow-hidden">
-        {pageHeader}
-        <div className="flex-1 overflow-y-auto bg-background p-7">
-          <PageMessage>{t("matches.details.notFound")}</PageMessage>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {pageHeader}
-
-      <div className="flex-1 overflow-y-auto bg-background">
-      <div className="p-7">
-        <div className="grid grid-cols-1 gap-lg lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="min-w-0 space-y-lg">
-              <Card variant="default" padding="md" shadow="sm" className="w-full">
-                <div className="flex flex-col gap-md">
-                  <div className="flex items-start justify-between gap-md">
-                    <div className="min-w-0">
-                      <div className="text-lg font-semibold text-foreground break-words">
-                        {match.title || "—"}
-                      </div>
-                      <div className="mt-1 text-sm text-muted-foreground break-words">
-                        {match.company || "—"}
-                      </div>
-                      {meta ? (
-                        <div className="mt-2 text-xs text-muted-foreground break-words">
-                          {meta}
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <StatusPill status={match.status} />
-                  </div>
-
-                  {match.url ? (
-                    <a
-                      href={match.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm text-primary hover:underline break-all"
-                    >
-                      {t("matches.details.openLink")}
-                    </a>
-                  ) : null}
-                </div>
-              </Card>
-
-              <Card variant="default" padding="md" shadow="sm" className="w-full">
-                <div className="text-base font-semibold text-foreground">
-                  {t("matches.details.descriptionTitle")}
-                </div>
-                <div className="mt-sm text-sm leading-relaxed whitespace-pre-wrap">
-                  {match.description || t("matches.details.noDescription")}
-                </div>
-              </Card>
-            </div>
-
-            <div className="space-y-lg">
-              <Card variant="default" padding="md" shadow="sm" className="w-full">
-                <div className="text-base font-semibold text-foreground">
-                  {t("matches.details.actionsTitle")}
-                </div>
-
-                <div className="mt-md flex flex-col gap-md">
-                  <StatusSelect
-                    value={match.status}
-                    disabled={busy}
-                    label={t("matches.common.status")}
-                    onChange={onUpdateStatus}
-                  />
-
-                  <div className="flex flex-wrap gap-sm">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      shape="pill"
-                      disabled={busy}
-                      onClick={() => setEditingId(match.id)}
-                    >
-                      {t("matches.common.edit")}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      shape="pill"
-                      disabled={busy}
-                      onClick={onDelete}
-                    >
-                      {t("matches.common.delete")}
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-
-              <Card variant="default" padding="md" shadow="sm" className="w-full">
-                <div className="text-base font-semibold text-foreground">
-                  {t("matches.details.metaTitle")}
-                </div>
-
-                <dl className="mt-md grid grid-cols-1 gap-sm text-sm">
-                  <MetaRow label={t("matches.details.fields.loop")} value={loopName || "—"} />
-                  <MetaRow label={t("matches.details.fields.location")} value={match.location || "—"} />
-                  <MetaRow label={t("matches.details.fields.platform")} value={platform || "—"} />
-                  <MetaRow label={t("matches.details.fields.matchedAt")} value={matchedAt || "—"} />
-                </dl>
-              </Card>
-            </div>
-        </div>
-      </div>
-      </div>
-
-      <EditMatchModal
-        open={Boolean(editingMatch)}
-        busy={busy}
-        loopName={editingMatch ? loopIdToName.get(editingMatch.loopId) ?? "" : ""}
-        match={editingMatch}
-        onClose={() => setEditingId(null)}
-        onSave={onSaveEdit}
-      />
-    </div>
-  );
+  return null;
 }
 
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-md">
+    <div className="flex items-start justify-between gap-4 border-b border-border py-2 last:border-b-0">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-foreground text-right break-words">{value}</dd>
+      <dd className="max-w-[65%] text-right text-foreground break-words">{value || "--"}</dd>
     </div>
   );
 }
 
-function StatusSelect({
-  value,
-  disabled,
-  label,
-  onChange,
-}: {
-  value: LoopMatchStatus;
-  disabled: boolean;
-  label: string;
-  onChange: (next: LoopMatchStatus) => void;
-}) {
-  return (
-    <label className="flex items-center justify-between gap-md text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <StatusMenu
-        value={value}
-        disabled={disabled}
-        onChange={(s) => onChange(s as LoopMatchStatus)}
-        size="sm"
-      />
-    </label>
-  );
-}
+export default function MatchDetailsPage() {
+  const navigate = useNavigate();
+  const params = useParams();
+  const [searchParams] = useSearchParams();
+  const matchId = String(params.matchId ?? "");
+  const requestedLoopId = searchParams.get("loopId") ?? "";
+  const loopsQ = useBackendLoopsQuery({ includeArchived: false });
+  const loops = loopsQ.data ?? [];
 
-function StatusPill({ status }: { status: LoopMatchStatus }) {
-  return <StatusBadge status={status} />;
+  const [match, setMatch] = useState<VacancyMatch | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [converting, setConverting] = useState(false);
+  const [hiding, setHiding] = useState(false);
+
+  const loop = useMemo(
+    () => loops.find((item) => item.id === match?.loopId || item.id === requestedLoopId) ?? null,
+    [loops, match?.loopId, requestedLoopId],
+  );
+  const loopName = getLoopName(loop);
+  const score = match ? getScore(match) : null;
+  const applicationId = match?.applicationId ?? null;
+
+  const loadMatch = useCallback(async () => {
+    if (!matchId) return;
+    if (!requestedLoopId && loopsQ.isLoading) return;
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const loaded = requestedLoopId
+        ? await getLoopVacancyMatchViaRest(requestedLoopId, matchId)
+        : await findMatchAcrossLoops(loops, matchId);
+      setMatch(loaded);
+      if (!loaded) setError("Vacancy match not found.");
+    } catch (loadError: unknown) {
+      setMatch(null);
+      setError(getErrorMessage(loadError));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loops, loopsQ.isLoading, matchId, requestedLoopId]);
+
+  useEffect(() => {
+    void loadMatch();
+  }, [loadMatch]);
+
+  async function handleCreateApplication() {
+    if (!match) return;
+    setConverting(true);
+    setError(null);
+    try {
+      const result = await createApplicationFromVacancyMatchViaRest(match.loopId, match.id);
+      setMatch(result.match);
+    } catch (convertError: unknown) {
+      setError(getErrorMessage(convertError));
+    } finally {
+      setConverting(false);
+    }
+  }
+
+  async function handleHide() {
+    if (!match) return;
+    setHiding(true);
+    setError(null);
+    try {
+      const updated = await patchLoopVacancyMatchViaRest(match.loopId, match.id, { status: "ignored" });
+      setMatch(updated);
+    } catch (hideError: unknown) {
+      setError(getErrorMessage(hideError));
+    } finally {
+      setHiding(false);
+    }
+  }
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden bg-background">
+      <header className="shrink-0 border-b border-border px-7 py-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2 text-[11.5px] text-muted-foreground/60">
+              <span>Loopboard</span>
+              <span>/</span>
+              <Link to="/dashboard/matches" className="hover:text-foreground">Matches</Link>
+              <span>/</span>
+              <span className="truncate">{match?.roleTitle || "Match details"}</span>
+            </div>
+            <h1 className="truncate text-[22px] font-semibold tracking-[-0.025em] text-foreground">
+              {match?.roleTitle || "Match details"}
+            </h1>
+            {match ? (
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {[match.companyName, match.locationText, match.source, loopName].filter(Boolean).join(" · ")}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={match?.loopId ? `/dashboard/matches?loopId=${encodeURIComponent(match.loopId)}` : "/dashboard/matches"}
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted"
+            >
+              Back
+            </Link>
+            {match?.sourceUrl ? (
+              <a
+                href={match.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground"
+              >
+                Open source
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto p-7">
+        {isLoading || loopsQ.isLoading ? (
+          <div className="rounded-[12px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
+            Loading match...
+          </div>
+        ) : error && !match ? (
+          <div className="rounded-[12px] border border-destructive/30 bg-destructive/5 p-6 text-[13px] text-destructive">
+            {error}
+          </div>
+        ) : !match ? (
+          <div className="rounded-[12px] border border-dashed border-border bg-card p-6 text-[13px] text-muted-foreground">
+            Vacancy match not found.
+          </div>
+        ) : (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
+            <section className="min-w-0 space-y-5">
+              <div className="rounded-[12px] border border-border bg-card p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${getStatusClass(match.status)}`}>
+                        {getStatusLabel(match.status)}
+                      </span>
+                      {score !== null ? (
+                        <span className="rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                          Score {score}
+                        </span>
+                      ) : null}
+                    </div>
+                    <h2 className="mt-3 text-[20px] font-semibold text-foreground">
+                      {match.roleTitle || "Untitled vacancy"}
+                    </h2>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      {match.companyName || "Company missing"}
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={match.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 block break-all text-[12.5px] text-primary hover:underline"
+                >
+                  {match.sourceUrl}
+                </a>
+              </div>
+
+              <div className="rounded-[12px] border border-border bg-card p-5">
+                <h2 className="text-[16px] font-semibold text-foreground">Description</h2>
+                <div className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+                  {match.vacancyDescription || "No description or snippet was saved for this match."}
+                </div>
+              </div>
+
+              <VacancyAnalysisPanel loopId={match.loopId} matchId={match.id} />
+            </section>
+
+            <aside className="space-y-5">
+              <div className="rounded-[12px] border border-border bg-card p-5">
+                <h2 className="text-[16px] font-semibold text-foreground">Actions</h2>
+                {error ? (
+                  <div className="mt-3 rounded-[10px] border border-destructive/30 bg-destructive/5 p-3 text-[12.5px] text-destructive">
+                    {error}
+                  </div>
+                ) : null}
+                <div className="mt-4 flex flex-col gap-2">
+                  {applicationId ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(getApplicationDetailsRoute(applicationId))}
+                      className="rounded-md bg-primary px-3 py-2 text-[13px] font-medium text-primary-foreground"
+                    >
+                      Open existing Application
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={converting || match.status === "ignored"}
+                      onClick={() => { void handleCreateApplication(); }}
+                      className="rounded-md bg-primary px-3 py-2 text-[13px] font-medium text-primary-foreground disabled:opacity-50"
+                    >
+                      {converting ? "Creating..." : "Create Application"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={hiding || match.status === "ignored" || match.status === "converted"}
+                    onClick={() => { void handleHide(); }}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-[13px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+                  >
+                    {hiding ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
+                    {hiding ? "Hiding..." : "Hide match"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-[12px] border border-border bg-card p-5">
+                <h2 className="text-[16px] font-semibold text-foreground">Metadata</h2>
+                <dl className="mt-3 text-[13px]">
+                  <MetaRow label="Loop" value={loopName || match.loopId} />
+                  <MetaRow label="Source" value={match.source || "--"} />
+                  <MetaRow label="External ID" value={match.externalId || "--"} />
+                  <MetaRow label="Location" value={match.locationText || "--"} />
+                  <MetaRow label="Created" value={match.createdAt} />
+                  <MetaRow label="Updated" value={match.updatedAt} />
+                  <MetaRow label="Application" value={match.applicationId || "--"} />
+                </dl>
+              </div>
+
+              <div className="rounded-[12px] border border-border bg-card p-5">
+                <h2 className="text-[16px] font-semibold text-foreground">Confidence</h2>
+                {Object.keys(match.confidence ?? {}).length === 0 ? (
+                  <p className="mt-3 text-[13px] text-muted-foreground">No confidence metadata.</p>
+                ) : (
+                  <pre className="mt-3 max-h-72 overflow-auto rounded-[8px] bg-muted p-3 text-[12px] text-muted-foreground">
+                    {JSON.stringify(match.confidence, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </aside>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }

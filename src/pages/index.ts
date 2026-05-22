@@ -185,6 +185,16 @@ export const MatchesPage = lazyPage(
   }),
 );
 
+export const MatchDetailsPage = lazyPage(
+  () => import("./MatchDetailsPage/MatchDetailsPage"),
+  "matches",
+  async () => ({
+    en: await import("./MatchesPage/locales/en.json"),
+    ru: await import("./MatchesPage/locales/ru.json"),
+    de: await import("./MatchesPage/locales/de.json"),
+  }),
+);
+
 export const BoardPage = lazyPage(
   () => import("./BoardPage/BoardPage"),
   "board",
