@@ -539,7 +539,9 @@ function normalizeDiscoveryPreviewUrl(sourceUrl: string): string {
     const value = url.toString();
     return value.endsWith("/") ? value.slice(0, -1) : value;
   } catch {
-    return sourceUrl.trim().replace(/\/+$/, "").toLowerCase();
+    let s = sourceUrl.trim().toLowerCase();
+    while (s.endsWith("/")) s = s.slice(0, -1);
+    return s;
   }
 }
 

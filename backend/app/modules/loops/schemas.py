@@ -177,6 +177,11 @@ class LoopUpdate(BaseModel):
         )
 
 
+class LoopMetrics(BaseModel):
+    matches_saved: int = 0
+    applications_total: int = 0
+
+
 class LoopRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -198,6 +203,7 @@ class LoopRead(BaseModel):
     last_discovery_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    metrics: LoopMetrics | None = None
 
 
 class LoopListResponse(BaseModel):

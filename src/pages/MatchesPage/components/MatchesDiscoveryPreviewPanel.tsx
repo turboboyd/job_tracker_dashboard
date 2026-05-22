@@ -1,6 +1,7 @@
 import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import type { Loop } from "src/entities/loop";
 import {
   getDiscoverySourceRuntimeStatusViaRest,
   runDiscoveryPreviewViaRest,
@@ -18,7 +19,6 @@ import {
 } from "src/features/vacancyMatches";
 import { ApiError } from "src/shared/api/rest/restClient";
 import { Button } from "src/shared/ui";
-import type { Loop } from "src/entities/loop";
 
 import type { MatchesFiltersState } from "../model/filters";
 
@@ -225,6 +225,37 @@ interface PreviewEntry {
   sourceUrl: string;
 }
 
+function buildRunItemEntries(
+  runItem: DiscoveryRunResponse["items"][number],
+  loopNameById: Map<string, string>,
+): PreviewEntry[] {
+  return runItem.previewItems.map((item) => ({
+    item,
+    loopId: runItem.loopId,
+    loopName: loopNameById.get(runItem.loopId) ?? runItem.loopId,
+    sourceId: runItem.sourceId ?? "",
+    sourceLabel: getRunnableDiscoverySourceLabel(runItem.sourceId),
+    externalId: item.externalId,
+    sourceUrl: item.sourceUrl,
+    key: `${runItem.loopId}:${runItem.sourceId ?? "unknown"}:${getMatchesDiscoveryPreviewItemKey(item)}`,
+  }));
+}
+
+function buildRawPreviewEntries(
+  results: DiscoveryRunResponse[],
+  loopNameById: Map<string, string>,
+): PreviewEntry[] {
+  return results.flatMap((result) =>
+    result.items.flatMap((runItem) => buildRunItemEntries(runItem, loopNameById)),
+  );
+}
+
+function checkResponseSourceHasMore(responses: readonly DiscoveryRunResponse[], sourceId: string): boolean {
+  return responses.some((response) =>
+    response.items.some((item) => item.sourceId === sourceId && item.hasMore),
+  );
+}
+
 export function MatchesDiscoveryPreviewPanel({
   filters,
   loops,
@@ -287,21 +318,7 @@ export function MatchesDiscoveryPreviewPanel({
   const isBusy = isLoading || loadingMoreSourceId !== null;
 
   const rawPreviewEntries = useMemo<PreviewEntry[]>(
-    () =>
-      results.flatMap((result) =>
-        result.items.flatMap((runItem) =>
-          runItem.previewItems.map((item) => ({
-            item,
-            loopId: runItem.loopId,
-            loopName: loopNameById.get(runItem.loopId) ?? runItem.loopId,
-            sourceId: runItem.sourceId ?? "",
-            sourceLabel: getRunnableDiscoverySourceLabel(runItem.sourceId),
-            externalId: item.externalId,
-            sourceUrl: item.sourceUrl,
-            key: `${runItem.loopId}:${runItem.sourceId ?? "unknown"}:${getMatchesDiscoveryPreviewItemKey(item)}`,
-          })),
-        ),
-      ),
+    () => buildRawPreviewEntries(results, loopNameById),
     [loopNameById, results],
   );
   const previewEntries = useMemo(
@@ -509,11 +526,7 @@ export function MatchesDiscoveryPreviewPanel({
           existingKeys.add(key);
         }
         previewKeysBySourceRef.current[sourceId] = existingKeys;
-        const backendHasMore = responses.some((response) =>
-          response.items.some(
-            (item) => item.sourceId === sourceId && item.hasMore,
-          ),
-        );
+        const backendHasMore = checkResponseSourceHasMore(responses, sourceId);
         next[sourceId] = backendHasMore && newUniqueCount > 0;
       }
       return next;

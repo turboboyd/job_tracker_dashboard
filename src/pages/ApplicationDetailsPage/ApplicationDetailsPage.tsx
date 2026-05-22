@@ -18,17 +18,19 @@ import {
   AppRoutes,
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
-import { useAuthSelectors } from "src/entities/auth";
 import {
   normalizeStatusKey,
   type StatusKey,
 } from "src/entities/application/model/status";
 import { StatusPill } from "src/entities/application/ui/StatusKit";
+import { useAuthSelectors } from "src/entities/auth";
+import type { WorkMode } from "src/features/applications/firestore/types";
 import {
   type ApplicationDoc,
   type ProcessStatus,
   type HistoryEventDoc,
 } from "src/features/applications/firestoreApplications";
+import type { ApplicationDocument } from "src/features/applications/rest/adapter";
 import {
   changeApplicationStatusViaRest,
   createApplicationCommentViaRest,
@@ -43,14 +45,13 @@ import {
   type ApplicationHistoryTypeFilter,
   type DocumentKind,
 } from "src/features/applications/rest/queries";
-import type { ApplicationDocument } from "src/features/applications/rest/adapter";
 import { ApiError } from "src/shared/api/rest/restClient";
+
 import { getApplicationVacancyDescription } from "./applicationDetails.helpers";
 import { InlineField } from "./ui/InlineField";
 import { SalaryField } from "./ui/SalaryField";
 import { TagsField } from "./ui/TagsField";
 
-import type { WorkMode } from "src/features/applications/firestore/types";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 

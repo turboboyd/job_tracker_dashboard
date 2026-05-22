@@ -89,6 +89,11 @@ class LoopsService:
             raise InvalidLoopError("Archived loop cannot be used for new records")
         return loop
 
+    async def get_metrics_by_loop_ids(
+        self, loop_ids: list[UUID]
+    ) -> dict[str, dict[str, int]]:
+        return await self._repo.get_metrics_by_loop_ids(loop_ids)
+
     async def require_owned_for_read(self, user: User, loop_id: str) -> Loop:
         try:
             parsed = UUID(loop_id)

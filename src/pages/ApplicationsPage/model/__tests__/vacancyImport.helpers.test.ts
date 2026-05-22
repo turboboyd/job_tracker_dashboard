@@ -4,6 +4,7 @@ import type { VacancyImportPreview } from "src/features/applications/rest/querie
 import { ApiError } from "src/shared/api/rest/restClient";
 
 import { buildCreateApplicationPayload } from "../applicationsPage.helpers";
+import type { CreateFormState } from "../types";
 import {
   applyVacancyImportFallbackToForm,
   applyVacancyImportPreviewToForm,
@@ -15,7 +16,6 @@ import {
   VACANCY_IMPORT_FALLBACK_MESSAGE,
   VACANCY_IMPORT_INVALID_URL_MESSAGE,
 } from "../vacancyImport.helpers";
-import type { CreateFormState } from "../types";
 
 function test(name: string, run: () => void) {
   run();

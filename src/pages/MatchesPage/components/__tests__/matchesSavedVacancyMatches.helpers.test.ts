@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
-import type { VacancyMatch } from "src/features/vacancyMatches";
 import type { Loop } from "src/entities/loop";
+import type { VacancyMatch } from "src/features/vacancyMatches";
 
 import {
   getApplicationDetailsRoute,

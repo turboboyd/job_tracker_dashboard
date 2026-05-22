@@ -114,6 +114,14 @@ class FakeLoopsService:
         loop.status = "archived"
         return loop
 
+    async def get_metrics_by_loop_ids(
+        self, loop_ids: list
+    ) -> dict:
+        return {
+            str(lid): {"matches_saved": 0, "applications_total": 0}
+            for lid in loop_ids
+        }
+
 
 def make_client(service: FakeLoopsService) -> TestClient:
     app = create_app()
@@ -305,6 +313,23 @@ def test_create_loop_rejects_too_many_keywords() -> None:
         )
 
     assert response.status_code == 422
+
+
+def test_list_loops_includes_metrics() -> None:
+    service = FakeLoopsService()
+    with make_client(service) as client:
+        response = client.get(
+            "/api/v1/loops?include_archived=true",
+            headers={"Authorization": "Bearer test"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["items"]) == 1
+    item = body["items"][0]
+    assert "metrics" in item
+    assert item["metrics"]["matches_saved"] == 0
+    assert item["metrics"]["applications_total"] == 0
 
 
 def test_create_loop_rejects_invalid_discovery_radius() -> None:

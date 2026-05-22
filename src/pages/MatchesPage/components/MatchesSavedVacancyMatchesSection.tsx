@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import type { Loop } from "src/entities/loop";
 import { VacancyAnalysisPanel } from "src/features/vacancyAnalysis";
 import {
   createApplicationFromVacancyMatchViaRest,
@@ -10,7 +11,6 @@ import {
 } from "src/features/vacancyMatches";
 import { getErrorMessage } from "src/shared/lib";
 import { Button } from "src/shared/ui";
-import type { Loop } from "src/entities/loop";
 
 import {
   getApplicationDetailsRoute,
@@ -131,6 +131,14 @@ function SavedMatchCard({
   );
 }
 
+async function fetchLoopMatches(
+  loop: Loop,
+): Promise<Array<{ loopName: string; match: VacancyMatch }>> {
+  const envelope = await listLoopVacancyMatchesViaRest(loop.id, { limit: 50, offset: 0 });
+  const loopName = loop.name || loop.title || loop.id;
+  return envelope.items.map((match) => ({ loopName, match }));
+}
+
 export function MatchesSavedVacancyMatchesSection({
   loops,
   loopsLoading,
@@ -168,18 +176,7 @@ export function MatchesSavedVacancyMatchesSection({
       setError(null);
 
       try {
-        const envelopes = await Promise.all(
-          targetLoops.map(async (loop) => {
-            const envelope = await listLoopVacancyMatchesViaRest(loop.id, {
-              limit: 50,
-              offset: 0,
-            });
-            return envelope.items.map((match) => ({
-              loopName: loop.name || loop.title || loop.id,
-              match,
-            }));
-          }),
-        );
+        const envelopes = await Promise.all(targetLoops.map(fetchLoopMatches));
 
         if (!cancelled) {
           const loadedItems = envelopes.flat();

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
-from app.modules.loops.schemas import LoopCreate, LoopListResponse, LoopRead, LoopUpdate
+from app.modules.loops.schemas import LoopCreate, LoopListResponse, LoopMetrics, LoopRead, LoopUpdate
 from app.modules.loops.service import LoopsService
 
 router = APIRouter(prefix="/loops", tags=["loops"])
@@ -34,8 +34,16 @@ async def list_loops(
         limit=limit,
         offset=offset,
     )
+    metrics_by_id = await svc.get_metrics_by_loop_ids([item.id for item in items])
+    loop_reads = []
+    for item in items:
+        loop_read = LoopRead.model_validate(item)
+        raw = metrics_by_id.get(str(item.id))
+        if raw is not None:
+            loop_read = loop_read.model_copy(update={"metrics": LoopMetrics(**raw)})
+        loop_reads.append(loop_read)
     return LoopListResponse(
-        items=[LoopRead.model_validate(item) for item in items],
+        items=loop_reads,
         total=total,
         limit=limit,
         offset=offset,

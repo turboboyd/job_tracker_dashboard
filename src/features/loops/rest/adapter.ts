@@ -3,10 +3,16 @@ import {
   LOOP_PLATFORM_VALUES,
   type CanonicalFilters,
   type Loop,
+  type LoopMetrics,
   type LoopPlatform,
   type LoopStatus,
   type RemoteMode,
 } from "src/entities/loop";
+
+export interface BackendLoopMetricsDto {
+  matches_saved: number;
+  applications_total: number;
+}
 
 export interface BackendLoopDto {
   id: string;
@@ -27,6 +33,7 @@ export interface BackendLoopDto {
   last_discovery_at: string | null;
   created_at: string;
   updated_at: string;
+  metrics?: BackendLoopMetricsDto | null;
 }
 
 export interface CreateBackendLoopInput {
@@ -126,6 +133,14 @@ function mapEmploymentType(values: readonly string[]): CanonicalFilters["employm
   return DEFAULT_CANONICAL_FILTERS.employmentType;
 }
 
+function mapMetrics(dto: BackendLoopDto): LoopMetrics | null {
+  if (dto.metrics == null) return null;
+  return {
+    matches_saved: dto.metrics.matches_saved,
+    applications_total: dto.metrics.applications_total,
+  };
+}
+
 export function mapBackendLoopDtoToLoop(dto: BackendLoopDto): Loop {
   const targetRole = normalizeString(dto.target_role);
   const title = normalizeString(dto.title, targetRole || "Untitled loop");
@@ -160,6 +175,7 @@ export function mapBackendLoopDtoToLoop(dto: BackendLoopDto): Loop {
     filters: buildFilters(dto),
     remoteMode: mapWorkModesToRemoteMode(dto.work_modes),
     platforms,
+    metrics: mapMetrics(dto),
   };
 }
 

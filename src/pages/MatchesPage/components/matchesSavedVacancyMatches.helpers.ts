@@ -1,5 +1,5 @@
-import type { VacancyMatch, VacancyMatchStatus } from "src/features/vacancyMatches";
 import type { Loop } from "src/entities/loop";
+import type { VacancyMatch, VacancyMatchStatus } from "src/features/vacancyMatches";
 
 import { getRunnableDiscoverySourceLabel } from "./matchesDiscoveryPreview.helpers";
 

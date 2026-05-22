@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+import { AppRoutes, RoutePath } from "src/app/providers/router/routeConfig/routeConfig";
 import { useAuthSelectors } from "src/entities/auth/model/hooks/useAuthSelectors";
 import { db } from "src/shared/config/firebase/firebase";
 
@@ -486,7 +487,7 @@ export default function ApplicationsPage() {
         initialMode={initialCreateMode}
         onCreateLoopRequested={() => {
           setIsCreateOpen(false);
-          navigate("/dashboard/loops");
+          navigate(RoutePath[AppRoutes.LOOPS]);
         }}
       />
     </div>

@@ -135,5 +135,13 @@ module.exports = [
     },
   },
 
+  // Test files using node:assert directly (not Vitest/Jest) — sonarjs cannot
+  // detect assert-style tests, so disable the false-positive empty-file rule.
+  {
+    files: ["src/**/*.test.{ts,tsx}", "src/**/*.spec.{ts,tsx}"],
+    rules: {
+      "sonarjs/no-empty-test-file": "off",
+    },
+  },
 
 ];
