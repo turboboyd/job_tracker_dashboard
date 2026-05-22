@@ -35,6 +35,7 @@ export type {
   CanonicalFilters,
   CreateLoopInput,
   Loop,
+  LoopMetrics,
   LoopPlatform,
   PlatformGroupId,
   PlatformMeta,

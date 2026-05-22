@@ -191,3 +191,9 @@ export function countLoopStats(statsById: LoopStatsById, loopIds: readonly strin
 export function shouldShowLoopsPagination(totalLoops: number, pageSize = 10): boolean {
   return totalLoops > pageSize;
 }
+
+export function getEffectiveStats(statsById: LoopStatsById, loop: Loop): LoopStats {
+  const base = getLoopStats(statsById, loop.id);
+  if (loop.metrics == null) return base;
+  return { ...base, matches: loop.metrics.matches_saved };
+}

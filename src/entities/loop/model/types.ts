@@ -43,6 +43,11 @@ export const LOOP_PLATFORM_VALUES = [
 
 export type LoopPlatform = (typeof LOOP_PLATFORM_VALUES)[number];
 
+export interface LoopMetrics {
+  matches_saved: number;
+  applications_total: number;
+}
+
 export interface Loop {
   id: string;
   title?: string;
@@ -68,6 +73,7 @@ export interface Loop {
   status?: LoopStatus;
   createdAtTs?: number | null;
   updatedAtTs?: number | null;
+  metrics?: LoopMetrics | null;
 }
 
 export interface CreateLoopInput {

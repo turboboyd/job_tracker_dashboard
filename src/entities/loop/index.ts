@@ -9,6 +9,7 @@ export type { LoopsUiState } from "./model/loopsUiSlice";
 
 export type {
   Loop,
+  LoopMetrics,
   LoopPlatform,
   CanonicalFilters,
   CreateLoopInput,

@@ -25,7 +25,7 @@ import {
   buildLoopStatsById,
   countLoopStats,
   filterLoopsByArchiveTab,
-  getLoopStats,
+  getEffectiveStats,
   getLoopStatus,
   getBackendLoopIdsForMatchLoading,
   isLoopPaused,
@@ -371,9 +371,14 @@ export function LoopsListView({
     return visibleLoops.slice(start, start + PAGE_SIZE);
   }, [safePage, visibleLoops]);
 
-  const backendLoopIdsKey = useMemo(
-    () => getBackendLoopIdsForMatchLoading(loops).join("|"),
+  const hasServerMetrics = useMemo(
+    () => loops.length > 0 && loops.every((l) => l.metrics != null),
     [loops],
+  );
+
+  const backendLoopIdsKey = useMemo(
+    () => (hasServerMetrics ? "" : getBackendLoopIdsForMatchLoading(loops).join("|")),
+    [hasServerMetrics, loops],
   );
 
   const statsById = useMemo(
@@ -779,7 +784,7 @@ function renderContent(params: {
           <LoopCard
             key={loop.id}
             loop={loop}
-            stats={getLoopStats(statsById, loop.id)}
+            stats={getEffectiveStats(statsById, loop)}
             busy={isFetching}
             onArchive={onArchive}
             onOpen={onOpenLoop}

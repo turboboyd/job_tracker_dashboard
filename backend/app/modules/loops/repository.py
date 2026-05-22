@@ -6,7 +6,9 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.models.application import Application
 from app.db.models.loop import Loop
+from app.db.models.vacancy_match import VacancyMatch
 
 
 class LoopsRepository:
@@ -59,3 +61,41 @@ class LoopsRepository:
         await self._db.flush()
         await self._db.refresh(loop)
         return loop
+
+    async def get_metrics_by_loop_ids(
+        self, loop_ids: list[UUID]
+    ) -> dict[str, dict[str, int]]:
+        if not loop_ids:
+            return {}
+
+        str_ids = [str(lid) for lid in loop_ids]
+
+        match_query = (
+            select(VacancyMatch.loop_id, func.count().label("cnt"))
+            .where(
+                VacancyMatch.loop_id.in_(str_ids),
+                VacancyMatch.status.in_(["new", "saved"]),
+            )
+            .group_by(VacancyMatch.loop_id)
+        )
+        match_rows = (await self._db.execute(match_query)).all()
+        matches_by_loop = {row.loop_id: row.cnt for row in match_rows}
+
+        app_query = (
+            select(Application.loop_id, func.count().label("cnt"))
+            .where(
+                Application.loop_id.in_(str_ids),
+                Application.archived.is_(False),
+            )
+            .group_by(Application.loop_id)
+        )
+        app_rows = (await self._db.execute(app_query)).all()
+        apps_by_loop = {row.loop_id: row.cnt for row in app_rows if row.loop_id}
+
+        return {
+            lid: {
+                "matches_saved": matches_by_loop.get(lid, 0),
+                "applications_total": apps_by_loop.get(lid, 0),
+            }
+            for lid in str_ids
+        }
