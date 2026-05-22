@@ -1,9 +1,9 @@
 import type { Loop, LoopStatus } from "src/entities/loop";
-import type { AppRow } from "src/pages/ApplicationsPage/model/types";
 import {
   isApplicationDueToday,
   isApplicationFollowUpDue,
 } from "src/pages/ApplicationsPage/model/applicationsPage.helpers";
+import type { AppRow } from "src/pages/ApplicationsPage/model/types";
 
 export interface LoopStats {
   applications: number;

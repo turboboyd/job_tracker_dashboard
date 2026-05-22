@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 
-import { _overrideBackendConfig, _resetBackendConfig } from "src/shared/config";
 import {
   _overrideRestAuthTokenProviderForTests,
   _resetRestAuthTokenProviderForTests,
 } from "src/shared/api/rest/restClient";
+import { _overrideBackendConfig, _resetBackendConfig } from "src/shared/config";
 
 import { createApplicationsRepo } from "../applicationsRepo";
 
