@@ -1,4 +1,3 @@
-import type { Loop } from "src/entities/loop";
 import { restDelete, restGet, restPatch, restPost } from "src/shared/api";
 import { getBackendConfig } from "src/shared/config";
 
@@ -95,11 +94,3 @@ export async function archiveLoopViaRest(loopId: string): Promise<void> {
   await restDelete(buildLoopDetailUrl(apiBaseUrl, loopId));
 }
 
-export async function duplicateLoopViaRest(loopId: string): Promise<Loop> {
-  const { apiBaseUrl } = getBackendConfig();
-  const dto = await restPost<BackendLoopDto>(
-    `${apiBaseUrl}/loops/${encodeURIComponent(loopId)}/duplicate`,
-    {},
-  );
-  return mapBackendLoopDtoToLoop(dto);
-}

@@ -8,7 +8,6 @@ import type { Loop, LoopStatus } from "src/entities/loop/model";
 import { LoopSearchLinks } from "src/entities/loop/ui/LoopSearchLinks/LoopSearchLinks";
 import {
   archiveLoopViaRest,
-  duplicateLoopViaRest,
   getLoopViaRest,
   updateLoopViaRest,
 } from "src/features/loops";
@@ -62,12 +61,12 @@ export function LoopDetailsView({
   userId,
   loopId,
   onBack,
-  onOpenLoop,
+  onOpenMatches,
 }: {
   userId: string;
   loopId: string;
   onBack: () => void;
-  onOpenLoop?: (id: string) => void;
+  onOpenMatches?: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -182,23 +181,6 @@ export function LoopDetailsView({
       setIsActionBusy(false);
     }
   }, [loop, onBack]);
-
-  const handleDuplicate = useCallback(async () => {
-    if (!loop) return;
-    setIsActionBusy(true);
-    setActionError(null);
-    try {
-      const newLoop = await duplicateLoopViaRest(loop.id);
-      if (onOpenLoop) {
-        onOpenLoop(newLoop.id);
-      } else {
-        onBack();
-      }
-    } catch (error: unknown) {
-      setActionError(getErrorMessage(error));
-      setIsActionBusy(false);
-    }
-  }, [loop, onBack, onOpenLoop]);
 
   const title = useMemo(
     () => loop?.name ?? t("loops.detailsTitle", "Loop"),
@@ -412,33 +394,36 @@ export function LoopDetailsView({
             {loop ? (
               <>
                 <LoopStatusBadge status={getLoopStatus(loop)} />
-                <button
-                  type="button"
-                  disabled={isActionBusy}
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-                  onClick={() => { void handlePauseResume(); }}
-                >
-                  {getLoopStatus(loop) === "paused"
-                    ? t("loops.resume", "Resume")
-                    : t("loops.pause", "Pause")}
-                </button>
-                <button
-                  type="button"
-                  disabled={isActionBusy}
-                  className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-                  onClick={() => { void handleDuplicate(); }}
-                >
-                  {t("loops.duplicate", "Duplicate")}
-                </button>
-                {getLoopStatus(loop) !== "archived" ? (
+                {onOpenMatches ? (
                   <button
                     type="button"
-                    disabled={isActionBusy}
-                    className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-                    onClick={() => { void handleArchive(); }}
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+                    onClick={() => onOpenMatches(loop.id)}
                   >
-                    {t("loops.archive", "Archive")}
+                    {t("loops.statMatches", "Matches")}
                   </button>
+                ) : null}
+                {getLoopStatus(loop) !== "archived" ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={isActionBusy}
+                      className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                      onClick={() => { void handlePauseResume(); }}
+                    >
+                      {getLoopStatus(loop) === "paused"
+                        ? t("loops.resume", "Resume")
+                        : t("loops.pause", "Pause")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isActionBusy}
+                      className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                      onClick={() => { void handleArchive(); }}
+                    >
+                      {t("loops.archive", "Archive")}
+                    </button>
+                  </>
                 ) : null}
                 <button
                   type="button"

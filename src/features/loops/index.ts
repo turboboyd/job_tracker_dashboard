@@ -3,7 +3,6 @@ export {
   buildLoopDetailUrl,
   buildLoopsListUrl,
   createLoopViaRest,
-  duplicateLoopViaRest,
   getLoopViaRest,
   listLoopsViaRest,
   updateLoopViaRest,
