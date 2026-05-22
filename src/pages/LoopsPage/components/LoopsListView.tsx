@@ -9,6 +9,7 @@ import { listApplicationsViaRest } from "src/features/applications/rest/queries"
 import {
   archiveLoopViaRest,
   createLoopViaRest,
+  duplicateLoopViaRest,
   listLoopsViaRest,
   updateLoopViaRest,
 } from "src/features/loops";
@@ -138,6 +139,7 @@ type LoopCardProps = {
   stats: LoopStats;
   busy: boolean;
   onArchive: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onOpen: (id: string) => void;
   onOpenApplications: (id: string) => void;
   onOpenMatches: (id: string) => void;
@@ -152,6 +154,7 @@ function LoopCard({
   stats,
   busy,
   onArchive,
+  onDuplicate,
   onOpen,
   onOpenApplications: _onOpenApplications,
   onOpenMatches,
@@ -272,6 +275,14 @@ function LoopCard({
                 onClick={() => onRestore(loop.id)}
               >
                 Restore
+              </LoopActionButton>
+            ) : null}
+            {!archived ? (
+              <LoopActionButton
+                disabled={busy}
+                onClick={() => onDuplicate(loop.id)}
+              >
+                Duplicate
               </LoopActionButton>
             ) : null}
             {!archived ? (
@@ -541,6 +552,22 @@ export function LoopsListView({
     [loadLoops],
   );
 
+  const handleDuplicate = useCallback(
+    async (loopId: string) => {
+      setIsUpdatingLoop(true);
+      try {
+        const newLoop = await duplicateLoopViaRest(loopId);
+        await loadLoops();
+        onOpenLoop(newLoop.id);
+      } catch (error: unknown) {
+        setStatsError(getErrorMessage(error));
+      } finally {
+        setIsUpdatingLoop(false);
+      }
+    },
+    [loadLoops, onOpenLoop],
+  );
+
   const showFrom =
     visibleLoops.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const showTo =
@@ -559,6 +586,7 @@ export function LoopsListView({
         setStatsError(getErrorMessage(error));
       });
     },
+    onDuplicate: handleDuplicate,
     onOpenApplications,
     onOpenLoop,
     onOpenMatches,
@@ -577,6 +605,7 @@ export function LoopsListView({
         },
       );
     },
+    onCreateLoop: () => setCreateOpen(true),
     page: safePage,
     pagedLoops,
     showFrom,
@@ -712,12 +741,43 @@ function TabButton({
   );
 }
 
+function LoopCardSkeleton() {
+  return (
+    <div className="animate-pulse rounded-[14px] border border-border bg-card p-5">
+      <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)_minmax(0,1fr)] items-center gap-6">
+        <div className="space-y-2">
+          <div className="h-4 w-16 rounded bg-muted" />
+          <div className="h-4 w-32 rounded bg-muted" />
+          <div className="h-3 w-24 rounded bg-muted/70" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-6 w-20 rounded-full bg-muted" />
+          <div className="h-6 w-14 rounded-full bg-muted" />
+        </div>
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex gap-5">
+            <div className="h-6 w-8 rounded bg-muted" />
+            <div className="h-6 w-8 rounded bg-muted" />
+            <div className="h-6 w-8 rounded bg-muted" />
+          </div>
+          <div className="flex gap-1.5">
+            <div className="h-7 w-16 rounded-[6px] bg-muted" />
+            <div className="h-7 w-14 rounded-[6px] bg-muted" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function renderContent(params: {
   activeTab: LoopsTab;
   error: string | null;
   isFetching: boolean;
   isLoading: boolean;
   onArchive: (id: string) => void;
+  onDuplicate: (id: string) => Promise<void>;
+  onCreateLoop: () => void;
   onOpenApplications: (id: string) => void;
   onOpenLoop: (id: string) => void;
   onOpenMatches: (id: string) => void;
@@ -741,6 +801,8 @@ function renderContent(params: {
     isFetching,
     isLoading,
     onArchive,
+    onDuplicate,
+    onCreateLoop,
     onOpenApplications,
     onOpenLoop,
     onOpenMatches,
@@ -761,8 +823,10 @@ function renderContent(params: {
 
   if (isLoading) {
     return (
-      <div className="text-sm text-muted-foreground">
-        {t("loops.loading", "Loading…")}
+      <div className="space-y-3">
+        <LoopCardSkeleton />
+        <LoopCardSkeleton />
+        <LoopCardSkeleton />
       </div>
     );
   }
@@ -772,9 +836,27 @@ function renderContent(params: {
   }
 
   if (total === 0) {
-    let message = t("loops.empty", "No loops yet. Create your first loop.");
-    if (activeTab === "archive") message = "Архив пуст.";
-    return <div className="text-sm text-muted-foreground">{message}</div>;
+    if (activeTab === "archive") {
+      return <div className="text-sm text-muted-foreground">Archive is empty.</div>;
+    }
+    return (
+      <div className="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-border bg-card py-16 text-center">
+        <div className="text-[32px] leading-none">🔍</div>
+        <p className="mt-3 text-[15px] font-medium text-foreground">
+          {t("loops.emptyTitle", "No loops yet")}
+        </p>
+        <p className="mt-1 text-[13px] text-muted-foreground">
+          {t("loops.emptyHint", "Create your first loop to start tracking job opportunities.")}
+        </p>
+        <button
+          type="button"
+          onClick={onCreateLoop}
+          className="mt-5 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          {t("loops.newLoop", "New loop")}
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -787,6 +869,7 @@ function renderContent(params: {
             stats={getEffectiveStats(statsById, loop)}
             busy={isFetching}
             onArchive={onArchive}
+            onDuplicate={(id) => { onDuplicate(id).catch(() => undefined); }}
             onOpen={onOpenLoop}
             onOpenApplications={onOpenApplications}
             onOpenMatches={onOpenMatches}

@@ -1,3 +1,4 @@
+import type { Loop } from "src/entities/loop";
 import { restDelete, restGet, restPatch, restPost } from "src/shared/api";
 import { getBackendConfig } from "src/shared/config";
 
@@ -44,7 +45,8 @@ export function buildLoopsListUrl(
   appendQueryParam(params, "offset", query.offset ?? 0);
 
   const qs = params.toString();
-  return `${apiBaseUrl}/loops${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  return `${apiBaseUrl}/loops${suffix}`;
 }
 
 export function buildLoopDetailUrl(apiBaseUrl: string, loopId: string): string {
@@ -91,4 +93,13 @@ export async function updateLoopViaRest(loopId: string, patch: UpdateBackendLoop
 export async function archiveLoopViaRest(loopId: string): Promise<void> {
   const { apiBaseUrl } = getBackendConfig();
   await restDelete(buildLoopDetailUrl(apiBaseUrl, loopId));
+}
+
+export async function duplicateLoopViaRest(loopId: string): Promise<Loop> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restPost<BackendLoopDto>(
+    `${apiBaseUrl}/loops/${encodeURIComponent(loopId)}/duplicate`,
+    {},
+  );
+  return mapBackendLoopDtoToLoop(dto);
 }
