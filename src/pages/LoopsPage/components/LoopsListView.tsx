@@ -831,17 +831,33 @@ function renderContent(params: {
     }
     return (
       <div className="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-border bg-card py-16 text-center">
-        <div className="text-[32px] leading-none">🔍</div>
-        <p className="mt-3 text-[15px] font-medium text-foreground">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-primary"
+            aria-hidden="true"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            <polyline points="21 3 21 9 15 9" />
+          </svg>
+        </div>
+        <p className="mt-4 text-[15px] font-semibold text-foreground">
           {t("loops.emptyTitle", "No loops yet")}
         </p>
-        <p className="mt-1 text-[13px] text-muted-foreground">
-          {t("loops.emptyHint", "Create your first loop to start tracking job opportunities.")}
+        <p className="mt-1.5 max-w-[280px] text-[13px] text-muted-foreground">
+          {t("loops.emptyHint", "Create your first loop to start tracking job opportunities automatically.")}
         </p>
         <button
           type="button"
           onClick={onCreateLoop}
-          className="mt-5 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          className="mt-5 rounded-lg bg-primary px-5 py-2 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
         >
           {t("loops.newLoop", "New loop")}
         </button>
