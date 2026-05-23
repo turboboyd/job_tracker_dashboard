@@ -24,7 +24,7 @@ import { Button, Pagination } from "src/shared/ui";
 import {
   buildLoopStatsById,
   countLoopStats,
-  filterLoopsByArchiveTab,
+  filterLoopsByTab,
   getEffectiveStats,
   getLoopStatus,
   getBackendLoopIdsForMatchLoading,
@@ -36,7 +36,7 @@ import {
 const PAGE_SIZE = 10;
 const APPLICATIONS_PAGE_SIZE = 100;
 
-type LoopsTab = "active" | "archive";
+type LoopsTab = "active" | "paused" | "archive";
 
 type StatTileProps = {
   label: string;
@@ -57,6 +57,7 @@ function readPageParam(search: string): number | null {
 function readTabParam(search: string): LoopsTab {
   const tab = new URLSearchParams(search).get("tab");
   if (tab === "archive") return "archive";
+  if (tab === "paused") return "paused";
   return "active";
 }
 
@@ -68,6 +69,7 @@ function writeLoopsSearch(
   if (patch.page !== undefined) sp.set("page", String(clampPage(patch.page)));
   if (patch.tab !== undefined) {
     if (patch.tab === "archive") sp.set("tab", "archive");
+    else if (patch.tab === "paused") sp.set("tab", "paused");
     else sp.delete("tab");
   }
 
@@ -247,11 +249,12 @@ function LoopCard({
 
           {/* Primary actions */}
           <div className="flex flex-wrap justify-end gap-1.5">
-            <LoopActionButton onClick={() => onOpenMatches(loop.id)}>
+            <LoopActionButton variant="primary" onClick={() => onOpenMatches(loop.id)}>
               {t("loops.statMatches", "Matches")}
             </LoopActionButton>
             {!archived ? (
               <LoopActionButton
+                variant="secondary"
                 disabled={busy}
                 onClick={() => onTogglePause(loop)}
               >
@@ -260,6 +263,7 @@ function LoopCard({
             ) : null}
             {archived ? (
               <LoopActionButton
+                variant="secondary"
                 disabled={busy}
                 onClick={() => onRestore(loop.id)}
               >
@@ -268,6 +272,7 @@ function LoopCard({
             ) : null}
             {!archived ? (
               <LoopActionButton
+                variant="ghost"
                 disabled={busy}
                 onClick={() => onArchive(loop.id)}
               >
@@ -287,14 +292,25 @@ function getPauseActionLabel(loop: Loop): string {
   return "Pause";
 }
 
+const LOOP_ACTION_CLASS: Record<"primary" | "secondary" | "ghost", string> = {
+  primary:
+    "border border-primary bg-primary text-primary-foreground hover:opacity-90",
+  secondary:
+    "border border-border bg-card text-foreground hover:bg-muted",
+  ghost:
+    "border border-transparent text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+};
+
 function LoopActionButton({
   children,
   disabled,
   onClick,
+  variant = "secondary",
 }: {
   children: string;
   disabled?: boolean;
   onClick: () => void;
+  variant?: "primary" | "secondary" | "ghost";
 }) {
   return (
     <button
@@ -304,7 +320,10 @@ function LoopActionButton({
         event.stopPropagation();
         onClick();
       }}
-      className="rounded-[6px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+      className={[
+        "rounded-[6px] px-2.5 py-1.5 text-[11.5px] transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        LOOP_ACTION_CLASS[variant],
+      ].join(" ")}
     >
       {children}
     </button>
@@ -349,11 +368,11 @@ export function LoopsListView({
   }, [location.search, savedListPage]);
 
   const statsLoops = useMemo(
-    () => filterLoopsByArchiveTab(loops, "active"),
+    () => filterLoopsByTab(loops, "active"),
     [loops],
   );
   const visibleLoops = useMemo(
-    () => filterLoopsByArchiveTab(loops, activeTab),
+    () => filterLoopsByTab(loops, activeTab),
     [activeTab, loops],
   );
   const totalPages = Math.max(1, Math.ceil(visibleLoops.length / PAGE_SIZE));
@@ -617,10 +636,16 @@ export function LoopsListView({
             Active
           </TabButton>
           <TabButton
+            active={activeTab === "paused"}
+            onClick={() => setTab("paused")}
+          >
+            Paused
+          </TabButton>
+          <TabButton
             active={activeTab === "archive"}
             onClick={() => setTab("archive")}
           >
-            Archive
+            Archived
           </TabButton>
         </div>
       </div>
@@ -799,7 +824,10 @@ function renderContent(params: {
 
   if (total === 0) {
     if (activeTab === "archive") {
-      return <div className="text-sm text-muted-foreground">Archive is empty.</div>;
+      return <div className="text-sm text-muted-foreground">No archived loops.</div>;
+    }
+    if (activeTab === "paused") {
+      return <div className="text-sm text-muted-foreground">No paused loops.</div>;
     }
     return (
       <div className="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-border bg-card py-16 text-center">

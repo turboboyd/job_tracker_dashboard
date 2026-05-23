@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { useAppDispatch, useAppSelector } from "src/app/store/hooks";
 import { joinTitles } from "src/entities/loop/lib";
 import type { Loop, LoopStatus } from "src/entities/loop/model";
-import { LoopSearchLinks } from "src/entities/loop/ui/LoopSearchLinks/LoopSearchLinks";
 import {
   archiveLoopViaRest,
   getLoopViaRest,
@@ -35,6 +34,66 @@ import { CardText } from "./Header";
 import { LoopSettingsPanel } from "./LoopSettingsPanel";
 import { getLoopStatus, isBackendLoopId } from "./loopsPage.helpers";
 import { VacancyMatchesSection } from "./VacancyMatchesSection";
+
+function FilterChip({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  if (!value) return null;
+  return (
+    <div className="rounded-[8px] border border-border bg-muted/50 px-3.5 py-2.5">
+      <div className="text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground/70">
+        {label}
+      </div>
+      <div className="mt-1 text-[13.5px] font-medium text-foreground">{value}</div>
+      {hint ? <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div> : null}
+    </div>
+  );
+}
+
+function LoopOverviewTab({ loop }: { loop: Loop }) {
+  const { t } = useTranslation();
+
+  const role = loop.filters?.role || joinTitles(loop.titles) || "—";
+  const location = loop.filters?.location || loop.location || "";
+  const radiusKm = loop.filters?.radiusKm ?? loop.radiusKm;
+  const radiusLabel = radiusKm > 0 ? `${radiusKm} km` : "";
+
+  let modeLabel = t("loops.any", "Any");
+  if (loop.filters?.workMode === "remote_only" || loop.remoteMode === "remote_only") {
+    modeLabel = t("loops.remoteOnly", "Remote only");
+  }
+
+  const employmentType = loop.filters?.employmentType ?? "";
+  const includeKeywords = loop.filters?.includeKeywords ?? loop.keywords?.join(", ") ?? "";
+  const excludeKeywords = loop.filters?.excludeKeywords ?? loop.excludedKeywords?.join(", ") ?? "";
+  const sourcesLabel = loop.selectedSources?.length
+    ? loop.selectedSources.join(", ")
+    : loop.platforms?.join(", ") ?? "";
+
+  const chips: Array<{ label: string; value: string; hint?: string }> = [
+    { label: t("loops.chipRole", "Role"), value: role },
+    { label: t("loops.chipLocation", "Location"), value: location },
+    { label: t("loops.chipRadius", "Radius"), value: radiusLabel },
+    { label: t("loops.chipMode", "Work mode"), value: modeLabel },
+    { label: t("loops.chipEmployment", "Employment"), value: employmentType },
+    { label: t("loops.chipKeywords", "Keywords"), value: includeKeywords },
+    { label: t("loops.chipExclude", "Exclude"), value: excludeKeywords },
+    { label: t("loops.chipSources", "Sources"), value: sourcesLabel },
+  ].filter((chip) => chip.value && chip.value !== "—");
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-[12px] border border-border bg-card p-5">
+        <h2 className="text-[13px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
+          {t("loops.searchParams", "Search parameters")}
+        </h2>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {chips.map((chip) => (
+            <FilterChip key={chip.label} label={chip.label} value={chip.value} hint={chip.hint} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function getStatusBadgeClass(status: LoopStatus): string {
   if (status === "archived") return "bg-muted text-muted-foreground";
@@ -285,6 +344,7 @@ export function LoopDetailsView({
     }
 
     if (activeTab === "settings") {
+      const isArchived = getLoopStatus(loop) === "archived";
       return (
         <LoopSettingsPanel
           loop={loop}
@@ -293,13 +353,32 @@ export function LoopDetailsView({
             setLoop(updated);
             return updated;
           }}
+          isPaused={getLoopStatus(loop) === "paused"}
+          onPauseResume={isArchived ? undefined : handlePauseResume}
+          onArchive={isArchived ? undefined : handleArchive}
         />
       );
     }
 
     if (activeTab === "matches") {
       return (
-        <>
+        <div className="space-y-5">
+          <div className="flex items-center justify-between rounded-[12px] border border-border bg-card px-5 py-4">
+            <div>
+              <div className="text-[13.5px] font-medium text-foreground">
+                {t("loops.matchesCta", "View all matches for this loop")}
+              </div>
+              <div className="mt-0.5 text-[12px] text-muted-foreground">
+                {t("loops.matchesCtaHint", "Filter, sort, and manage all discovery matches in one place.")}
+              </div>
+            </div>
+            <Link
+              to={`/dashboard/matches?loopId=${encodeURIComponent(loop.id)}`}
+              className="shrink-0 rounded-md bg-primary px-4 py-2 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {t("loops.openMatches", "Open Matches")}
+            </Link>
+          </div>
           {isBackendLoopId(loop.id) ? (
             <ArbeitsagenturDiscoveryPreviewPanel
               loopId={loop.id}
@@ -315,54 +394,21 @@ export function LoopDetailsView({
               onOpenSources={() => setActiveTab("overview")}
             />
           ) : null}
-        </>
+        </div>
       );
     }
 
-    return (
-      <LoopSearchLinks
-        userId={userId}
-        page={detailsPage}
-        onPageChange={(p) => {
-          dispatch(setLoopDetailsPage({ loopId, page: p }));
-          updateURLParams(
-            navigate,
-            location,
-            { page: String(p) },
-            { replace: true },
-          );
-        }}
-        loop={{
-          id: loop.id,
-          name: loop.name,
-          titles: loop.titles,
-          location: loop.location,
-          radiusKm: loop.radiusKm,
-          platforms: loop.platforms,
-          remoteMode: loop.remoteMode,
-          filters: loop.filters,
-        }}
-        onUpdateLoop={async (patch) => {
-          const updated = await updateLoopViaRest(loop.id, patch);
-          setLoop(updated);
-        }}
-        onAddVacancy={openCreateApplicationDialog}
-      />
-    );
+    return <LoopOverviewTab loop={loop} />;
   }, [
     activeTab,
     isLoadingLoop,
     loopError,
     loop,
     t,
-    userId,
-    detailsPage,
-    dispatch,
-    loopId,
-    navigate,
-    location,
     openCreateApplicationDialog,
     matchesRefreshKey,
+    handlePauseResume,
+    handleArchive,
   ]);
 
   return (
@@ -418,20 +464,13 @@ export function LoopDetailsView({
                     <button
                       type="button"
                       disabled={isActionBusy}
-                      className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10 disabled:opacity-50"
                       onClick={() => { void handleArchive(); }}
                     >
                       {t("loops.archive", "Archive")}
                     </button>
                   </>
                 ) : null}
-                <button
-                  type="button"
-                  className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                  onClick={openCreateApplicationDialog}
-                >
-                  {t("loops.addVacancy", "Add vacancy")}
-                </button>
               </>
             ) : null}
             <button

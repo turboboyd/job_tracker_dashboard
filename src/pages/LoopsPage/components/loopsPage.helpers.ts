@@ -62,15 +62,24 @@ export function isLoopPaused(loop: Pick<Loop, "status">): boolean {
   return getLoopStatus(loop) === "paused";
 }
 
+export function filterLoopsByTab(
+  loops: readonly Loop[],
+  tab: "active" | "paused" | "archive",
+): Loop[] {
+  return loops.filter((loop) => {
+    const status = getLoopStatus(loop);
+    if (tab === "archive") return status === "archived";
+    if (tab === "paused") return status === "paused";
+    return status === "active";
+  });
+}
+
+/** @deprecated use filterLoopsByTab */
 export function filterLoopsByArchiveTab(
   loops: readonly Loop[],
   tab: "active" | "archive",
 ): Loop[] {
-  return loops.filter((loop) => {
-    const archived = isLoopArchived(loop);
-    if (tab === "archive") return archived;
-    return !archived;
-  });
+  return filterLoopsByTab(loops, tab);
 }
 
 export function isApplicationSaved(row: AppRow): boolean {
