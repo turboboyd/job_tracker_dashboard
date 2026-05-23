@@ -8,6 +8,7 @@ import type { AppRow } from "src/pages/ApplicationsPage/model/types";
 import {
   buildLoopStatsById,
   filterLoopsByArchiveTab,
+  filterLoopsByTab,
   getBackendLoopIdsForMatchLoading,
   getLoopStats,
   getLoopStatus,
@@ -70,10 +71,18 @@ test("getLoopStatus defaults old loop documents to active", () => {
   assert.equal(getLoopStatus(loop("b", { status: "paused" })), "paused");
 });
 
-test("filterLoopsByArchiveTab keeps archived loops out of active tab", () => {
+test("filterLoopsByTab separates active/paused/archived into distinct tabs", () => {
   const loops = [loop("active"), loop("paused", { status: "paused" }), loop("archived", { status: "archived" })];
 
-  assert.deepEqual(filterLoopsByArchiveTab(loops, "active").map((item) => item.id), ["active", "paused"]);
+  assert.deepEqual(filterLoopsByTab(loops, "active").map((item) => item.id), ["active"]);
+  assert.deepEqual(filterLoopsByTab(loops, "paused").map((item) => item.id), ["paused"]);
+  assert.deepEqual(filterLoopsByTab(loops, "archive").map((item) => item.id), ["archived"]);
+});
+
+test("filterLoopsByArchiveTab (deprecated) excludes archived from active tab", () => {
+  const loops = [loop("active"), loop("paused", { status: "paused" }), loop("archived", { status: "archived" })];
+
+  assert.deepEqual(filterLoopsByArchiveTab(loops, "active").map((item) => item.id), ["active"]);
   assert.deepEqual(filterLoopsByArchiveTab(loops, "archive").map((item) => item.id), ["archived"]);
 });
 

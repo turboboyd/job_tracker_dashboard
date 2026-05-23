@@ -24,6 +24,9 @@ import {
 interface LoopSettingsPanelProps {
   loop: Loop;
   onSave: (patch: UpdateBackendLoopInput) => Promise<Loop | void>;
+  onPauseResume?: () => Promise<void>;
+  onArchive?: () => Promise<void>;
+  isPaused?: boolean;
 }
 
 type TextAreaField =
@@ -53,7 +56,7 @@ const textareaFields: Array<{
   },
 ];
 
-export function LoopSettingsPanel({ loop, onSave }: LoopSettingsPanelProps) {
+export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPaused }: LoopSettingsPanelProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<LoopSettingsDraft>(() =>
     createLoopSettingsDraft(loop),
@@ -61,6 +64,8 @@ export function LoopSettingsPanel({ loop, onSave }: LoopSettingsPanelProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [isDangerBusy, setIsDangerBusy] = useState(false);
+  const [dangerError, setDangerError] = useState<string | null>(null);
   const [sourceRuntimeStatuses, setSourceRuntimeStatuses] = useState<
     DiscoverySourceRuntimeStatus[] | null
   >(null);
@@ -260,6 +265,59 @@ export function LoopSettingsPanel({ loop, onSave }: LoopSettingsPanelProps) {
           </button>
         </div>
       </form>
+
+      {(onPauseResume ?? onArchive) ? (
+        <div className="mt-6 rounded-[12px] border border-destructive/30 bg-destructive/5 p-5">
+          <h3 className="text-[13px] font-semibold text-destructive">
+            {t("loops.dangerZone", "Danger zone")}
+          </h3>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            {t("loops.dangerZoneHint", "Irreversible or disruptive actions for this loop.")}
+          </p>
+          {dangerError ? (
+            <p className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
+              {dangerError}
+            </p>
+          ) : null}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {onPauseResume ? (
+              <button
+                type="button"
+                disabled={isDangerBusy}
+                onClick={async () => {
+                  setIsDangerBusy(true);
+                  setDangerError(null);
+                  try { await onPauseResume(); } catch (e) {
+                    setDangerError(e instanceof Error ? e.message : "Error");
+                  } finally { setIsDangerBusy(false); }
+                }}
+                className="rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                {isPaused
+                  ? t("loops.resume", "Resume loop")
+                  : t("loops.pause", "Pause loop")}
+              </button>
+            ) : null}
+            {onArchive ? (
+              <button
+                type="button"
+                disabled={isDangerBusy}
+                onClick={async () => {
+                  if (!window.confirm(t("loops.archiveConfirm", "Archive this loop? It will be hidden from the active list."))) return;
+                  setIsDangerBusy(true);
+                  setDangerError(null);
+                  try { await onArchive(); } catch (e) {
+                    setDangerError(e instanceof Error ? e.message : "Error");
+                  } finally { setIsDangerBusy(false); }
+                }}
+                className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-[12.5px] font-medium text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50"
+              >
+                {t("loops.archive", "Archive loop")}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
