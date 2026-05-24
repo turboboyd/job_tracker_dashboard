@@ -337,9 +337,14 @@ export function LoopDetailsView({
 
     let cancelled = false;
 
-    listLoopVacancyMatchesViaRest(loopId, { limit: 5 })
+    listLoopVacancyMatchesViaRest(loopId, { limit: 10 })
       .then((envelope) => {
-        if (!cancelled) setTopMatches(envelope.items);
+        if (!cancelled) {
+          const actionable = envelope.items.filter(
+            (m) => m.status === "new" || m.status === "saved",
+          );
+          setTopMatches(actionable.slice(0, 5));
+        }
       })
       .catch(() => {
         if (!cancelled) setTopMatches([]);
