@@ -8,7 +8,7 @@ import {
 import type { CreateLoopForm } from "./createLoopModal.types";
 
 export function createInitialLoopForm(): CreateLoopForm {
-  return { name: "New loop", role: "", location: "Berlin" };
+  return { name: "", role: "", location: "Berlin", platforms: [...RECOMMENDED_PLATFORMS] };
 }
 
 export function validateCreateLoopForm(form: CreateLoopForm): string | null {
@@ -34,6 +34,7 @@ export function buildCreateLoopInput(form: CreateLoopForm): CreateLoopInput {
   const name = form.name.trim();
   const role = form.role.trim();
   const location = form.location.trim();
+  const platforms = form.platforms.length > 0 ? form.platforms : [...RECOMMENDED_PLATFORMS];
 
   return {
     name,
@@ -41,7 +42,7 @@ export function buildCreateLoopInput(form: CreateLoopForm): CreateLoopInput {
     location,
     radiusKm: 30,
     remoteMode: "any",
-    platforms: RECOMMENDED_PLATFORMS,
+    platforms: platforms as typeof RECOMMENDED_PLATFORMS,
     filters: {
       ...DEFAULT_CANONICAL_FILTERS,
       role,
