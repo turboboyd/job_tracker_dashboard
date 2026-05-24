@@ -71,17 +71,74 @@ function LoopOverviewTab({ loop }: { loop: Loop }) {
     sources: t("loops.chipSources", "Sources"),
   });
 
+  const includeKw = (loop.filters?.includeKeywords || loop.keywords?.join(", ") || "")
+    .split(/[,\s]+/).map((k) => k.trim()).filter(Boolean);
+  const excludeKw = (loop.filters?.excludeKeywords || loop.excludedKeywords?.join(", ") || "")
+    .split(/[,\s]+/).map((k) => k.trim()).filter(Boolean);
+
+  // exclude keyword chips already shown in chips grid — strip them to avoid duplication
+  const mainChips = chips.filter(
+    (c) => c.label !== t("loops.chipKeywords", "Keywords") && c.label !== t("loops.chipExclude", "Exclude"),
+  );
+
   return (
     <div className="space-y-4">
       <div className="rounded-[12px] border border-border bg-card p-5">
-        <h2 className="text-[13px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
-          {t("loops.searchParams", "Search parameters")}
-        </h2>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {chips.map((chip) => (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
+            {t("loops.searchParams", "Search parameters")}
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {mainChips.map((chip) => (
             <FilterChip key={chip.label} label={chip.label} value={chip.value} />
           ))}
         </div>
+
+        {(includeKw.length > 0 || excludeKw.length > 0) && (
+          <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+            {includeKw.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11.5px] text-muted-foreground">
+                  {t("loops.include", "Include:")}
+                </span>
+                {includeKw.map((k) => (
+                  <span
+                    key={k}
+                    className="rounded-full border px-2 py-0.5 text-[11.5px]"
+                    style={{
+                      background: "color-mix(in oklab, rgb(5,150,105) 10%, transparent)",
+                      borderColor: "color-mix(in oklab, rgb(5,150,105) 25%, transparent)",
+                      color: "rgb(5,150,105)",
+                    }}
+                  >
+                    + {k}
+                  </span>
+                ))}
+              </div>
+            )}
+            {excludeKw.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11.5px] text-muted-foreground">
+                  {t("loops.exclude", "Exclude:")}
+                </span>
+                {excludeKw.map((k) => (
+                  <span
+                    key={k}
+                    className="rounded-full border px-2 py-0.5 text-[11.5px]"
+                    style={{
+                      background: "color-mix(in oklab, rgb(220,38,38) 10%, transparent)",
+                      borderColor: "color-mix(in oklab, rgb(220,38,38) 22%, transparent)",
+                      color: "rgb(220,38,38)",
+                    }}
+                  >
+                    − {k}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -356,71 +413,77 @@ export function LoopDetailsView({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {loop ? (
-              <>
-                <LoopStatusBadge status={getLoopStatus(loop)} />
-                {onOpenMatches ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-                    onClick={() => onOpenMatches(loop.id)}
-                  >
-                    {t("loops.statMatches", "Matches")}
-                  </button>
-                ) : null}
-                {getLoopStatus(loop) !== "archived" ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={isActionBusy}
-                      className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-                      onClick={() => { void handlePauseResume(); }}
-                    >
-                      {getLoopStatus(loop) === "paused"
-                        ? t("loops.resume", "Resume")
-                        : t("loops.pause", "Pause")}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isActionBusy}
-                      className="flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                      onClick={() => { void handleArchive(); }}
-                    >
-                      {t("loops.archive", "Archive")}
-                    </button>
-                  </>
-                ) : null}
-              </>
+            {loop && getLoopStatus(loop) !== "archived" ? (
+              <button
+                type="button"
+                disabled={isActionBusy}
+                className="rounded-md px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => { void handlePauseResume(); }}
+              >
+                {getLoopStatus(loop) === "paused"
+                  ? t("loops.resume", "Resume")
+                  : t("loops.pause", "Pause")}
+              </button>
             ) : null}
             <button
               type="button"
-              className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-              onClick={onBack}
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+              onClick={() => setActiveTab("settings")}
             >
-              ← {t("loops.back", "Back")}
+              {t("loops.editSettings", "Settings")}
             </button>
+            {onOpenMatches && loop ? (
+              <button
+                type="button"
+                className="rounded-md bg-primary px-3.5 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                onClick={() => onOpenMatches(loop.id)}
+              >
+                {t("loops.openMatches", "Open Matches")} →
+              </button>
+            ) : null}
           </div>
         </div>
 
         {/* Stats row */}
         {loop?.metrics ? (
-          <div className="mt-4 flex items-center gap-0 divide-x divide-border border-t border-border px-7">
-            <div className="flex flex-col py-3 pr-6">
-              <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
-                {t("loops.statMatches", "Matches")}
-              </span>
-              <span className="mt-0.5 text-[20px] font-semibold leading-none tabular-nums text-foreground">
-                {loop.metrics.matches_saved}
-              </span>
-            </div>
-            <div className="flex flex-col py-3 px-6">
-              <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
-                {t("loops.statApplied", "Applied")}
-              </span>
-              <span className="mt-0.5 text-[20px] font-semibold leading-none tabular-nums text-primary">
-                {loop.metrics.applications_total}
-              </span>
-            </div>
+          <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] divide-x divide-border border-t border-border px-7">
+            {[
+              {
+                label: t("loops.statMatches", "Matches"),
+                value: loop.metrics.matches_saved,
+                sub: t("loops.statMatchesSub", "System matches"),
+                accent: false,
+              },
+              {
+                label: t("loops.statApplied", "Applied"),
+                value: loop.metrics.applications_total,
+                sub: String(
+                  loop.metrics.matches_saved > 0
+                    ? `${Math.round((loop.metrics.applications_total / loop.metrics.matches_saved) * 100)}% от матчей`
+                    : "—"
+                ),
+                accent: true,
+              },
+            ].map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`flex flex-col py-3 ${i === 0 ? "pr-5" : "px-5"}`}
+              >
+                <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
+                  {stat.label}
+                </span>
+                <span
+                  className={`mt-0.5 text-[22px] font-semibold leading-none tabular-nums ${
+                    stat.accent ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {stat.value}
+                </span>
+                {stat.sub ? (
+                  <span className="mt-1 text-[11px] text-muted-foreground/70">{stat.sub}</span>
+                ) : null}
+              </div>
+            ))}
           </div>
         ) : null}
 
