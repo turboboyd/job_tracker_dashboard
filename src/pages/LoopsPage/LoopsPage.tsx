@@ -56,7 +56,7 @@ export default function LoopsPage() {
   }
 
   return isDetails ? (
-    <LoopDetailsView userId={userId} loopId={loopId!} onBack={goBack} onOpenMatches={openLoopMatches} />
+    <LoopDetailsView loopId={loopId!} onBack={goBack} onOpenMatches={openLoopMatches} />
   ) : (
     <LoopsListView
       userId={userId}

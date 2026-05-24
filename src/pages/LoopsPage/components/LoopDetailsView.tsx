@@ -10,22 +10,10 @@ import {
   getLoopViaRest,
   updateLoopViaRest,
 } from "src/features/loops";
-import { createApplicationsRepo } from "src/pages/ApplicationsPage/api/applicationsRepo";
-import {
-  buildCreateApplicationPayload,
-  canSubmitApplicationForm,
-  getLoopTargetRole,
-} from "src/pages/ApplicationsPage/model/applicationsPage.helpers";
-import {
-  EMPTY_CREATE_FORM,
-  type CreateFormState,
-} from "src/pages/ApplicationsPage/model/types";
-import { CreateApplicationDialog } from "src/pages/ApplicationsPage/ui/CreateApplicationDialog";
 import {
   setLastLoopsUrl,
   setLoopDetailsPage,
 } from "src/pages/LoopsPage/model/loopsUiSlice";
-import { db } from "src/shared/config/firebase/firebase";
 import { getErrorMessage } from "src/shared/lib";
 import { updateURLParams } from "src/shared/lib/url/updateURLParams";
 
@@ -33,7 +21,6 @@ import { ArbeitsagenturDiscoveryPreviewPanel } from "./ArbeitsagenturDiscoveryPr
 import { CardText } from "./Header";
 import { LoopSettingsPanel } from "./LoopSettingsPanel";
 import { getLoopStatus, isBackendLoopId } from "./loopsPage.helpers";
-import { VacancyMatchesSection } from "./VacancyMatchesSection";
 
 function FilterChip({ label, value, hint }: { label: string; value: string; hint?: string }) {
   if (!value) return null;
@@ -121,14 +108,11 @@ function LoopStatusBadge({ status }: { status: LoopStatus }) {
   );
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
 export function LoopDetailsView({
-  userId,
   loopId,
   onBack,
   onOpenMatches,
 }: {
-  userId: string;
   loopId: string;
   onBack: () => void;
   onOpenMatches?: (id: string) => void;
@@ -137,8 +121,6 @@ export function LoopDetailsView({
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
-  const applicationsRepo = useMemo(() => createApplicationsRepo(db), []);
-
   const savedDetailsPage = useAppSelector(
     (s) => s.loopsUi.detailsPageByLoopId[loopId],
   );
@@ -146,11 +128,6 @@ export function LoopDetailsView({
   const [isLoadingLoop, setIsLoadingLoop] = useState(false);
   const [loopError, setLoopError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "matches" | "settings">("overview");
-  const [isCreateApplicationOpen, setIsCreateApplicationOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<CreateFormState>(EMPTY_CREATE_FORM);
-  const [isCreatingApplication, setIsCreatingApplication] = useState(false);
-  const [createApplicationError, setCreateApplicationError] = useState<string | null>(null);
-  const [matchesRefreshKey, setMatchesRefreshKey] = useState(0);
   const [isActionBusy, setIsActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -269,72 +246,6 @@ export function LoopDetailsView({
     return `${roles} · ${loop.location} · ${remoteText}`;
   }, [loop, t]);
 
-  const updateCreateForm = useCallback(
-    <K extends keyof CreateFormState>(key: K, value: CreateFormState[K]) => {
-      setCreateForm((current) => ({ ...current, [key]: value }));
-    },
-    [],
-  );
-
-  const openCreateApplicationDialog = useCallback(() => {
-    if (!loop) return;
-
-    setCreateApplicationError(null);
-    setCreateForm({
-      ...EMPTY_CREATE_FORM,
-      loopId: loop.id,
-      roleTitle: getLoopTargetRole(loop),
-    });
-    setIsCreateApplicationOpen(true);
-  }, [loop]);
-
-  const closeCreateApplicationDialog = useCallback(() => {
-    setIsCreateApplicationOpen(false);
-    setCreateForm(EMPTY_CREATE_FORM);
-  }, []);
-
-  const selectCreateApplicationLoop = useCallback((nextLoopId: string) => {
-    if (!loop || nextLoopId !== loop.id) {
-      setCreateForm((current) => ({ ...current, loopId: "" }));
-      return;
-    }
-
-    setCreateForm((current) => ({
-      ...current,
-      loopId: loop.id,
-      roleTitle: current.roleTitle.trim() ? current.roleTitle : getLoopTargetRole(loop),
-    }));
-  }, [loop]);
-
-  const canCreateApplication = useMemo(
-    () => canSubmitApplicationForm(createForm),
-    [createForm],
-  );
-
-  const handleCreateApplication = useCallback(async () => {
-    if (!userId || !loop || !canCreateApplication) return;
-
-    setIsCreatingApplication(true);
-    setCreateApplicationError(null);
-    try {
-      await applicationsRepo.createApplication(
-        userId,
-        buildCreateApplicationPayload({ ...createForm, loopId: loop.id }),
-      );
-      closeCreateApplicationDialog();
-    } catch (error: unknown) {
-      setCreateApplicationError(getErrorMessage(error));
-    } finally {
-      setIsCreatingApplication(false);
-    }
-  }, [
-    applicationsRepo,
-    canCreateApplication,
-    closeCreateApplicationDialog,
-    createForm,
-    loop,
-    userId,
-  ]);
 
   const content = useMemo(() => {
     if (isLoadingLoop) {
@@ -369,6 +280,7 @@ export function LoopDetailsView({
     if (activeTab === "matches") {
       return (
         <div className="space-y-5">
+          {/* Primary CTA — full matches page */}
           <div className="flex items-center justify-between rounded-[12px] border border-border bg-card px-5 py-4">
             <div>
               <div className="text-[13.5px] font-medium text-foreground">
@@ -385,19 +297,12 @@ export function LoopDetailsView({
               {t("loops.openMatches", "Open Matches")}
             </Link>
           </div>
+          {/* Discovery preview — manual search only */}
           {isBackendLoopId(loop.id) ? (
             <ArbeitsagenturDiscoveryPreviewPanel
               loopId={loop.id}
               selectedSources={loop.selectedSources}
-              onMatchSaved={() => setMatchesRefreshKey((current) => current + 1)}
-            />
-          ) : null}
-          {isBackendLoopId(loop.id) ? (
-            <VacancyMatchesSection
-              loopId={loop.id}
-              reloadKey={matchesRefreshKey}
-              onAddVacancy={openCreateApplicationDialog}
-              onOpenSources={() => setActiveTab("overview")}
+              onMatchSaved={() => { /* discovery-only, no list to refresh */ }}
             />
           ) : null}
         </div>
@@ -411,8 +316,6 @@ export function LoopDetailsView({
     loopError,
     loop,
     t,
-    openCreateApplicationDialog,
-    matchesRefreshKey,
     handlePauseResume,
     handleArchive,
   ]);
@@ -425,7 +328,7 @@ export function LoopDetailsView({
             {/* Loop icon */}
             <div
               className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[17px] text-white"
-              style={{ background: "linear-gradient(135deg, var(--color-primary), color-mix(in oklab, var(--color-primary) 60%, #818cf8))" }}
+              style={{ background: "linear-gradient(135deg, rgb(var(--primary)), rgb(var(--secondary)))" }}
               aria-hidden="true"
             >
               ↻
@@ -555,33 +458,8 @@ export function LoopDetailsView({
             </div>
           ) : null}
           {content}
-          {createApplicationError ? (
-            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-              {createApplicationError}
-            </div>
-          ) : null}
         </div>
       </div>
-
-      {loop ? (
-        <CreateApplicationDialog
-          isOpen={isCreateApplicationOpen}
-          onClose={closeCreateApplicationDialog}
-          form={createForm}
-          onChange={updateCreateForm}
-          onCreate={handleCreateApplication}
-          canSubmit={canCreateApplication}
-          isCreating={isCreatingApplication}
-          activeLoops={loop.status === "archived" ? [] : [loop]}
-          isLoadingLoops={false}
-          onSelectLoop={selectCreateApplicationLoop}
-          initialLoopId={loop.id}
-          initialMode="import"
-          onCreateLoopRequested={() => {
-            setIsCreateApplicationOpen(false);
-          }}
-        />
-      ) : null}
     </div>
   );
 }
