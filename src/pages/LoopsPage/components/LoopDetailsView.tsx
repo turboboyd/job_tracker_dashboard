@@ -16,6 +16,11 @@ import {
 } from "src/pages/LoopsPage/model/loopsUiSlice";
 import { getErrorMessage } from "src/shared/lib";
 import { updateURLParams } from "src/shared/lib/url/updateURLParams";
+import {
+  listLoopVacancyMatchesViaRest,
+  type VacancyMatch,
+  type VacancyMatchStatus,
+} from "src/features/vacancyMatches";
 
 import { ArbeitsagenturDiscoveryPreviewPanel } from "./ArbeitsagenturDiscoveryPreviewPanel";
 import { CardText } from "./Header";
@@ -55,7 +60,22 @@ function buildLoopChips(loop: Loop, labels: Record<string, string>): ChipDef[] {
   return raw.filter((chip) => chip.value && chip.value !== "—");
 }
 
-function LoopOverviewTab({ loop }: { loop: Loop }) {
+const MATCH_STATUS_STYLES: Record<VacancyMatchStatus, { label: string; cls: string }> = {
+  new:       { label: "Новая",     cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  saved:     { label: "Сохранено", cls: "bg-muted text-muted-foreground" },
+  ignored:   { label: "Ignored",   cls: "bg-muted text-muted-foreground opacity-60" },
+  converted: { label: "Отклик",    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+};
+
+function LoopOverviewTab({
+  loop,
+  topMatches,
+  onOpenMatches,
+}: {
+  loop: Loop;
+  topMatches: VacancyMatch[];
+  onOpenMatches?: (id: string) => void;
+}) {
   const { t } = useTranslation();
 
   const chips = buildLoopChips(loop, {
@@ -140,6 +160,64 @@ function LoopOverviewTab({ loop }: { loop: Loop }) {
           </div>
         )}
       </div>
+
+      {topMatches.length > 0 && (
+        <div className="overflow-hidden rounded-[12px] border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+            <div>
+              <div className="text-[13px] font-medium text-foreground">
+                {t("loops.topMatches", "Топ-матчи в этом цикле")}
+              </div>
+              <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                {t("loops.topMatchesSub", "Последние совпадения")}
+              </div>
+            </div>
+            {onOpenMatches && (
+              <button
+                type="button"
+                onClick={() => onOpenMatches(loop.id)}
+                className="text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("loops.allMatches", "Все матчи")} →
+              </button>
+            )}
+          </div>
+          <div className="divide-y divide-border">
+            {topMatches.map((m) => {
+              const company = m.companyName ?? "—";
+              const statusStyle = MATCH_STATUS_STYLES[m.status] ?? MATCH_STATUS_STYLES.new;
+              return (
+                <a
+                  key={m.id}
+                  href={m.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="grid grid-cols-[28px_minmax(0,1fr)_minmax(0,0.7fr)_auto_20px] items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border border-border bg-muted text-[11px] font-semibold text-muted-foreground">
+                    {company.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-medium text-foreground">
+                      {m.roleTitle ?? "—"}
+                    </div>
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      {company}{m.locationText ? ` · ${m.locationText}` : ""}
+                    </div>
+                  </div>
+                  <div className="min-w-0 truncate text-[11.5px] text-muted-foreground">
+                    {m.source ?? "—"}
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${statusStyle.cls}`}>
+                    {statusStyle.label}
+                  </span>
+                  <span className="text-[13px] text-muted-foreground">→</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -187,6 +265,7 @@ export function LoopDetailsView({
   const [activeTab, setActiveTab] = useState<"overview" | "matches" | "settings">("overview");
   const [isActionBusy, setIsActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [topMatches, setTopMatches] = useState<VacancyMatch[]>([]);
 
   const readPageFromSearch = (search: string): number | null => {
     try {
@@ -252,6 +331,24 @@ export function LoopDetailsView({
       cancelled = true;
     };
   }, [loopId, t]);
+
+  useEffect(() => {
+    if (!isBackendLoopId(loopId)) return;
+
+    let cancelled = false;
+
+    listLoopVacancyMatchesViaRest(loopId, { limit: 5 })
+      .then((envelope) => {
+        if (!cancelled) setTopMatches(envelope.items);
+      })
+      .catch(() => {
+        if (!cancelled) setTopMatches([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loopId]);
 
   const handlePauseResume = useCallback(async () => {
     if (!loop) return;
@@ -366,12 +463,14 @@ export function LoopDetailsView({
       );
     }
 
-    return <LoopOverviewTab loop={loop} />;
+    return <LoopOverviewTab loop={loop} topMatches={topMatches} onOpenMatches={onOpenMatches} />;
   }, [
     activeTab,
     isLoadingLoop,
     loopError,
     loop,
+    topMatches,
+    onOpenMatches,
     t,
     handlePauseResume,
     handleArchive,
