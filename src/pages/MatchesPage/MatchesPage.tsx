@@ -1,4 +1,4 @@
-import { ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -23,20 +23,27 @@ type SortFilter = "updated_desc" | "created_desc" | "score_desc" | "title_asc";
 
 const PAGE_SIZE = 20;
 
-const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "new", label: "New" },
-  { value: "saved", label: "Saved" },
-  { value: "ignored", label: "Hidden" },
-  { value: "converted", label: "Converted" },
+const STATUS_TABS: Array<{ value: StatusFilter; label: string }> = [
+  { value: "all", label: "Все" },
+  { value: "new", label: "Новые" },
+  { value: "saved", label: "Сохранённые" },
+  { value: "ignored", label: "Скрытые" },
+  { value: "converted", label: "Отклики" },
 ];
 
 const SORT_OPTIONS: Array<{ value: SortFilter; label: string }> = [
-  { value: "updated_desc", label: "Recently updated" },
-  { value: "created_desc", label: "Recently saved" },
-  { value: "score_desc", label: "Best score" },
-  { value: "title_asc", label: "Title A-Z" },
+  { value: "updated_desc", label: "Недавно обновлённые" },
+  { value: "created_desc", label: "Недавно сохранённые" },
+  { value: "score_desc", label: "Лучший скор" },
+  { value: "title_asc", label: "Название А-Я" },
 ];
+
+const MATCH_STATUS_STYLES: Record<VacancyMatchStatus, { label: string; cls: string }> = {
+  new: { label: "Новая", cls: "bg-primary/10 text-primary" },
+  saved: { label: "Сохранено", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+  ignored: { label: "Скрыто", cls: "bg-muted text-muted-foreground opacity-70" },
+  converted: { label: "Отклик", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+};
 
 interface MatchWithLoop {
   loopName: string;
@@ -62,20 +69,6 @@ function getLoopName(loop: Loop): string {
 function getScore(match: VacancyMatch): number | null {
   const raw = match.confidence?.score ?? match.confidence?.overall ?? match.confidence?.match;
   return typeof raw === "number" ? Math.round(raw) : null;
-}
-
-function getStatusLabel(status: VacancyMatchStatus): string {
-  if (status === "new") return "New";
-  if (status === "saved") return "Saved";
-  if (status === "ignored") return "Hidden";
-  return "Converted";
-}
-
-function getStatusClass(status: VacancyMatchStatus): string {
-  if (status === "converted") return "bg-blue-100 text-blue-700";
-  if (status === "ignored") return "bg-muted text-muted-foreground";
-  if (status === "saved") return "bg-emerald-100 text-emerald-700";
-  return "bg-primary/10 text-primary";
 }
 
 function getScoreClass(score: number): string {
@@ -137,7 +130,7 @@ function filterAndSortMatches(
   });
 }
 
-function MatchCard({
+function MatchRow({
   item,
   convertingId,
   ignoringId,
@@ -152,94 +145,85 @@ function MatchCard({
   onIgnore: (match: VacancyMatch) => void;
   onOpenDetails: (match: VacancyMatch) => void;
 }) {
-  const { loopName, match } = item;
+  const { match } = item;
   const score = getScore(match);
   const canAct = match.status === "new" || match.status === "saved";
+  const company = (match.companyName ?? "").trim() || "?";
+  const avatar = company.charAt(0).toUpperCase();
+  const statusStyle = MATCH_STATUS_STYLES[match.status];
 
   return (
-    <article className="rounded-[10px] border border-border bg-card p-4">
-      <div className="flex items-start gap-3">
-        {score !== null ? (
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[7px] border text-[14px] font-semibold tabular-nums ${getScoreClass(score)}`}>
-            {score}
-          </div>
-        ) : (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[7px] border border-border bg-muted text-[12px] text-muted-foreground">
-            --
-          </div>
-        )}
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onOpenDetails(match)}
-              className="min-w-0 truncate text-left text-[15px] font-semibold text-foreground hover:underline"
-            >
-              {match.roleTitle || "Untitled vacancy"}
-            </button>
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${getStatusClass(match.status)}`}>
-              {getStatusLabel(match.status)}
-            </span>
-          </div>
-          <div className="mt-1 text-[12.5px] text-muted-foreground">
-            {[match.companyName, match.locationText, match.source, loopName].filter(Boolean).join(" · ")}
-          </div>
-          {match.vacancyDescription ? (
-            <p className="mt-2 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
-              {match.vacancyDescription}
-            </p>
-          ) : null}
-          <a
-            href={match.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-flex max-w-full items-center gap-1 truncate text-[12px] text-primary hover:underline"
-          >
-            <span className="truncate">{match.sourceUrl}</span>
-            <ExternalLink className="h-3 w-3 shrink-0" />
-          </a>
-        </div>
+    <div className="grid grid-cols-[32px_minmax(0,1fr)_100px_76px_auto] items-center gap-3 px-5 py-3.5 transition-colors hover:bg-muted/30">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-muted text-[12px] font-semibold text-muted-foreground">
+        {avatar}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="min-w-0">
         <button
           type="button"
           onClick={() => onOpenDetails(match)}
-          className="rounded-md border border-border px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted"
+          className="block max-w-full truncate text-left text-[13.5px] font-medium text-foreground hover:underline"
         >
-          Details
+          {match.roleTitle || "Без названия"}
         </button>
+        <div className="truncate text-[12px] text-muted-foreground">
+          {[company !== "?" ? company : null, match.locationText].filter(Boolean).join(" · ")}
+        </div>
+      </div>
+
+      <div className="truncate text-[11.5px] text-muted-foreground">
+        {match.source || "—"}
+      </div>
+
+      <span className={`rounded-full px-2 py-0.5 text-center text-[11px] font-medium ${statusStyle.cls}`}>
+        {statusStyle.label}
+      </span>
+
+      <div className="flex shrink-0 items-center gap-1.5">
+        {score !== null ? (
+          <div className={`flex h-7 w-10 items-center justify-center rounded-[5px] border text-[11.5px] font-semibold tabular-nums ${getScoreClass(score)}`}>
+            {score}
+          </div>
+        ) : null}
         {canAct ? (
           <>
             <button
               type="button"
               disabled={convertingId === match.id}
               onClick={() => onConvert(match)}
-              className="rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground disabled:opacity-50"
+              className="rounded-md bg-primary px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground disabled:opacity-50"
             >
-              {convertingId === match.id ? "Creating..." : "Create Application"}
+              {convertingId === match.id ? "…" : "Откликнуться"}
             </button>
             <button
               type="button"
               disabled={ignoringId === match.id}
               onClick={() => onIgnore(match)}
-              className="rounded-md border border-border px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-muted disabled:opacity-50"
+              className="rounded-md border border-border px-2.5 py-1 text-[11.5px] text-muted-foreground hover:bg-muted disabled:opacity-50"
             >
-              {ignoringId === match.id ? "Hiding..." : "Hide"}
+              {ignoringId === match.id ? "…" : "Скрыть"}
             </button>
           </>
         ) : null}
         {match.applicationId ? (
           <a
             href={getApplicationDetailsRoute(match.applicationId)}
-            className="rounded-md border border-border px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted"
+            className="rounded-md border border-border px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-muted"
           >
-            Open Application
+            Заявка
           </a>
         ) : null}
+        <a
+          href={match.sourceUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-[11.5px] font-medium text-foreground hover:bg-muted"
+        >
+          Открыть
+          <ExternalLink className="h-3 w-3" />
+        </a>
       </div>
-    </article>
+    </div>
   );
 }
 
@@ -274,6 +258,8 @@ export default function MatchesPage() {
     () => loops.find((loop) => loop.id === selectedLoopId) ?? null,
     [loops, selectedLoopId],
   );
+
+  const fromLoopId = searchParams.get("loopId");
 
   useEffect(() => {
     const loopId = searchParams.get("loopId") ?? "";
@@ -417,99 +403,139 @@ export default function MatchesPage() {
 
   const hasMore = offset < total;
 
+  const loopFilters = selectedLoop?.filters as
+    | { role?: string; location?: string; radiusKm?: number; workMode?: string }
+    | undefined;
+
+  const contextBadges = selectedLoop
+    ? [
+        loopFilters?.role ? { label: loopFilters.role } : null,
+        loopFilters?.location ?? selectedLoop.location
+          ? { label: loopFilters?.location ?? selectedLoop.location }
+          : null,
+        loopFilters?.radiusKm ? { label: `${loopFilters.radiusKm} km` } : null,
+        loopFilters?.workMode && loopFilters.workMode !== "any"
+          ? { label: loopFilters.workMode }
+          : null,
+      ].filter(Boolean as unknown as <T>(x: T | null) => x is T)
+    : [];
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-      <header className="shrink-0 border-b border-border px-7 py-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <header className="shrink-0 border-b border-border px-7 pb-0 pt-5">
+        <div className="flex flex-wrap items-start justify-between gap-4 pb-4">
           <div>
-            <div className="mb-1 flex items-center gap-2 text-[11.5px] text-muted-foreground/60">
-              <span>Loopboard</span>
-              <span>/</span>
-              <span>Matches</span>
-            </div>
+            {fromLoopId ? (
+              <button
+                type="button"
+                onClick={() => navigate(`/dashboard/loops/${fromLoopId}`)}
+                className="mb-2 inline-flex items-center gap-1.5 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Назад к циклу
+              </button>
+            ) : (
+              <div className="mb-1 flex items-center gap-2 text-[11.5px] text-muted-foreground/60">
+                <span>Loopboard</span>
+                <span>/</span>
+                <span>Матчи</span>
+              </div>
+            )}
             <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground">
-              Matches
+              {selectedLoop ? getLoopName(selectedLoop) : "Матчи"}
             </h1>
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              Discovery preview and saved vacancy matches for one search loop.
-            </p>
+            {contextBadges.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {contextBadges.map((badge) => (
+                  <span
+                    key={badge.label}
+                    className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[11.5px] text-muted-foreground"
+                  >
+                    {badge.label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                Вакансии из поисковых циклов
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setReloadKey((key) => key + 1)}
-            disabled={!selectedLoop || isLoading}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            Refresh saved
-          </button>
+          <div className="flex items-center gap-2">
+            {loops.length > 1 ? (
+              <select
+                value={selectedLoopId}
+                onChange={(event) => handleSelectLoop(event.target.value)}
+                disabled={loopsQ.isLoading}
+                className="h-9 rounded-md border border-border bg-background px-3 text-[13px] text-foreground"
+              >
+                <option value="">Выбрать цикл...</option>
+                {loops.map((loop) => (
+                  <option key={loop.id} value={loop.id}>
+                    {getLoopName(loop)}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setReloadKey((key) => key + 1)}
+              disabled={!selectedLoop || isLoading}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+              Обновить
+            </button>
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(220px,320px)_1fr]">
-          <label className="text-[12px] font-medium text-muted-foreground">
-            Loop
-            <select
-              value={selectedLoopId}
-              onChange={(event) => handleSelectLoop(event.target.value)}
-              disabled={loopsQ.isLoading}
-              className="mt-1 h-9 w-full rounded-md border border-border bg-background px-3 text-[13px] text-foreground"
-            >
-              <option value="">Choose a Loop...</option>
-              {loops.map((loop) => (
-                <option key={loop.id} value={loop.id}>
-                  {getLoopName(loop)}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex gap-0.5">
+            {STATUS_TABS.map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setStatus(tab.value)}
+                className={[
+                  "rounded-t-md px-3.5 py-2 text-[12.5px] font-medium transition-colors",
+                  status === tab.value
+                    ? "border-b-2 border-primary text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Search
-              <input
-                value={q}
-                onChange={(event) => setQ(event.target.value)}
-                placeholder="Role, company, location..."
-                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-3 text-[13px] text-foreground"
-              />
-            </label>
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Source
+          <div className="flex items-center gap-2 pb-1">
+            <input
+              value={q}
+              onChange={(event) => setQ(event.target.value)}
+              placeholder="Роль, компания..."
+              className="h-8 w-48 rounded-md border border-border bg-background px-3 text-[12.5px] text-foreground placeholder:text-muted-foreground/60 focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/20"
+            />
+            {sources.length > 0 ? (
               <select
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
-                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-3 text-[13px] text-foreground"
+                className="h-8 rounded-md border border-border bg-background px-2 text-[12.5px] text-foreground"
               >
-                <option value="">All sources</option>
+                <option value="">Все источники</option>
                 {sources.map((src) => (
                   <option key={src} value={src}>{src}</option>
                 ))}
               </select>
-            </label>
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Status
-              <select
-                value={status}
-                onChange={(event) => setStatus(event.target.value as StatusFilter)}
-                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-3 text-[13px] text-foreground"
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="text-[12px] font-medium text-muted-foreground">
-              Sort
-              <select
-                value={sort}
-                onChange={(event) => setSort(event.target.value as SortFilter)}
-                className="mt-1 h-9 w-full rounded-md border border-border bg-background px-3 text-[13px] text-foreground"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
+            ) : null}
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortFilter)}
+              className="h-8 rounded-md border border-border bg-background px-2 text-[12.5px] text-foreground"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
           </div>
         </div>
       </header>
@@ -517,15 +543,15 @@ export default function MatchesPage() {
       <main className="flex-1 overflow-y-auto p-6">
         {loopsQ.isLoading ? (
           <div className="rounded-[12px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
-            Loading loops...
+            Загрузка циклов...
           </div>
         ) : loops.length === 0 ? (
           <div className="rounded-[12px] border border-dashed border-border bg-card p-6 text-[13px] text-muted-foreground">
-            Create a Loop first, then come back here to run discovery and save vacancy matches.
+            Создайте цикл поиска, чтобы видеть матчи здесь.
           </div>
         ) : !selectedLoop ? (
           <div className="rounded-[12px] border border-dashed border-border bg-card p-6 text-[13px] text-muted-foreground">
-            Choose a Loop to run discovery and view saved vacancy matches.
+            Выберите цикл, чтобы запустить поиск и просматривать матчи.
           </div>
         ) : (
           <>
@@ -539,36 +565,36 @@ export default function MatchesPage() {
               }}
             />
 
-            <section className="rounded-[14px] border border-border bg-card p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <section className="overflow-hidden rounded-[14px] border border-border bg-card">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
                 <div>
-                  <h2 className="text-[16px] font-semibold text-foreground">
-                    Saved VacancyMatches
-                  </h2>
-                  <p className="mt-1 text-[12.5px] text-muted-foreground">
-                    {visibleItems.length} shown from {total} saved matches.
-                  </p>
+                  <div className="text-[15px] font-semibold text-foreground">
+                    Сохранённые матчи
+                  </div>
+                  <div className="mt-0.5 text-[12px] text-muted-foreground">
+                    {visibleItems.length} из {total}
+                  </div>
                 </div>
               </div>
 
               {error ? (
-                <div className="mt-4 rounded-[10px] border border-destructive/30 bg-destructive/5 p-3 text-[12.5px] text-destructive">
+                <div className="mx-5 mt-4 rounded-[10px] border border-destructive/30 bg-destructive/5 p-3 text-[12.5px] text-destructive">
                   {error}
                 </div>
               ) : null}
 
               {isLoading ? (
-                <div className="mt-4 rounded-[10px] border border-border bg-background p-4 text-[12.5px] text-muted-foreground">
-                  Loading saved matches...
+                <div className="p-6 text-[13px] text-muted-foreground">
+                  Загрузка матчей...
                 </div>
               ) : visibleItems.length === 0 ? (
-                <div className="mt-4 rounded-[10px] border border-dashed border-border bg-background p-4 text-[12.5px] text-muted-foreground">
-                  No saved vacancy matches for this Loop yet. Run discovery above and save interesting vacancies.
+                <div className="p-6 text-[13px] text-muted-foreground">
+                  Нет матчей по выбранным фильтрам. Запустите поиск выше, чтобы собрать вакансии.
                 </div>
               ) : (
-                <div className="mt-4 grid gap-3">
+                <div className="divide-y divide-border">
                   {visibleItems.map((item) => (
-                    <MatchCard
+                    <MatchRow
                       key={item.match.id}
                       item={item}
                       convertingId={convertingId}
@@ -582,7 +608,7 @@ export default function MatchesPage() {
               )}
 
               {hasMore ? (
-                <div className="mt-4 flex justify-center">
+                <div className="flex justify-center border-t border-border p-4">
                   <button
                     type="button"
                     disabled={isLoadingMore}
@@ -590,7 +616,7 @@ export default function MatchesPage() {
                     className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${isLoadingMore ? "animate-spin" : ""}`} />
-                    {isLoadingMore ? "Loading..." : "Load more"}
+                    {isLoadingMore ? "Загрузка..." : "Загрузить ещё"}
                   </button>
                 </div>
               ) : null}

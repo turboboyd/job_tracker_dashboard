@@ -16,6 +16,11 @@ import {
 } from "src/pages/LoopsPage/model/loopsUiSlice";
 import { getErrorMessage } from "src/shared/lib";
 import { updateURLParams } from "src/shared/lib/url/updateURLParams";
+import {
+  listLoopVacancyMatchesViaRest,
+  type VacancyMatch,
+  type VacancyMatchStatus,
+} from "src/features/vacancyMatches";
 
 import { ArbeitsagenturDiscoveryPreviewPanel } from "./ArbeitsagenturDiscoveryPreviewPanel";
 import { CardText } from "./Header";
@@ -55,7 +60,22 @@ function buildLoopChips(loop: Loop, labels: Record<string, string>): ChipDef[] {
   return raw.filter((chip) => chip.value && chip.value !== "—");
 }
 
-function LoopOverviewTab({ loop }: { loop: Loop }) {
+const MATCH_STATUS_STYLES: Record<VacancyMatchStatus, { label: string; cls: string }> = {
+  new:       { label: "Новая",     cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  saved:     { label: "Сохранено", cls: "bg-muted text-muted-foreground" },
+  ignored:   { label: "Ignored",   cls: "bg-muted text-muted-foreground opacity-60" },
+  converted: { label: "Отклик",    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+};
+
+function LoopOverviewTab({
+  loop,
+  topMatches,
+  onOpenMatches,
+}: {
+  loop: Loop;
+  topMatches: VacancyMatch[];
+  onOpenMatches?: (id: string) => void;
+}) {
   const { t } = useTranslation();
 
   const chips = buildLoopChips(loop, {
@@ -71,18 +91,133 @@ function LoopOverviewTab({ loop }: { loop: Loop }) {
     sources: t("loops.chipSources", "Sources"),
   });
 
+  const includeKw = (loop.filters?.includeKeywords || loop.keywords?.join(", ") || "")
+    .split(/[,\s]+/).map((k) => k.trim()).filter(Boolean);
+  const excludeKw = (loop.filters?.excludeKeywords || loop.excludedKeywords?.join(", ") || "")
+    .split(/[,\s]+/).map((k) => k.trim()).filter(Boolean);
+
+  // exclude keyword chips already shown in chips grid — strip them to avoid duplication
+  const mainChips = chips.filter(
+    (c) => c.label !== t("loops.chipKeywords", "Keywords") && c.label !== t("loops.chipExclude", "Exclude"),
+  );
+
   return (
     <div className="space-y-4">
       <div className="rounded-[12px] border border-border bg-card p-5">
-        <h2 className="text-[13px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
-          {t("loops.searchParams", "Search parameters")}
-        </h2>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {chips.map((chip) => (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
+            {t("loops.searchParams", "Search parameters")}
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {mainChips.map((chip) => (
             <FilterChip key={chip.label} label={chip.label} value={chip.value} />
           ))}
         </div>
+
+        {(includeKw.length > 0 || excludeKw.length > 0) && (
+          <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+            {includeKw.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11.5px] text-muted-foreground">
+                  {t("loops.include", "Include:")}
+                </span>
+                {includeKw.map((k) => (
+                  <span
+                    key={k}
+                    className="rounded-full border px-2 py-0.5 text-[11.5px]"
+                    style={{
+                      background: "color-mix(in oklab, rgb(5,150,105) 10%, transparent)",
+                      borderColor: "color-mix(in oklab, rgb(5,150,105) 25%, transparent)",
+                      color: "rgb(5,150,105)",
+                    }}
+                  >
+                    + {k}
+                  </span>
+                ))}
+              </div>
+            )}
+            {excludeKw.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11.5px] text-muted-foreground">
+                  {t("loops.exclude", "Exclude:")}
+                </span>
+                {excludeKw.map((k) => (
+                  <span
+                    key={k}
+                    className="rounded-full border px-2 py-0.5 text-[11.5px]"
+                    style={{
+                      background: "color-mix(in oklab, rgb(220,38,38) 10%, transparent)",
+                      borderColor: "color-mix(in oklab, rgb(220,38,38) 22%, transparent)",
+                      color: "rgb(220,38,38)",
+                    }}
+                  >
+                    − {k}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {topMatches.length > 0 && (
+        <div className="overflow-hidden rounded-[12px] border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+            <div>
+              <div className="text-[13px] font-medium text-foreground">
+                {t("loops.topMatches", "Топ-матчи в этом цикле")}
+              </div>
+              <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                {t("loops.topMatchesSub", "Последние совпадения")}
+              </div>
+            </div>
+            {onOpenMatches && (
+              <button
+                type="button"
+                onClick={() => onOpenMatches(loop.id)}
+                className="text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("loops.allMatches", "Все матчи")} →
+              </button>
+            )}
+          </div>
+          <div className="divide-y divide-border">
+            {topMatches.map((m) => {
+              const company = m.companyName ?? "—";
+              const statusStyle = MATCH_STATUS_STYLES[m.status] ?? MATCH_STATUS_STYLES.new;
+              return (
+                <a
+                  key={m.id}
+                  href={m.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="grid grid-cols-[28px_minmax(0,1fr)_minmax(0,0.7fr)_auto_20px] items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border border-border bg-muted text-[11px] font-semibold text-muted-foreground">
+                    {company.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-medium text-foreground">
+                      {m.roleTitle ?? "—"}
+                    </div>
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      {company}{m.locationText ? ` · ${m.locationText}` : ""}
+                    </div>
+                  </div>
+                  <div className="min-w-0 truncate text-[11.5px] text-muted-foreground">
+                    {m.source ?? "—"}
+                  </div>
+                  <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${statusStyle.cls}`}>
+                    {statusStyle.label}
+                  </span>
+                  <span className="text-[13px] text-muted-foreground">→</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -130,6 +265,7 @@ export function LoopDetailsView({
   const [activeTab, setActiveTab] = useState<"overview" | "matches" | "settings">("overview");
   const [isActionBusy, setIsActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [topMatches, setTopMatches] = useState<VacancyMatch[]>([]);
 
   const readPageFromSearch = (search: string): number | null => {
     try {
@@ -195,6 +331,29 @@ export function LoopDetailsView({
       cancelled = true;
     };
   }, [loopId, t]);
+
+  useEffect(() => {
+    if (!isBackendLoopId(loopId)) return;
+
+    let cancelled = false;
+
+    listLoopVacancyMatchesViaRest(loopId, { limit: 10 })
+      .then((envelope) => {
+        if (!cancelled) {
+          const actionable = envelope.items.filter(
+            (m) => m.status === "new" || m.status === "saved",
+          );
+          setTopMatches(actionable.slice(0, 5));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setTopMatches([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loopId]);
 
   const handlePauseResume = useCallback(async () => {
     if (!loop) return;
@@ -309,12 +468,14 @@ export function LoopDetailsView({
       );
     }
 
-    return <LoopOverviewTab loop={loop} />;
+    return <LoopOverviewTab loop={loop} topMatches={topMatches} onOpenMatches={onOpenMatches} />;
   }, [
     activeTab,
     isLoadingLoop,
     loopError,
     loop,
+    topMatches,
+    onOpenMatches,
     t,
     handlePauseResume,
     handleArchive,
@@ -356,71 +517,77 @@ export function LoopDetailsView({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {loop ? (
-              <>
-                <LoopStatusBadge status={getLoopStatus(loop)} />
-                {onOpenMatches ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-                    onClick={() => onOpenMatches(loop.id)}
-                  >
-                    {t("loops.statMatches", "Matches")}
-                  </button>
-                ) : null}
-                {getLoopStatus(loop) !== "archived" ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={isActionBusy}
-                      className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-                      onClick={() => { void handlePauseResume(); }}
-                    >
-                      {getLoopStatus(loop) === "paused"
-                        ? t("loops.resume", "Resume")
-                        : t("loops.pause", "Pause")}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isActionBusy}
-                      className="flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                      onClick={() => { void handleArchive(); }}
-                    >
-                      {t("loops.archive", "Archive")}
-                    </button>
-                  </>
-                ) : null}
-              </>
+            {loop && getLoopStatus(loop) !== "archived" ? (
+              <button
+                type="button"
+                disabled={isActionBusy}
+                className="rounded-md px-3 py-1.5 text-[12.5px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => { void handlePauseResume(); }}
+              >
+                {getLoopStatus(loop) === "paused"
+                  ? t("loops.resume", "Resume")
+                  : t("loops.pause", "Pause")}
+              </button>
             ) : null}
             <button
               type="button"
-              className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-              onClick={onBack}
+              className="rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
+              onClick={() => setActiveTab("settings")}
             >
-              ← {t("loops.back", "Back")}
+              {t("loops.editSettings", "Settings")}
             </button>
+            {onOpenMatches && loop ? (
+              <button
+                type="button"
+                className="rounded-md bg-primary px-3.5 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                onClick={() => onOpenMatches(loop.id)}
+              >
+                {t("loops.openMatches", "Open Matches")} →
+              </button>
+            ) : null}
           </div>
         </div>
 
         {/* Stats row */}
         {loop?.metrics ? (
-          <div className="mt-4 flex items-center gap-0 divide-x divide-border border-t border-border px-7">
-            <div className="flex flex-col py-3 pr-6">
-              <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
-                {t("loops.statMatches", "Matches")}
-              </span>
-              <span className="mt-0.5 text-[20px] font-semibold leading-none tabular-nums text-foreground">
-                {loop.metrics.matches_saved}
-              </span>
-            </div>
-            <div className="flex flex-col py-3 px-6">
-              <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
-                {t("loops.statApplied", "Applied")}
-              </span>
-              <span className="mt-0.5 text-[20px] font-semibold leading-none tabular-nums text-primary">
-                {loop.metrics.applications_total}
-              </span>
-            </div>
+          <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] divide-x divide-border border-t border-border px-7">
+            {[
+              {
+                label: t("loops.statMatches", "Matches"),
+                value: loop.metrics.matches_saved,
+                sub: t("loops.statMatchesSub", "System matches"),
+                accent: false,
+              },
+              {
+                label: t("loops.statApplied", "Applied"),
+                value: loop.metrics.applications_total,
+                sub: String(
+                  loop.metrics.matches_saved > 0
+                    ? `${Math.round((loop.metrics.applications_total / loop.metrics.matches_saved) * 100)}% от матчей`
+                    : "—"
+                ),
+                accent: true,
+              },
+            ].map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`flex flex-col py-3 ${i === 0 ? "pr-5" : "px-5"}`}
+              >
+                <span className="text-[11px] font-medium uppercase tracking-[0.07em] text-muted-foreground/70">
+                  {stat.label}
+                </span>
+                <span
+                  className={`mt-0.5 text-[22px] font-semibold leading-none tabular-nums ${
+                    stat.accent ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {stat.value}
+                </span>
+                {stat.sub ? (
+                  <span className="mt-1 text-[11px] text-muted-foreground/70">{stat.sub}</span>
+                ) : null}
+              </div>
+            ))}
           </div>
         ) : null}
 

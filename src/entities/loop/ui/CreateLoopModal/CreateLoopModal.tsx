@@ -57,8 +57,8 @@ export function CreateLoopModal({
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title="Create loop"
-      description="Start with the basics: name, role, location. You can fine-tune in loop settings later."
+      title="Новый цикл поиска"
+      description="Задай параметры один раз — ссылки для платформ соберутся автоматически."
     >
       {error ? (
         <div className="mb-3 rounded-xl border border-border bg-background p-3 text-sm">

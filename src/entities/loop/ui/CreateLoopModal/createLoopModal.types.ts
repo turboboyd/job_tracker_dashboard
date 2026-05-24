@@ -10,5 +10,6 @@ export interface CreateLoopModalProps {
 export interface CreateLoopForm {
   location: string;
   name: string;
+  platforms: string[];
   role: string;
 }
