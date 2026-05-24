@@ -7,10 +7,8 @@ import { type Loop, CreateLoopModal } from "src/entities/loop";
 import { joinTitles } from "src/entities/loop/lib/format";
 import { listApplicationsViaRest } from "src/features/applications/rest/queries";
 import {
-  archiveLoopViaRest,
   createLoopViaRest,
   listLoopsViaRest,
-  updateLoopViaRest,
 } from "src/features/loops";
 import { listLoopVacancyMatchesViaRest, type VacancyMatch } from "src/features/vacancyMatches";
 import type { AppRow } from "src/pages/ApplicationsPage/model/types";
@@ -28,7 +26,6 @@ import {
   getEffectiveStats,
   getLoopStatus,
   getBackendLoopIdsForMatchLoading,
-  isLoopPaused,
   shouldShowLoopsPagination,
   type LoopStats,
 } from "./loopsPage.helpers";
@@ -138,30 +135,10 @@ function LoopStatusBadge({ loop }: { loop: Loop }) {
 type LoopCardProps = {
   loop: Loop;
   stats: LoopStats;
-  busy: boolean;
-  onArchive: (id: string) => void;
   onOpen: (id: string) => void;
-  onOpenApplications: (id: string) => void;
-  onOpenMatches: (id: string) => void;
-  onAddApplication: (id: string) => void;
-  onImportVacancy: (id: string) => void;
-  onRestore: (id: string) => void;
-  onTogglePause: (loop: Loop) => void;
 };
 
-function LoopCard({
-  loop,
-  stats,
-  busy,
-  onArchive,
-  onOpen,
-  onOpenApplications: _onOpenApplications,
-  onOpenMatches,
-  onAddApplication: _onAddApplication,
-  onImportVacancy: _onImportVacancy,
-  onRestore,
-  onTogglePause,
-}: LoopCardProps) {
+function LoopCard({ loop, stats, onOpen }: LoopCardProps) {
   const { t } = useTranslation();
   const titlesText =
     joinTitles(Array.isArray(loop.titles) ? loop.titles : []) ||
@@ -170,7 +147,6 @@ function LoopCard({
   if (loop.remoteMode === "remote_only") {
     remoteText = t("loops.remoteOnly", "Remote");
   }
-  const archived = getLoopStatus(loop) === "archived";
   let sourceLabel = t("loops.sources", "sources");
   if (loop.platforms.length === 1) {
     sourceLabel = t("loops.source", "source");
@@ -225,61 +201,38 @@ function LoopCard({
           </span>
         </div>
 
-        {/* Col 3: metrics + actions */}
-        <div className="flex flex-col items-end gap-3">
-          {/* 2 key metrics */}
-          <div className="flex items-start gap-5">
-            <div className="flex flex-col items-center">
+        {/* Col 3: metrics + open button */}
+        <div className="flex flex-col items-end gap-2.5">
+          <div className="text-right">
+            <div className="text-[10.5px] text-muted-foreground">
+              {t("loops.statMatches", "Matches")} · {t("loops.statApplications", "Applications")} · {t("loops.statToday", "Today")}
+            </div>
+            <div className="mt-1.5 flex items-baseline justify-end gap-3.5">
               <span className="text-[18px] font-semibold leading-none tabular-nums text-foreground">
                 {stats.matches}
               </span>
-              <span className="mt-0.5 text-[10.5px] text-muted-foreground">
-                {t("loops.statMatches", "Matches")}
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
               <span className="text-[18px] font-semibold leading-none tabular-nums text-primary">
                 {stats.applications}
               </span>
-              <span className="mt-0.5 text-[10.5px] text-muted-foreground">
-                {t("loops.statApplications", "Applications")}
+              <span
+                className={`text-[18px] font-semibold leading-none tabular-nums ${
+                  stats.today > 0 ? "text-emerald-600" : "text-muted-foreground"
+                }`}
+              >
+                +{stats.today}
               </span>
             </div>
           </div>
-
-          {/* Primary actions */}
-          <div className="flex flex-wrap justify-end gap-1.5">
-            <LoopActionButton variant="primary" onClick={() => onOpenMatches(loop.id)}>
-              {t("loops.statMatches", "Matches")}
-            </LoopActionButton>
-            {!archived ? (
-              <LoopActionButton
-                variant="secondary"
-                disabled={busy}
-                onClick={() => onTogglePause(loop)}
-              >
-                {getPauseActionLabel(loop)}
-              </LoopActionButton>
-            ) : null}
-            {archived ? (
-              <LoopActionButton
-                variant="secondary"
-                disabled={busy}
-                onClick={() => onRestore(loop.id)}
-              >
-                Restore
-              </LoopActionButton>
-            ) : null}
-            {!archived ? (
-              <LoopActionButton
-                variant="ghost"
-                disabled={busy}
-                onClick={() => onArchive(loop.id)}
-              >
-                Archive
-              </LoopActionButton>
-            ) : null}
-          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(loop.id);
+            }}
+            className="rounded-[6px] border border-border bg-card px-3 py-1.5 text-[11.5px] font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            {t("loops.open", "Открыть")} →
+          </button>
         </div>
       </div>
     </div>
@@ -287,48 +240,6 @@ function LoopCard({
 }
 
 
-function getPauseActionLabel(loop: Loop): string {
-  if (isLoopPaused(loop)) return "Resume";
-  return "Pause";
-}
-
-const LOOP_ACTION_CLASS: Record<"primary" | "secondary" | "ghost", string> = {
-  primary:
-    "border border-primary bg-primary text-primary-foreground hover:opacity-90",
-  secondary:
-    "border border-border bg-card text-foreground hover:bg-muted",
-  ghost:
-    "border border-transparent text-muted-foreground hover:text-destructive hover:bg-destructive/10",
-};
-
-function LoopActionButton({
-  children,
-  disabled,
-  onClick,
-  variant = "secondary",
-}: {
-  children: string;
-  disabled?: boolean;
-  onClick: () => void;
-  variant?: "primary" | "secondary" | "ghost";
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      className={[
-        "rounded-[6px] px-2.5 py-1.5 text-[11.5px] transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        LOOP_ACTION_CLASS[variant],
-      ].join(" ")}
-    >
-      {children}
-    </button>
-  );
-}
 
 export function LoopsListView({
   userId,
@@ -358,7 +269,6 @@ export function LoopsListView({
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [loops, setLoops] = useState<Loop[]>([]);
   const [isLoadingLoops, setIsLoadingLoops] = useState(false);
-  const [isUpdatingLoop, setIsUpdatingLoop] = useState(false);
   const [loopsError, setLoopsError] = useState<string | null>(null);
 
   const activeTab = readTabParam(location.search);
@@ -535,29 +445,14 @@ export function LoopsListView({
     [location.pathname, location.search, navigate],
   );
 
-  const setLoopStatus = useCallback(
-    async (loopId: string, status: "active" | "paused" | "archived") => {
-      setIsUpdatingLoop(true);
-      try {
-        if (status === "archived") {
-          await archiveLoopViaRest(loopId);
-        } else {
-          await updateLoopViaRest(loopId, { status });
-        }
-        await loadLoops();
-      } finally {
-        setIsUpdatingLoop(false);
-      }
-    },
-    [loadLoops],
-  );
+
 
   const showFrom =
     visibleLoops.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const showTo =
     visibleLoops.length === 0 ? 0 : showFrom + pagedLoops.length - 1;
   const isLoading = isLoadingLoops || isLoadingApplications;
-  const isFetching = isLoadingLoops || isUpdatingLoop;
+  const isFetching = isLoadingLoops;
   const error = loopsError ?? statsError;
 
   const content = renderContent({
@@ -565,29 +460,8 @@ export function LoopsListView({
     error,
     isFetching,
     isLoading,
-    onArchive: (id) => {
-      setLoopStatus(id, "archived").catch((error: unknown) => {
-        setStatsError(getErrorMessage(error));
-      });
-    },
-    onOpenApplications,
     onOpenLoop,
-    onOpenMatches,
-    onAddApplication,
-    onImportVacancy,
     onPageChange: goToPage,
-    onRestore: (id) => {
-      setLoopStatus(id, "active").catch((error: unknown) => {
-        setStatsError(getErrorMessage(error));
-      });
-    },
-    onTogglePause: (loop) => {
-      setLoopStatus(loop.id, isLoopPaused(loop) ? "active" : "paused").catch(
-        (error: unknown) => {
-          setStatsError(getErrorMessage(error));
-        },
-      );
-    },
     onCreateLoop: () => setCreateOpen(true),
     page: safePage,
     pagedLoops,
@@ -743,16 +617,14 @@ function LoopCardSkeleton() {
           <div className="h-6 w-20 rounded-full bg-muted" />
           <div className="h-6 w-14 rounded-full bg-muted" />
         </div>
-        <div className="flex flex-col items-end gap-3">
-          <div className="flex gap-5">
-            <div className="h-6 w-8 rounded bg-muted" />
-            <div className="h-6 w-8 rounded bg-muted" />
-            <div className="h-6 w-8 rounded bg-muted" />
+        <div className="flex flex-col items-end gap-2.5">
+          <div className="h-3 w-32 rounded bg-muted/70" />
+          <div className="flex gap-3.5">
+            <div className="h-5 w-7 rounded bg-muted" />
+            <div className="h-5 w-7 rounded bg-muted" />
+            <div className="h-5 w-7 rounded bg-muted" />
           </div>
-          <div className="flex gap-1.5">
-            <div className="h-7 w-16 rounded-[6px] bg-muted" />
-            <div className="h-7 w-14 rounded-[6px] bg-muted" />
-          </div>
+          <div className="h-7 w-20 rounded-[6px] bg-muted" />
         </div>
       </div>
     </div>
@@ -764,16 +636,9 @@ function renderContent(params: {
   error: string | null;
   isFetching: boolean;
   isLoading: boolean;
-  onArchive: (id: string) => void;
   onCreateLoop: () => void;
-  onOpenApplications: (id: string) => void;
   onOpenLoop: (id: string) => void;
-  onOpenMatches: (id: string) => void;
-  onAddApplication: (id: string) => void;
-  onImportVacancy: (id: string) => void;
   onPageChange: (nextPage: number) => void;
-  onRestore: (id: string) => void;
-  onTogglePause: (loop: Loop) => void;
   page: number;
   pagedLoops: Loop[];
   showFrom: number;
@@ -788,16 +653,9 @@ function renderContent(params: {
     error,
     isFetching,
     isLoading,
-    onArchive,
     onCreateLoop,
-    onOpenApplications,
     onOpenLoop,
-    onOpenMatches,
-    onAddApplication,
-    onImportVacancy,
     onPageChange,
-    onRestore,
-    onTogglePause,
     page,
     pagedLoops,
     showFrom,
@@ -873,15 +731,7 @@ function renderContent(params: {
             key={loop.id}
             loop={loop}
             stats={getEffectiveStats(statsById, loop)}
-            busy={isFetching}
-            onArchive={onArchive}
             onOpen={onOpenLoop}
-            onOpenApplications={onOpenApplications}
-            onOpenMatches={onOpenMatches}
-            onAddApplication={onAddApplication}
-            onImportVacancy={onImportVacancy}
-            onRestore={onRestore}
-            onTogglePause={onTogglePause}
           />
         ))}
       </div>
