@@ -139,5 +139,58 @@
   "noFilters": "Фильтры не выбраны",
   "signInBody": "Войди, чтобы увидеть свои направления поиска.",
   "signInSubtitle": "Войди, чтобы продолжить.",
-  "title": "Направления поиска"
+  "title": "Направления поиска",
+
+  "tabActive": "Активные",
+  "tabPaused": "На паузе",
+  "tabArchive": "Архив",
+
+  "statLoops": "Циклов",
+  "statMatches": "Матчи",
+  "statApplications": "Отклики",
+  "statApplied": "Откликнулся",
+  "statToday": "Сегодня",
+  "statMatchesSub": "Системные совпадения",
+  "statAppliedSub": "Из всех циклов",
+  "statTodaySub": "Новых сегодня",
+
+  "emptyTitle": "Циклов ещё нет",
+  "emptyHint": "Создай первый цикл поиска — и вакансии начнут отслеживаться автоматически.",
+  "emptyArchive": "Архивных циклов нет.",
+  "emptyPaused": "Нет циклов на паузе.",
+
+  "tabOverview": "Обзор",
+  "tabMatches": "Матчи",
+  "tabSettings": "Настройки",
+
+  "pause": "Пауза",
+  "resume": "Возобновить",
+  "editSettings": "Настройки",
+  "openMatches": "Открыть матчи",
+
+  "chipRole": "Роль",
+  "chipLocation": "Локация",
+  "chipRadius": "Радиус",
+  "chipMode": "Формат",
+  "chipEmployment": "Занятость",
+  "chipKeywords": "Ключевые слова",
+  "chipExclude": "Исключить",
+  "chipSources": "Источники",
+  "searchParams": "Параметры поиска",
+  "include": "Включить:",
+  "exclude": "Исключить:",
+
+  "topMatches": "Топ-матчи в этом цикле",
+  "topMatchesSub": "Последние совпадения",
+  "allMatches": "Все матчи",
+
+  "matchesCta": "Просмотреть все матчи этого цикла",
+  "matchesCtaHint": "Фильтруй, сортируй и управляй всеми совпадениями в одном месте.",
+
+  "sources": "источников",
+  "source": "источник",
+
+  "active": "Активный",
+  "paused": "На паузе",
+  "archived": "Архив"
 }

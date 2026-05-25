@@ -139,5 +139,58 @@
   "noFilters": "No filters applied",
   "signInBody": "Please sign in to view your loops.",
   "signInSubtitle": "Sign in to continue.",
-  "title": "Loops page"
+  "title": "Loops page",
+
+  "tabActive": "Active",
+  "tabPaused": "Paused",
+  "tabArchive": "Archived",
+
+  "statLoops": "Loops",
+  "statMatches": "Matches",
+  "statApplications": "Applications",
+  "statApplied": "Applied",
+  "statToday": "Today",
+  "statMatchesSub": "System matches",
+  "statAppliedSub": "From all loops",
+  "statTodaySub": "Fresh today",
+
+  "emptyTitle": "No loops yet",
+  "emptyHint": "Create your first loop to start tracking job opportunities automatically.",
+  "emptyArchive": "No archived loops.",
+  "emptyPaused": "No paused loops.",
+
+  "tabOverview": "Overview",
+  "tabMatches": "Matches",
+  "tabSettings": "Settings",
+
+  "pause": "Pause",
+  "resume": "Resume",
+  "editSettings": "Settings",
+  "openMatches": "Open Matches",
+
+  "chipRole": "Role",
+  "chipLocation": "Location",
+  "chipRadius": "Radius",
+  "chipMode": "Work mode",
+  "chipEmployment": "Employment",
+  "chipKeywords": "Keywords",
+  "chipExclude": "Exclude",
+  "chipSources": "Sources",
+  "searchParams": "Search parameters",
+  "include": "Include:",
+  "exclude": "Exclude:",
+
+  "topMatches": "Top matches in this loop",
+  "topMatchesSub": "Recent matches",
+  "allMatches": "All matches",
+
+  "matchesCta": "View all matches for this loop",
+  "matchesCtaHint": "Filter, sort, and manage all discovery matches in one place.",
+
+  "sources": "sources",
+  "source": "source",
+
+  "active": "Active",
+  "paused": "Paused",
+  "archived": "Archived"
 }
