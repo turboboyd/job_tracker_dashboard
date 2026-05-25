@@ -507,19 +507,19 @@ export function LoopsListView({
             active={activeTab === "active"}
             onClick={() => setTab("active")}
           >
-            Active
+            {t("loops.tabActive", "Активные")}
           </TabButton>
           <TabButton
             active={activeTab === "paused"}
             onClick={() => setTab("paused")}
           >
-            Paused
+            {t("loops.tabPaused", "На паузе")}
           </TabButton>
           <TabButton
             active={activeTab === "archive"}
             onClick={() => setTab("archive")}
           >
-            Archived
+            {t("loops.tabArchive", "Архив")}
           </TabButton>
         </div>
       </div>
@@ -530,7 +530,7 @@ export function LoopsListView({
             <StatTile
               label={t("loops.statLoops", "Loops")}
               value={statsLoops.length}
-              sub={`Active: ${statsLoops.filter((l) => getLoopStatus(l) === "active").length}`}
+              sub={`${t("loops.tabActive", "Активные")}: ${statsLoops.filter((l) => getLoopStatus(l) === "active").length}`}
             />
             <StatTile
               label={t("loops.statMatches", "Matches")}
@@ -540,7 +540,7 @@ export function LoopsListView({
             <StatTile
               label={t("loops.statApplied", "Applied")}
               value={activeTotals.applied}
-              sub="From all loops"
+              sub={t("loops.statAppliedSub", "Из всех циклов")}
               accent
             />
             <StatTile
@@ -682,10 +682,10 @@ function renderContent(params: {
 
   if (total === 0) {
     if (activeTab === "archive") {
-      return <div className="text-sm text-muted-foreground">No archived loops.</div>;
+      return <div className="text-sm text-muted-foreground">{t("loops.emptyArchive", "Архивных циклов нет.")}</div>;
     }
     if (activeTab === "paused") {
-      return <div className="text-sm text-muted-foreground">No paused loops.</div>;
+      return <div className="text-sm text-muted-foreground">{t("loops.emptyPaused", "Нет циклов на паузе.")}</div>;
     }
     return (
       <div className="flex flex-col items-center justify-center rounded-[14px] border border-dashed border-border bg-card py-16 text-center">

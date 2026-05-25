@@ -63,7 +63,7 @@ function buildLoopChips(loop: Loop, labels: Record<string, string>): ChipDef[] {
 const MATCH_STATUS_STYLES: Record<VacancyMatchStatus, { label: string; cls: string }> = {
   new:       { label: "Новая",     cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
   saved:     { label: "Сохранено", cls: "bg-muted text-muted-foreground" },
-  ignored:   { label: "Ignored",   cls: "bg-muted text-muted-foreground opacity-60" },
+  ignored:   { label: "Скрыто",    cls: "bg-muted text-muted-foreground opacity-60" },
   converted: { label: "Отклик",    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
 };
 
@@ -229,9 +229,9 @@ function getStatusBadgeClass(status: LoopStatus): string {
 }
 
 const STATUS_LABEL: Record<LoopStatus, string> = {
-  active: "Active",
-  paused: "Paused",
-  archived: "Archived",
+  active: "Активный",
+  paused: "На паузе",
+  archived: "Архив",
 };
 
 function LoopStatusBadge({ status }: { status: LoopStatus }) {
