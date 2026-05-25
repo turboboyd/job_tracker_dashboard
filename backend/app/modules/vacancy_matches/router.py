@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
@@ -157,7 +157,6 @@ async def list_preview_ignores(
 
 @router.delete(
     "/preview-ignores/{ignore_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
     summary="Remove one hidden discovery preview item",
 )
 async def delete_preview_ignore(
@@ -165,11 +164,12 @@ async def delete_preview_ignore(
     ignore_id: UUID,
     current_user: CurrentUser,
     svc: VacancyMatchesSvc,
-) -> None:
+) -> Response:
     try:
         await svc.delete_preview_ignore(current_user, loop_id, ignore_id)
     except VacancyMatchError as error:
         raise _match_http_error(error) from error
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("", response_model=VacancyMatchListResponse, summary="List vacancy matches for a loop")

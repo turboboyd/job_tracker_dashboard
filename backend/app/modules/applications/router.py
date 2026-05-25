@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
@@ -153,14 +153,13 @@ async def change_application_status(
 
 @router.delete(
     "/{app_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
     summary="Archive application",
 )
 async def delete_application(
     app_id: UUID,
     current_user: CurrentUser,
     db: DbSession,
-) -> None:
+) -> Response:
     """Soft-delete: sets archived=True. The record remains queryable via
     GET /applications?archived=true."""
     svc = ApplicationsService(db)
@@ -171,3 +170,4 @@ async def delete_application(
             detail="Application not found",
         )
     await svc.archive(app, current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

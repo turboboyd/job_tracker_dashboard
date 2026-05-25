@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Response, UploadFile, status
 from fastapi.responses import Response
 
 from app.auth.deps import CurrentUser
@@ -92,12 +92,12 @@ async def download_document(
 
 @router.delete(
     "/documents/{document_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a document",
 )
 async def delete_document(
     document_id: UUID,
     current_user: CurrentUser,
     svc: DocumentsService = Depends(_svc),
-) -> None:
+) -> Response:
     await svc.delete(current_user, document_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
