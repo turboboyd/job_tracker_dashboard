@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -74,3 +75,26 @@ class DiscoveryRunResponse(BaseModel):
     matches_previewed: int
     warnings: list[str]
     items: list[DiscoveryRunItem]
+
+
+class DiscoveryRunHistoryItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    run_id: str
+    loop_id: str
+    status: DiscoveryRunStatus
+    sources: list[str]
+    items_found: int
+    items_new: int
+    duration_ms: int
+    error_text: str | None
+    started_at: datetime
+    finished_at: datetime
+
+
+class DiscoveryRunHistoryResponse(BaseModel):
+    items: list[DiscoveryRunHistoryItem]
+    total: int
+    limit: int
+    offset: int

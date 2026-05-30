@@ -7,7 +7,15 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
-from app.modules.loops.schemas import LoopCreate, LoopListResponse, LoopMetrics, LoopRead, LoopUpdate
+from app.modules.loops.schemas import (
+    LoopCreate,
+    LoopListResponse,
+    LoopMetrics,
+    LoopRead,
+    LoopSourceStat,
+    LoopSourceStatsResponse,
+    LoopUpdate,
+)
 from app.modules.loops.service import LoopsService
 
 router = APIRouter(prefix="/loops", tags=["loops"])
@@ -72,7 +80,12 @@ async def get_loop(
     svc: LoopsSvc,
 ) -> LoopRead:
     loop = await svc.get_owned(current_user, loop_id)
-    return LoopRead.model_validate(loop)
+    metrics_by_id = await svc.get_metrics_by_loop_ids([loop.id])
+    loop_read = LoopRead.model_validate(loop)
+    raw = metrics_by_id.get(str(loop.id))
+    if raw is not None:
+        loop_read = loop_read.model_copy(update={"metrics": LoopMetrics(**raw)})
+    return loop_read
 
 
 @router.patch("/{loop_id}", response_model=LoopRead, summary="Update loop")
@@ -84,6 +97,20 @@ async def patch_loop(
 ) -> LoopRead:
     loop = await svc.patch(current_user, loop_id, payload)
     return LoopRead.model_validate(loop)
+
+
+@router.get(
+    "/{loop_id}/source-stats",
+    response_model=LoopSourceStatsResponse,
+    summary="Per-source stats for a loop",
+)
+async def get_loop_source_stats(
+    loop_id: UUID,
+    current_user: CurrentUser,
+    svc: LoopsSvc,
+) -> LoopSourceStatsResponse:
+    items = await svc.get_source_stats(current_user, loop_id)
+    return LoopSourceStatsResponse(items=[LoopSourceStat(**item) for item in items])
 
 
 @router.delete("/{loop_id}", response_model=LoopRead, summary="Archive loop")

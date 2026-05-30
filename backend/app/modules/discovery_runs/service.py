@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.models.discovery_run_record import DiscoveryRunRecord
 from app.db.models.loop import Loop
 from app.db.models.user import User
 from app.modules.discovery_adapters.base import DiscoveryAdapterError
@@ -28,6 +30,8 @@ from app.modules.discovery_runs.cache_repository import (
     upsert_cache,
 )
 from app.modules.discovery_runs.schemas import (
+    DiscoveryRunHistoryItem,
+    DiscoveryRunHistoryResponse,
     DiscoveryRunItem,
     DiscoveryRunPreviewItem,
     DiscoveryRunRequest,
@@ -55,6 +59,7 @@ class DiscoveryRunsService:
         user: User,
         payload: DiscoveryRunRequest,
     ) -> DiscoveryRunResponse:
+        started_at = datetime.now(timezone.utc)
         loops = await self._load_loops(user, payload.loop_id)
         items: list[DiscoveryRunItem] = []
         warnings: list[str] = []
@@ -103,9 +108,34 @@ class DiscoveryRunsService:
                     f"{loop_id}:{source_id}:{warning}" for warning in item.warnings
                 )
 
+        run_id = str(uuid4())
+        finished_at = datetime.now(timezone.utc)
+        overall_status: str = "completed_with_warnings" if warnings else "completed"
+        if loops and all(it.status == "failed" for it in items):
+            overall_status = "failed"
+
+        if self._db is not None and not payload.dry_run:
+            try:
+                async with self._db.begin_nested():
+                    await self._persist_history(
+                        user=user,
+                        loops=loops,
+                        items=items,
+                        run_id=run_id,
+                        overall_status=overall_status,
+                        matches_previewed=matches_previewed,
+                        started_at=started_at,
+                        finished_at=finished_at,
+                    )
+            except Exception:
+                logger.warning(
+                    "Failed to persist discovery run history (non-fatal)",
+                    exc_info=True,
+                )
+
         return DiscoveryRunResponse(
-            run_id=str(uuid4()),
-            status="completed_with_warnings" if warnings else "completed",
+            run_id=run_id,
+            status=overall_status,  # type: ignore[arg-type]
             dry_run=payload.dry_run,
             page=payload.page,
             page_size=payload.page_size,
@@ -115,6 +145,123 @@ class DiscoveryRunsService:
             matches_previewed=matches_previewed,
             warnings=warnings,
             items=items,
+        )
+
+    async def _persist_history(
+        self,
+        *,
+        user: User,
+        loops: list[Loop],
+        items: list[DiscoveryRunItem],
+        run_id: str,
+        overall_status: str,
+        matches_previewed: int,
+        started_at: datetime,
+        finished_at: datetime,
+    ) -> None:
+        if self._db is None or not loops:
+            return
+
+        duration_ms = max(
+            0, int((finished_at - started_at).total_seconds() * 1000)
+        )
+        items_by_loop: dict[str, list[DiscoveryRunItem]] = {}
+        for it in items:
+            items_by_loop.setdefault(it.loop_id, []).append(it)
+
+        for loop in loops:
+            loop_items = items_by_loop.get(str(loop.id), [])
+            loop_sources = sorted(
+                {it.source_id for it in loop_items if it.source_id is not None}
+            )
+            loop_found = sum(it.items_previewed for it in loop_items)
+            loop_failed = [it for it in loop_items if it.status == "failed"]
+            status = overall_status
+            error_text: str | None = None
+            if loop_failed:
+                status = "failed" if len(loop_failed) == len(loop_items) else "completed_with_warnings"
+                error_text = "; ".join(
+                    f"{it.source_id or '?'}: {it.message}" for it in loop_failed
+                )[:2000]
+
+            record = DiscoveryRunRecord(
+                user_id=user.id,
+                loop_id=loop.id,
+                run_id=run_id,
+                status=status,
+                sources=loop_sources,
+                items_found=loop_found,
+                items_new=loop_found,  # currently no dedupe — adapt later when match dedup ships
+                duration_ms=duration_ms,
+                error_text=error_text,
+                started_at=started_at,
+                finished_at=finished_at,
+            )
+            self._db.add(record)
+
+            # Schedule next auto-run
+            if loop.auto_discovery_enabled:
+                interval_h = max(1, loop.discovery_interval_hours or 24)
+                loop.next_run_at = finished_at + timedelta(hours=interval_h)
+
+        try:
+            await self._db.flush()
+        except Exception:
+            logger.warning("Failed to persist discovery run history", exc_info=True)
+
+    async def list_history(
+        self,
+        user: User,
+        loop_id: str | None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> DiscoveryRunHistoryResponse:
+        if self._db is None:
+            return DiscoveryRunHistoryResponse(items=[], total=0, limit=limit, offset=offset)
+
+        conditions = [DiscoveryRunRecord.user_id == user.id]
+        if loop_id is not None:
+            try:
+                parsed = UUID(loop_id)
+            except ValueError as exc:
+                raise InvalidLoopError("Loop id must be a valid UUID") from exc
+            conditions.append(DiscoveryRunRecord.loop_id == parsed)
+
+        count_query = (
+            select(func.count()).select_from(DiscoveryRunRecord).where(*conditions)
+        )
+        total = (await self._db.execute(count_query)).scalar_one()
+
+        result = await self._db.execute(
+            select(DiscoveryRunRecord)
+            .where(*conditions)
+            .order_by(DiscoveryRunRecord.finished_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = list(result.scalars().all())
+
+        return DiscoveryRunHistoryResponse(
+            items=[
+                DiscoveryRunHistoryItem(
+                    id=str(row.id),
+                    run_id=row.run_id,
+                    loop_id=str(row.loop_id),
+                    status=row.status,  # type: ignore[arg-type]
+                    sources=list(row.sources or []),
+                    items_found=row.items_found,
+                    items_new=row.items_new,
+                    duration_ms=row.duration_ms,
+                    error_text=row.error_text,
+                    started_at=row.started_at,
+                    finished_at=row.finished_at,
+                )
+                for row in rows
+            ],
+            total=total,
+            limit=limit,
+            offset=offset,
         )
 
     async def _load_loops(self, user: User, loop_id: str | None) -> list[Loop]:
@@ -273,17 +420,20 @@ class DiscoveryRunsService:
         )
 
         # ── Cache write (only on completed results) ───────────────────────────
+        # Wrap in a SAVEPOINT so a cache-write failure doesn't poison the outer
+        # transaction (e.g. blocking subsequent writes like run-history persistence).
         if self._db is not None and result.status == "completed":
             try:
-                await upsert_cache(
-                    self._db,
-                    loop_id=loop.id,
-                    source_id=source_id,
-                    search_scope=payload.search_scope,
-                    page=payload.page,
-                    result=result,
-                    now=datetime.now(timezone.utc),
-                )
+                async with self._db.begin_nested():
+                    await upsert_cache(
+                        self._db,
+                        loop_id=loop.id,
+                        source_id=source_id,
+                        search_scope=payload.search_scope,
+                        page=payload.page,
+                        result=result,
+                        now=datetime.now(timezone.utc),
+                    )
             except Exception:
                 logger.warning(
                     "Cache write failed (non-fatal): loop=%s source=%s",

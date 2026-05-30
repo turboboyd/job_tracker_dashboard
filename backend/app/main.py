@@ -1,3 +1,8 @@
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +20,26 @@ from app.core.errors import (
 from app.core.logging import setup_logging
 from app.core.middleware import RequestIDMiddleware
 
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    from app.db.session import _get_session_factory
+    from app.scheduler import run_scheduler
+
+    factory = _get_session_factory()
+    task = asyncio.create_task(run_scheduler(factory))
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        logger.info("Auto-discovery scheduler stopped")
+
 
 def create_app() -> FastAPI:
     settings = get_settings()
@@ -27,6 +52,7 @@ def create_app() -> FastAPI:
         docs_url="/api/docs",
         redoc_url="/api/redoc",
         openapi_url="/api/openapi.json",
+        lifespan=_lifespan,
     )
 
     # ── Middleware ─────────────────────────────────────────────────────────────

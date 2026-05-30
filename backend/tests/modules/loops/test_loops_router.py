@@ -118,7 +118,17 @@ class FakeLoopsService:
         self, loop_ids: list
     ) -> dict:
         return {
-            str(lid): {"matches_saved": 0, "applications_total": 0}
+            str(lid): {
+                "matches_saved": 0,
+                "applications_total": 0,
+                "applied_count": 0,
+                "interview_count": 0,
+                "offer_count": 0,
+                "rejected_count": 0,
+                "response_rate": 0.0,
+                "interview_rate": 0.0,
+                "offer_rate": 0.0,
+            }
             for lid in loop_ids
         }
 
@@ -327,9 +337,30 @@ def test_list_loops_includes_metrics() -> None:
     body = response.json()
     assert len(body["items"]) == 1
     item = body["items"][0]
-    assert "metrics" in item
-    assert item["metrics"]["matches_saved"] == 0
-    assert item["metrics"]["applications_total"] == 0
+    metrics = item.get("metrics") or {}
+    assert metrics["matches_saved"] == 0
+    assert metrics["applications_total"] == 0
+    assert metrics["interview_count"] == 0
+    assert metrics["offer_count"] == 0
+    assert metrics["response_rate"] == 0.0
+
+
+def test_get_loop_includes_metrics() -> None:
+    service = FakeLoopsService()
+    with make_client(service) as client:
+        response = client.get(
+            f"/api/v1/loops/{LOOP_ID}",
+            headers={"Authorization": "Bearer test"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    metrics = body.get("metrics") or {}
+    assert metrics["matches_saved"] == 0
+    assert metrics["applications_total"] == 0
+    assert metrics["interview_count"] == 0
+    assert metrics["offer_count"] == 0
+    assert metrics["response_rate"] == 0.0
 
 
 def test_create_loop_rejects_invalid_discovery_radius() -> None:

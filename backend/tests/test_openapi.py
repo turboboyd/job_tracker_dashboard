@@ -462,10 +462,10 @@ def test_discovery_preview_response_fields(components):
     assert removed_field not in props
 
 
-def test_discovery_runs_path_has_post_only(paths):
+def test_discovery_runs_path_has_post_and_get(paths):
     ops = paths["/api/v1/discovery-runs"]
     assert "post" in ops
-    assert "get" not in ops
+    assert "get" in ops
 
 
 def test_discovery_run_schemas_exist(components):
@@ -679,7 +679,7 @@ def test_openapi_version_present(schema):
 
 
 def test_openapi_path_count(paths):
-    assert len(paths) == 34, f"Expected 34 paths, got {len(paths)}: {sorted(paths)}"
+    assert len(paths) == 35, f"Expected 35 paths, got {len(paths)}: {sorted(paths)}"
 
 
 # ── ApplicationListResponse envelope ──────────────────────────────────────────
