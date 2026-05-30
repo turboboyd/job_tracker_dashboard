@@ -4,11 +4,17 @@ import { getBackendConfig } from "src/shared/config";
 import {
   mapBackendLoopDtoToLoop,
   mapCreateLoopInputToDto,
+  mapLoopSourceStatsResponseDto,
   mapUpdateLoopInputToDto,
   type BackendLoopDto,
   type CreateBackendLoopInput,
+  type LoopSourceStat,
+  type LoopSourceStatsResponse,
+  type LoopSourceStatsResponseDto,
   type UpdateBackendLoopInput,
 } from "./adapter";
+
+export type { LoopSourceStat, LoopSourceStatsResponse };
 
 export interface BackendLoopListResponseDto {
   items: BackendLoopDto[];
@@ -92,5 +98,19 @@ export async function updateLoopViaRest(loopId: string, patch: UpdateBackendLoop
 export async function archiveLoopViaRest(loopId: string): Promise<void> {
   const { apiBaseUrl } = getBackendConfig();
   await restDelete(buildLoopDetailUrl(apiBaseUrl, loopId));
+}
+
+export function buildLoopSourceStatsUrl(apiBaseUrl: string, loopId: string): string {
+  return `${apiBaseUrl}/loops/${encodeURIComponent(loopId)}/source-stats`;
+}
+
+export async function listLoopSourceStatsViaRest(
+  loopId: string,
+): Promise<LoopSourceStatsResponse> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restGet<LoopSourceStatsResponseDto>(
+    buildLoopSourceStatsUrl(apiBaseUrl, loopId),
+  );
+  return mapLoopSourceStatsResponseDto(dto);
 }
 

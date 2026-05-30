@@ -2,11 +2,15 @@ import { restGet, restPost } from "src/shared/api";
 import { getBackendConfig } from "src/shared/config";
 
 import {
+  mapDiscoveryRunHistoryResponseDto,
   mapDiscoveryRunPreviewInputToDto,
   mapDiscoveryRunResponseDto,
   mapDiscoverySourceRuntimeStatusResponseDto,
 } from "./adapter";
 import type {
+  DiscoveryRunHistoryQuery,
+  DiscoveryRunHistoryResponse,
+  DiscoveryRunHistoryResponseDto,
   DiscoveryRunPreviewInput,
   DiscoveryRunResponse,
   DiscoveryRunResponseDto,
@@ -40,4 +44,27 @@ export async function getDiscoverySourceRuntimeStatusViaRest(): Promise<Discover
     { auth: false },
   );
   return mapDiscoverySourceRuntimeStatusResponseDto(dto);
+}
+
+export function buildDiscoveryRunsHistoryUrl(
+  apiBaseUrl: string,
+  query: DiscoveryRunHistoryQuery = {},
+): string {
+  const params = new URLSearchParams();
+  if (query.loopId) params.set("loop_id", query.loopId);
+  if (query.limit !== undefined) params.set("limit", String(query.limit));
+  if (query.offset !== undefined) params.set("offset", String(query.offset));
+  const qs = params.toString();
+  const suffix = qs ? `?${qs}` : "";
+  return `${apiBaseUrl}/discovery-runs${suffix}`;
+}
+
+export async function listDiscoveryRunHistoryViaRest(
+  query: DiscoveryRunHistoryQuery = {},
+): Promise<DiscoveryRunHistoryResponse> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restGet<DiscoveryRunHistoryResponseDto>(
+    buildDiscoveryRunsHistoryUrl(apiBaseUrl, query),
+  );
+  return mapDiscoveryRunHistoryResponseDto(dto);
 }

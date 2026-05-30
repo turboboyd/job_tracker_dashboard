@@ -12,6 +12,13 @@ import {
 export interface BackendLoopMetricsDto {
   matches_saved: number;
   applications_total: number;
+  applied_count?: number;
+  interview_count?: number;
+  offer_count?: number;
+  rejected_count?: number;
+  response_rate?: number;
+  interview_rate?: number;
+  offer_rate?: number;
 }
 
 export interface BackendLoopDto {
@@ -32,6 +39,8 @@ export interface BackendLoopDto {
   auto_discovery_enabled?: boolean;
   discovery_radius_km?: number | null;
   last_discovery_at?: string | null;
+  next_run_at?: string | null;
+  discovery_interval_hours?: number;
   created_at?: string;
   updated_at?: string;
   metrics?: BackendLoopMetricsDto | null;
@@ -53,6 +62,7 @@ export interface CreateBackendLoopInput {
   workModes?: string[];
   selectedSources?: string[];
   autoDiscoveryEnabled?: boolean;
+  discoveryIntervalHours?: number;
   discoveryRadiusKm?: number | null;
   remoteMode?: RemoteMode;
   filters?: CanonicalFilters;
@@ -144,6 +154,13 @@ function mapMetrics(dto: BackendLoopDto): LoopMetrics | null {
   return {
     matches_saved: dto.metrics.matches_saved,
     applications_total: dto.metrics.applications_total,
+    applied_count: dto.metrics.applied_count ?? 0,
+    interview_count: dto.metrics.interview_count ?? 0,
+    offer_count: dto.metrics.offer_count ?? 0,
+    rejected_count: dto.metrics.rejected_count ?? 0,
+    response_rate: dto.metrics.response_rate ?? 0,
+    interview_rate: dto.metrics.interview_rate ?? 0,
+    offer_rate: dto.metrics.offer_rate ?? 0,
   };
 }
 
@@ -180,6 +197,8 @@ export function mapBackendLoopDtoToLoop(dto: BackendLoopDto): Loop {
     autoDiscoveryEnabled: dto.auto_discovery_enabled ?? false,
     discoveryRadiusKm: dto.discovery_radius_km ?? null,
     lastDiscoveryAt: dto.last_discovery_at ?? null,
+    nextRunAt: dto.next_run_at ?? null,
+    discoveryIntervalHours: dto.discovery_interval_hours ?? 24,
     createdAt,
     updatedAt,
     createdAtTs: createdAt ? Date.parse(createdAt) : null,
@@ -224,10 +243,57 @@ export function mapCreateLoopInputToDto(input: CreateBackendLoopInput): Record<s
     work_modes: workModes,
     selected_sources: selectedSources,
     auto_discovery_enabled: input.autoDiscoveryEnabled ?? false,
+    ...(input.discoveryIntervalHours !== undefined
+      ? { discovery_interval_hours: input.discoveryIntervalHours }
+      : {}),
     ...(input.discoveryRadiusKm !== undefined
       ? { discovery_radius_km: input.discoveryRadiusKm }
       : {}),
   };
+}
+
+// ─── Source stats ─────────────────────────────────────────────────────────────
+
+export type SourceHealth = "ok" | "warning" | "error" | "never";
+
+export interface LoopSourceStatDto {
+  source_id: string;
+  matches: number;
+  applied: number;
+  last_run_at: string | null;
+  health: SourceHealth;
+}
+
+export interface LoopSourceStatsResponseDto {
+  items: LoopSourceStatDto[];
+}
+
+export interface LoopSourceStat {
+  sourceId: string;
+  matches: number;
+  applied: number;
+  lastRunAt: string | null;
+  health: SourceHealth;
+}
+
+export interface LoopSourceStatsResponse {
+  items: LoopSourceStat[];
+}
+
+export function mapLoopSourceStatDto(dto: LoopSourceStatDto): LoopSourceStat {
+  return {
+    sourceId: dto.source_id,
+    matches: dto.matches,
+    applied: dto.applied,
+    lastRunAt: dto.last_run_at ?? null,
+    health: dto.health ?? "never",
+  };
+}
+
+export function mapLoopSourceStatsResponseDto(
+  dto: LoopSourceStatsResponseDto,
+): LoopSourceStatsResponse {
+  return { items: dto.items.map(mapLoopSourceStatDto) };
 }
 
 export function mapUpdateLoopInputToDto(input: UpdateBackendLoopInput): Record<string, unknown> {
@@ -235,6 +301,7 @@ export function mapUpdateLoopInputToDto(input: UpdateBackendLoopInput): Record<s
   if (input.title === undefined && input.name === undefined) delete dto.title;
   if (input.status === undefined) delete dto.status;
   if (input.autoDiscoveryEnabled === undefined) delete dto.auto_discovery_enabled;
+  if (input.discoveryIntervalHours === undefined) delete dto.discovery_interval_hours;
   if (input.sources === undefined && input.platforms === undefined) delete dto.sources;
   if (input.selectedSources === undefined && input.platforms === undefined) delete dto.selected_sources;
   if (input.keywords === undefined && input.filters?.includeKeywords === undefined) delete dto.keywords;

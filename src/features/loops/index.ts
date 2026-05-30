@@ -4,11 +4,16 @@ export {
   buildLoopsListUrl,
   createLoopViaRest,
   getLoopViaRest,
+  listLoopSourceStatsViaRest,
   listLoopsViaRest,
   updateLoopViaRest,
   type BackendLoopListQuery,
   type BackendLoopListResponseDto,
+  type LoopSourceStat,
+  type LoopSourceStatsResponse,
 } from "./rest/queries";
+
+export type { SourceHealth } from "./rest/adapter";
 
 export {
   useBackendLoopsQuery,

@@ -46,6 +46,8 @@ test("mapLoopSettingsDraftToPatch creates backend Loop settings patch", () => {
     workModes: ["remote"],
     selectedSources: ["linkedin", "indeed"],
     discoveryRadiusKmText: "100",
+    autoDiscoveryEnabled: false,
+    discoveryIntervalHoursText: "24",
   });
 
   assert.deepEqual(patch, {
@@ -55,6 +57,7 @@ test("mapLoopSettingsDraftToPatch creates backend Loop settings patch", () => {
     workModes: ["remote"],
     selectedSources: ["linkedin", "indeed"],
     discoveryRadiusKm: 100,
+    autoDiscoveryEnabled: false,
   });
 });
 
@@ -66,9 +69,27 @@ test("mapLoopSettingsDraftToPatch omits blank radius", () => {
     workModes: [],
     selectedSources: [],
     discoveryRadiusKmText: " ",
+    autoDiscoveryEnabled: false,
+    discoveryIntervalHoursText: "24",
   });
 
   assert.equal("discoveryRadiusKm" in patch, false);
+});
+
+test("mapLoopSettingsDraftToPatch includes interval when auto-discovery enabled", () => {
+  const patch = mapLoopSettingsDraftToPatch({
+    keywordsText: "",
+    excludedKeywordsText: "",
+    employmentTypes: [],
+    workModes: [],
+    selectedSources: [],
+    discoveryRadiusKmText: "",
+    autoDiscoveryEnabled: true,
+    discoveryIntervalHoursText: "12",
+  });
+
+  assert.equal(patch.autoDiscoveryEnabled, true);
+  assert.equal(patch.discoveryIntervalHours, 12);
 });
 
 test("source ids map to friendly labels while patches keep backend ids", () => {
@@ -88,6 +109,8 @@ test("source ids map to friendly labels while patches keep backend ids", () => {
     workModes: [],
     selectedSources: ["manual_url", "linkedin"],
     discoveryRadiusKmText: "",
+    autoDiscoveryEnabled: false,
+    discoveryIntervalHoursText: "24",
   });
 
   assert.deepEqual(patch.selectedSources, ["manual_url", "linkedin"]);
