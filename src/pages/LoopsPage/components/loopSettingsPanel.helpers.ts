@@ -10,6 +10,8 @@ type LoopSettingsSource = Pick<
   | "workModes"
   | "selectedSources"
   | "discoveryRadiusKm"
+  | "autoDiscoveryEnabled"
+  | "discoveryIntervalHours"
 >;
 
 export interface LoopSettingsDraft {
@@ -19,6 +21,8 @@ export interface LoopSettingsDraft {
   workModes: string[];
   selectedSources: string[];
   discoveryRadiusKmText: string;
+  autoDiscoveryEnabled: boolean;
+  discoveryIntervalHoursText: string;
 }
 
 export interface LoopSettingsOption {
@@ -34,6 +38,10 @@ export const DISCOVERY_SOURCE_OPTIONS: readonly LoopSettingsOption[] = [
   { value: "arbeitsagentur", label: "Jobbörse Arbeitsagentur" },
   { value: "adzuna", label: "Adzuna" },
   { value: "remotive", label: "Remotive" },
+  { value: "arbeitnow", label: "Arbeit Now" },
+  { value: "remotejobs", label: "Remote Jobs" },
+  { value: "himalayas", label: "Himalayas" },
+  { value: "remoteok", label: "RemoteOK" },
   { value: "greenhouse", label: "Greenhouse company boards" },
   { value: "lever", label: "Lever company boards" },
   { value: "manual_url", label: "Вручную по ссылке" },
@@ -94,6 +102,8 @@ export const createLoopSettingsDraft = (
   selectedSources: normalizeSettingsValues(loop.selectedSources),
   discoveryRadiusKmText:
     loop.discoveryRadiusKm == null ? "" : String(loop.discoveryRadiusKm),
+  autoDiscoveryEnabled: loop.autoDiscoveryEnabled ?? false,
+  discoveryIntervalHoursText: String(loop.discoveryIntervalHours ?? 24),
 });
 
 export const mapLoopSettingsDraftToPatch = (
@@ -105,12 +115,19 @@ export const mapLoopSettingsDraftToPatch = (
     employmentTypes: normalizeSettingsValues(draft.employmentTypes),
     workModes: normalizeSettingsValues(draft.workModes),
     selectedSources: normalizeSettingsValues(draft.selectedSources),
+    autoDiscoveryEnabled: draft.autoDiscoveryEnabled,
   };
 
   const radiusText = draft.discoveryRadiusKmText.trim();
-
   if (radiusText !== "") {
     patch.discoveryRadiusKm = Number(radiusText);
+  }
+
+  if (draft.autoDiscoveryEnabled) {
+    const hours = parseInt(draft.discoveryIntervalHoursText, 10);
+    if (Number.isFinite(hours) && hours >= 1 && hours <= 168) {
+      patch.discoveryIntervalHours = hours;
+    }
   }
 
   return patch;
@@ -153,7 +170,14 @@ export function getLoopSettingsSourceStatusLabel(
     if (status.configurationStatus === "not_runnable") return "Только ручной/будущий источник";
   }
 
-  if (value === "arbeitsagentur" || value === "remotive") {
+  if (
+    value === "arbeitsagentur" ||
+    value === "remotive" ||
+    value === "arbeitnow" ||
+    value === "remotejobs" ||
+    value === "himalayas" ||
+    value === "remoteok"
+  ) {
     return statuses ? "Готов к preview" : "Статус проверяется";
   }
 

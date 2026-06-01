@@ -5,7 +5,7 @@ export type DiscoverySearchScope = "focused" | "normal" | "broad";
 export interface DiscoveryRunRequestDto {
   loop_id: string;
   dry_run: boolean;
-  source_ids: string[];
+  source_ids?: string[];
   search_scope?: DiscoverySearchScope;
   page?: number;
   page_size?: number;
@@ -53,7 +53,7 @@ export interface DiscoveryRunResponseDto {
 export interface DiscoveryRunPreviewInput {
   loopId: string;
   dryRun: true;
-  sourceIds: string[];
+  sourceIds?: string[];
   searchScope?: DiscoverySearchScope;
   page?: number;
   pageSize?: number;
@@ -129,4 +129,52 @@ export interface DiscoveryRunResponse {
   matchesPreviewed: number;
   warnings: string[];
   items: DiscoveryRunItem[];
+}
+
+export interface DiscoveryRunHistoryItemDto {
+  id: string;
+  run_id: string;
+  loop_id: string;
+  status: DiscoveryRunStatus;
+  sources: string[];
+  items_found: number;
+  items_new: number;
+  duration_ms: number;
+  error_text: string | null;
+  started_at: string;
+  finished_at: string;
+}
+
+export interface DiscoveryRunHistoryResponseDto {
+  items: DiscoveryRunHistoryItemDto[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface DiscoveryRunHistoryItem {
+  id: string;
+  runId: string;
+  loopId: string;
+  status: DiscoveryRunStatus;
+  sources: string[];
+  itemsFound: number;
+  itemsNew: number;
+  durationMs: number;
+  errorText: string | null;
+  startedAt: string;
+  finishedAt: string;
+}
+
+export interface DiscoveryRunHistoryResponse {
+  items: DiscoveryRunHistoryItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface DiscoveryRunHistoryQuery {
+  loopId?: string;
+  limit?: number;
+  offset?: number;
 }

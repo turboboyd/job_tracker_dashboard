@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import status
@@ -56,7 +57,18 @@ class LoopsService:
         updates = payload.model_dump(exclude_unset=True, exclude_none=True)
         if not updates:
             return loop
-        return await self._repo.patch(loop, updates)
+        patched = await self._repo.patch(loop, updates)
+        # When auto-discovery is enabled and next_run_at is not yet scheduled, schedule it now.
+        if patched.auto_discovery_enabled and patched.next_run_at is None:
+            interval_h = max(1, patched.discovery_interval_hours or 24)
+            patched = await self._repo.patch(
+                patched,
+                {"next_run_at": datetime.now(timezone.utc) + timedelta(hours=interval_h)},
+            )
+        # When auto-discovery is disabled, clear the pending run.
+        elif not patched.auto_discovery_enabled and patched.next_run_at is not None:
+            patched = await self._repo.patch(patched, {"next_run_at": None})
+        return patched
 
     async def archive(self, user: User, loop_id: UUID) -> Loop:
         loop = await self.get_owned(user, loop_id)
@@ -93,6 +105,10 @@ class LoopsService:
         self, loop_ids: list[UUID]
     ) -> dict[str, dict[str, int]]:
         return await self._repo.get_metrics_by_loop_ids(loop_ids)
+
+    async def get_source_stats(self, user: User, loop_id: UUID) -> list[dict]:
+        await self.get_owned(user, loop_id)
+        return await self._repo.get_source_stats_for_loop(loop_id, user.id)
 
     async def require_owned_for_read(self, user: User, loop_id: str) -> Loop:
         try:

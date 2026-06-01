@@ -53,6 +53,12 @@ class Loop(Base):
     last_discovery_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    next_run_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    discovery_interval_hours: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=24, server_default="24"
+    )
     status: Mapped[str] = mapped_column(
         String,
         nullable=False,

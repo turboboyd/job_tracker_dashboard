@@ -17,6 +17,10 @@ class Settings(BaseSettings):
 
     # ── Database ───────────────────────────────────────────────────────────────
     DATABASE_URL: str
+    # Dedicated database for integration tests. The integration test fixtures
+    # call create_all/drop_all, so this MUST point at a throwaway database —
+    # never the development DATABASE_URL. Left empty when not running tests.
+    TEST_DATABASE_URL: str = ""
 
     # ── CORS ───────────────────────────────────────────────────────────────────
     CORS_ALLOWED_ORIGINS: list[str] = [

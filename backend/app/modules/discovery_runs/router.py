@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
-from app.modules.discovery_runs.schemas import DiscoveryRunRequest, DiscoveryRunResponse
+from app.modules.discovery_runs.schemas import (
+    DiscoveryRunHistoryResponse,
+    DiscoveryRunRequest,
+    DiscoveryRunResponse,
+)
 from app.modules.discovery_runs.service import DiscoveryRunsService
 from app.modules.loops.service import LoopsService
 
@@ -35,3 +39,20 @@ async def create_discovery_run(
     svc: DiscoveryRunsSvc,
 ) -> DiscoveryRunResponse:
     return await svc.run(current_user, payload)
+
+
+@router.get(
+    "",
+    response_model=DiscoveryRunHistoryResponse,
+    summary="List persisted discovery run history",
+)
+async def list_discovery_runs(
+    current_user: CurrentUser,
+    svc: DiscoveryRunsSvc,
+    loop_id: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> DiscoveryRunHistoryResponse:
+    return await svc.list_history(
+        current_user, loop_id, limit=limit, offset=offset,
+    )

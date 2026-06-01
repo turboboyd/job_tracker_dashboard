@@ -91,6 +91,13 @@ test("mapBackendLoopDtoToLoop tolerates compact list response DTO", () => {
   assert.deepEqual(loop.metrics, {
     matches_saved: 0,
     applications_total: 8,
+    applied_count: 0,
+    interview_count: 0,
+    offer_count: 0,
+    rejected_count: 0,
+    response_rate: 0,
+    interview_rate: 0,
+    offer_rate: 0,
   });
 });
 

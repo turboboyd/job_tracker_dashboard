@@ -121,6 +121,7 @@ class LoopUpdate(BaseModel):
     selected_sources: list[str] | None = None
     auto_discovery_enabled: bool | None = None
     discovery_radius_km: int | None = Field(default=None, ge=0, le=250)
+    discovery_interval_hours: int | None = Field(default=None, ge=1, le=168)
 
     @field_validator("sources")
     @classmethod
@@ -180,6 +181,13 @@ class LoopUpdate(BaseModel):
 class LoopMetrics(BaseModel):
     matches_saved: int = 0
     applications_total: int = 0
+    applied_count: int = 0
+    interview_count: int = 0
+    offer_count: int = 0
+    rejected_count: int = 0
+    response_rate: float = 0.0
+    interview_rate: float = 0.0
+    offer_rate: float = 0.0
 
 
 class LoopRead(BaseModel):
@@ -201,6 +209,8 @@ class LoopRead(BaseModel):
     auto_discovery_enabled: bool
     discovery_radius_km: int | None
     last_discovery_at: datetime | None
+    next_run_at: datetime | None = None
+    discovery_interval_hours: int = 24
     created_at: datetime
     updated_at: datetime
     metrics: LoopMetrics | None = None
@@ -211,3 +221,18 @@ class LoopListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+SourceHealth = Literal["ok", "warning", "error", "never"]
+
+
+class LoopSourceStat(BaseModel):
+    source_id: str
+    matches: int = 0
+    applied: int = 0
+    last_run_at: datetime | None = None
+    health: SourceHealth = "never"
+
+
+class LoopSourceStatsResponse(BaseModel):
+    items: list[LoopSourceStat]

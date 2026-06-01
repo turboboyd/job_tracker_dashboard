@@ -1,4 +1,8 @@
 import type {
+  DiscoveryRunHistoryItem,
+  DiscoveryRunHistoryItemDto,
+  DiscoveryRunHistoryResponse,
+  DiscoveryRunHistoryResponseDto,
   DiscoveryRunItem,
   DiscoveryRunItemDto,
   DiscoveryRunPreviewInput,
@@ -94,5 +98,34 @@ export function mapDiscoverySourceRuntimeStatusResponseDto(
 ): DiscoverySourceRuntimeStatusResponse {
   return {
     items: dto.items.map(mapDiscoverySourceRuntimeStatusDto),
+  };
+}
+
+export function mapDiscoveryRunHistoryItemDto(
+  dto: DiscoveryRunHistoryItemDto,
+): DiscoveryRunHistoryItem {
+  return {
+    id: dto.id,
+    runId: dto.run_id,
+    loopId: dto.loop_id,
+    status: dto.status,
+    sources: dto.sources,
+    itemsFound: dto.items_found,
+    itemsNew: dto.items_new,
+    durationMs: dto.duration_ms,
+    errorText: dto.error_text,
+    startedAt: dto.started_at,
+    finishedAt: dto.finished_at,
+  };
+}
+
+export function mapDiscoveryRunHistoryResponseDto(
+  dto: DiscoveryRunHistoryResponseDto,
+): DiscoveryRunHistoryResponse {
+  return {
+    items: dto.items.map(mapDiscoveryRunHistoryItemDto),
+    total: dto.total,
+    limit: dto.limit,
+    offset: dto.offset,
   };
 }

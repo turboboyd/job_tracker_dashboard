@@ -46,6 +46,13 @@ export type LoopPlatform = (typeof LOOP_PLATFORM_VALUES)[number];
 export interface LoopMetrics {
   matches_saved: number;
   applications_total: number;
+  applied_count: number;
+  interview_count: number;
+  offer_count: number;
+  rejected_count: number;
+  response_rate: number;
+  interview_rate: number;
+  offer_rate: number;
 }
 
 export interface Loop {
@@ -65,6 +72,8 @@ export interface Loop {
   autoDiscoveryEnabled?: boolean;
   discoveryRadiusKm?: number | null;
   lastDiscoveryAt?: string | null;
+  nextRunAt?: string | null;
+  discoveryIntervalHours?: number;
   createdAt?: string;
   updatedAt?: string;
   filters?: CanonicalFilters;

@@ -102,10 +102,15 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
   }, [loop]);
 
   const updateDraft = (
-    field: "keywordsText" | "excludedKeywordsText" | "discoveryRadiusKmText",
+    field: "keywordsText" | "excludedKeywordsText" | "discoveryRadiusKmText" | "discoveryIntervalHoursText",
     value: string,
   ) => {
     setDraft((current) => ({ ...current, [field]: value }));
+    setSaved(false);
+  };
+
+  const toggleAutoDiscovery = () => {
+    setDraft((current) => ({ ...current, autoDiscoveryEnabled: !current.autoDiscoveryEnabled }));
     setSaved(false);
   };
 
@@ -153,7 +158,7 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
         <p className="mt-1 text-sm text-muted-foreground">
           {t(
             "loops.settingsDescription",
-            "Настройте направление поиска. Эти параметры сохраняются в backend, но автоматический поиск пока не запускают.",
+            "Настройте направление поиска, источники и расписание автоматической синхронизации.",
           )}
         </p>
       </div>
@@ -239,6 +244,59 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
               )}
             </span>
           </label>
+        </div>
+
+        {/* ── Auto-discovery ─────────────────────────────────────────────── */}
+        <div className="rounded-xl border border-border bg-muted/30 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {t("loops.settingsAutoDiscovery", "Автоматический поиск")}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t(
+                  "loops.settingsAutoDiscoveryHint",
+                  "Планировщик будет запускать поиск автоматически по расписанию.",
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draft.autoDiscoveryEnabled}
+              disabled={isSaving}
+              onClick={toggleAutoDiscovery}
+              className={[
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+                draft.autoDiscoveryEnabled ? "bg-sky-600" : "bg-muted",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform",
+                  draft.autoDiscoveryEnabled ? "translate-x-5" : "translate-x-0",
+                ].join(" ")}
+              />
+            </button>
+          </div>
+
+          {draft.autoDiscoveryEnabled ? (
+            <label className="mt-4 block">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("loops.settingsIntervalHours", "Интервал, часов (1–168)")}
+              </span>
+              <input
+                type="number"
+                min="1"
+                max="168"
+                step="1"
+                className="mt-1.5 w-32 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/30"
+                value={draft.discoveryIntervalHoursText}
+                onChange={(e) => updateDraft("discoveryIntervalHoursText", e.target.value)}
+                disabled={isSaving}
+              />
+            </label>
+          ) : null}
         </div>
 
         {error ? (
