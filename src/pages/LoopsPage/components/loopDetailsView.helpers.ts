@@ -1,6 +1,8 @@
-import type { Loop } from "src/entities/loop/model";
+import { joinTitles, type Loop, type LoopStatus } from "src/entities/loop";
 import type { LoopSourceStat } from "src/features/loops";
 import type { VacancyMatch, VacancyMatchStatus } from "src/features/vacancyMatches";
+
+import type { ChipDef, StatTile } from "./loopDetailsView.types";
 
 export interface MatchesBucket {
   source: string;
@@ -213,3 +215,87 @@ export function generateLoopRecommendations(
 
   return recs;
 }
+
+export const SOURCE_COLORS: Record<string, string> = {
+  linkedin: "#0a66c2",
+  stepstone: "#005c5c",
+  indeed: "#2164f3",
+  xing: "#006567",
+  arbeitsagentur: "#dc2626",
+  jobvector: "#1d4ed8",
+  joblift: "#1e3a8a",
+  kimeta: "#ea580c",
+  adzuna: "#7c3aed",
+  remotive: "#10b981",
+  arbeitnow: "#0f172a",
+  remotejobs: "#f97316",
+  himalayas: "#0ea5e9",
+  remoteok: "#f43f5e",
+  greenhouse: "#22c55e",
+  lever: "#3b82f6",
+  manual_url: "#6b7280",
+  company_websites: "#6b7280",
+};
+
+export function getSourceColor(sourceId: string): string {
+  return SOURCE_COLORS[sourceId.toLowerCase()] ?? "#6b7280";
+}
+
+export function buildStatTiles(
+  t: (key: string, fallback: string, opts?: Record<string, unknown>) => string,
+  params: {
+    savedTotal: number;
+    appliedTotal: number;
+    matchesToday: number;
+    conversionRate: number | null;
+  },
+): StatTile[] {
+  const { savedTotal, appliedTotal, matchesToday, conversionRate } = params;
+  const appliedPct =
+    savedTotal > 0
+      ? t("loops.statAppliedPct", "{{value}}% of saved", {
+          value: Math.round((appliedTotal / savedTotal) * 100),
+        })
+      : t("loops.dash", "—");
+  return [
+    { label: t("loops.statMatches", "Matches"), value: savedTotal, sub: t("loops.statMatchesSub", "Saved matches"), accent: false },
+    { label: t("loops.statApplied", "Applied"), value: appliedTotal, sub: appliedPct, accent: true },
+    { label: t("loops.statToday", "Today"), value: matchesToday, sub: t("loops.statTodaySub", "New today"), accent: false },
+    { label: t("loops.statConversion", "Conversion"), value: conversionRate !== null ? `${conversionRate}%` : "—", sub: t("loops.statConversionSub", "Saved → applied"), accent: false },
+  ];
+}
+
+export function buildLoopChips(loop: Loop, labels: Record<string, string>): ChipDef[] {
+  const isRemote = loop.filters?.workMode === "remote_only" || loop.remoteMode === "remote_only";
+  const radiusKm = loop.filters?.radiusKm ?? loop.radiusKm;
+
+  const raw: ChipDef[] = [
+    { label: labels.role, value: loop.filters?.role || joinTitles(loop.titles) },
+    { label: labels.location, value: loop.filters?.location || loop.location },
+    { label: labels.radius, value: radiusKm > 0 ? `${radiusKm} km` : "" },
+    { label: labels.mode, value: isRemote ? labels.remote : labels.any },
+    { label: labels.employment, value: loop.filters?.employmentType ?? "" },
+  ];
+
+  return raw.filter((chip) => chip.value && chip.value !== "—");
+}
+
+export const MATCH_STATUS_STYLES: Record<VacancyMatchStatus, { key: string; cls: string }> = {
+  new:       { key: "loops.statusNew",       cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  saved:     { key: "loops.statusSaved",     cls: "bg-muted text-muted-foreground" },
+  ignored:   { key: "loops.statusIgnored",   cls: "bg-muted text-muted-foreground opacity-60" },
+  converted: { key: "loops.statusConverted", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+};
+
+export function getStatusBadgeClass(status: LoopStatus): string {
+  if (status === "archived") return "bg-muted text-muted-foreground";
+  if (status === "paused") return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
+  return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
+}
+
+export const HISTORY_STATUS_STYLES: Record<string, string> = {
+  completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  completed_with_warnings: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  failed: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+  skipped: "bg-muted text-muted-foreground",
+};
