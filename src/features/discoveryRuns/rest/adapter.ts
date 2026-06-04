@@ -27,6 +27,7 @@ export function mapDiscoveryRunPreviewInputToDto(
     search_scope: input.searchScope,
     page: input.page,
     page_size: input.pageSize,
+    cache_only: input.cacheOnly,
   };
 }
 
@@ -54,7 +55,7 @@ export function mapDiscoveryRunItemDto(dto: DiscoveryRunItemDto): DiscoveryRunIt
     reason: dto.reason,
     message: dto.message,
     itemsPreviewed: dto.items_previewed,
-    hasMore: dto.has_more ?? dto.items_previewed >= 5,
+    hasMore: dto.has_more ?? dto.items_previewed >= 20,
     previewItems: dto.preview_items.map(mapDiscoveryRunPreviewItemDto),
     warnings: dto.warnings,
     errors: dto.errors,

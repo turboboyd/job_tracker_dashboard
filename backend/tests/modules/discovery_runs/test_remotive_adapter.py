@@ -100,7 +100,7 @@ async def test_remotive_adapter_builds_safe_query_and_maps_results() -> None:
         result = await RemotiveAdapter(client=client).discover(
             loop=make_loop(),
             source=source,
-            options=DiscoveryAdapterOptions(max_results=5),
+            options=DiscoveryAdapterOptions(max_results=5, page_size=5),
         )
 
     assert result.status == "completed"

@@ -18,7 +18,12 @@ class DiscoveryRunRequest(BaseModel):
     source_ids: list[str] | None = None
     search_scope: DiscoverySearchScope = "normal"
     page: int = Field(default=1, ge=1, le=20)
-    page_size: int = Field(default=5, ge=1, le=5)
+    page_size: int = Field(default=20, ge=1, le=20)
+    # When True the run serves ONLY from the preview cache and never performs a
+    # synchronous external fetch on a cache miss. User-facing feeds set this so
+    # browsing the Search tab never hammers external job boards — missing pages
+    # are warmed in the background / by the scheduler instead.
+    cache_only: bool = False
 
     @field_validator("source_ids")
     @classmethod

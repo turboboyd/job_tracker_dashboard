@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 from app.modules.discovery_adapters.schemas import DiscoveryAdapterItem
 
-MAX_RESULTS_PER_SOURCE = 5
+MAX_RESULTS_PER_SOURCE = 20
 MAX_DISCOVERY_PREVIEW_PAGE = 20
 REQUEST_TIMEOUT_SECONDS = 8
 ALLOWED_URL_SCHEMES = frozenset({"http", "https"})

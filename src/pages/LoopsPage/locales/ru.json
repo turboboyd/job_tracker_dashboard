@@ -175,6 +175,11 @@
   "sourceStatusNever": "Не запускался",
   "sourceConvRate": "Конв.",
   "sourceLastPoll": "Последний опрос · {{value}}",
+  "sourcesToggleSubtitle": "Включи источники, по которым этот луп будет искать вакансии.",
+  "sourcesEnabledCount": "{{enabled}} / {{total}}",
+  "sourceDisabled": "Выключен",
+  "sourceDisabledHint": "Поиск по этому источнику отключён",
+  "sourceToggleAria": "Включить источник {{label}}",
 
   "statusNew": "Новая",
   "statusSaved": "Сохранено",

@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.application import Application
+from app.db.models.discovery_preview_cache import DiscoveryPreviewCache
 from app.db.models.discovery_run_record import DiscoveryRunRecord
 from app.db.models.loop import Loop
 from app.db.models.vacancy_match import VacancyMatch
@@ -202,6 +203,23 @@ class LoopsRepository:
                 if key not in last_run_by_source:
                     last_run_by_source[key] = (finished_at, run_status)
 
+        # Last cache-warm (fetched_at) per source. Dry-run cache warming never
+        # writes a DiscoveryRunRecord, so without this an actively-warmed source
+        # would show "Не запускался" even though it's polled every few hours.
+        cache_rows = (
+            await self._db.execute(
+                select(
+                    DiscoveryPreviewCache.source_id,
+                    func.max(DiscoveryPreviewCache.fetched_at).label("last_fetch"),
+                )
+                .where(DiscoveryPreviewCache.loop_id == loop_id)
+                .group_by(DiscoveryPreviewCache.source_id)
+            )
+        ).all()
+        last_fetch_by_source: dict[str, datetime] = {
+            (row.source_id or "").lower(): row.last_fetch for row in cache_rows
+        }
+
         def _health(run_status: str) -> str:
             if run_status == "completed":
                 return "ok"
@@ -209,31 +227,48 @@ class LoopsRepository:
                 return "warning"
             return "error"
 
+        def _last_poll(key: str) -> tuple[datetime | None, str]:
+            """Most recent activity for a source — run record or cache warm."""
+            run = last_run_by_source.get(key)
+            fetch = last_fetch_by_source.get(key)
+            if run and fetch:
+                # Whichever happened most recently wins; a successful warm = ok.
+                if fetch >= run[0]:
+                    return fetch, "ok"
+                return run[0], _health(run[1])
+            if run:
+                return run[0], _health(run[1])
+            if fetch:
+                return fetch, "ok"
+            return None, "never"
+
         result: list[dict] = []
         seen_sources: set[str] = set()
         for row in match_rows:
             source_id = row.source or "unknown"
             key = source_id.lower()
             seen_sources.add(key)
-            last = last_run_by_source.get(key)
+            last_run_at, health = _last_poll(key)
             result.append({
                 "source_id": source_id,
                 "matches": row.total,
                 "applied": row.converted,
-                "last_run_at": last[0] if last else None,
-                "health": _health(last[1]) if last else "never",
+                "last_run_at": last_run_at,
+                "health": health,
             })
 
-        # Include sources that ran but produced no matches yet
-        for src, (last_run, run_status) in last_run_by_source.items():
-            if src not in seen_sources:
-                result.append({
-                    "source_id": src,
-                    "matches": 0,
-                    "applied": 0,
-                    "last_run_at": last_run,
-                    "health": _health(run_status),
-                })
+        # Include sources that were polled/ran but have no saved matches yet.
+        for key in set(last_run_by_source) | set(last_fetch_by_source):
+            if key in seen_sources:
+                continue
+            last_run_at, health = _last_poll(key)
+            result.append({
+                "source_id": key,
+                "matches": 0,
+                "applied": 0,
+                "last_run_at": last_run_at,
+                "health": health,
+            })
 
         result.sort(key=lambda x: x["matches"], reverse=True)
         return result

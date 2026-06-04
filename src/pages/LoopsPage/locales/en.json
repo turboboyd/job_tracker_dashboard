@@ -173,6 +173,11 @@
   "sourceStatusNever": "Not run",
   "sourceConvRate": "Conv.",
   "sourceLastPoll": "Last poll · {{value}}",
+  "sourcesToggleSubtitle": "Turn on the sources this loop should search for jobs.",
+  "sourcesEnabledCount": "{{enabled}} / {{total}}",
+  "sourceDisabled": "Disabled",
+  "sourceDisabledHint": "Search for this source is turned off",
+  "sourceToggleAria": "Enable source {{label}}",
   "tabAnalytics": "Analytics",
   "tabSettings": "Settings",
 

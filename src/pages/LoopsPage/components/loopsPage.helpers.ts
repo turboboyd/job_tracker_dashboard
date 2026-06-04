@@ -210,3 +210,31 @@ export function getEffectiveStats(statsById: LoopStatsById, loop: Loop): LoopSta
     applications: loop.metrics.applications_total,
   };
 }
+
+/**
+ * Aggregate stats across loops using the same per-loop logic as the loop cards
+ * (i.e. respecting ``loop.metrics`` when present). Keeps the header totals
+ * consistent with the individual cards — summing the raw ``statsById`` instead
+ * would ignore server metrics and report 0 whenever match rows aren't loaded.
+ */
+export function countEffectiveLoopStats(
+  statsById: LoopStatsById,
+  loops: readonly Loop[],
+): LoopStats {
+  return loops.reduce<LoopStats>(
+    (total, loop) => {
+      const stats = getEffectiveStats(statsById, loop);
+      total.applications += stats.applications;
+      total.saved += stats.saved;
+      total.applied += stats.applied;
+      total.interview += stats.interview;
+      total.offer += stats.offer;
+      total.rejected += stats.rejected;
+      total.today += stats.today;
+      total.followUps += stats.followUps;
+      total.matches += stats.matches;
+      return total;
+    },
+    { ...DEFAULT_LOOP_STATS },
+  );
+}

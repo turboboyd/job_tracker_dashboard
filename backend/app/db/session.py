@@ -39,6 +39,15 @@ def _get_session_factory() -> async_sessionmaker[AsyncSession]:
     return _async_session_factory
 
 
+def get_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Public accessor for the shared session factory.
+
+    Use this for work outside the request/response cycle (background tasks,
+    schedulers) that needs its own short-lived session.
+    """
+    return _get_session_factory()
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency that provides a per-request AsyncSession."""
     factory = _get_session_factory()

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.discovery_run_record import DiscoveryRunRecord
 from app.db.models.loop import Loop
 from app.db.models.user import User
+from app.db.models.vacancy_match import VacancyMatch
+from app.db.models.vacancy_preview_ignore import VacancyPreviewIgnore
 from app.modules.discovery_adapters.base import DiscoveryAdapterError
 from app.modules.discovery_adapters.registry import (
     DiscoveryAdapterRegistry,
@@ -39,6 +41,10 @@ from app.modules.discovery_runs.schemas import (
 )
 from app.modules.discovery_sources.registry import get_discovery_source
 from app.modules.loops.service import InvalidLoopError, LoopsService
+from app.modules.vacancy_matches.service import (
+    VacancyMatchPreviewValidationError,
+    normalize_source_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -199,10 +205,9 @@ class DiscoveryRunsService:
             )
             self._db.add(record)
 
-            # Schedule next auto-run
-            if loop.auto_discovery_enabled:
-                interval_h = max(1, loop.discovery_interval_hours or 24)
-                loop.next_run_at = finished_at + timedelta(hours=interval_h)
+            # NOTE: next_run_at is owned by the scheduler (app/scheduler.py),
+            # which reschedules each loop after warming. We intentionally do not
+            # touch it here so there is a single source of truth.
 
         try:
             await self._db.flush()
@@ -376,6 +381,7 @@ class DiscoveryRunsService:
                     dry_run=payload.dry_run,
                     max_results=payload.page_size,
                 )
+                item = await self._filter_already_handled(item, loop.id, source_id)
                 return item, 1
             logger.debug(
                 "Cache MISS: loop=%s source=%s scope=%s page=%s",
@@ -383,6 +389,22 @@ class DiscoveryRunsService:
                 source_id,
                 payload.search_scope,
                 payload.page,
+            )
+
+        # ── Cache-only mode: never fetch externally on a miss ─────────────────
+        # The user-facing feed sets cache_only so browsing never blocks on (or
+        # hammers) external job boards. The miss is surfaced as "cache_warming"
+        # so the caller can trigger a background warm and the UI can retry.
+        if payload.cache_only:
+            return (
+                DiscoveryRunItem(
+                    loop_id=loop_id,
+                    source_id=source_id,
+                    status="skipped",
+                    reason="cache_warming",
+                    message="No cached results yet — a background refresh was requested.",
+                ),
+                1,
             )
 
         # ── Live adapter call ─────────────────────────────────────────────────
@@ -442,7 +464,84 @@ class DiscoveryRunsService:
                     exc_info=True,
                 )
 
+        item = await self._filter_already_handled(item, loop.id, source_id)
         return item, 1
+
+    async def _load_handled_keys(
+        self, loop_id: UUID, source_id: str
+    ) -> tuple[set[str], set[str]]:
+        """Return (external_ids, normalized_urls) the user already saved/ignored.
+
+        Covers both saved vacancy matches and explicitly ignored previews for
+        this loop+source so the preview feed never re-offers them — including
+        after a page reload, where the frontend's in-memory save state is lost.
+        """
+        external_ids: set[str] = set()
+        urls: set[str] = set()
+        if self._db is None:
+            return external_ids, urls
+
+        loop_key = str(loop_id)
+
+        match_rows = (
+            await self._db.execute(
+                select(VacancyMatch.external_id, VacancyMatch.source_url).where(
+                    VacancyMatch.loop_id == loop_key,
+                    VacancyMatch.source == source_id,
+                )
+            )
+        ).all()
+        ignore_rows = (
+            await self._db.execute(
+                select(
+                    VacancyPreviewIgnore.external_id,
+                    VacancyPreviewIgnore.source_url,
+                ).where(
+                    VacancyPreviewIgnore.loop_id == loop_key,
+                    VacancyPreviewIgnore.source_id == source_id,
+                )
+            )
+        ).all()
+
+        for external_id, source_url in (*match_rows, *ignore_rows):
+            if external_id and external_id.strip():
+                external_ids.add(external_id.strip())
+            if source_url:
+                # Saved/ignored URLs are persisted already-normalized.
+                urls.add(source_url)
+
+        return external_ids, urls
+
+    async def _filter_already_handled(
+        self, item: DiscoveryRunItem, loop_id: UUID, source_id: str
+    ) -> DiscoveryRunItem:
+        if self._db is None or not item.preview_items:
+            return item
+
+        external_ids, urls = await self._load_handled_keys(loop_id, source_id)
+        if not external_ids and not urls:
+            return item
+
+        kept: list[DiscoveryRunPreviewItem] = []
+        for preview in item.preview_items:
+            ext = (preview.external_id or "").strip()
+            if ext and ext in external_ids:
+                continue
+            if preview.source_url:
+                try:
+                    normalized = normalize_source_url(preview.source_url)
+                except VacancyMatchPreviewValidationError:
+                    normalized = preview.source_url
+                if normalized in urls:
+                    continue
+            kept.append(preview)
+
+        if len(kept) == len(item.preview_items):
+            return item
+
+        return item.model_copy(
+            update={"preview_items": kept, "items_previewed": len(kept)}
+        )
 
     @staticmethod
     def _item_from_adapter_result(

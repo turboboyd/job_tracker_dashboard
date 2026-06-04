@@ -30,6 +30,19 @@ SOURCE_ID = "safe_source"
 # ── helpers ────────────────────────────────────────────────────────────────────
 
 
+def make_db():
+    """MagicMock AsyncSession whose execute() yields an empty result set.
+
+    The service queries saved matches / preview ignores to filter the feed, so
+    db.execute must be awaitable and return a row set (defaults to no rows).
+    """
+    mock = MagicMock()
+    empty_result = MagicMock()
+    empty_result.all.return_value = []
+    mock.execute = AsyncMock(return_value=empty_result)
+    return mock
+
+
 def make_user():
     from app.db.models.user import User
 
@@ -207,7 +220,7 @@ async def test_cache_hit_skips_adapter_call(monkeypatch):
         lambda sid: make_source(sid),
     )
 
-    db = MagicMock()
+    db = make_db()
     cache_entry = make_cache_entry()
     svc, adapter = make_service(db=db)
 
@@ -243,7 +256,7 @@ async def test_cache_miss_calls_adapter_and_writes_cache(monkeypatch):
         lambda sid: make_source(sid),
     )
 
-    db = MagicMock()
+    db = make_db()
     svc, adapter = make_service(db=db)
 
     with (
@@ -316,7 +329,7 @@ async def test_failed_adapter_result_is_not_cached(monkeypatch):
         items=[],
         errors=["timeout"],
     )
-    db = MagicMock()
+    db = make_db()
     svc, adapter = make_service(
         db=db,
         adapter=FakeAdapter(result=failed_result),
@@ -357,7 +370,7 @@ async def test_skipped_adapter_result_is_not_cached(monkeypatch):
         items=[],
         warnings=["no_keywords_configured"],
     )
-    db = MagicMock()
+    db = make_db()
     svc, adapter = make_service(
         db=db,
         adapter=FakeAdapter(result=skipped_result),
@@ -392,7 +405,7 @@ async def test_cache_write_failure_is_non_fatal(monkeypatch):
         lambda sid: make_source(sid),
     )
 
-    db = MagicMock()
+    db = make_db()
     svc, adapter = make_service(db=db)
 
     with (
@@ -424,7 +437,7 @@ async def test_cache_lookup_passes_scope_and_page(monkeypatch):
         lambda sid: make_source(sid),
     )
 
-    db = MagicMock()
+    db = make_db()
     svc, _ = make_service(db=db)
 
     with (

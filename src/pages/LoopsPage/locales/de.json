@@ -155,6 +155,11 @@
   "sourceStatusNever": "Nicht gestartet",
   "sourceConvRate": "Konv.",
   "sourceLastPoll": "Letzte Abfrage · {{value}}",
+  "sourcesToggleSubtitle": "Aktiviere die Quellen, in denen dieser Loop nach Jobs suchen soll.",
+  "sourcesEnabledCount": "{{enabled}} / {{total}}",
+  "sourceDisabled": "Deaktiviert",
+  "sourceDisabledHint": "Die Suche für diese Quelle ist ausgeschaltet",
+  "sourceToggleAria": "Quelle {{label}} aktivieren",
   "tabAnalytics": "Analytik",
   "tabSettings": "Einstellungen",
 

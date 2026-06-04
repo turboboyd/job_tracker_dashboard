@@ -21,7 +21,7 @@ import { Button, Pagination } from "src/shared/ui";
 
 import {
   buildLoopStatsById,
-  countLoopStats,
+  countEffectiveLoopStats,
   filterLoopsByTab,
   getEffectiveStats,
   getLoopStatus,
@@ -307,11 +307,7 @@ export function LoopsListView({
     [applications, loops, matches],
   );
   const activeTotals = useMemo(
-    () =>
-      countLoopStats(
-        statsById,
-        statsLoops.map((loop) => loop.id),
-      ),
+    () => countEffectiveLoopStats(statsById, statsLoops),
     [statsById, statsLoops],
   );
 

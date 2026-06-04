@@ -7,6 +7,7 @@ import type { AppRow } from "src/pages/ApplicationsPage/model/types";
 
 import {
   buildLoopStatsById,
+  countEffectiveLoopStats,
   filterLoopsByArchiveTab,
   filterLoopsByTab,
   getBackendLoopIdsForMatchLoading,
@@ -170,6 +171,40 @@ test("buildLoopStatsById counts F16 loop counters by loopId", () => {
   });
 });
 
+
+test("countEffectiveLoopStats honours loop.metrics so header totals match the cards", () => {
+  // Server metrics present but no match rows loaded (the real-world case where
+  // the header tile read 0 while the card read 4). The aggregate must follow
+  // metrics.matches_saved, exactly like getEffectiveStats does per card.
+  const loops = [
+    loop("loop-a", {
+      metrics: { matches_saved: 4, applications_total: 1 },
+    } as Partial<Loop>),
+    loop("loop-b", {
+      metrics: { matches_saved: 2, applications_total: 0 },
+    } as Partial<Loop>),
+  ];
+
+  const stats = buildLoopStatsById({ loops, applications: [], matches: [] });
+  const totals = countEffectiveLoopStats(stats, loops);
+
+  assert.equal(totals.matches, 6);
+  assert.equal(totals.applications, 1);
+});
+
+test("countEffectiveLoopStats falls back to computed stats when metrics are absent", () => {
+  const loops = [loop("loop-a"), loop("loop-b")];
+  const matches = [
+    match("m1", "loop-a", "saved"),
+    match("m2", "loop-a", "new"),
+    match("m3", "loop-b", "saved"),
+  ];
+
+  const stats = buildLoopStatsById({ loops, applications: [], matches });
+  const totals = countEffectiveLoopStats(stats, loops);
+
+  assert.equal(totals.matches, 3);
+});
 
 test("isBackendLoopId accepts backend UUIDs and rejects legacy Firestore/demo ids", () => {
   assert.equal(isBackendLoopId("3fa85f64-5717-4562-b3fc-2c963f66afa6"), true);

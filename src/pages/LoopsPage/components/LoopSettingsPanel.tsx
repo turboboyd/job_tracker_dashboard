@@ -2,18 +2,12 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Loop } from "src/entities/loop";
-import {
-  getDiscoverySourceRuntimeStatusViaRest,
-  type DiscoverySourceRuntimeStatus,
-} from "src/features/discoveryRuns";
 import type { UpdateBackendLoopInput } from "src/features/loops";
 
 import {
-  DISCOVERY_SOURCE_OPTIONS,
   EMPLOYMENT_TYPE_OPTIONS,
   WORK_MODE_OPTIONS,
   createLoopSettingsDraft,
-  getLoopSettingsSourceStatusLabel,
   mapLoopSettingsDraftToPatch,
   mergeKnownAndSelectedOptions,
   toggleSettingsValue,
@@ -66,29 +60,7 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
   const [saved, setSaved] = useState(false);
   const [isDangerBusy, setIsDangerBusy] = useState(false);
   const [dangerError, setDangerError] = useState<string | null>(null);
-  const [sourceRuntimeStatuses, setSourceRuntimeStatuses] = useState<
-    DiscoverySourceRuntimeStatus[] | null
-  >(null);
   const savedLoopIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadSourceStatuses() {
-      try {
-        const response = await getDiscoverySourceRuntimeStatusViaRest();
-        if (!cancelled) setSourceRuntimeStatuses(response.items);
-      } catch {
-        if (!cancelled) setSourceRuntimeStatuses(null);
-      }
-    }
-
-    void loadSourceStatuses();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (savedLoopIdRef.current === loop.id) {
@@ -115,7 +87,7 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
   };
 
   const toggleDraftValue = (
-    field: "employmentTypes" | "workModes" | "selectedSources",
+    field: "employmentTypes" | "workModes",
     value: string,
   ) => {
     setDraft((current) => ({
@@ -158,7 +130,7 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
         <p className="mt-1 text-sm text-muted-foreground">
           {t(
             "loops.settingsDescription",
-            "Настройте направление поиска, источники и расписание автоматической синхронизации.",
+            "Настройте направление поиска и расписание автоматической синхронизации.",
           )}
         </p>
       </div>
@@ -200,26 +172,6 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
             disabled={isSaving}
             onToggle={(value) => toggleDraftValue("workModes", value)}
           />
-
-          <div className="md:col-span-2">
-            <CheckboxGroup
-              label={t("loops.settingsSelectedSources", "Источники")}
-              options={mergeKnownAndSelectedOptions(
-                DISCOVERY_SOURCE_OPTIONS,
-                draft.selectedSources,
-              )}
-              selectedValues={draft.selectedSources}
-              disabled={isSaving}
-              onToggle={(value) => toggleDraftValue("selectedSources", value)}
-              getOptionMeta={(value) =>
-                getLoopSettingsSourceStatusLabel(value, sourceRuntimeStatuses)
-              }
-              hint={t(
-                "loops.settingsSourcesHint",
-                "Сохраняются технические source id, но здесь показаны понятные названия.",
-              )}
-            />
-          </div>
 
           <label className="block">
             <span className="text-sm font-medium text-foreground">

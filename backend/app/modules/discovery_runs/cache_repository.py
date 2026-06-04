@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import delete, select
@@ -15,6 +15,12 @@ from app.modules.discovery_adapters.schemas import DiscoveryAdapterItem, Discove
 logger = logging.getLogger(__name__)
 
 DEFAULT_TTL_SECONDS: int = 3600  # 1 hour
+
+# How long auto-fetched preview rows are retained before purging. Bounds the
+# size of discovery_preview_cache: actively warmed loops refresh fetched_at
+# every cycle so they never age out, while paused/inactive loops drop off after
+# this window. Never touches user-saved jobs — those live in separate tables.
+RETENTION_DAYS: int = 30
 
 _SOURCE_TTL: dict[str, int] = {
     "arbeitsagentur": 4 * 3600,
@@ -126,6 +132,32 @@ async def cleanup_expired(db: AsyncSession, *, now: datetime) -> int:
     result = await db.execute(stmt)
     await db.commit()
     return result.rowcount
+
+
+async def cleanup_stale(
+    db: AsyncSession,
+    *,
+    now: datetime,
+    max_age_days: int = RETENTION_DAYS,
+) -> int:
+    """Purge preview-cache rows not refreshed within ``max_age_days``.
+
+    Keyed on ``fetched_at`` (bumped on every warm) so actively used loops are
+    never purged; only stale/paused loops drop off. Only the cache table is
+    affected — saved applications and vacancy matches live elsewhere.
+    """
+    cutoff = now - timedelta(days=max_age_days)
+    stmt = delete(DiscoveryPreviewCache).where(
+        DiscoveryPreviewCache.fetched_at < cutoff
+    )
+    result = await db.execute(stmt)
+    await db.commit()
+    deleted = result.rowcount
+    if deleted:
+        logger.info(
+            "Cache retention: purged %d row(s) older than %dd", deleted, max_age_days
+        )
+    return deleted
 
 
 def result_from_cache(entry: DiscoveryPreviewCache) -> DiscoveryAdapterResult:

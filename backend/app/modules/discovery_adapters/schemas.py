@@ -12,11 +12,11 @@ class DiscoveryAdapterOptions(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     dry_run: bool = True
-    max_results: int = Field(default=5, ge=0, le=5)
+    max_results: int = Field(default=20, ge=0, le=20)
     timeout_seconds: int = Field(default=8, ge=1, le=60)
     search_scope: DiscoverySearchScope = "normal"
     page: int = Field(default=1, ge=1, le=20)
-    page_size: int = Field(default=5, ge=1, le=5)
+    page_size: int = Field(default=20, ge=1, le=20)
 
 
 class DiscoveryAdapterItem(BaseModel):

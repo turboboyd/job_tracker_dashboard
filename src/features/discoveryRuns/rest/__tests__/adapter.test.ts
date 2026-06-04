@@ -15,6 +15,7 @@ assert.deepEqual(
     searchScope: "broad",
     page: 2,
     pageSize: 5,
+    cacheOnly: true,
   }),
   {
     loop_id: "loop-1",
@@ -23,6 +24,7 @@ assert.deepEqual(
     search_scope: "broad",
     page: 2,
     page_size: 5,
+    cache_only: true,
   },
 );
 
@@ -86,7 +88,7 @@ assert.equal(
     items: [
       {
         ...dto.items[0],
-        items_previewed: 5,
+        items_previewed: 20,
         has_more: undefined,
       },
     ],
@@ -99,7 +101,7 @@ assert.equal(
     items: [
       {
         ...dto.items[0],
-        items_previewed: 4,
+        items_previewed: 19,
         has_more: undefined,
       },
     ],

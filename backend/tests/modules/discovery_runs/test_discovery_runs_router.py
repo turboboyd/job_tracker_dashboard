@@ -395,20 +395,20 @@ async def test_discovery_run_passes_safety_limits_to_adapter(monkeypatch) -> Non
         "app.modules.discovery_runs.service.get_discovery_source",
         lambda source_id: make_source(source_id),
     )
-    adapter = FakeAdapter(item_count=12)
+    adapter = FakeAdapter(item_count=25)
 
     result = await make_service(
         FakeLoopsService([make_loop(selected_sources=["safe_source"])]),
         DiscoveryAdapterRegistry([adapter]),
     ).run(make_user(), DiscoveryRunRequest(loop_id=str(LOOP_ID)))
 
-    assert adapter.calls[0].max_results == 5
+    assert adapter.calls[0].max_results == 20
     assert adapter.calls[0].timeout_seconds == 8
     assert adapter.calls[0].search_scope == "normal"
     assert adapter.calls[0].page == 1
-    assert adapter.calls[0].page_size == 5
-    assert result.matches_previewed == 5
-    assert len(result.items[0].preview_items) == 5
+    assert adapter.calls[0].page_size == 20
+    assert result.matches_previewed == 20
+    assert len(result.items[0].preview_items) == 20
     assert result.items[0].has_more is True
 
 

@@ -9,6 +9,7 @@ export interface DiscoveryRunRequestDto {
   search_scope?: DiscoverySearchScope;
   page?: number;
   page_size?: number;
+  cache_only?: boolean;
 }
 
 export interface DiscoveryRunPreviewItemDto {
@@ -57,6 +58,8 @@ export interface DiscoveryRunPreviewInput {
   searchScope?: DiscoverySearchScope;
   page?: number;
   pageSize?: number;
+  /** Serve only from the backend cache; missing pages are warmed in the background. */
+  cacheOnly?: boolean;
 }
 
 export type DiscoverySourceConfigurationStatus =
