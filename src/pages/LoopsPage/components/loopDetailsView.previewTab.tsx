@@ -13,9 +13,11 @@ import { isBackendLoopId } from "./loopsPage.helpers";
 export function LoopPreviewTab({
   loop,
   onRefreshSourceStats,
+  onMatchSaved,
 }: {
   loop: Loop;
   onRefreshSourceStats: () => void;
+  onMatchSaved: () => void;
 }) {
   const isBackendId = isBackendLoopId(loop.id);
   const sources = loop.selectedSources ?? [];
@@ -71,7 +73,7 @@ export function LoopPreviewTab({
     <DiscoveryPreviewFeed
       loopId={loop.id}
       sources={runnableSources}
-      onMatchSaved={() => {}}
+      onMatchSaved={onMatchSaved}
       onRunComplete={onRefreshSourceStats}
     />
   );

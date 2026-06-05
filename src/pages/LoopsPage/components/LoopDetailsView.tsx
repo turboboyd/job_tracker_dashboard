@@ -59,6 +59,7 @@ export function LoopDetailsView({
   const [actionError, setActionError] = useState<string | null>(null);
   const [matches, setMatches] = useState<VacancyMatch[]>([]);
   const [matchesLoading, setMatchesLoading] = useState(false);
+  const [matchesRefreshKey, setMatchesRefreshKey] = useState(0);
   const [sourceStats, setSourceStats] = useState<LoopSourceStat[]>([]);
   const [sourceStatsLoading, setSourceStatsLoading] = useState(false);
   const [sourceStatsRefreshKey, setSourceStatsRefreshKey] = useState(0);
@@ -67,6 +68,20 @@ export function LoopDetailsView({
   const handleRefreshSourceStats = useCallback(() => {
     setSourceStatsRefreshKey((k) => k + 1);
   }, []);
+
+  // Saving a vacancy from the preview tab must make it visible in Analytics /
+  // Overview without a full page reload. Re-fetch the data those tabs derive
+  // from: the matches list (funnel + by-source) and the loop (metrics.matches_saved).
+  const handleMatchSaved = useCallback(() => {
+    setMatchesRefreshKey((k) => k + 1);
+    setSourceStatsRefreshKey((k) => k + 1);
+    if (!isBackendLoopId(loopId)) return;
+    getLoopViaRest(loopId)
+      .then((item) => setLoop(item))
+      .catch(() => {
+        // Best-effort refresh of loop metrics; the next reload will reconcile.
+      });
+  }, [loopId]);
 
   const readPageFromSearch = (search: string): number | null => {
     try {
@@ -141,7 +156,7 @@ export function LoopDetailsView({
     return () => {
       cancelled = true;
     };
-  }, [loopId]);
+  }, [loopId, matchesRefreshKey]);
 
   useEffect(() => {
     if (!isBackendLoopId(loopId)) return;
@@ -390,6 +405,7 @@ export function LoopDetailsView({
             sourceStats={sourceStats}
             sourceStatsLoading={sourceStatsLoading}
             onRefreshSourceStats={handleRefreshSourceStats}
+            onMatchSaved={handleMatchSaved}
             isArchived={isArchived}
             status={status}
             onOpenMatches={onOpenMatches}

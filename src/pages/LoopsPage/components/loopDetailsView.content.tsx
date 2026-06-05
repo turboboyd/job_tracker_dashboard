@@ -23,6 +23,7 @@ export function LoopDetailContent({
   sourceStats,
   sourceStatsLoading,
   onRefreshSourceStats,
+  onMatchSaved,
   isArchived,
   status,
   onOpenMatches,
@@ -39,6 +40,7 @@ export function LoopDetailContent({
   sourceStats: LoopSourceStat[];
   sourceStatsLoading: boolean;
   onRefreshSourceStats: () => void;
+  onMatchSaved: () => void;
   isArchived: boolean;
   status: LoopStatus;
   onOpenMatches?: (id: string) => void;
@@ -79,7 +81,13 @@ export function LoopDetailContent({
       />
     );
   if (activeTab === "preview")
-    return <LoopPreviewTab loop={loop} onRefreshSourceStats={onRefreshSourceStats} />;
+    return (
+      <LoopPreviewTab
+        loop={loop}
+        onRefreshSourceStats={onRefreshSourceStats}
+        onMatchSaved={onMatchSaved}
+      />
+    );
   if (activeTab === "history")   return <LoopHistoryTab loop={loop} />;
   if (activeTab === "analytics") return <LoopAnalyticsTab loop={loop} matches={matches} />;
   return (
