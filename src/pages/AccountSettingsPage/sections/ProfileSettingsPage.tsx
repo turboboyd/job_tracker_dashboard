@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { AccountSettingsLayout } from "../ui/AccountSettingsLayout";
 
 import { ProfileSettingsForm } from "./profileSettings.sections";
+import { ResumeSettingsSection } from "./ResumeSettingsSection";
 import { useProfileSettingsPageController } from "./useProfileSettingsPageController";
 
 export default function ProfileSettingsPage() {
@@ -22,15 +23,18 @@ export default function ProfileSettingsPage() {
       title={t("accountSettings.page.title", "Account settings")}
       subtitle={t("accountSettings.sidebar.profile", "Profile")}
       content={
-        <ProfileSettingsForm
-          key={formKey}
-          uid={uid}
-          email={email}
-          canEditName={canEditName}
-          isFetching={isFetching}
-          initial={initial}
-          timeZoneOptions={timeZoneOptions}
-        />
+        <div className="space-y-6">
+          <ProfileSettingsForm
+            key={formKey}
+            uid={uid}
+            email={email}
+            canEditName={canEditName}
+            isFetching={isFetching}
+            initial={initial}
+            timeZoneOptions={timeZoneOptions}
+          />
+          <ResumeSettingsSection />
+        </div>
       }
     />
   );

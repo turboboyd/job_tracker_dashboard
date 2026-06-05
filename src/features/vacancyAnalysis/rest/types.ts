@@ -111,6 +111,7 @@ export interface AnalysisPlanReadDto {
     multi_match_comparison: boolean;
     priority: AnalysisPlanPriority;
   };
+  ai_available: boolean;
 }
 
 export interface AnalysisPlan {
@@ -126,4 +127,5 @@ export interface AnalysisPlan {
     multiMatchComparison: boolean;
     priority: AnalysisPlanPriority;
   };
+  aiAvailable: boolean;
 }

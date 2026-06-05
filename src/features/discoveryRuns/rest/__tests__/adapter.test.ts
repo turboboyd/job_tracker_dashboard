@@ -81,6 +81,33 @@ assert.equal(mapped.items[0].hasMore, true);
 assert.equal(mapped.items[0].previewItems[0].sourceUrl, "https://example.test/job-1");
 assert.equal(mapped.items[0].previewItems[0].postedAt, "2026-05-01");
 assert.deepEqual(mapped.items[0].previewItems[0].rawMetadata, { refnr: "job-1" });
+// Insight is absent in this fixture → mapped to null (never undefined).
+assert.equal(mapped.items[0].previewItems[0].insight, null);
+
+// When the backend attaches a relevance insight, it is mapped through verbatim.
+const mappedWithInsight = mapDiscoveryRunResponseDto({
+  ...dto,
+  items: [
+    {
+      ...dto.items[0],
+      preview_items: [
+        {
+          ...dto.items[0].preview_items[0],
+          insight: {
+            score: 0.85,
+            matched: ["Backend", "Engineer"],
+            missing: ["Kubernetes"],
+          },
+        },
+      ],
+    },
+  ],
+});
+assert.deepEqual(mappedWithInsight.items[0].previewItems[0].insight, {
+  score: 0.85,
+  matched: ["Backend", "Engineer"],
+  missing: ["Kubernetes"],
+});
 
 assert.equal(
   mapDiscoveryRunResponseDto({

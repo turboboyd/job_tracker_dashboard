@@ -44,6 +44,13 @@ export function mapDiscoveryRunPreviewItemDto(
     postedAt: dto.posted_at,
     rawMetadata: dto.raw_metadata,
     confidence: dto.confidence,
+    insight: dto.insight
+      ? {
+          score: dto.insight.score,
+          matched: dto.insight.matched,
+          missing: dto.insight.missing,
+        }
+      : null,
   };
 }
 

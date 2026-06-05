@@ -24,9 +24,28 @@ export const DISCOVERY_PREVIEW_COPY = {
   savedAsMatch: "Сохранено",
   alreadySaved: "Уже сохранено",
   previewBadge: "Не сохранено",
+  relevanceLabel: "Релевантность",
+  relevanceMatchedLabel: "Подходит:",
+  relevanceMissingLabel: "Не хватает:",
 } as const;
 
 export type DiscoveryPreviewSaveState = "idle" | "saving" | "saved" | "duplicate";
+
+export type DiscoveryRelevanceTone = "high" | "medium" | "low";
+
+/** Clamp the 0..1 heuristic relevance score to a whole 0..100 percentage. */
+export function formatRelevanceScore(score: number): number {
+  if (!Number.isFinite(score)) return 0;
+  return Math.round(Math.max(0, Math.min(1, score)) * 100);
+}
+
+/** Bucket the relevance score for colour-coding the badge. */
+export function getRelevanceTone(score: number): DiscoveryRelevanceTone {
+  const pct = formatRelevanceScore(score);
+  if (pct >= 70) return "high";
+  if (pct >= 35) return "medium";
+  return "low";
+}
 
 const WARNING_MESSAGES: Record<string, string> = {
   automatic_discovery_not_available: "Этот источник пока не поддерживает предварительный поиск.",

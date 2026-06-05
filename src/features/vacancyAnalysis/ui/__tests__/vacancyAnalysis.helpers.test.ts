@@ -49,6 +49,7 @@ const freeFeatureText = getFeatureAvailabilityText({
     multiMatchComparison: false,
     priority: "normal",
   },
+  aiAvailable: false,
 }).join(" ");
 assert.equal(freeFeatureText.includes("Полное сопроводительное письмо"), true);
 assert.equal(freeFeatureText.includes("Улучшение плана будет добавлено позже"), true);

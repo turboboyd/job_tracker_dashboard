@@ -10,6 +10,7 @@ import {
   type DiscoveryRunResponse,
   type DiscoverySourceRuntimeStatus,
 } from "src/features/discoveryRuns";
+import { DiscoveryRelevanceInsight } from "src/features/discoveryRuns/ui/DiscoveryRelevanceInsight";
 import {
   ignoreDiscoveryPreviewViaRest,
   listDiscoveryPreviewIgnoresViaRest,
@@ -143,6 +144,7 @@ function PreviewCard({
               {item.snippet}
             </p>
           ) : null}
+          <DiscoveryRelevanceInsight insight={item.insight ?? null} />
         </div>
         <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
           {statusLabel}

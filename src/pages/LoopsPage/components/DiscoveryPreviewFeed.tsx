@@ -10,6 +10,7 @@ import {
   isDiscoveryPreviewSaveDisabled,
   type DiscoveryPreviewSaveState,
 } from "src/features/discoveryRuns/ui/discoveryPreview.helpers";
+import { DiscoveryRelevanceInsight } from "src/features/discoveryRuns/ui/DiscoveryRelevanceInsight";
 import { saveDiscoveryPreviewAsMatchViaRest } from "src/features/vacancyMatches";
 import { Button } from "src/shared/ui";
 
@@ -126,6 +127,7 @@ function FeedCard({
           {stripHtml(item.snippet)}
         </p>
       ) : null}
+      <DiscoveryRelevanceInsight insight={item.insight ?? null} />
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <a
           href={item.sourceUrl}

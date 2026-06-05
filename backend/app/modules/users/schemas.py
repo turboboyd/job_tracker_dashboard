@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 PlanName = Literal["free", "basic", "premium"]
 
@@ -19,6 +19,7 @@ class UserRead(BaseModel):
     timezone: str
     date_format: str
     analysis_plan: PlanName
+    resume_text: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -44,6 +45,8 @@ class UserPatch(BaseModel):
     language: str | None = None
     timezone: str | None = None
     date_format: str | None = None
+    # Send "" to clear the saved resume; omit / null leaves it unchanged.
+    resume_text: str | None = Field(default=None, max_length=20_000)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -65,3 +68,7 @@ class AnalysisPlanRead(BaseModel):
     plan: PlanName
     limits: AnalysisPlanLimits
     features: AnalysisPlanFeatures
+    # Whether a real AI backend is configured server-side. When False, the "AI"
+    # analysis mode is unavailable (the request would 503), so the UI disables it
+    # instead of silently returning deterministic output.
+    ai_available: bool = False

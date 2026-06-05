@@ -36,6 +36,17 @@
     "dateFormatExample2": "01/29/2026",
     "dateFormatExample3": "2026-01-29"
   },
+  "resume": {
+    "title": "Lebenslauf",
+    "subtitle": "Wird in deinem Profil gespeichert und bei der Analyse von Stellen vorausgefüllt",
+    "label": "Lebenslauf-Text",
+    "placeholder": "Füge deinen Lebenslauf oder CV ein...",
+    "hint": "Dieser Lebenslauf wird bei der Analyse von Stellen automatisch verwendet. Leere das Feld und speichere, um ihn zu entfernen.",
+    "saved": "Lebenslauf gespeichert.",
+    "empty": "Noch kein Lebenslauf gespeichert.",
+    "loadError": "Lebenslauf konnte nicht geladen werden.",
+    "saveError": "Lebenslauf konnte nicht gespeichert werden."
+  },
   "notifications": {
     "title": "Bewerbungserinnerungen",
     "subtitle": "Erinnerungen für Anrufe, Follow-ups und Bewerbungsaufgaben vorbereiten",

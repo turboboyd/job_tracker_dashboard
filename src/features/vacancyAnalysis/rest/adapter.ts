@@ -94,5 +94,6 @@ export function mapAnalysisPlanDto(dto: AnalysisPlanReadDto): AnalysisPlan {
       multiMatchComparison: dto.features.multi_match_comparison,
       priority: dto.features.priority,
     },
+    aiAvailable: dto.ai_available ?? false,
   };
 }

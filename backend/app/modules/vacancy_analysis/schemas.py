@@ -15,18 +15,20 @@ class VacancyAnalysisCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     analysis_type: AnalysisType = "basic"
-    resume_text: str = Field(..., min_length=1, max_length=20_000)
+    # Optional: when omitted/blank the service falls back to the resume saved on
+    # the user's profile (and errors if neither is available).
+    resume_text: str | None = Field(default=None, max_length=20_000)
     language: str = Field(default="ru", min_length=2, max_length=8)
     include_cover_letter: bool = False
     include_interview_questions: bool = False
 
     @field_validator("resume_text")
     @classmethod
-    def normalize_resume_text(cls, value: str) -> str:
+    def normalize_resume_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         normalized = value.strip()
-        if not normalized:
-            raise ValueError("resume_text is required")
-        return normalized
+        return normalized or None
 
 
 class VacancyAnalysisQuota(BaseModel):

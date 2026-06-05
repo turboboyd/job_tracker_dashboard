@@ -96,6 +96,7 @@ assert.deepEqual(
       multi_match_comparison: true,
       priority: "high",
     },
+    ai_available: true,
   }),
   {
     plan: "premium",
@@ -110,5 +111,6 @@ assert.deepEqual(
       multiMatchComparison: true,
       priority: "high",
     },
+    aiAvailable: true,
   },
 );

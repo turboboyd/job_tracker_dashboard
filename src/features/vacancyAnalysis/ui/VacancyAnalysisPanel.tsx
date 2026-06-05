@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { getCurrentUserProfileViaRest } from "src/features/userProfile";
 import { Button } from "src/shared/ui";
 
 import {
@@ -118,6 +119,7 @@ export function VacancyAnalysisPanel({ loopId, matchId }: VacancyAnalysisPanelPr
   const [error, setError] = useState<string | null>(null);
   const [analysisPlan, setAnalysisPlan] = useState<AnalysisPlan | null>(null);
   const [planError, setPlanError] = useState<string | null>(null);
+  const [profileResumeText, setProfileResumeText] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -159,6 +161,27 @@ export function VacancyAnalysisPanel({ loopId, matchId }: VacancyAnalysisPanelPr
     }
 
     loadPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfileResume() {
+      try {
+        const profile = await getCurrentUserProfileViaRest();
+        if (!cancelled) setProfileResumeText(profile.resumeText ?? "");
+      } catch {
+        // A missing/failed profile resume is non-blocking: the user can still
+        // paste a resume directly into the modal.
+        if (!cancelled) setProfileResumeText("");
+      }
+    }
+
+    loadProfileResume();
 
     return () => {
       cancelled = true;
@@ -277,6 +300,7 @@ export function VacancyAnalysisPanel({ loopId, matchId }: VacancyAnalysisPanelPr
         onSaved={handleSaved}
         plan={analysisPlan}
         planError={planError}
+        profileResumeText={profileResumeText}
       />
     </div>
   );

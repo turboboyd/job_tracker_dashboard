@@ -11,6 +11,11 @@ export const VACANCY_ANALYSIS_COPY = {
   basicDescription: "Базовый анализ — быстрый анализ по ключевым словам и правилам.",
   aiLabel: "AI-анализ",
   aiDescription: "AI-анализ — более подробный анализ, расходует дневной AI-лимит.",
+  aiUnavailableNote: "AI-анализ ещё не настроен на сервере — доступен базовый анализ.",
+  resumeLabel: "Текст резюме",
+  resumePlaceholder: "Вставьте текст резюме или CV...",
+  resumeProfileHint: "Резюме подставлено из профиля — измените текст при необходимости.",
+  resumeProfileFallbackHint: "Поле пустое — будет использовано резюме из профиля.",
   historySaved: "История анализа сохраняется.",
   score: "Оценка",
   strengths: "Сильные стороны",
@@ -40,6 +45,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   AI_PROVIDER_INVALID_RESPONSE: "AI вернул некорректный ответ. Попробуйте ещё раз.",
   AI_PROVIDER_TIMEOUT: "AI-анализ занял слишком много времени. Попробуйте позже.",
   AI_PROVIDER_NOT_CONFIGURED: "AI-анализ ещё не настроен на сервере.",
+  ANALYSIS_RESUME_REQUIRED: "Добавьте резюме в профиле или вставьте его текст для анализа.",
 };
 
 export function getVacancyAnalysisErrorMessage(error: unknown): string {

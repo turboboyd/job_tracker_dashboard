@@ -128,6 +128,7 @@ src/features/auth
 src/features/cv-checker
 src/features/cvVersions
 src/features/i18n
+src/features/userProfile
 
 src/pages
 ```

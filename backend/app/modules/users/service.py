@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import Settings, get_settings
 from app.db.models.user import User
 from app.modules.users.repository import UsersRepository
 from app.modules.users.schemas import (
@@ -45,7 +46,9 @@ def _cover_letter_feature(policy: PlanPolicy) -> str:
     return "disabled"
 
 
-def _plan_response(plan: PlanName, policy: PlanPolicy) -> AnalysisPlanRead:
+def _plan_response(
+    plan: PlanName, policy: PlanPolicy, *, ai_available: bool
+) -> AnalysisPlanRead:
     return AnalysisPlanRead(
         plan=plan,
         limits=AnalysisPlanLimits(
@@ -59,9 +62,14 @@ def _plan_response(plan: PlanName, policy: PlanPolicy) -> AnalysisPlanRead:
             multi_match_comparison=policy.multi_match_comparison,
             priority=policy.priority,
         ),
+        ai_available=ai_available,
     )
 
 
-def get_analysis_plan_for_user(user: User) -> AnalysisPlanRead:
+def get_analysis_plan_for_user(
+    user: User, settings: Settings | None = None
+) -> AnalysisPlanRead:
+    settings = settings or get_settings()
     plan = resolve_user_plan(user)
-    return _plan_response(plan, get_plan_policy(plan))
+    ai_available = settings.AI_ANALYSIS_PROVIDER != "deterministic"
+    return _plan_response(plan, get_plan_policy(plan), ai_available=ai_available)

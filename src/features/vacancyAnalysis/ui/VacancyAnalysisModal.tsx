@@ -22,6 +22,8 @@ interface VacancyAnalysisModalProps {
   onSaved: (analysis: VacancyAnalysis) => void;
   plan: AnalysisPlan | null;
   planError?: string | null;
+  /** Resume saved on the user's profile, used to prefill the textarea. */
+  profileResumeText?: string;
 }
 
 export function VacancyAnalysisModal({
@@ -31,6 +33,7 @@ export function VacancyAnalysisModal({
   onSaved,
   plan,
   planError,
+  profileResumeText,
 }: VacancyAnalysisModalProps) {
   const [analysisType, setAnalysisType] = useState<VacancyAnalysisType>("basic");
   const [resumeText, setResumeText] = useState("");
@@ -39,17 +42,38 @@ export function VacancyAnalysisModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => resumeText.trim().length > 0 && !isSubmitting, [
-    resumeText,
-    isSubmitting,
-  ]);
+  const hasProfileResume = (profileResumeText ?? "").trim().length > 0;
+  // Submit is allowed when the user typed something OR a profile resume exists
+  // (the backend falls back to the saved resume when the field is empty).
+  const canSubmit = useMemo(
+    () => (resumeText.trim().length > 0 || hasProfileResume) && !isSubmitting,
+    [resumeText, hasProfileResume, isSubmitting],
+  );
   const canRequestInterviewQuestions = plan?.features.interviewQuestions ?? true;
+  // Only force-disable AI once we actually know the server can't do it. While the
+  // plan is still loading (null) we leave it enabled and let the backend reject.
+  const aiUnavailable = plan ? !plan.aiAvailable : false;
 
   useEffect(() => {
     if (!canRequestInterviewQuestions) {
       setIncludeInterviewQuestions(false);
     }
   }, [canRequestInterviewQuestions]);
+
+  useEffect(() => {
+    if (aiUnavailable && analysisType === "ai") {
+      setAnalysisType("basic");
+    }
+  }, [aiUnavailable, analysisType]);
+
+  // Prefill the textarea with the saved profile resume each time the modal
+  // opens, unless the user has already typed something in this session.
+  useEffect(() => {
+    if (!open) return;
+    setResumeText((current) =>
+      current.trim().length > 0 ? current : profileResumeText ?? "",
+    );
+  }, [open, profileResumeText]);
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -121,13 +145,18 @@ export function VacancyAnalysisModal({
             </span>
           </label>
 
-          <label className="rounded-[10px] border border-border bg-background p-3">
+          <label
+            className={`rounded-[10px] border border-border bg-background p-3${
+              aiUnavailable ? " opacity-60" : ""
+            }`}
+          >
             <span className="flex items-start gap-2">
               <input
                 type="radio"
                 name="vacancy-analysis-type"
                 value="ai"
                 checked={analysisType === "ai"}
+                disabled={aiUnavailable}
                 onChange={() => setAnalysisType("ai")}
                 className="mt-1"
               />
@@ -136,7 +165,9 @@ export function VacancyAnalysisModal({
                   {VACANCY_ANALYSIS_COPY.aiLabel}
                 </span>
                 <span className="mt-1 block text-[12px] text-muted-foreground">
-                  {VACANCY_ANALYSIS_COPY.aiDescription}
+                  {aiUnavailable
+                    ? VACANCY_ANALYSIS_COPY.aiUnavailableNote
+                    : VACANCY_ANALYSIS_COPY.aiDescription}
                 </span>
               </span>
             </span>
@@ -144,15 +175,24 @@ export function VacancyAnalysisModal({
         </div>
 
         <label className="block">
-          <span className="text-[13px] font-medium text-foreground">Текст резюме</span>
+          <span className="text-[13px] font-medium text-foreground">
+            {VACANCY_ANALYSIS_COPY.resumeLabel}
+          </span>
           <textarea
             value={resumeText}
             onChange={(event) => setResumeText(event.target.value)}
             maxLength={20_000}
             rows={10}
             className="mt-2 min-h-[220px] w-full resize-y rounded-[10px] border border-border bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
-            placeholder="Вставьте текст резюме или CV..."
+            placeholder={VACANCY_ANALYSIS_COPY.resumePlaceholder}
           />
+          {hasProfileResume ? (
+            <span className="mt-1 block text-[12px] text-muted-foreground">
+              {resumeText.trim().length > 0
+                ? VACANCY_ANALYSIS_COPY.resumeProfileHint
+                : VACANCY_ANALYSIS_COPY.resumeProfileFallbackHint}
+            </span>
+          ) : null}
         </label>
 
         <div className="grid gap-2 sm:grid-cols-2">

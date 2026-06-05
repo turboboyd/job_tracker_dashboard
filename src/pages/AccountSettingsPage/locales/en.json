@@ -36,6 +36,17 @@
     "dateFormatExample2": "01/29/2026",
     "dateFormatExample3": "2026-01-29"
   },
+  "resume": {
+    "title": "Resume",
+    "subtitle": "Stored in your profile and prefilled when analyzing vacancies",
+    "label": "Resume text",
+    "placeholder": "Paste your resume or CV...",
+    "hint": "This resume is used automatically when analyzing vacancies. Clear the field and save to remove it.",
+    "saved": "Resume saved.",
+    "empty": "No resume saved yet.",
+    "loadError": "Failed to load resume.",
+    "saveError": "Failed to save resume."
+  },
   "notifications": {
     "title": "Application reminders",
     "subtitle": "Prepare reminders for follow-ups, calls and application tasks",

@@ -13,9 +13,11 @@ from app.modules.loops.service import LoopNotFoundError
 from app.modules.vacancy_analysis.schemas import VacancyAnalysisCreate
 from app.modules.vacancy_analysis.service import (
     AIProviderInvalidResponseError,
+    AIProviderNotConfiguredError,
     AIProviderUnavailableError,
     AnalysisNotFoundError,
     AnalysisQuotaExceededError,
+    AnalysisResumeRequiredError,
     VacancyAnalysisService,
 )
 from app.modules.vacancy_analysis.providers import AnalysisProviderResult
@@ -30,7 +32,7 @@ LOOP_ID = UUID("4b33e9a4-7a7e-4d94-87c1-5d70b78e48a0")
 MATCH_ID = uuid4()
 
 
-def make_user(plan: str = "free") -> User:
+def make_user(plan: str = "free", resume_text: str | None = None) -> User:
     return User(
         id=USER_ID,
         firebase_uid="firebase-user",
@@ -38,6 +40,7 @@ def make_user(plan: str = "free") -> User:
         display_name="User",
         photo_url=None,
         analysis_plan=plan,
+        resume_text=resume_text,
     )
 
 
@@ -223,24 +226,25 @@ async def test_creates_basic_analysis_and_saves_result_without_raw_resume_text()
 
 
 @pytest.mark.asyncio
-async def test_creates_ai_analysis_in_deterministic_fallback_mode() -> None:
+async def test_ai_analysis_without_real_provider_is_rejected_not_faked() -> None:
+    # No silent fallback: requesting "ai" while the server is in deterministic
+    # mode must error, never return deterministic output dressed up as AI.
     repo = FakeRepo()
     service = make_service(repo)
 
-    result = await service.create(
-        make_user(),
-        str(LOOP_ID),
-        MATCH_ID,
-        VacancyAnalysisCreate(
-            analysis_type="ai",
-            resume_text="Python FastAPI PostgreSQL backend engineer",
-        ),
-    )
+    with pytest.raises(AIProviderNotConfiguredError):
+        await service.create(
+            make_user(),
+            str(LOOP_ID),
+            MATCH_ID,
+            VacancyAnalysisCreate(
+                analysis_type="ai",
+                resume_text="Python FastAPI PostgreSQL backend engineer",
+            ),
+        )
 
-    assert result.analysis_type == "ai"
-    assert result.provider == "deterministic"
-    assert result.model_info["mode"] == "deterministic"
-    assert result.quota.ai_used == 1
+    assert repo.items == []
+    assert repo.usage.ai_used == 0
 
 
 @pytest.mark.asyncio
@@ -276,7 +280,11 @@ async def test_basic_plan_allows_more_than_one_ai_analysis_per_day() -> None:
     repo = FakeRepo()
     repo.usage.ai_used = 1
 
-    result = await make_service(repo).create(
+    result = await make_service(
+        repo,
+        ollama_provider=FakeProvider(provider="ollama"),
+        provider_name="ollama",
+    ).create(
         make_user("basic"),
         str(LOOP_ID),
         MATCH_ID,
@@ -395,19 +403,20 @@ async def test_basic_analysis_never_calls_ollama_provider() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ai_analysis_with_deterministic_setting_uses_deterministic_provider() -> None:
+async def test_ai_analysis_with_deterministic_setting_raises_and_does_not_call_provider() -> None:
     repo = FakeRepo()
     deterministic = FakeProvider(provider="deterministic")
 
-    result = await make_service(repo, provider=deterministic).create(
-        make_user(),
-        str(LOOP_ID),
-        MATCH_ID,
-        VacancyAnalysisCreate(analysis_type="ai", resume_text="Python"),
-    )
+    with pytest.raises(AIProviderNotConfiguredError):
+        await make_service(repo, provider=deterministic).create(
+            make_user(),
+            str(LOOP_ID),
+            MATCH_ID,
+            VacancyAnalysisCreate(analysis_type="ai", resume_text="Python"),
+        )
 
-    assert result.provider == "deterministic"
-    assert deterministic.calls == 1
+    assert deterministic.calls == 0
+    assert repo.usage.ai_used == 0
 
 
 @pytest.mark.asyncio
@@ -472,3 +481,59 @@ async def test_provider_unavailable_does_not_save_or_consume_quota() -> None:
 
     assert repo.items == []
     assert repo.usage.ai_used == 0
+
+
+@pytest.mark.asyncio
+async def test_resume_text_falls_back_to_profile_when_omitted() -> None:
+    repo = FakeRepo()
+    service = make_service(repo)
+    user = make_user(resume_text="Saved profile resume: Python FastAPI engineer")
+
+    result = await service.create(
+        user,
+        str(LOOP_ID),
+        MATCH_ID,
+        VacancyAnalysisCreate(analysis_type="basic"),  # no resume_text
+    )
+
+    assert result.provider == "deterministic"
+    # The stored profile resume was used (hash present, raw text never stored).
+    assert result.resume_hash
+    assert "Saved profile resume" not in str(repo.items[0].vacancy_snapshot)
+
+
+@pytest.mark.asyncio
+async def test_request_resume_text_overrides_profile_resume() -> None:
+    repo = FakeRepo()
+    service = make_service(repo)
+    user = make_user(resume_text="Stored resume")
+
+    # Two analyses: stored-only vs request-provided should hash differently.
+    stored = await service.create(
+        user, str(LOOP_ID), MATCH_ID, VacancyAnalysisCreate(analysis_type="basic")
+    )
+    provided = await service.create(
+        user,
+        str(LOOP_ID),
+        MATCH_ID,
+        VacancyAnalysisCreate(analysis_type="basic", resume_text="Different resume"),
+    )
+
+    assert stored.resume_hash != provided.resume_hash
+
+
+@pytest.mark.asyncio
+async def test_missing_resume_everywhere_is_rejected() -> None:
+    repo = FakeRepo()
+    service = make_service(repo)
+
+    with pytest.raises(AnalysisResumeRequiredError):
+        await service.create(
+            make_user(resume_text=None),
+            str(LOOP_ID),
+            MATCH_ID,
+            VacancyAnalysisCreate(analysis_type="basic"),  # no resume anywhere
+        )
+
+    assert repo.items == []
+    assert repo.usage.basic_used == 0

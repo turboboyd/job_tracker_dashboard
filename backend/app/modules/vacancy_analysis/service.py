@@ -125,6 +125,11 @@ class AIProviderNotConfiguredError(APIError):
         super().__init__("AI_PROVIDER_NOT_CONFIGURED", message, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+class AnalysisResumeRequiredError(APIError):
+    def __init__(self, message: str = "Resume text is required for analysis") -> None:
+        super().__init__("ANALYSIS_RESUME_REQUIRED", message, status.HTTP_400_BAD_REQUEST)
+
+
 class VacancyAnalysisService:
     def __init__(
         self,
@@ -156,6 +161,10 @@ class VacancyAnalysisService:
         policy = get_plan_policy(plan_name)
         self._validate_requested_features(payload, policy)
 
+        # Resume text may come from the request OR fall back to the resume saved
+        # on the user's profile, so users don't have to paste it every time.
+        resume_text = self._resolve_resume_text(payload, user)
+
         today = datetime.now(UTC).date()
         usage = await self._repo.get_or_create_usage(user_id=user.id, day=today, plan=plan_name)
         self._ensure_quota_available(usage, policy, payload.analysis_type)
@@ -165,7 +174,7 @@ class VacancyAnalysisService:
             provider,
             loop=loop,
             match=match,
-            resume_text=payload.resume_text,
+            resume_text=resume_text,
             language=payload.language,
             plan=policy,
             analysis_type=payload.analysis_type,
@@ -180,7 +189,7 @@ class VacancyAnalysisService:
             provider=result.provider,
             model=result.model,
             plan=plan_name,
-            resume_hash=_hash_resume(payload.resume_text),
+            resume_hash=_hash_resume(resume_text),
             vacancy_snapshot=_snapshot_match(match),
             overall_score=result.overall_score,
             summary=result.summary,
@@ -244,6 +253,17 @@ class VacancyAnalysisService:
         return VacancyAnalysisRead.model_validate(analysis)
 
     @staticmethod
+    def _resolve_resume_text(payload: VacancyAnalysisCreate, user: User) -> str:
+        """Use the request's resume_text, else the resume saved on the profile."""
+        candidate = (payload.resume_text or "").strip()
+        if candidate:
+            return candidate
+        stored = (getattr(user, "resume_text", None) or "").strip()
+        if stored:
+            return stored
+        raise AnalysisResumeRequiredError()
+
+    @staticmethod
     def _validate_requested_features(
         payload: VacancyAnalysisCreate,
         policy: PlanPolicy,
@@ -273,8 +293,10 @@ class VacancyAnalysisService:
     def _select_provider(self, analysis_type: str) -> AnalysisProviderProtocol:
         if analysis_type == "basic":
             return self._deterministic_provider
-        if self._settings.AI_ANALYSIS_PROVIDER == "deterministic":
-            return self._deterministic_provider
+        # analysis_type == "ai": a real AI backend is required. We deliberately
+        # do NOT silently fall back to the deterministic provider — a user who
+        # asks for AI must either get AI or a clear "not configured" error,
+        # never keyword-matching output masquerading as AI.
         if self._settings.AI_ANALYSIS_PROVIDER == "ollama":
             return self._ollama_provider or OllamaAnalysisProvider(
                 base_url=self._settings.OLLAMA_BASE_URL,

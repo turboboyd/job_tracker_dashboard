@@ -12,6 +12,12 @@ export interface DiscoveryRunRequestDto {
   cache_only?: boolean;
 }
 
+export interface DiscoveryRunPreviewInsightDto {
+  score: number;
+  matched: string[];
+  missing: string[];
+}
+
 export interface DiscoveryRunPreviewItemDto {
   external_id: string | null;
   source_url: string;
@@ -22,6 +28,7 @@ export interface DiscoveryRunPreviewItemDto {
   posted_at: string | null;
   raw_metadata: Record<string, unknown>;
   confidence: Record<string, number>;
+  insight?: DiscoveryRunPreviewInsightDto | null;
 }
 
 export interface DiscoveryRunItemDto {
@@ -95,6 +102,12 @@ export interface DiscoverySourceRuntimeStatusResponse {
   items: DiscoverySourceRuntimeStatus[];
 }
 
+export interface DiscoveryRunPreviewInsight {
+  score: number;
+  matched: string[];
+  missing: string[];
+}
+
 export interface DiscoveryRunPreviewItem {
   externalId: string | null;
   sourceUrl: string;
@@ -105,6 +118,7 @@ export interface DiscoveryRunPreviewItem {
   postedAt: string | null;
   rawMetadata: Record<string, unknown>;
   confidence: Record<string, number>;
+  insight?: DiscoveryRunPreviewInsight | null;
 }
 
 export interface DiscoveryRunItem {

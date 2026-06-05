@@ -4,9 +4,11 @@ import {
   ARBEITSAGENTUR_SOURCE_ID,
   collectDiscoveryPreviewMessages,
   DISCOVERY_PREVIEW_COPY,
+  formatRelevanceScore,
   getDiscoveryPreviewCopyText,
   getDiscoveryPreviewSaveButtonLabel,
   getDiscoveryWarningMessage,
+  getRelevanceTone,
   isDiscoveryPreviewSaveDisabled,
   isArbeitsagenturSelected,
 } from "../discoveryPreview.helpers";
@@ -74,6 +76,22 @@ assert.equal(isDiscoveryPreviewSaveDisabled("idle"), false);
 assert.equal(isDiscoveryPreviewSaveDisabled("saving"), true);
 assert.equal(isDiscoveryPreviewSaveDisabled("saved"), true);
 assert.equal(isDiscoveryPreviewSaveDisabled("duplicate"), true);
+
+// Relevance score formatting: clamp to 0..100 and round.
+assert.equal(formatRelevanceScore(1), 100);
+assert.equal(formatRelevanceScore(0), 0);
+assert.equal(formatRelevanceScore(0.846), 85);
+assert.equal(formatRelevanceScore(1.5), 100);
+assert.equal(formatRelevanceScore(-0.2), 0);
+assert.equal(formatRelevanceScore(Number.NaN), 0);
+
+// Relevance tone bucketing for badge colour.
+assert.equal(getRelevanceTone(0.9), "high");
+assert.equal(getRelevanceTone(0.7), "high");
+assert.equal(getRelevanceTone(0.5), "medium");
+assert.equal(getRelevanceTone(0.35), "medium");
+assert.equal(getRelevanceTone(0.1), "low");
+assert.equal(getRelevanceTone(0), "low");
 
 const forbiddenSearchDirectionWords = new RegExp(
   [`ци${"кл"}`, `ци${"клы"}`, `cy${"cle"}`].join("|"),

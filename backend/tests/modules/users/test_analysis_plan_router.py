@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from types import SimpleNamespace
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.auth.deps import get_current_user
 from app.db.models.user import User
 from app.main import create_app
+from app.modules.users.service import get_analysis_plan_for_user
 
 
 def make_user(plan: str = "free") -> User:
@@ -51,6 +53,22 @@ def test_get_current_analysis_plan_returns_free_limits() -> None:
     assert data["features"]["interview_questions"] is False
     assert data["features"]["cv_keywords"] is True
     assert data["features"]["priority"] == "normal"
+    # Default test config runs the deterministic provider → AI is not available.
+    assert data["ai_available"] is False
+
+
+def test_ai_available_reflects_configured_provider() -> None:
+    user = make_user("free")
+
+    deterministic = get_analysis_plan_for_user(
+        user, SimpleNamespace(AI_ANALYSIS_PROVIDER="deterministic")
+    )
+    ollama = get_analysis_plan_for_user(
+        user, SimpleNamespace(AI_ANALYSIS_PROVIDER="ollama")
+    )
+
+    assert deterministic.ai_available is False
+    assert ollama.ai_available is True
 
 
 def test_get_current_analysis_plan_returns_premium_features() -> None:
