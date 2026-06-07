@@ -165,7 +165,6 @@
   "tabOverview": "Обзор",
   "tabMatches": "Матчи",
   "tabSources": "Источники",
-  "tabPreview": "Поиск",
   "tabHistory": "История запусков",
   "tabAnalytics": "Аналитика",
   "tabSettings": "Настройки",
@@ -283,6 +282,7 @@
   "topMatches": "Топ-матчи в этом цикле",
   "topMatchesSub": "Последние совпадения",
   "allMatches": "Все матчи",
+  "matchesLiveSub": "Свежие совпадения из источников этого цикла",
 
   "matchesCta": "Просмотреть все матчи этого цикла",
   "matchesCtaHint": "Фильтруй, сортируй и управляй всеми совпадениями в одном месте.",

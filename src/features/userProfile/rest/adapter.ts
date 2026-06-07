@@ -16,6 +16,7 @@ export function mapUserProfileDto(dto: UserProfileDto): UserProfile {
     dateFormat: dto.date_format,
     analysisPlan: dto.analysis_plan,
     resumeText: dto.resume_text,
+    matchesSeenAt: dto.matches_seen_at,
     createdAt: dto.created_at,
     updatedAt: dto.updated_at,
   };

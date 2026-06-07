@@ -1,4 +1,4 @@
-export type TabKey = "overview" | "sources" | "preview" | "history" | "analytics" | "settings";
+export type TabKey = "overview" | "sources" | "history" | "analytics" | "settings";
 
 export interface StatTile {
   label: string;

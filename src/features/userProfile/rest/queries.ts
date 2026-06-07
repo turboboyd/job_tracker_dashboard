@@ -1,4 +1,4 @@
-import { restGet, restPatch } from "src/shared/api";
+import { restGet, restPatch, restPost } from "src/shared/api";
 import { getBackendConfig } from "src/shared/config";
 
 import { mapResumeUpdateInputToDto, mapUserProfileDto } from "./adapter";
@@ -10,6 +10,10 @@ import type {
 
 export function buildCurrentUserUrl(apiBaseUrl: string): string {
   return `${apiBaseUrl}/users/me`;
+}
+
+export function buildMarkMatchesSeenUrl(apiBaseUrl: string): string {
+  return `${apiBaseUrl}/users/me/matches-seen`;
 }
 
 export async function getCurrentUserProfileViaRest(): Promise<UserProfile> {
@@ -26,5 +30,15 @@ export async function updateCurrentUserResumeViaRest(
     buildCurrentUserUrl(apiBaseUrl),
     mapResumeUpdateInputToDto(input),
   );
+  return mapUserProfileDto(dto);
+}
+
+/**
+ * Advance the Matches "seen" watermark to now. The backend then treats matches
+ * created after this point as "unseen" for the «Новые» tab.
+ */
+export async function markMatchesSeenViaRest(): Promise<UserProfile> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restPost<UserProfileDto>(buildMarkMatchesSeenUrl(apiBaseUrl), {});
   return mapUserProfileDto(dto);
 }

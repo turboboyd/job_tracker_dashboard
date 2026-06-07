@@ -165,7 +165,6 @@
   "tabOverview": "Overview",
   "tabMatches": "Matches",
   "tabSources": "Sources",
-  "tabPreview": "Search",
   "tabHistory": "History",
   "sourceStatusOnline": "● Online",
   "sourceStatusSlow": "Slow",
@@ -283,6 +282,7 @@
   "topMatches": "Top matches in this loop",
   "topMatchesSub": "Recent matches",
   "allMatches": "All matches",
+  "matchesLiveSub": "Fresh matches from this loop's sources",
 
   "matchesCta": "View all matches for this loop",
   "matchesCtaHint": "Filter, sort, and manage all discovery matches in one place.",

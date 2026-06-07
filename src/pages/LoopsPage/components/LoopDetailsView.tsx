@@ -243,7 +243,6 @@ export function LoopDetailsView({
   const tabs: { key: TabKey; label: string; badge?: number }[] = [
     { key: "overview",  label: t("loops.tabOverview",  "Overview")  },
     { key: "sources",   label: t("loops.tabSources",   "Sources"), badge: loop?.selectedSources?.length || undefined },
-    { key: "preview",   label: t("loops.tabPreview",   "Поиск")     },
     { key: "history",   label: t("loops.tabHistory",   "History")   },
     { key: "analytics", label: t("loops.tabAnalytics", "Analytics") },
     { key: "settings",  label: t("loops.tabSettings",  "Settings")  },

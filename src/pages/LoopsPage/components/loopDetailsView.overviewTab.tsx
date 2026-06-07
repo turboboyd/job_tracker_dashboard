@@ -8,11 +8,9 @@ import type { VacancyMatch } from "src/features/vacancyMatches";
 import {
   buildHeatmap,
   buildLoopChips,
-  computeMatchScore,
   generateLoopRecommendations,
   getSourceColor,
   groupMatchesBySource,
-  MATCH_STATUS_STYLES,
   timeAgoFromIso,
 } from "./loopDetailsView.helpers";
 import { useTimeAgoLabel } from "./loopDetailsView.hooks";
@@ -21,6 +19,7 @@ import {
   NextRunCountdown,
   RecommendationCard,
 } from "./loopDetailsView.parts";
+import { LoopPreviewTab } from "./loopDetailsView.previewTab";
 
 export function LoopOverviewTab({
   loop,
@@ -29,6 +28,8 @@ export function LoopOverviewTab({
   onOpenMatches,
   sourceStats,
   sourceStatsLoading,
+  onRefreshSourceStats,
+  onMatchSaved,
 }: {
   loop: Loop;
   matches: VacancyMatch[];
@@ -36,6 +37,8 @@ export function LoopOverviewTab({
   onOpenMatches?: (id: string) => void;
   sourceStats: LoopSourceStat[];
   sourceStatsLoading: boolean;
+  onRefreshSourceStats: () => void;
+  onMatchSaved: () => void;
 }) {
   const { t } = useTranslation();
   const formatTimeAgo = useTimeAgoLabel();
@@ -54,16 +57,6 @@ export function LoopOverviewTab({
     .split(/[,\s]+/).map((k) => k.trim()).filter(Boolean);
   const excludeKw = (loop.filters?.excludeKeywords || loop.excludedKeywords?.join(", ") || "")
     .split(/[,\s]+/).map((k) => k.trim()).filter(Boolean);
-
-  const topMatches = useMemo(
-    () =>
-      matches
-        .filter((m) => m.status === "new" || m.status === "saved")
-        .map((m) => ({ match: m, score: computeMatchScore(m, loop) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5),
-    [matches, loop],
-  );
 
   const heatmap = useMemo(() => buildHeatmap(matches, 30), [matches]);
   const heatmapMax = Math.max(1, ...heatmap);
@@ -166,86 +159,34 @@ export function LoopOverviewTab({
           )}
         </div>
 
-        {/* Top matches */}
-        {topMatches.length > 0 && (
-          <div className="overflow-hidden rounded-[12px] border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-              <div>
-                <div className="text-[13px] font-medium text-foreground">
-                  {t("loops.topMatches", "Top matches in this loop")}
-                </div>
-                <div className="mt-0.5 text-[11.5px] text-muted-foreground">
-                  {t("loops.topMatchesSub", "Most recent actionable matches")}
-                </div>
+        {/* Matches — live discovery feed (replaces the old saved-match top list).
+            The full, filterable list lives behind "All matches" → /matches. */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div>
+              <div className="text-[13px] font-medium text-foreground">
+                {t("loops.tabMatches", "Матчи")}
               </div>
-              {onOpenMatches && (
-                <button
-                  type="button"
-                  onClick={() => onOpenMatches(loop.id)}
-                  className="text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {t("loops.allMatches", "All matches")} →
-                </button>
-              )}
+              <div className="mt-0.5 text-[11.5px] text-muted-foreground">
+                {t("loops.matchesLiveSub", "Свежие совпадения из источников этого цикла")}
+              </div>
             </div>
-            <div className="divide-y divide-border">
-              {topMatches.map(({ match: m, score }) => {
-                const company = m.companyName ?? "—";
-                const statusStyle = MATCH_STATUS_STYLES[m.status] ?? MATCH_STATUS_STYLES.new;
-                const barColor =
-                  score >= 90
-                    ? "rgb(5,150,105)"
-                    : score >= 80
-                      ? "rgb(var(--primary, 5 150 105))"
-                      : "rgb(148,163,184)";
-                return (
-                  <a
-                    key={m.id}
-                    href={m.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="grid grid-cols-[28px_minmax(0,1fr)_minmax(0,0.7fr)_auto_88px_20px] items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border border-border bg-muted text-[11px] font-semibold text-muted-foreground">
-                      {company.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-[13px] font-medium text-foreground">
-                        {m.roleTitle ?? "—"}
-                      </div>
-                      <div className="truncate text-[11px] text-muted-foreground">
-                        {company}{m.locationText ? ` · ${m.locationText}` : ""}
-                      </div>
-                    </div>
-                    <div className="flex min-w-0 items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                      <span
-                        className="h-1.5 w-1.5 shrink-0 rounded-[2px]"
-                        style={{ background: getSourceColor(m.source ?? "") }}
-                        aria-hidden="true"
-                      />
-                      <span className="truncate">{m.source ?? "—"}</span>
-                    </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-medium ${statusStyle.cls}`}>
-                      {t(statusStyle.key)}
-                    </span>
-                    <div className="flex items-center gap-1.5 justify-self-end">
-                      <div className="h-1 w-9 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${score}%`, background: barColor }}
-                        />
-                      </div>
-                      <span className="text-[11.5px] font-medium tabular-nums text-foreground">
-                        {score}
-                      </span>
-                    </div>
-                    <span className="text-[13px] text-muted-foreground">→</span>
-                  </a>
-                );
-              })}
-            </div>
+            {onOpenMatches && (
+              <button
+                type="button"
+                onClick={() => onOpenMatches(loop.id)}
+                className="shrink-0 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("loops.allMatches", "All matches")} →
+              </button>
+            )}
           </div>
-        )}
+          <LoopPreviewTab
+            loop={loop}
+            onRefreshSourceStats={onRefreshSourceStats}
+            onMatchSaved={onMatchSaved}
+          />
+        </div>
 
         {/* Activity heatmap (derived from match created_at) */}
         <div className="rounded-[12px] border border-border bg-card p-5">

@@ -147,7 +147,6 @@
   "tabOverview": "Übersicht",
   "tabMatches": "Matches",
   "tabSources": "Quellen",
-  "tabPreview": "Suche",
   "tabHistory": "Verlauf",
   "sourceStatusOnline": "● Online",
   "sourceStatusSlow": "Langsam",
@@ -271,6 +270,7 @@
   "topMatches": "Top-Matches in diesem Suchlauf",
   "topMatchesSub": "Letzte umsetzbare Matches",
   "allMatches": "Alle Matches",
+  "matchesLiveSub": "Frische Matches aus den Quellen dieses Suchlaufs",
   "matchesCta": "Alle Matches dieses Suchlaufs anzeigen",
   "matchesCtaHint": "Filtern, sortieren und alle Discovery-Matches an einem Ort verwalten."
 }

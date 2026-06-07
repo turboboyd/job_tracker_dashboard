@@ -13,6 +13,7 @@ import {
   mapVacancyPreviewIgnoreResponseDto,
   mapVacancyMatchFromPreviewResponseDto,
   mapVacancyMatchDto,
+  mapVacancyMatchEvaluationDto,
   mapVacancyMatchPreviewDto,
   type ApplicationFromPreviewResponseDto,
   type CreateApplicationFromMatchInput,
@@ -28,6 +29,8 @@ import {
   type SaveVacancyMatchInput,
   type VacancyMatch,
   type VacancyMatchDto,
+  type VacancyMatchEvaluation,
+  type VacancyMatchEvaluationDto,
   type VacancyMatchFromPreviewResponseDto,
   type VacancyMatchListEnvelope,
   type VacancyMatchListEnvelopeDto,
@@ -89,7 +92,8 @@ export function buildLoopMatchesListUrl(
   if (query.offset !== undefined) params.set("offset", String(Math.max(0, query.offset)));
 
   const qs = params.toString();
-  return `${loopMatchesBaseUrl(apiBaseUrl, loopId)}${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  return `${loopMatchesBaseUrl(apiBaseUrl, loopId)}${suffix}`;
 }
 
 export function buildLoopMatchDetailUrl(apiBaseUrl: string, loopId: string, matchId: string): string {
@@ -106,6 +110,14 @@ export function buildLoopMatchCreateApplicationUrl(
   matchId: string,
 ): string {
   return `${buildLoopMatchDetailUrl(apiBaseUrl, loopId, matchId)}/create-application`;
+}
+
+export function buildLoopMatchEvaluateUrl(
+  apiBaseUrl: string,
+  loopId: string,
+  matchId: string,
+): string {
+  return `${buildLoopMatchDetailUrl(apiBaseUrl, loopId, matchId)}/evaluate`;
 }
 
 export async function previewLoopVacancyMatchViaRest(
@@ -257,4 +269,16 @@ export async function createApplicationFromVacancyMatchViaRest(
     mapCreateApplicationFromMatchInputToDto(input),
   );
   return mapCreateApplicationFromMatchResponseDto(dto);
+}
+
+export async function evaluateLoopVacancyMatchViaRest(
+  loopId: string,
+  matchId: string,
+): Promise<VacancyMatchEvaluation> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restPost<VacancyMatchEvaluationDto>(
+    buildLoopMatchEvaluateUrl(apiBaseUrl, loopId, matchId),
+    {},
+  );
+  return mapVacancyMatchEvaluationDto(dto);
 }

@@ -11,6 +11,7 @@ export interface UserProfileDto {
   date_format: string;
   analysis_plan: UserProfilePlan;
   resume_text: string | null;
+  matches_seen_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +27,8 @@ export interface UserProfile {
   dateFormat: string;
   analysisPlan: UserProfilePlan;
   resumeText: string | null;
+  /** Watermark for the Matches "Новые" tab; null until first marked seen. */
+  matchesSeenAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

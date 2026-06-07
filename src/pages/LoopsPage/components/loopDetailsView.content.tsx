@@ -8,7 +8,6 @@ import { CardText } from "./Header";
 import { LoopAnalyticsTab } from "./loopDetailsView.analyticsTab";
 import { LoopHistoryTab } from "./loopDetailsView.historyTab";
 import { LoopOverviewTab } from "./loopDetailsView.overviewTab";
-import { LoopPreviewTab } from "./loopDetailsView.previewTab";
 import { LoopSourcesTab } from "./loopDetailsView.sourcesTab";
 import type { TabKey } from "./loopDetailsView.types";
 import { LoopSettingsPanel } from "./LoopSettingsPanel";
@@ -80,14 +79,6 @@ export function LoopDetailContent({
         onLoopUpdated={onLoopUpdated}
       />
     );
-  if (activeTab === "preview")
-    return (
-      <LoopPreviewTab
-        loop={loop}
-        onRefreshSourceStats={onRefreshSourceStats}
-        onMatchSaved={onMatchSaved}
-      />
-    );
   if (activeTab === "history")   return <LoopHistoryTab loop={loop} />;
   if (activeTab === "analytics") return <LoopAnalyticsTab loop={loop} matches={matches} />;
   return (
@@ -98,6 +89,8 @@ export function LoopDetailContent({
       onOpenMatches={onOpenMatches}
       sourceStats={sourceStats}
       sourceStatsLoading={sourceStatsLoading}
+      onRefreshSourceStats={onRefreshSourceStats}
+      onMatchSaved={onMatchSaved}
     />
   );
 }

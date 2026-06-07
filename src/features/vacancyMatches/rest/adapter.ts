@@ -391,3 +391,70 @@ export function mapApplicationFromPreviewResponseDto(
     duplicate: dto.duplicate,
   };
 }
+
+export type DuplicateStatus =
+  | "none"
+  | "possible_duplicate"
+  | "likely_duplicate"
+  | "exact_duplicate";
+
+export interface VacancyMatchEvaluationDto {
+  match_id: string;
+  loop_id: string;
+  total_score: number;
+  title_match_score: number;
+  location_match_score: number;
+  employment_type_match_score: number;
+  work_mode_match_score: number;
+  keyword_score: number;
+  excluded_keyword_penalty: number;
+  source_score: number;
+  reasons: string[];
+  penalties: string[];
+  duplicate_status: DuplicateStatus;
+  duplicate_of_match_id: string | null;
+  duplicate_application_id: string | null;
+  duplicate_reasons: string[];
+}
+
+export interface VacancyMatchEvaluation {
+  matchId: string;
+  loopId: string;
+  totalScore: number;
+  titleMatchScore: number;
+  locationMatchScore: number;
+  employmentTypeMatchScore: number;
+  workModeMatchScore: number;
+  keywordScore: number;
+  excludedKeywordPenalty: number;
+  sourceScore: number;
+  reasons: string[];
+  penalties: string[];
+  duplicateStatus: DuplicateStatus;
+  duplicateOfMatchId: string | null;
+  duplicateApplicationId: string | null;
+  duplicateReasons: string[];
+}
+
+export function mapVacancyMatchEvaluationDto(
+  dto: VacancyMatchEvaluationDto,
+): VacancyMatchEvaluation {
+  return {
+    matchId: dto.match_id,
+    loopId: dto.loop_id,
+    totalScore: dto.total_score,
+    titleMatchScore: dto.title_match_score,
+    locationMatchScore: dto.location_match_score,
+    employmentTypeMatchScore: dto.employment_type_match_score,
+    workModeMatchScore: dto.work_mode_match_score,
+    keywordScore: dto.keyword_score,
+    excludedKeywordPenalty: dto.excluded_keyword_penalty,
+    sourceScore: dto.source_score,
+    reasons: dto.reasons,
+    penalties: dto.penalties,
+    duplicateStatus: dto.duplicate_status,
+    duplicateOfMatchId: dto.duplicate_of_match_id,
+    duplicateApplicationId: dto.duplicate_application_id,
+    duplicateReasons: dto.duplicate_reasons,
+  };
+}
