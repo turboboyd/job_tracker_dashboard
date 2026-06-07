@@ -1,15 +1,18 @@
-"""Background discovery cache-warming scheduler.
+"""Background discovery scheduler (cache-warm + match persistence).
 
 Runs as an asyncio task (started via FastAPI lifespan). Every TICK_SECONDS it
 finds active loops whose cache is due for a refresh (next_run_at is null or in
-the past), fetches their selected sources once, and writes the results to
-discovery_preview_cache. User-facing requests then serve straight from the DB
-instead of hitting external job boards on every page view.
+the past) and runs a real discovery pass for each: freshly-found vacancies are
+persisted as "new" matches (deduped against existing ones) and the preview
+cache is refreshed as a side effect. User-facing requests then serve straight
+from the DB instead of hitting external job boards on every page view, and the
+Matches list keeps filling with fresh vacancies several times a day without the
+user pressing refresh.
 
-This module owns ``Loop.next_run_at``: after warming a loop it schedules the
+This module owns ``Loop.next_run_at``: after running a loop it schedules the
 next refresh. Auto-discovery loops use their configured interval; all other
-active loops are warmed on a fixed WARM_INTERVAL_HOURS cadence so the cache
-never goes fully cold.
+active loops are refreshed on a fixed WARM_INTERVAL_HOURS cadence so the
+Matches list never goes fully stale.
 """
 
 from __future__ import annotations
@@ -108,9 +111,14 @@ async def scheduler_tick(factory: async_sessionmaker[AsyncSession]) -> None:
                     continue
 
                 runs_svc = DiscoveryRunsService(loops=LoopsService(db), db=db)
+                # Every due active loop runs a real (non-dry) pass so freshly-found
+                # vacancies are persisted as "new" matches and surface in the
+                # user's Matches list — not just the auto-discovery loops. The
+                # service dedupes against existing matches, so re-warming a loop
+                # never double-creates rows; it only adds genuinely new vacancies.
                 payload = DiscoveryRunRequest(
                     loop_id=str(loop.id),
-                    dry_run=True,
+                    dry_run=False,
                     search_scope="normal",
                     page=1,
                     page_size=20,

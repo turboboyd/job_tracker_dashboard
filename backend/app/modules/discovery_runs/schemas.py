@@ -56,6 +56,19 @@ class DiscoveryRunItem(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
+class DiscoveryRunPreviewInsight(BaseModel):
+    """Lightweight, read-time heuristic 'fit' breakdown for a preview item.
+
+    Computed on the fly against the loop's current role/keywords/location (never
+    cached) so the user gets an at-a-glance relevance read *before* saving a
+    vacancy — without any external/LLM call.
+    """
+
+    score: float = 0.0
+    matched: list[str] = Field(default_factory=list)
+    missing: list[str] = Field(default_factory=list)
+
+
 class DiscoveryRunPreviewItem(BaseModel):
     external_id: str | None = None
     source_url: str
@@ -66,6 +79,7 @@ class DiscoveryRunPreviewItem(BaseModel):
     posted_at: str | None = None
     raw_metadata: dict = Field(default_factory=dict)
     confidence: dict[str, float] = Field(default_factory=dict)
+    insight: DiscoveryRunPreviewInsight | None = None
 
 
 class DiscoveryRunResponse(BaseModel):

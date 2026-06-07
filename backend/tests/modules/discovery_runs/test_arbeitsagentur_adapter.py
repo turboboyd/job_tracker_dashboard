@@ -112,6 +112,22 @@ def test_arbeitsagentur_adapter_maps_api_response_item() -> None:
     assert item.raw_metadata == {"refnr": "10000-123456789-S"}
 
 
+def test_arbeitsagentur_adapter_maps_employment_from_arbeitszeitmodelle() -> None:
+    item = map_arbeitsagentur_job(
+        {
+            "refnr": "10000-123456789-S",
+            "titel": "Software Engineer",
+            "arbeitszeitmodelle": ["VOLLZEIT", "TEILZEIT"],
+        }
+    )
+
+    assert item is not None
+    assert item.raw_metadata == {
+        "refnr": "10000-123456789-S",
+        "employment_type": "VOLLZEIT",
+    }
+
+
 def test_arbeitsagentur_adapter_rejects_non_http_result_url() -> None:
     item = map_arbeitsagentur_job(
         {

@@ -99,10 +99,12 @@ class AdzunaAdapter:
                 errors=["adzuna_invalid_response"],
             )
 
+        currency = _adzuna_currency(self._base_url)
         items = [
             item
             for item in (
-                map_adzuna_job(job) for job in jobs[: options.max_results]
+                map_adzuna_job(job, currency=currency)
+                for job in jobs[: options.max_results]
             )
             if item is not None
         ]
@@ -190,7 +192,11 @@ def build_adzuna_query_candidates(
     return params_list
 
 
-def map_adzuna_job(job: dict[str, Any]) -> DiscoveryAdapterItem | None:
+def map_adzuna_job(
+    job: dict[str, Any],
+    *,
+    currency: str | None = None,
+) -> DiscoveryAdapterItem | None:
     source_url = clean_string(job.get("redirect_url") or job.get("adref"))
     if not is_allowed_url(source_url):
         return None
@@ -205,6 +211,16 @@ def map_adzuna_job(job: dict[str, Any]) -> DiscoveryAdapterItem | None:
     if isinstance(location_obj, dict):
         location = clean_string(location_obj.get("display_name"))
 
+    raw_metadata: dict[str, Any] = {
+        key: value
+        for key, value in {
+            "category": _nested_display_name(job.get("category")),
+            "contract_type": clean_string(job.get("contract_type")),
+        }.items()
+        if value
+    }
+    raw_metadata.update(_salary_metadata(job, currency))
+
     return DiscoveryAdapterItem(
         external_id=clean_string(job.get("id")),
         source_url=source_url or "",
@@ -213,14 +229,7 @@ def map_adzuna_job(job: dict[str, Any]) -> DiscoveryAdapterItem | None:
         location=location,
         snippet=clean_string(job.get("description"), max_length=800),
         posted_at=clean_string(job.get("created")),
-        raw_metadata={
-            key: value
-            for key, value in {
-                "category": _nested_display_name(job.get("category")),
-                "contract_type": clean_string(job.get("contract_type")),
-            }.items()
-            if value
-        },
+        raw_metadata=raw_metadata,
         confidence={"source_quality": 0.72},
     )
 
@@ -250,3 +259,79 @@ def _nested_display_name(value: Any) -> str | None:
     if not isinstance(value, dict):
         return None
     return clean_string(value.get("label") or value.get("display_name"))
+
+
+# Adzuna serves each country from a dedicated endpoint and quotes salaries in
+# that country's local currency (the response itself carries no currency code).
+# We derive the currency from the endpoint's country segment.
+_ADZUNA_COUNTRY_CURRENCY: dict[str, str] = {
+    "at": "EUR",
+    "be": "EUR",
+    "de": "EUR",
+    "es": "EUR",
+    "fr": "EUR",
+    "ie": "EUR",
+    "it": "EUR",
+    "nl": "EUR",
+    "gb": "GBP",
+    "us": "USD",
+    "ca": "CAD",
+    "au": "AUD",
+    "nz": "NZD",
+    "ch": "CHF",
+    "pl": "PLN",
+    "in": "INR",
+    "sg": "SGD",
+    "za": "ZAR",
+    "br": "BRL",
+    "mx": "MXN",
+}
+
+
+def _adzuna_currency(base_url: str) -> str | None:
+    segments = [segment for segment in base_url.split("/") if segment]
+    if "jobs" not in segments:
+        return None
+    country_index = segments.index("jobs") + 1
+    if country_index >= len(segments):
+        return None
+    return _ADZUNA_COUNTRY_CURRENCY.get(segments[country_index].lower())
+
+
+def _positive_amount(value: Any) -> int | float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)) and value > 0:
+        return int(value) if float(value).is_integer() else float(value)
+    if isinstance(value, str):
+        cleaned = value.strip().replace(",", "")
+        try:
+            parsed = float(cleaned)
+        except ValueError:
+            return None
+        if parsed <= 0:
+            return None
+        return int(parsed) if parsed.is_integer() else parsed
+    return None
+
+
+def _is_predicted(value: Any) -> bool:
+    # Adzuna marks estimated salaries with salary_is_predicted "1" (sometimes 1).
+    return str(value).strip() in {"1", "true", "True"}
+
+
+def _salary_metadata(job: dict[str, Any], currency: str | None) -> dict[str, Any]:
+    salary_min = _positive_amount(job.get("salary_min"))
+    salary_max = _positive_amount(job.get("salary_max"))
+    if salary_min is None and salary_max is None:
+        return {}
+
+    metadata: dict[str, Any] = {}
+    if salary_min is not None:
+        metadata["salary_min"] = salary_min
+    if salary_max is not None:
+        metadata["salary_max"] = salary_max
+    if currency:
+        metadata["salary_currency"] = currency
+    metadata["salary_is_predicted"] = _is_predicted(job.get("salary_is_predicted"))
+    return metadata

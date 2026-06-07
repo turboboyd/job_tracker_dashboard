@@ -143,12 +143,17 @@ Authorization: Bearer <token>
   "timezone": "Europe/Berlin",
   "date_format": "DD.MM.YYYY",
   "analysis_plan": "free",
+  "matches_seen_at": null,
   "created_at": "2024-01-15T10:00:00Z",
   "updated_at": "2024-01-15T10:00:00Z"
 }
 ```
 
-**Read-only fields** (cannot be changed via PATCH): `id`, `firebase_uid`, `email`, `photo_url`, `analysis_plan`, `created_at`.
+`matches_seen_at` is the watermark for the Matches «Новые» (unseen) tab: matches
+created after this timestamp are treated as unseen. It is `null` until the user
+first marks the list seen (see `POST /users/me/matches-seen`).
+
+**Read-only fields** (cannot be changed via PATCH): `id`, `firebase_uid`, `email`, `photo_url`, `analysis_plan`, `matches_seen_at`, `created_at`.
 
 ### GET /users/me/analysis-plan
 
@@ -242,6 +247,20 @@ Content-Type: application/json
 **Response 200:** Same shape as `GET /users/me`.
 
 **Validation:** Extra fields not listed above are rejected with `422`.
+
+### POST /users/me/matches-seen
+
+Advance the user's Matches "seen" watermark to now. The Matches «Новые» tab
+treats matches created after this timestamp as unseen, so calling this marks
+everything currently in the list as seen. The body is ignored.
+
+```
+POST /api/v1/users/me/matches-seen
+Authorization: Bearer <token>
+```
+
+**Response 200:** Same shape as `GET /users/me`, with `matches_seen_at` set to
+the new server timestamp.
 
 ---
 

@@ -7,6 +7,7 @@ import pytest
 
 from app.modules.discovery_adapters.adapters.adzuna import (
     AdzunaAdapter,
+    _adzuna_currency,
     build_adzuna_query_candidates,
     map_adzuna_job,
 )
@@ -49,6 +50,53 @@ def test_adzuna_adapter_maps_api_response_item() -> None:
         "category": "IT Jobs",
         "contract_type": "permanent",
     }
+
+
+def test_adzuna_adapter_maps_salary_when_present() -> None:
+    item = map_adzuna_job(
+        {
+            "id": "adzuna-2",
+            "redirect_url": "https://www.adzuna.de/details/2",
+            "title": "Senior Frontend Developer",
+            "salary_min": 70000,
+            "salary_max": 90000,
+            "salary_is_predicted": "0",
+        },
+        currency="EUR",
+    )
+
+    assert item is not None
+    assert item.raw_metadata == {
+        "salary_min": 70000,
+        "salary_max": 90000,
+        "salary_currency": "EUR",
+        "salary_is_predicted": False,
+    }
+
+
+def test_adzuna_adapter_flags_predicted_salary_and_omits_unknown_currency() -> None:
+    item = map_adzuna_job(
+        {
+            "id": "adzuna-3",
+            "redirect_url": "https://www.adzuna.de/details/3",
+            "title": "Frontend Developer",
+            "salary_max": 80000.0,
+            "salary_is_predicted": "1",
+        },
+        currency=None,
+    )
+
+    assert item is not None
+    assert item.raw_metadata == {
+        "salary_max": 80000,
+        "salary_is_predicted": True,
+    }
+
+
+def test_adzuna_currency_is_derived_from_endpoint_country() -> None:
+    assert _adzuna_currency("https://api.adzuna.com/v1/api/jobs/de/search") == "EUR"
+    assert _adzuna_currency("https://api.adzuna.com/v1/api/jobs/gb/search/1") == "GBP"
+    assert _adzuna_currency("https://api.adzuna.com/v1/api/jobs/zz/search") is None
 
 
 def test_adzuna_adapter_builds_bounded_query_candidates() -> None:

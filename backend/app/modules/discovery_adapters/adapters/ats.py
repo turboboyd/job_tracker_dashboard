@@ -246,9 +246,23 @@ def map_lever_job(
     categories = job.get("categories")
     location = None
     team = None
+    commitment = None
     if isinstance(categories, dict):
         location = clean_string(categories.get("location"))
         team = clean_string(categories.get("team"))
+        commitment = clean_string(categories.get("commitment"))
+
+    raw_metadata: dict[str, Any] = {
+        key: value
+        for key, value in {
+            "team": team,
+            "site_name": clean_string(company_name),
+            "employment_type": commitment,
+            "workplace_type": _lever_workplace_type(job.get("workplaceType")),
+        }.items()
+        if value
+    }
+    raw_metadata.update(_lever_salary(job.get("salaryRange")))
 
     return DiscoveryAdapterItem(
         external_id=clean_string(job.get("id")),
@@ -257,16 +271,45 @@ def map_lever_job(
         company=clean_string(company_name),
         location=location,
         snippet=description,
-        raw_metadata={
-            key: value
-            for key, value in {
-                "team": team,
-                "site_name": clean_string(company_name),
-            }.items()
-            if value
-        },
+        raw_metadata=raw_metadata,
         confidence={"source_quality": 0.66},
     )
+
+
+_LEVER_WORKPLACE_TYPES = {"remote", "on-site", "hybrid"}
+
+
+def _lever_workplace_type(value: Any) -> str | None:
+    text = clean_string(value)
+    if text and text.lower() in _LEVER_WORKPLACE_TYPES:
+        return text
+    return None
+
+
+def _ats_amount(value: Any) -> int | float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)) and value > 0:
+        return int(value) if float(value).is_integer() else float(value)
+    return None
+
+
+def _lever_salary(salary_range: Any) -> dict[str, Any]:
+    if not isinstance(salary_range, dict):
+        return {}
+    salary_min = _ats_amount(salary_range.get("min"))
+    salary_max = _ats_amount(salary_range.get("max"))
+    if salary_min is None and salary_max is None:
+        return {}
+    metadata: dict[str, Any] = {}
+    if salary_min is not None:
+        metadata["salary_min"] = salary_min
+    if salary_max is not None:
+        metadata["salary_max"] = salary_max
+    currency = clean_string(salary_range.get("currency"))
+    if currency:
+        metadata["salary_currency"] = currency
+    return metadata
 
 
 def _extract_greenhouse_jobs(payload: Any) -> list[dict[str, Any]]:

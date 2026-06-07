@@ -64,6 +64,61 @@ def test_lever_adapter_maps_posting_item() -> None:
     assert item.raw_metadata == {"team": "Engineering", "site_name": "example"}
 
 
+def test_lever_adapter_maps_workplace_employment_and_salary() -> None:
+    item = map_lever_job(
+        {
+            "id": "lever-9",
+            "hostedUrl": "https://jobs.lever.co/example/lever-9",
+            "text": "Frontend Engineer",
+            "descriptionPlain": "React role.",
+            "categories": {
+                "location": "Berlin",
+                "team": "Engineering",
+                "commitment": "Full-time",
+            },
+            "workplaceType": "remote",
+            "salaryRange": {
+                "min": 70000,
+                "max": 90000.0,
+                "currency": "EUR",
+                "interval": "per-year-salary",
+            },
+        },
+        search_text="Frontend React",
+        company_name="example",
+    )
+
+    assert item is not None
+    assert item.raw_metadata == {
+        "team": "Engineering",
+        "site_name": "example",
+        "employment_type": "Full-time",
+        "workplace_type": "remote",
+        "salary_min": 70000,
+        "salary_max": 90000,
+        "salary_currency": "EUR",
+    }
+
+
+def test_lever_adapter_drops_unspecified_workplace_and_empty_salary() -> None:
+    item = map_lever_job(
+        {
+            "id": "lever-10",
+            "hostedUrl": "https://jobs.lever.co/example/lever-10",
+            "text": "Frontend Engineer",
+            "descriptionPlain": "React role.",
+            "categories": {"team": "Engineering"},
+            "workplaceType": "unspecified",
+            "salaryRange": {"min": 0, "max": None, "currency": "EUR"},
+        },
+        search_text="Frontend React",
+        company_name="example",
+    )
+
+    assert item is not None
+    assert item.raw_metadata == {"team": "Engineering", "site_name": "example"}
+
+
 @pytest.mark.asyncio
 async def test_greenhouse_adapter_skips_when_not_configured() -> None:
     source = get_discovery_source("greenhouse")

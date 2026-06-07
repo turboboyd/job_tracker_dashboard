@@ -33,6 +33,7 @@ _REQUIRED_PATHS = [
     "/api/v1/health",
     "/api/v1/health/ready",
     "/api/v1/users/me",
+    "/api/v1/users/me/matches-seen",
     "/api/v1/users/me/analysis-plan",
     "/api/v1/dev/users/me/analysis-plan",
     "/api/v1/applications",
@@ -90,6 +91,13 @@ def test_health_ready_has_get(paths):
 def test_users_me_has_get_and_patch(paths):
     assert "get" in paths["/api/v1/users/me"]
     assert "patch" in paths["/api/v1/users/me"]
+
+
+def test_users_me_matches_seen_has_post_only(paths):
+    ops = paths["/api/v1/users/me/matches-seen"]
+    assert "post" in ops
+    assert "get" not in ops
+    assert "patch" not in ops
 
 
 def test_users_me_analysis_plan_has_get_only(paths):
@@ -679,7 +687,7 @@ def test_openapi_version_present(schema):
 
 
 def test_openapi_path_count(paths):
-    assert len(paths) == 35, f"Expected 35 paths, got {len(paths)}: {sorted(paths)}"
+    assert len(paths) == 36, f"Expected 36 paths, got {len(paths)}: {sorted(paths)}"
 
 
 # ── ApplicationListResponse envelope ──────────────────────────────────────────

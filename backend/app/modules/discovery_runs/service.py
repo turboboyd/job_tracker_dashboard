@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
@@ -35,6 +37,7 @@ from app.modules.discovery_runs.schemas import (
     DiscoveryRunHistoryItem,
     DiscoveryRunHistoryResponse,
     DiscoveryRunItem,
+    DiscoveryRunPreviewInsight,
     DiscoveryRunPreviewItem,
     DiscoveryRunRequest,
     DiscoveryRunResponse,
@@ -44,9 +47,156 @@ from app.modules.loops.service import InvalidLoopError, LoopsService
 from app.modules.vacancy_matches.service import (
     VacancyMatchPreviewValidationError,
     normalize_source_url,
+    sanitize_raw_metadata,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def build_excluded_keyword_matchers(
+    excluded_keywords: list[str] | None,
+) -> list[re.Pattern[str]]:
+    """Compile loop ``excluded_keywords`` into whole-word, case-insensitive matchers.
+
+    Whole-word matching (``\\b``) is deliberate: excluding "java" must not drop
+    "javascript", and excluding "qa" must not drop "quality". Unicode word
+    boundaries cover German/Cyrillic titles since ``re`` treats ``str`` patterns
+    as Unicode. Blank and duplicate keywords are ignored.
+    """
+    matchers: list[re.Pattern[str]] = []
+    seen: set[str] = set()
+    for raw in excluded_keywords or []:
+        if not isinstance(raw, str):
+            continue
+        keyword = raw.strip()
+        if not keyword:
+            continue
+        key = keyword.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        matchers.append(
+            re.compile(rf"\b{re.escape(keyword)}\b", re.IGNORECASE)
+        )
+    return matchers
+
+
+def preview_matches_excluded(
+    preview: DiscoveryRunPreviewItem,
+    matchers: list[re.Pattern[str]],
+) -> bool:
+    """True if any excluded matcher hits the preview's title/company/snippet."""
+    haystack = " ".join(
+        part
+        for part in (preview.title, preview.company, preview.snippet)
+        if part
+    )
+    if not haystack:
+        return False
+    return any(matcher.search(haystack) for matcher in matchers)
+
+
+# ── Relevance scoring ────────────────────────────────────────────────────────
+# Weights for the [0, 1] relevance score. A title hit is worth far more than a
+# snippet mention; matching the loop's location adds a small bonus on top.
+_RELEVANCE_TERMS_WEIGHT = 0.85
+_RELEVANCE_SNIPPET_FACTOR = 0.3
+_RELEVANCE_LOCATION_BONUS = 0.15
+_RELEVANCE_MIN_TERM_LENGTH = 2
+
+
+@dataclass(frozen=True)
+class RelevanceMatcher:
+    """A loop term plus its compiled whole-word pattern.
+
+    Keeping the original ``term`` alongside the pattern lets us report *which*
+    terms matched / are missing in the read-time preview insight, not just a
+    coverage count.
+    """
+
+    term: str
+    pattern: re.Pattern[str]
+
+
+def build_relevance_matchers(loop: Loop) -> list[RelevanceMatcher]:
+    """Whole-word matchers for the loop's role words + keywords.
+
+    ``target_role`` is split into words ("Senior Frontend Developer" →
+    senior/frontend/developer) and merged with ``keywords``; short and duplicate
+    tokens are dropped. Used to score how well a vacancy matches what the loop is
+    looking for.
+    """
+    raw_terms: list[str] = []
+    role = getattr(loop, "target_role", None)
+    if isinstance(role, str):
+        raw_terms.extend(role.split())
+    for keyword in getattr(loop, "keywords", None) or []:
+        if isinstance(keyword, str):
+            raw_terms.append(keyword.strip())
+
+    matchers: list[RelevanceMatcher] = []
+    seen: set[str] = set()
+    for term in raw_terms:
+        term = term.strip()
+        if len(term) < _RELEVANCE_MIN_TERM_LENGTH:
+            continue
+        key = term.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        matchers.append(
+            RelevanceMatcher(
+                term=term,
+                pattern=re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE),
+            )
+        )
+    return matchers
+
+
+def score_preview_relevance(
+    preview: DiscoveryRunPreviewItem,
+    matchers: list[RelevanceMatcher],
+    location_cf: str,
+) -> float:
+    """Score a preview in [0, 1]: term coverage in title/snippet + location bonus."""
+    score = 0.0
+    if matchers:
+        title = preview.title or ""
+        snippet = preview.snippet or ""
+        title_hits = sum(1 for m in matchers if m.pattern.search(title))
+        snippet_hits = sum(1 for m in matchers if m.pattern.search(snippet))
+        coverage = (title_hits + _RELEVANCE_SNIPPET_FACTOR * snippet_hits) / len(
+            matchers
+        )
+        score += _RELEVANCE_TERMS_WEIGHT * min(1.0, coverage)
+    if location_cf and location_cf in (preview.location or "").casefold():
+        score += _RELEVANCE_LOCATION_BONUS
+    return round(min(1.0, score), 3)
+
+
+def analyze_preview_relevance(
+    preview: DiscoveryRunPreviewItem,
+    matchers: list[RelevanceMatcher],
+    location_cf: str,
+) -> DiscoveryRunPreviewInsight:
+    """Heuristic 'fit' breakdown: relevance score + matched / missing loop terms.
+
+    A term counts as *matched* if it appears (whole-word) in the title or
+    snippet; otherwise it is *missing*. No external calls — this is the
+    lightweight, read-time analysis shown on the discovery feed before saving.
+    """
+    score = score_preview_relevance(preview, matchers, location_cf)
+    matched: list[str] = []
+    missing: list[str] = []
+    if matchers:
+        title = preview.title or ""
+        snippet = preview.snippet or ""
+        for matcher in matchers:
+            if matcher.pattern.search(title) or matcher.pattern.search(snippet):
+                matched.append(matcher.term)
+            else:
+                missing.append(matcher.term)
+    return DiscoveryRunPreviewInsight(score=score, matched=matched, missing=missing)
 
 
 class DiscoveryRunsService:
@@ -99,11 +249,16 @@ class DiscoveryRunsService:
                 warnings.append(f"Loop {loop_id} has no discovery sources selected.")
                 continue
 
+            # Load every saved/ignored key for this loop ONCE (two queries),
+            # grouped by source, instead of querying per source (the old N+1).
+            handled_by_source = await self._load_handled_keys_by_source(loop.id)
+
             for source_id in selected_sources:
                 item, source_checked = await self._evaluate_source(
                     loop,
                     source_id,
                     payload,
+                    handled=handled_by_source.get(source_id, (set(), set())),
                 )
                 sources_checked += source_checked
                 matches_previewed += item.items_previewed
@@ -120,7 +275,26 @@ class DiscoveryRunsService:
         if loops and all(it.status == "failed" for it in items):
             overall_status = "failed"
 
+        created_by_loop: dict[str, int] = {}
         if self._db is not None and not payload.dry_run:
+            # Auto-discovery pass: persist freshly-found vacancies as "new"
+            # matches so they surface in the user's Matches list. Each step is
+            # wrapped in its own SAVEPOINT so a failure can't poison the outer
+            # request/scheduler transaction (mirrors the cache-write guard).
+            try:
+                async with self._db.begin_nested():
+                    created_by_loop = await self._persist_matches(
+                        user=user,
+                        loops=loops,
+                        items=items,
+                    )
+            except Exception:
+                logger.warning(
+                    "Failed to persist discovery matches (non-fatal)",
+                    exc_info=True,
+                )
+                created_by_loop = {}
+
             try:
                 async with self._db.begin_nested():
                     await self._persist_history(
@@ -132,6 +306,7 @@ class DiscoveryRunsService:
                         matches_previewed=matches_previewed,
                         started_at=started_at,
                         finished_at=finished_at,
+                        created_by_loop=created_by_loop,
                     )
             except Exception:
                 logger.warning(
@@ -147,11 +322,95 @@ class DiscoveryRunsService:
             page_size=payload.page_size,
             loops_checked=len(loops),
             sources_checked=sources_checked,
-            matches_created=0,
+            matches_created=sum(created_by_loop.values()),
             matches_previewed=matches_previewed,
             warnings=warnings,
             items=items,
         )
+
+    async def _persist_matches(
+        self,
+        *,
+        user: User,
+        loops: list[Loop],
+        items: list[DiscoveryRunItem],
+    ) -> dict[str, int]:
+        """Persist freshly-discovered previews as ``new`` vacancy matches.
+
+        Only runs on a non-dry-run (auto-discovery) pass. By the time we get
+        here ``item.preview_items`` has already been filtered against the loop's
+        saved matches, ignored previews and excluded keywords (see
+        ``_filter_already_handled`` / ``_filter_excluded_keywords``), so every
+        surviving preview is genuinely new — cross-run dedupe is handled there.
+        We still de-dupe *within* this batch (a source can return the same
+        posting twice, or overlapping scopes can collide) by source+external_id
+        and normalized URL. Returns the number of matches created per loop id.
+        """
+        created_by_loop: dict[str, int] = {}
+        if self._db is None:
+            return created_by_loop
+
+        loop_ids = {str(loop.id) for loop in loops}
+        items_by_loop: dict[str, list[DiscoveryRunItem]] = {}
+        for item in items:
+            if item.loop_id in loop_ids:
+                items_by_loop.setdefault(item.loop_id, []).append(item)
+
+        for loop_id, loop_items in items_by_loop.items():
+            seen_external: set[tuple[str, str]] = set()
+            seen_url: set[str] = set()
+            created = 0
+            for item in loop_items:
+                if item.status != "would_run" or not item.source_id:
+                    continue
+                source_id = item.source_id
+                for preview in item.preview_items:
+                    try:
+                        normalized_url = normalize_source_url(preview.source_url)
+                    except VacancyMatchPreviewValidationError:
+                        continue
+                    external_id = (preview.external_id or "").strip() or None
+                    if external_id is not None:
+                        external_key = (source_id, external_id)
+                        if external_key in seen_external:
+                            continue
+                        seen_external.add(external_key)
+                    if normalized_url in seen_url:
+                        continue
+                    seen_url.add(normalized_url)
+
+                    self._db.add(
+                        VacancyMatch(
+                            user_id=user.id,
+                            loop_id=loop_id,
+                            source_url=normalized_url,
+                            source=source_id,
+                            external_id=external_id,
+                            company_name=preview.company,
+                            role_title=preview.title or "Вакансия из автопоиска",
+                            location_text=preview.location,
+                            vacancy_description=preview.snippet,
+                            raw_metadata=sanitize_raw_metadata(
+                                {
+                                    **(preview.raw_metadata or {}),
+                                    **(
+                                        {"posted_at": preview.posted_at}
+                                        if preview.posted_at
+                                        else {}
+                                    ),
+                                }
+                            ),
+                            confidence=preview.confidence,
+                            warnings=[],
+                            status="new",
+                        )
+                    )
+                    created += 1
+            if created:
+                created_by_loop[loop_id] = created
+
+        await self._db.flush()
+        return created_by_loop
 
     async def _persist_history(
         self,
@@ -164,9 +423,12 @@ class DiscoveryRunsService:
         matches_previewed: int,
         started_at: datetime,
         finished_at: datetime,
+        created_by_loop: dict[str, int] | None = None,
     ) -> None:
         if self._db is None or not loops:
             return
+
+        created_by_loop = created_by_loop or {}
 
         duration_ms = max(
             0, int((finished_at - started_at).total_seconds() * 1000)
@@ -181,6 +443,11 @@ class DiscoveryRunsService:
                 {it.source_id for it in loop_items if it.source_id is not None}
             )
             loop_found = sum(it.items_previewed for it in loop_items)
+            # Prefer the actual persisted count (from _persist_matches) so the
+            # history's "new" column reflects how many vacancies were really
+            # written, not just how many previews were surfaced. Falls back to
+            # the preview count when no persistence ran (dry-run/warm-only).
+            loop_new = created_by_loop.get(str(loop.id), loop_found)
             loop_failed = [it for it in loop_items if it.status == "failed"]
             status = overall_status
             error_text: str | None = None
@@ -197,7 +464,7 @@ class DiscoveryRunsService:
                 status=status,
                 sources=loop_sources,
                 items_found=loop_found,
-                items_new=loop_found,  # currently no dedupe — adapt later when match dedup ships
+                items_new=loop_new,
                 duration_ms=duration_ms,
                 error_text=error_text,
                 started_at=started_at,
@@ -304,6 +571,7 @@ class DiscoveryRunsService:
         loop: Loop,
         source_id: str,
         payload: DiscoveryRunRequest,
+        handled: tuple[set[str], set[str]],
     ) -> tuple[DiscoveryRunItem, int]:
         loop_id = str(loop.id)
         source = get_discovery_source(source_id)
@@ -381,7 +649,9 @@ class DiscoveryRunsService:
                     dry_run=payload.dry_run,
                     max_results=payload.page_size,
                 )
-                item = await self._filter_already_handled(item, loop.id, source_id)
+                item = self._filter_excluded_keywords(item, loop)
+                item = self._filter_already_handled(item, handled)
+                item = self._rank_preview_items(item, loop)
                 return item, 1
             logger.debug(
                 "Cache MISS: loop=%s source=%s scope=%s page=%s",
@@ -464,61 +734,132 @@ class DiscoveryRunsService:
                     exc_info=True,
                 )
 
-        item = await self._filter_already_handled(item, loop.id, source_id)
+        item = self._filter_excluded_keywords(item, loop)
+        item = self._filter_already_handled(item, handled)
+        item = self._rank_preview_items(item, loop)
         return item, 1
 
-    async def _load_handled_keys(
-        self, loop_id: UUID, source_id: str
-    ) -> tuple[set[str], set[str]]:
-        """Return (external_ids, normalized_urls) the user already saved/ignored.
+    @staticmethod
+    def _rank_preview_items(item: DiscoveryRunItem, loop: Loop) -> DiscoveryRunItem:
+        """Sort previews best-first by relevance and annotate ``confidence.relevance``.
 
-        Covers both saved vacancy matches and explicitly ignored previews for
-        this loop+source so the preview feed never re-offers them — including
-        after a page reload, where the frontend's in-memory save state is lost.
+        Applied at read time (not stored in cache) so ranking always reflects the
+        loop's current role/keywords/location. Sorting is stable: items with equal
+        scores keep their original (adapter) order. The annotated score gives the
+        UI a basis for a relevance badge.
         """
-        external_ids: set[str] = set()
-        urls: set[str] = set()
+        if not item.preview_items:
+            return item
+
+        matchers = build_relevance_matchers(loop)
+        location_cf = (getattr(loop, "location", None) or "").strip().casefold()
+        if not matchers and not location_cf:
+            return item
+
+        scored: list[tuple[float, int, DiscoveryRunPreviewItem]] = []
+        for index, preview in enumerate(item.preview_items):
+            insight = analyze_preview_relevance(preview, matchers, location_cf)
+            annotated = preview.model_copy(
+                update={
+                    "confidence": {**preview.confidence, "relevance": insight.score},
+                    "insight": insight,
+                }
+            )
+            scored.append((insight.score, index, annotated))
+
+        # Sort by score desc; original index keeps ties stable.
+        scored.sort(key=lambda entry: (-entry[0], entry[1]))
+        return item.model_copy(
+            update={"preview_items": [preview for _, _, preview in scored]}
+        )
+
+    @staticmethod
+    def _filter_excluded_keywords(
+        item: DiscoveryRunItem, loop: Loop
+    ) -> DiscoveryRunItem:
+        """Drop preview items whose title/company/snippet match a loop minus-word.
+
+        Applied in-memory (cheap) before the DB-backed already-handled filter so
+        excluded vacancies never reach the user — regardless of which adapter
+        produced them or whether they came from cache or a live fetch.
+        """
+        if not item.preview_items:
+            return item
+
+        matchers = build_excluded_keyword_matchers(
+            getattr(loop, "excluded_keywords", None)
+        )
+        if not matchers:
+            return item
+
+        kept = [
+            preview
+            for preview in item.preview_items
+            if not preview_matches_excluded(preview, matchers)
+        ]
+        if len(kept) == len(item.preview_items):
+            return item
+
+        return item.model_copy(
+            update={"preview_items": kept, "items_previewed": len(kept)}
+        )
+
+    async def _load_handled_keys_by_source(
+        self, loop_id: UUID
+    ) -> dict[str, tuple[set[str], set[str]]]:
+        """Load every saved/ignored key for a loop in two queries, grouped by source.
+
+        Returns ``{source_id: (external_ids, normalized_urls)}`` covering both
+        saved vacancy matches and explicitly ignored previews so the preview feed
+        never re-offers them — including after a page reload, where the frontend's
+        in-memory save state is lost. Loading all sources at once avoids the old
+        N+1 (two queries per source) when a loop spans several sources.
+        """
+        handled: dict[str, tuple[set[str], set[str]]] = {}
         if self._db is None:
-            return external_ids, urls
+            return handled
 
         loop_key = str(loop_id)
 
         match_rows = (
             await self._db.execute(
-                select(VacancyMatch.external_id, VacancyMatch.source_url).where(
-                    VacancyMatch.loop_id == loop_key,
-                    VacancyMatch.source == source_id,
-                )
+                select(
+                    VacancyMatch.source,
+                    VacancyMatch.external_id,
+                    VacancyMatch.source_url,
+                ).where(VacancyMatch.loop_id == loop_key)
             )
         ).all()
         ignore_rows = (
             await self._db.execute(
                 select(
+                    VacancyPreviewIgnore.source_id,
                     VacancyPreviewIgnore.external_id,
                     VacancyPreviewIgnore.source_url,
-                ).where(
-                    VacancyPreviewIgnore.loop_id == loop_key,
-                    VacancyPreviewIgnore.source_id == source_id,
-                )
+                ).where(VacancyPreviewIgnore.loop_id == loop_key)
             )
         ).all()
 
-        for external_id, source_url in (*match_rows, *ignore_rows):
+        for source_id, external_id, source_url in (*match_rows, *ignore_rows):
+            if source_id is None:
+                continue
+            external_ids, urls = handled.setdefault(source_id, (set(), set()))
             if external_id and external_id.strip():
                 external_ids.add(external_id.strip())
             if source_url:
                 # Saved/ignored URLs are persisted already-normalized.
                 urls.add(source_url)
 
-        return external_ids, urls
+        return handled
 
-    async def _filter_already_handled(
-        self, item: DiscoveryRunItem, loop_id: UUID, source_id: str
+    @staticmethod
+    def _filter_already_handled(
+        item: DiscoveryRunItem, handled: tuple[set[str], set[str]]
     ) -> DiscoveryRunItem:
-        if self._db is None or not item.preview_items:
+        if not item.preview_items:
             return item
 
-        external_ids, urls = await self._load_handled_keys(loop_id, source_id)
+        external_ids, urls = handled
         if not external_ids and not urls:
             return item
 
@@ -572,9 +913,8 @@ class DiscoveryRunsService:
             reason = result.warnings[0] if result.warnings else "source_adapter_skipped"
             message = "Source adapter skipped this source safely."
         elif not dry_run:
-            reason = "automatic_match_persistence_not_enabled"
-            message = "Automatic match persistence is not enabled."
-            warnings.append("automatic_match_persistence_not_enabled")
+            reason = "automatic_match_persistence"
+            message = "Source adapter returned items; new matches are persisted."
 
         return DiscoveryRunItem(
             loop_id=loop_id,

@@ -351,7 +351,10 @@ async def test_discovery_run_unknown_adapter_source_is_unsupported(monkeypatch) 
 
 
 @pytest.mark.asyncio
-async def test_discovery_run_non_dry_run_does_not_persist_matches(monkeypatch) -> None:
+async def test_discovery_run_non_dry_run_without_db_skips_persistence(monkeypatch) -> None:
+    """A non-dry run marks items as persistence-enabled, but with no DB session
+    bound nothing is written (``matches_created == 0``). The actual persistence
+    against a real DB is covered by the integration suite."""
     monkeypatch.setattr(
         "app.modules.discovery_runs.service.get_discovery_source",
         lambda source_id: make_source(source_id),
@@ -363,10 +366,10 @@ async def test_discovery_run_non_dry_run_does_not_persist_matches(monkeypatch) -
         DiscoveryAdapterRegistry([FakeAdapter(item_count=1)]),
     ).run(make_user(), DiscoveryRunRequest(loop_id=str(LOOP_ID), dry_run=False))
 
-    assert result.matches_created == 0
+    assert result.matches_created == 0  # no DB session → nothing persisted
     assert result.matches_previewed == 1
-    assert result.items[0].reason == "automatic_match_persistence_not_enabled"
-    assert "automatic_match_persistence_not_enabled" in result.items[0].warnings
+    assert result.items[0].reason == "automatic_match_persistence"
+    assert "automatic_match_persistence_not_enabled" not in result.items[0].warnings
     assert loop.last_discovery_at is None
 
 

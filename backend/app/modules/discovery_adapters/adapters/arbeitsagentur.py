@@ -284,6 +284,7 @@ def map_arbeitsagentur_job(job: dict[str, Any]) -> DiscoveryAdapterItem | None:
             "refnr": refnr,
             "beruf": clean_string(job.get("beruf")),
             "hash_id": clean_string(job.get("hashId")),
+            "employment_type": _arbeitsagentur_employment(job),
         }.items()
         if value
     }
@@ -298,6 +299,18 @@ def map_arbeitsagentur_job(job: dict[str, Any]) -> DiscoveryAdapterItem | None:
         raw_metadata=raw_metadata,
         confidence={"source_quality": 0.7},
     )
+
+
+def _arbeitsagentur_employment(job: dict[str, Any]) -> str | None:
+    value = job.get("arbeitszeitmodelle") or job.get("arbeitszeit")
+    if isinstance(value, str):
+        return clean_string(value)
+    if isinstance(value, list):
+        for entry in value:
+            text = clean_string(entry) if isinstance(entry, str) else None
+            if text:
+                return text
+    return None
 
 
 def _extract_jobs(payload: dict[str, Any]) -> list[dict[str, Any]]:

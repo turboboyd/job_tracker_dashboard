@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -11,6 +20,29 @@ from app.db.base import Base
 
 class DiscoveryPreviewCache(Base):
     __tablename__ = "discovery_preview_cache"
+
+    # Keep these in sync with alembic 0015. The named unique constraint is what
+    # the warming upsert targets (ON CONFLICT ON CONSTRAINT uq_discovery_preview_cache_key);
+    # without it here, a create_all-built schema (tests, quick-start) silently
+    # lacks the constraint and the upsert fails at runtime.
+    __table_args__ = (
+        UniqueConstraint(
+            "loop_id",
+            "source_id",
+            "search_scope",
+            "page",
+            name="uq_discovery_preview_cache_key",
+        ),
+        Index(
+            "ix_discovery_preview_cache_loop_expires",
+            "loop_id",
+            "expires_at",
+        ),
+        Index(
+            "ix_discovery_preview_cache_source_id",
+            "source_id",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
