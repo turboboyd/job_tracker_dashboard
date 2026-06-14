@@ -216,10 +216,16 @@ export function mapCreateLoopInputToDto(input: CreateBackendLoopInput): Record<s
   );
   const sources = normalizeStringList(input.sources ?? input.platforms);
   const selectedSources = normalizeStringList(input.selectedSources ?? input.platforms ?? sources);
-  const workModes = normalizeStringList(
-    input.workModes ??
-      (input.filters?.workMode ? [input.filters.workMode] : input.remoteMode === "remote_only" ? ["remote"] : []),
-  );
+  // Fallback work-mode list when input.workModes is not provided. Computed as a
+  // flat if/else (instead of a nested ternary) for readability; side-effect-free,
+  // so eager evaluation is equivalent to the previous ?? short-circuit.
+  let workModeFallback: string[] = [];
+  if (input.filters?.workMode) {
+    workModeFallback = [input.filters.workMode];
+  } else if (input.remoteMode === "remote_only") {
+    workModeFallback = ["remote"];
+  }
+  const workModes = normalizeStringList(input.workModes ?? workModeFallback);
   const title = normalizeString(input.title ?? input.name, targetRole || "Untitled loop");
 
   return {

@@ -244,10 +244,6 @@ function LoopCard({ loop, stats, onOpen }: LoopCardProps) {
 export function LoopsListView({
   userId,
   onOpenLoop,
-  onOpenApplications,
-  onOpenMatches,
-  onAddApplication,
-  onImportVacancy,
 }: {
   userId: string;
   onOpenLoop: (id: string) => void;

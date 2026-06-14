@@ -147,11 +147,6 @@ function isoToTs(iso: string): Timestamp {
   return Timestamp.fromDate(new Date(iso));
 }
 
-function maybeTs(iso: string | null | undefined): Timestamp | undefined {
-  if (!iso) return undefined;
-  return isoToTs(iso);
-}
-
 // ── REST DTO → ApplicationDoc ──────────────────────────────────────────────────
 
 export function mapDtoToDoc(dto: ApplicationReadDto, userId: string): ApplicationDoc {

@@ -12,7 +12,7 @@ type Props = {
   ctaSecondary: React.ReactNode;
 };
 
-export const HowToStartBlock: React.FC<Props> = ({ ctaPrimary, ctaSecondary }) => {
+export const HowToStartBlock: React.FC<Props> = ({ ctaPrimary }) => {
   const { t } = useTranslation();
 
   const steps = [

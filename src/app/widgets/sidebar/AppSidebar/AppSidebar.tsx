@@ -121,7 +121,7 @@ function SidebarLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose, onToggle }) => {
+export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const { user } = useAuthSelectors();
 
