@@ -1,16 +1,14 @@
-import { restDelete, restGet, restPatch, restPost } from "src/shared/api";
+import { restGet, restPatch, restPost } from "src/shared/api";
 import { getBackendConfig } from "src/shared/config";
 
 import {
   mapApplicationFromPreviewResponseDto,
   mapCreateApplicationFromMatchInputToDto,
   mapCreateApplicationFromMatchResponseDto,
-  mapIgnoreDiscoveryPreviewInputToDto,
+  mapMatchesFeedResponseDto,
   mapPatchVacancyMatchInputToDto,
   mapSaveDiscoveryPreviewMatchInputToDto,
   mapSaveVacancyMatchInputToDto,
-  mapVacancyPreviewIgnoreDto,
-  mapVacancyPreviewIgnoreResponseDto,
   mapVacancyMatchFromPreviewResponseDto,
   mapVacancyMatchDto,
   mapVacancyMatchEvaluationDto,
@@ -20,8 +18,9 @@ import {
   type CreateApplicationFromMatchResponseDto,
   type CreateApplicationFromMatchResult,
   type ConvertVacancyMatchResponseDto,
-  type IgnoreDiscoveryPreviewInput,
-  type IgnoreDiscoveryPreviewResult,
+  type ListMatchesFeedInput,
+  type MatchesFeedResponse,
+  type MatchesFeedResponseDto,
   type PatchVacancyMatchInput,
   type SaveDiscoveryPreviewAsApplicationResult,
   type SaveDiscoveryPreviewMatchInput,
@@ -37,13 +36,14 @@ import {
   type VacancyMatchPreview,
   type VacancyMatchPreviewDto,
   type VacancyMatchStatus,
-  type VacancyPreviewIgnoreListEnvelope,
-  type VacancyPreviewIgnoreListEnvelopeDto,
-  type VacancyPreviewIgnoreResponseDto,
 } from "./adapter";
+
+/** "freshness" (default, unchanged) | "score" (backend-owned match score). */
+export type LoopMatchesSort = "freshness" | "score";
 
 export interface VacancyMatchListQuery {
   status?: VacancyMatchStatus;
+  sort?: LoopMatchesSort;
   limit?: number;
   offset?: number;
 }
@@ -69,16 +69,27 @@ export function buildLoopApplicationFromPreviewUrl(apiBaseUrl: string, loopId: s
   return `${apiBaseUrl}/loops/${encodeURIComponent(loopId)}/applications/from-preview`;
 }
 
-export function buildLoopMatchPreviewIgnoresUrl(apiBaseUrl: string, loopId: string): string {
-  return `${loopMatchesBaseUrl(apiBaseUrl, loopId)}/preview-ignores`;
+export function buildMatchesFeedUrl(
+  apiBaseUrl: string,
+  input: ListMatchesFeedInput = {},
+): string {
+  const params = new URLSearchParams();
+  if (input.tab) params.set("tab", input.tab);
+  if (input.q) params.set("q", input.q);
+  if (input.source) params.set("source", input.source);
+  if (input.sort) params.set("sort", input.sort);
+  if (input.limit !== undefined) {
+    params.set("limit", String(Math.max(1, Math.min(input.limit, 100))));
+  }
+  if (input.offset !== undefined) params.set("offset", String(Math.max(0, input.offset)));
+
+  const qs = params.toString();
+  const suffix = qs ? `?${qs}` : "";
+  return `${apiBaseUrl}/matches${suffix}`;
 }
 
-export function buildLoopMatchPreviewIgnoreUrl(
-  apiBaseUrl: string,
-  loopId: string,
-  ignoreId: string,
-): string {
-  return `${buildLoopMatchPreviewIgnoresUrl(apiBaseUrl, loopId)}/${encodeURIComponent(ignoreId)}`;
+export function buildLoopMatchSeenUrl(apiBaseUrl: string, loopId: string, matchId: string): string {
+  return `${buildLoopMatchDetailUrl(apiBaseUrl, loopId, matchId)}/seen`;
 }
 
 export function buildLoopMatchesListUrl(
@@ -88,6 +99,7 @@ export function buildLoopMatchesListUrl(
 ): string {
   const params = new URLSearchParams();
   if (query.status) params.set("status", query.status);
+  if (query.sort) params.set("sort", query.sort);
   if (query.limit !== undefined) params.set("limit", String(Math.max(1, Math.min(query.limit, 100))));
   if (query.offset !== undefined) params.set("offset", String(Math.max(0, query.offset)));
 
@@ -168,39 +180,24 @@ export async function saveDiscoveryPreviewAsApplicationViaRest(
   return mapApplicationFromPreviewResponseDto(dto);
 }
 
-export async function ignoreDiscoveryPreviewViaRest(
-  loopId: string,
-  input: IgnoreDiscoveryPreviewInput,
-): Promise<IgnoreDiscoveryPreviewResult> {
+export async function listMatchesFeedViaRest(
+  input: ListMatchesFeedInput = {},
+): Promise<MatchesFeedResponse> {
   const { apiBaseUrl } = getBackendConfig();
-  const dto = await restPost<VacancyPreviewIgnoreResponseDto>(
-    buildLoopMatchPreviewIgnoresUrl(apiBaseUrl, loopId),
-    mapIgnoreDiscoveryPreviewInputToDto(input),
-  );
-  return mapVacancyPreviewIgnoreResponseDto(dto);
+  const dto = await restGet<MatchesFeedResponseDto>(buildMatchesFeedUrl(apiBaseUrl, input));
+  return mapMatchesFeedResponseDto(dto);
 }
 
-export async function listDiscoveryPreviewIgnoresViaRest(
+export async function markLoopVacancyMatchSeenViaRest(
   loopId: string,
-): Promise<VacancyPreviewIgnoreListEnvelope> {
+  matchId: string,
+): Promise<VacancyMatch> {
   const { apiBaseUrl } = getBackendConfig();
-  const dto = await restGet<VacancyPreviewIgnoreListEnvelopeDto>(
-    buildLoopMatchPreviewIgnoresUrl(apiBaseUrl, loopId),
+  const dto = await restPost<VacancyMatchDto>(
+    buildLoopMatchSeenUrl(apiBaseUrl, loopId, matchId),
+    {},
   );
-  return {
-    items: dto.items.map(mapVacancyPreviewIgnoreDto),
-    total: dto.total,
-    limit: dto.limit,
-    offset: dto.offset,
-  };
-}
-
-export async function unignoreDiscoveryPreviewViaRest(
-  loopId: string,
-  ignoreId: string,
-): Promise<void> {
-  const { apiBaseUrl } = getBackendConfig();
-  await restDelete(buildLoopMatchPreviewIgnoreUrl(apiBaseUrl, loopId, ignoreId));
+  return mapVacancyMatchDto(dto);
 }
 
 export async function listLoopVacancyMatchesViaRest(

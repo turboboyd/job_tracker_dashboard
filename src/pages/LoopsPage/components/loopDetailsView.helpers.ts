@@ -9,7 +9,6 @@ export interface MatchesBucket {
   total: number;
   saved: number;
   converted: number;
-  ignored: number;
   new: number;
 }
 
@@ -21,7 +20,7 @@ export function groupMatchesBySource(matches: readonly VacancyMatch[]): MatchesB
     const key = (m.source ?? UNKNOWN_SOURCE).toLowerCase().trim() || UNKNOWN_SOURCE;
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { source: key, total: 0, saved: 0, converted: 0, ignored: 0, new: 0 };
+      bucket = { source: key, total: 0, saved: 0, converted: 0, new: 0 };
       buckets.set(key, bucket);
     }
     bucket.total += 1;
@@ -37,7 +36,6 @@ export function countMatchesByStatus(
     new: 0,
     saved: 0,
     converted: 0,
-    ignored: 0,
   };
   for (const m of matches) counts[m.status] += 1;
   return counts;
@@ -91,50 +89,65 @@ export function computeConversionRate(saved: number, applications: number): numb
   return Math.round((applications / saved) * 100);
 }
 
-export function computeMatchScore(match: VacancyMatch, loop: Loop): number {
-  let score = 40;
+// ── Overview "Top matches" ─────────────────────────────────────────────────
+// Mirrors the backend feed ordering (vacancy_matches repository) so the
+// Overview preview agrees with the full /matches list:
+//   posted_at DESC NULLS LAST, updated_at DESC, created_at DESC, id ASC.
+function freshnessTimestamp(iso: string | null | undefined): number {
+  if (!iso) return Number.NEGATIVE_INFINITY;
+  const ts = Date.parse(iso);
+  return Number.isFinite(ts) ? ts : Number.NEGATIVE_INFINITY;
+}
 
-  const title = (match.roleTitle ?? "").toLowerCase();
-  const company = (match.companyName ?? "").toLowerCase();
-  const location = (match.locationText ?? "").toLowerCase();
-  const desc = (match.vacancyDescription ?? "").toLowerCase();
-  const blob = `${title} ${company} ${location} ${desc}`;
+// Larger timestamp first (DESC). Compared explicitly rather than via
+// subtraction so two missing timestamps (−Infinity) don't produce NaN.
+function compareDesc(a: number, b: number): number {
+  if (a === b) return 0;
+  return a > b ? -1 : 1;
+}
 
-  const titles = (loop.titles ?? []).map((s) => s.toLowerCase().trim()).filter(Boolean);
-  for (const lt of titles) {
-    const words = lt.split(/\s+/).filter(Boolean);
-    if (title.includes(lt) || (words.length > 0 && words.every((w) => title.includes(w)))) {
-      score += 20;
-      break;
-    }
-  }
+export function compareMatchesByFreshness(a: VacancyMatch, b: VacancyMatch): number {
+  const posted = compareDesc(freshnessTimestamp(a.postedAt), freshnessTimestamp(b.postedAt));
+  if (posted !== 0) return posted;
+  const updated = compareDesc(freshnessTimestamp(a.updatedAt), freshnessTimestamp(b.updatedAt));
+  if (updated !== 0) return updated;
+  const created = compareDesc(freshnessTimestamp(a.createdAt), freshnessTimestamp(b.createdAt));
+  if (created !== 0) return created;
+  return a.id.localeCompare(b.id);
+}
 
-  const includes = (loop.keywords ?? []).map((s) => s.toLowerCase().trim()).filter(Boolean);
-  let incHits = 0;
-  for (const kw of includes) {
-    if (blob.includes(kw)) {
-      incHits += 1;
-      if (incHits >= 5) break;
-    }
-  }
-  score += incHits * 5;
+export function selectTopFreshMatches(
+  matches: readonly VacancyMatch[],
+  limit = 5,
+): VacancyMatch[] {
+  if (limit <= 0) return [];
+  return [...matches].sort(compareMatchesByFreshness).slice(0, limit);
+}
 
-  const excludes = (loop.excludedKeywords ?? []).map((s) => s.toLowerCase().trim()).filter(Boolean);
-  for (const kw of excludes) {
-    if (blob.includes(kw)) score -= 10;
-  }
+// ── Overview "Top matches" by backend-owned score ──────────────────────────
+// Top Matches = highest backend `score` first (NULLS last), with the shared
+// freshness chain as the tie-break — mirroring the server's `sort=score`
+// (score DESC NULLS LAST, then posted_at/updated_at/created_at/id). The score
+// is owned by the backend; the frontend only orders by it, never computes it.
+function compareScoreDesc(a: number | null, b: number | null): number {
+  if (a === b) return 0;
+  if (a === null) return 1; // nulls last
+  if (b === null) return -1;
+  return a > b ? -1 : 1;
+}
 
-  const loopLoc = (loop.location ?? "").toLowerCase().trim();
-  if (loopLoc && location.includes(loopLoc)) score += 10;
+export function compareMatchesByScore(a: VacancyMatch, b: VacancyMatch): number {
+  const byScore = compareScoreDesc(a.score, b.score);
+  if (byScore !== 0) return byScore;
+  return compareMatchesByFreshness(a, b);
+}
 
-  const ts = Date.parse(match.createdAt);
-  if (Number.isFinite(ts)) {
-    const ageH = (Date.now() - ts) / 3_600_000;
-    if (ageH < 12) score += 10;
-    else if (ageH < 48) score += 5;
-  }
-
-  return Math.max(0, Math.min(100, Math.round(score)));
+export function selectTopScoredMatches(
+  matches: readonly VacancyMatch[],
+  limit = 5,
+): VacancyMatch[] {
+  if (limit <= 0) return [];
+  return [...matches].sort(compareMatchesByScore).slice(0, limit);
 }
 
 export interface LoopRecommendation {
@@ -283,7 +296,6 @@ export function buildLoopChips(loop: Loop, labels: Record<string, string>): Chip
 export const MATCH_STATUS_STYLES: Record<VacancyMatchStatus, { key: string; cls: string }> = {
   new:       { key: "loops.statusNew",       cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300" },
   saved:     { key: "loops.statusSaved",     cls: "bg-muted text-muted-foreground" },
-  ignored:   { key: "loops.statusIgnored",   cls: "bg-muted text-muted-foreground opacity-60" },
   converted: { key: "loops.statusConverted", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
 };
 

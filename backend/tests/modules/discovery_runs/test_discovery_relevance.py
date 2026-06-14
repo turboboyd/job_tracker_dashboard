@@ -1,3 +1,12 @@
+"""Tests for the unified preview scoring on the discovery feed (Stage 6c).
+
+Previews are scored by the SAME core as persisted matches
+(``vacancy_matches/scoring.py``); the legacy 0–1 relevance heuristic is gone.
+``confidence["score"]`` carries the unified 0–100 value, while
+``confidence["relevance"]`` and ``insight.score`` remain on the 0–1 scale
+(= score / 100) for the current frontend badge until Stage 6d.
+"""
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -8,10 +17,10 @@ from app.modules.discovery_runs.schemas import (
 )
 from app.modules.discovery_runs.service import (
     DiscoveryRunsService,
-    analyze_preview_relevance,
-    build_relevance_matchers,
-    score_preview_relevance,
+    build_preview_insight,
+    loop_insight_terms,
 )
+from app.modules.vacancy_matches.scoring import ScoreInput, score_match
 
 
 def _preview(**overrides) -> DiscoveryRunPreviewItem:
@@ -50,102 +59,87 @@ def _loop(**overrides):
     return SimpleNamespace(**data)
 
 
-# ── build_relevance_matchers ─────────────────────────────────────────────────
+# ── loop_insight_terms ───────────────────────────────────────────────────────
 
 
-def test_matchers_split_role_words_and_merge_keywords():
-    matchers = build_relevance_matchers(
+def test_terms_split_role_words_and_merge_keywords():
+    terms = loop_insight_terms(
         _loop(target_role="Senior Frontend Developer", keywords=["React", "a"])
     )
     # senior + frontend + developer + react ("a" is too short and dropped)
-    assert len(matchers) == 4
+    assert terms == ["Senior", "Frontend", "Developer", "React"]
 
 
-def test_matchers_dedupe_case_insensitively():
-    matchers = build_relevance_matchers(
+def test_terms_dedupe_case_insensitively():
+    terms = loop_insight_terms(
         _loop(target_role="Developer", keywords=["developer", "DEVELOPER"])
     )
-    assert len(matchers) == 1
+    assert terms == ["Developer"]
 
 
-# ── score_preview_relevance ──────────────────────────────────────────────────
+# ── build_preview_insight ────────────────────────────────────────────────────
 
 
-def test_full_title_coverage_plus_location_scores_one():
-    matchers = build_relevance_matchers(_loop(target_role="Frontend Developer"))
-    score = score_preview_relevance(
-        _preview(title="Frontend Developer", location="Berlin"), matchers, "berlin"
+def _score_preview(preview: DiscoveryRunPreviewItem, loop, source_id="arbeitsagentur"):
+    return score_match(
+        loop,
+        ScoreInput(
+            role_title=preview.title,
+            company_name=preview.company,
+            location_text=preview.location,
+            description=preview.snippet,
+            source=source_id,
+        ),
     )
-    # 0.85 (full coverage) + 0.15 (location) == 1.0
-    assert score == 1.0
-
-
-def test_snippet_only_match_scores_low():
-    matchers = build_relevance_matchers(_loop(target_role="Frontend Developer"))
-    score = score_preview_relevance(
-        _preview(title="React Engineer", snippet="frontend role", location="Munich"),
-        matchers,
-        "berlin",
-    )
-    # one of two terms in snippet only: 0.85 * (0.3 / 2) ≈ 0.128, no location bonus
-    assert 0.0 < score < 0.2
-
-
-def test_no_signal_scores_zero():
-    matchers = build_relevance_matchers(_loop(target_role="Frontend Developer"))
-    score = score_preview_relevance(
-        _preview(title="Plumber", snippet="pipes", location="Munich"),
-        matchers,
-        "berlin",
-    )
-    assert score == 0.0
-
-
-# ── analyze_preview_relevance (heuristic feed insight) ───────────────────────
 
 
 def test_insight_reports_matched_and_missing_terms():
-    matchers = build_relevance_matchers(
-        _loop(target_role="Frontend Developer", keywords=["React", "TypeScript"])
-    )
-    insight = analyze_preview_relevance(
-        _preview(title="Frontend Developer", snippet="React role.", location="Berlin"),
-        matchers,
-        "berlin",
-    )
-    # frontend + developer (title) + react (snippet) matched; typescript missing
+    loop = _loop(target_role="Frontend Developer", keywords=["React", "TypeScript"])
+    preview = _preview(title="Frontend Developer", snippet="React role.")
+
+    insight = build_preview_insight(loop, _score_preview(preview, loop))
+
+    # frontend + developer (title overlap) + react (keyword) matched;
+    # typescript missing.
     assert set(insight.matched) == {"Frontend", "Developer", "React"}
     assert insight.missing == ["TypeScript"]
-    assert insight.score > 0.0
+    # 0–1 scale for the current frontend badge.
+    assert 0.0 < insight.score <= 1.0
 
 
-def test_insight_no_matchers_is_empty_but_scored_by_location():
-    insight = analyze_preview_relevance(
-        _preview(location="Berlin"), [], "berlin"
-    )
-    assert insight.matched == []
-    assert insight.missing == []
-    assert insight.score == 0.15  # location bonus only
+def test_insight_score_mirrors_unified_total():
+    loop = _loop()
+    preview = _preview(title="Frontend Developer", location="Berlin")
+    result = _score_preview(preview, loop)
+
+    insight = build_preview_insight(loop, result)
+
+    # full title overlap (25) + location (10), no selected sources on the stub.
+    assert result.total == 35
+    assert insight.score == 0.35
 
 
 # ── DiscoveryRunsService._rank_preview_items ─────────────────────────────────
 
 
-def test_rank_attaches_insight_to_each_preview():
+def test_rank_attaches_insight_and_both_score_scales():
     item = _item([_preview(title="Frontend Developer", snippet="React role.")])
 
     ranked = DiscoveryRunsService._rank_preview_items(
         item, _loop(keywords=["React", "Vue"])
     )
 
-    insight = ranked.preview_items[0].insight
-    assert insight is not None
-    assert "Frontend" in insight.matched
-    assert "Vue" in insight.missing
-    assert insight.score == ranked.preview_items[0].confidence["relevance"]
+    top = ranked.preview_items[0]
+    assert top.insight is not None
+    assert "Frontend" in top.insight.matched
+    assert "Vue" in top.insight.missing
+    # title 25 + location 10 + keyword react 10 = 45 (stub has no sources).
+    assert top.confidence["score"] == 45.0
+    assert top.confidence["relevance"] == 0.45  # deprecated 0–1 mirror
+    assert top.insight.score == top.confidence["relevance"]
 
 
-def test_rank_orders_best_first_and_annotates_relevance():
+def test_rank_orders_best_first_and_preserves_other_confidence():
     weak = _preview(external_id="weak", title="React Engineer", snippet="pipes")
     strong = _preview(external_id="strong", title="Frontend Developer")
     item = _item([weak, strong])
@@ -153,9 +147,9 @@ def test_rank_orders_best_first_and_annotates_relevance():
     ranked = DiscoveryRunsService._rank_preview_items(item, _loop())
 
     assert [p.external_id for p in ranked.preview_items] == ["strong", "weak"]
-    # relevance annotated without clobbering source_quality
     top = ranked.preview_items[0]
-    assert top.confidence["relevance"] > ranked.preview_items[1].confidence["relevance"]
+    assert top.confidence["score"] > ranked.preview_items[1].confidence["score"]
+    # annotation must not clobber adapter-provided confidence keys
     assert top.confidence["source_quality"] == 0.7
 
 
@@ -169,10 +163,14 @@ def test_rank_is_stable_for_equal_scores():
     assert [p.external_id for p in ranked.preview_items] == ["a", "b"]
 
 
-def test_rank_no_op_without_role_or_location():
+def test_rank_annotates_zero_scores_without_signals():
+    # Even a loop with no role/keywords/location gets consistent annotations
+    # (score 0) instead of silently skipping — order stays stable.
     item = _item([_preview(external_id="a"), _preview(external_id="b")])
     loop = _loop(target_role=None, keywords=[], location=None)
 
     ranked = DiscoveryRunsService._rank_preview_items(item, loop)
 
-    assert ranked is item
+    assert [p.external_id for p in ranked.preview_items] == ["a", "b"]
+    assert all(p.confidence["score"] == 0.0 for p in ranked.preview_items)
+    assert all(p.confidence["relevance"] == 0.0 for p in ranked.preview_items)

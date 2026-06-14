@@ -210,7 +210,7 @@ class LoopRead(BaseModel):
     discovery_radius_km: int | None
     last_discovery_at: datetime | None
     next_run_at: datetime | None = None
-    discovery_interval_hours: int = 24
+    discovery_interval_hours: int = 4
     created_at: datetime
     updated_at: datetime
     metrics: LoopMetrics | None = None

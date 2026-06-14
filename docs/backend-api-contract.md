@@ -143,17 +143,17 @@ Authorization: Bearer <token>
   "timezone": "Europe/Berlin",
   "date_format": "DD.MM.YYYY",
   "analysis_plan": "free",
-  "matches_seen_at": null,
   "created_at": "2024-01-15T10:00:00Z",
   "updated_at": "2024-01-15T10:00:00Z"
 }
 ```
 
-`matches_seen_at` is the watermark for the Matches «Новые» (unseen) tab: matches
-created after this timestamp are treated as unseen. It is `null` until the user
-first marks the list seen (see `POST /users/me/matches-seen`).
+> The Matches «Новые» (unseen) tab is now driven by **per-match** `seen_at`
+> (see `POST /loops/{loop_id}/matches/{match_id}/seen`), not a global user
+> watermark. The previous `users.matches_seen_at` field and the
+> `POST /users/me/matches-seen` endpoint were removed.
 
-**Read-only fields** (cannot be changed via PATCH): `id`, `firebase_uid`, `email`, `photo_url`, `analysis_plan`, `matches_seen_at`, `created_at`.
+**Read-only fields** (cannot be changed via PATCH): `id`, `firebase_uid`, `email`, `photo_url`, `analysis_plan`, `created_at`.
 
 ### GET /users/me/analysis-plan
 
@@ -248,19 +248,9 @@ Content-Type: application/json
 
 **Validation:** Extra fields not listed above are rejected with `422`.
 
-### POST /users/me/matches-seen
-
-Advance the user's Matches "seen" watermark to now. The Matches «Новые» tab
-treats matches created after this timestamp as unseen, so calling this marks
-everything currently in the list as seen. The body is ignored.
-
-```
-POST /api/v1/users/me/matches-seen
-Authorization: Bearer <token>
-```
-
-**Response 200:** Same shape as `GET /users/me`, with `matches_seen_at` set to
-the new server timestamp.
+> **Removed:** `POST /users/me/matches-seen`. The global "seen" watermark was
+> replaced by per-match `seen_at`; mark a single match seen with
+> `POST /loops/{loop_id}/matches/{match_id}/seen`.
 
 ---
 
@@ -585,13 +575,10 @@ Fields:
 - The Matches UI source cards also show the current preview count per source,
   how many preview items are new vs already saved, and whether another page may
   be available.
-- The Matches UI hides already saved preview items by default. This is a client
-  presentation filter only; it does not delete preview results, persist data, or
-  create Applications.
-- The Matches UI also supports `Не интересно` for individual preview cards.
-  This creates a preview ignore record through
-  `POST /loops/{loop_id}/matches/preview-ignores`. It is not a Vacancy Match,
-  does not update `last_discovery_at`, and does not create an Application.
+- Manual "Обновить" добор on `/dashboard/matches` runs this bounded preview to
+  surface fresh candidates. It does not delete preview results, persist data
+  automatically, or create Applications. There is no hide/ignore action: the
+  per-card "Не интересно"/preview-ignore feature was removed.
 
 **Response 200:**
 ```json
@@ -684,7 +671,7 @@ Current safe workflow:
    saved automatically.
 4. The user chooses one item and saves it as a Vacancy Match through
    `POST /api/v1/loops/{loop_id}/matches/from-preview`.
-5. The saved match can be analyzed, ignored, or converted by explicit action.
+5. The saved match can be analyzed or converted by explicit action.
 6. The user creates an Application only through
    `POST /api/v1/loops/{loop_id}/matches/{match_id}/create-application`.
 
@@ -696,17 +683,85 @@ Product boundaries:
 - It must not create Applications automatically.
 - It must not submit anything to external employers.
 - It must not bulk-save preview results.
-- A scheduled background refresh is future work and requires separate safety
-  review, logging, limits, deduplication, and source controls.
+- A scheduled background refresh now persists matches for active loops every
+  4 hours, aligned to midnight Europe/Berlin. It remains bounded, logged, and
+  deduplicated, and never creates Applications.
 
 Expected future direction:
 
 - `/dashboard/matches` becomes the central feed for saved Vacancy Matches and
   later safe refreshed candidates.
 - Source adapters are enabled one at a time after review.
-- Users can save, ignore, analyze, and convert selected items.
+- Users can save, analyze, and convert selected items.
 - Applications remain the user's own tracked application records, created only
   after an explicit user action.
+
+### GET /matches
+
+Paginated **cross-loop** feed of persisted vacancy matches for the current user.
+This is the single source of truth behind `/dashboard/matches`: it returns saved
+matches across all of the user's visible loops (paused and archived loops are
+excluded), with stable tab counts. It does not run discovery — the manual
+"Обновить" добор uses `POST /discovery-runs` separately.
+
+```
+GET /api/v1/matches?tab=all&q=react&source=arbeitsagentur&sort=posted&limit=20&offset=0
+Authorization: Bearer <token>
+```
+
+**Query parameters:**
+
+| Param | Type | Default | Constraints | Description |
+|---|---|---|---|---|
+| `tab` | enum | `all` | `all` \| `new` \| `saved` | `new` = unseen **and** not saved/converted; `saved` = status `saved` |
+| `q` | string | — | ≤ 200 chars | Substring match over company / role / location |
+| `source` | string | — | ≤ 64 chars | Restrict to one source id (case-insensitive) |
+| `sort` | enum | `posted` | `posted` \| `company` \| `loop` | `posted` = freshest first (`posted_at` then `created_at`) |
+| `limit` | int | `20` | 1–100 | Items per page |
+| `offset` | int | `0` | ≥ 0 | Items to skip |
+
+**Response 200:**
+```json
+{
+  "items": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "loop_id": "4b33e9a4-7a7e-4d94-87c1-5d70b78e48a0",
+      "loop_name": "Ausbildung IT Bremen",
+      "source_url": "https://www.arbeitsagentur.de/jobsuche/jobdetail/10000-1234567890-S",
+      "source": "arbeitsagentur",
+      "external_id": "10000-1234567890-S",
+      "company_name": "Example GmbH",
+      "role_title": "Backend Developer",
+      "location_text": "Berlin",
+      "vacancy_description": "Build APIs with Python.",
+      "raw_metadata": {},
+      "confidence": { "source_quality": 0.95 },
+      "warnings": [],
+      "status": "saved",
+      "application_id": null,
+      "seen_at": null,
+      "posted_at": "2026-05-15T00:00:00Z",
+      "created_at": "2026-05-15T10:00:00Z",
+      "updated_at": "2026-05-15T10:00:00Z"
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0,
+  "counts": {
+    "all": 1,
+    "new": 0,
+    "saved": 1
+  }
+}
+```
+
+`total` is the count for the **active** `tab` under the current `q`/`source`
+scope. `counts` carries the badge count for every tab under that same scope, so
+the tab badges stay stable while the user switches tabs. Each feed item is a full
+`VacancyMatchRead` plus `loop_name` (the owning loop's display name).
 
 ### GET /loops
 
@@ -802,7 +857,17 @@ Constraints remain MVP-safe:
 - saving a match does not create an application
 - conversion creates an application with `loop_id = match.loop_id` and `has_loop = true`
 
-Supported match statuses: `new`, `saved`, `ignored`, `converted`.
+Supported match statuses: `new`, `saved`, `converted`. There is no hide/ignore
+status; the previous `ignored` value and the preview-ignore endpoints were
+removed.
+
+Every `VacancyMatchRead` also carries:
+
+- `seen_at`: timestamp of the first time the current user opened the match (via
+  `POST .../matches/{match_id}/seen`), or `null` if never opened. Drives the
+  per-match "Просмотрено" badge and the Matches «Новые» (unseen) tab.
+- `posted_at`: original publication date reported by the source, or `null`. Used
+  as the primary key for the Matches feed freshness sort.
 
 ### POST /loops/{loop_id}/matches/import-preview
 
@@ -905,92 +970,10 @@ Content-Type: application/json
 
 If a match already exists for the same `loop_id + source_id + external_id`, or for the same normalized `source_url` inside the Loop/source, the endpoint returns the existing match with `created=false` and `duplicate=true`. Existing matches are not overwritten or merged.
 
-### POST /loops/{loop_id}/matches/preview-ignores
-
-Persist a user decision to hide one discovery preview item from future Matches
-preview feeds. This endpoint requires an explicit user action. It validates Loop
-ownership and source id, normalizes `source_url`, and deduplicates by
-`loop_id + source_id + external_id` or normalized `source_url`.
-
-It creates only a preview ignore record. It does not create a Vacancy Match,
-does not create an Application, does not update `last_discovery_at`, and does
-not start scheduled work.
-
-```
-POST /api/v1/loops/{loop_id}/matches/preview-ignores
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**Request body:**
-```json
-{
-  "source_id": "arbeitsagentur",
-  "external_id": "10000-1234567890-S",
-  "source_url": "https://www.arbeitsagentur.de/jobsuche/jobdetail/10000-1234567890-S",
-  "title": "Backend Developer",
-  "company": "Example GmbH"
-}
-```
-
-**Response 201:**
-```json
-{
-  "item": {
-    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "loop_id": "4b33e9a4-7a7e-4d94-87c1-5d70b78e48a0",
-    "source_id": "arbeitsagentur",
-    "external_id": "10000-1234567890-S",
-    "source_url": "https://www.arbeitsagentur.de/jobsuche/jobdetail/10000-1234567890-S",
-    "title": "Backend Developer",
-    "company": "Example GmbH",
-    "created_at": "2026-05-18T10:00:00Z",
-    "updated_at": "2026-05-18T10:00:00Z"
-  },
-  "created": true,
-  "duplicate": false
-}
-```
-
-Duplicate ignores return the existing item with `created=false` and
-`duplicate=true`.
-
-### GET /loops/{loop_id}/matches/preview-ignores
-
-List current-user preview ignore records for one Loop. The Matches UI uses this
-to hide previously dismissed preview items when the page opens or the Loop
-filter changes.
-
-```
-GET /api/v1/loops/{loop_id}/matches/preview-ignores?limit=200&offset=0
-Authorization: Bearer <token>
-```
-
-**Response 200:**
-```json
-{
-  "items": [],
-  "total": 0,
-  "limit": 200,
-  "offset": 0
-}
-```
-
-### DELETE /loops/{loop_id}/matches/preview-ignores/{ignore_id}
-
-Remove one preview ignore record so the item can appear in future preview feeds
-again. This endpoint deletes only the ignore record. It does not create or
-modify Vacancy Matches or Applications.
-
-```
-DELETE /api/v1/loops/{loop_id}/matches/preview-ignores/{ignore_id}
-Authorization: Bearer <token>
-```
-
-**Response 204:** no body.
-
-**Response 404:** ignore record not found or belongs to another user/Loop.
+> **Removed:** the preview-ignore endpoints
+> (`POST`/`GET`/`DELETE /loops/{loop_id}/matches/preview-ignores`) and the
+> `ignored` match status no longer exist. The Matches feed is a feed of persisted
+> matches with no per-card hide action.
 
 ### GET /loops/{loop_id}/matches
 
@@ -1001,6 +984,8 @@ GET /api/v1/loops/{loop_id}/matches?status=saved&limit=20&offset=0
 Authorization: Bearer <token>
 ```
 
+`status` accepts `new`, `saved`, or `converted`.
+
 **Response 200:**
 ```json
 {
@@ -1010,6 +995,24 @@ Authorization: Bearer <token>
   "offset": 0
 }
 ```
+
+### POST /loops/{loop_id}/matches/{match_id}/seen
+
+Mark one vacancy match as seen by the current user. The first call stamps
+`seen_at` with the server time; repeated calls are idempotent and keep the
+original timestamp. The body is ignored.
+
+This drives the per-match "Просмотрено" badge and the Matches «Новые» (unseen)
+tab. It does not change `status`, create an Application, or run discovery.
+
+```
+POST /api/v1/loops/{loop_id}/matches/{match_id}/seen
+Authorization: Bearer <token>
+```
+
+**Response 200:** the full `VacancyMatchRead` object with `seen_at` populated.
+
+**Response 404:** vacancy match not found in the current user's Loop.
 
 ### PATCH /loops/{loop_id}/matches/{match_id}
 
@@ -1180,7 +1183,7 @@ saved yet.
 
 ### POST /loops/{loop_id}/matches/{match_id}/create-application
 
-Explicitly create an application from a saved match. The match must belong to the current user and the path `loop_id`. Ignored matches must be restored first. `company_name` and `role_title` are required.
+Explicitly create an application from a saved match. The match must belong to the current user and the path `loop_id`. `company_name` and `role_title` are required.
 
 This endpoint runs only after a user action. It does not submit anything to an external employer, does not run discovery, does not update `last_discovery_at`, and does not convert other matches.
 

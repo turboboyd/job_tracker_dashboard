@@ -1,236 +1,41 @@
-import type { Loop } from "src/entities/loop";
-import type {
-  DiscoveryRunPreviewItem,
-  DiscoveryRunResponse,
-} from "src/features/discoveryRuns";
+import { getDiscoverySourcePriority, type Loop } from "src/entities/loop";
 import type {
   DuplicateStatus,
+  ScoreReasonEntry,
   VacancyMatch,
   VacancyMatchEvaluation,
-  VacancyMatchListEnvelope,
   VacancyMatchStatus,
 } from "src/features/vacancyMatches";
 
 export const MATCHES_V2_PAGE_SIZE = 20;
-export const MATCHES_V2_PER_LOOP_FETCH_CAP = 200;
 
-export type StatusTab = "all" | VacancyMatchStatus;
-export type SortKey = "match" | "posted" | "company" | "loop";
+export type StatusTab = "all" | "new" | "saved";
+export type SortKey = "posted" | "company" | "loop";
 
-/** Origin of a synthesized preview match (the live discovery item it stands for). */
-export interface MatchPreviewOrigin {
-  sourceId: string;
-  item: DiscoveryRunPreviewItem;
-}
-
+/**
+ * A persisted vacancy match paired with its loop's display name. This is the
+ * exact shape the backend feed returns per row (`MatchesFeedItem`), so the page
+ * maps the feed straight into this type with no client-side merge/filter/sort.
+ */
 export interface MatchWithLoopName {
   loopName: string;
   match: VacancyMatch;
-  /** True when `match` is synthesized from a live discovery preview (not yet persisted). */
-  isPreview?: boolean;
-  /** Present only for preview rows — the raw discovery item, used for save/ignore. */
-  preview?: MatchPreviewOrigin;
-}
-
-/** Drop trailing "/" chars without a regex (sonarjs/slow-regex-safe). */
-function stripTrailingSlashes(value: string): string {
-  let end = value.length;
-  while (end > 0 && value.charCodeAt(end - 1) === 47 /* "/" */) end -= 1;
-  return value.slice(0, end);
-}
-
-/**
- * Stable identity for cross-source/run dedup: prefer (source, externalId); fall
- * back to (source, normalized URL) when the source omits an external id. Shared
- * by persisted matches and synthesized previews so a freshly-saved match and its
- * still-cached preview collapse to one row.
- */
-export function getMatchDedupeKey(match: VacancyMatch): string {
-  const source = normalize(match.source);
-  const externalId = normalize(match.externalId);
-  if (externalId) return `${source}:id:${externalId}`;
-  const url = stripTrailingSlashes(normalize(match.sourceUrl));
-  return `${source}:url:${url}`;
-}
-
-/**
- * Build a display-only `VacancyMatch` from a live discovery preview item so it can
- * flow through the same list/detail/filter/sort pipeline as persisted matches.
- * The synthetic id is prefixed `preview:` so callers can tell it apart and avoid
- * hitting match-id-bound endpoints (evaluate/analysis/convert) before it's saved.
- */
-export function previewItemToMatch(
-  loopId: string,
-  sourceId: string,
-  item: DiscoveryRunPreviewItem,
-): VacancyMatch {
-  const postedAt =
-    item.postedAt && !Number.isNaN(Date.parse(item.postedAt)) ? item.postedAt : null;
-  const timestamp = postedAt ?? new Date().toISOString();
-  const rawMetadata: Record<string, unknown> = {
-    ...item.rawMetadata,
-    ...(postedAt ? { posted_at: postedAt } : {}),
-  };
-  // Surface the relevance score under `score` so getMatchScore ranks previews
-  // alongside persisted matches.
-  const confidence: Record<string, number> = {
-    ...item.confidence,
-    ...(item.insight ? { score: item.insight.score } : {}),
-  };
-  return {
-    id: `preview:${loopId}:${sourceId}:${item.externalId ?? item.sourceUrl}`,
-    userId: "",
-    loopId,
-    sourceUrl: item.sourceUrl,
-    source: sourceId || null,
-    externalId: item.externalId,
-    companyName: item.company,
-    roleTitle: item.title,
-    locationText: item.location,
-    vacancyDescription: item.snippet,
-    rawMetadata,
-    confidence,
-    warnings: [],
-    status: "new",
-    applicationId: null,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-}
-
-/** A per-loop persisted-matches page paired with the loop it came from. */
-export interface LoopMatchesResult {
-  loop: Loop;
-  response: VacancyMatchListEnvelope;
-}
-
-/** A per-loop live discovery preview paired with its loop; `null` on fetch failure. */
-export interface LoopPreviewResult {
-  loop: Loop;
-  response: DiscoveryRunResponse | null;
-}
-
-export interface MergedMatchesFeed {
-  items: MatchWithLoopName[];
-  /** Sources still warming server-side; caller may schedule a retry when > 0. */
-  warmingCount: number;
-}
-
-/**
- * A per-loop predicate that keeps only vacancies from the sources the user has
- * enabled on that loop (`selectedSources`). When a loop has no sources selected
- * (legacy/unconfigured), we impose no constraint and show everything — that's the
- * safe default that can't accidentally blank out a loop's feed.
- */
-function makeSourceFilter(loop: Loop): (source: string | null | undefined) => boolean {
-  const allowed = (loop.selectedSources ?? [])
-    .map((s) => normalize(s))
-    .filter((s) => s.length > 0);
-  if (allowed.length === 0) return () => true;
-  const allowedSet = new Set(allowed);
-  return (source) => allowedSet.has(normalize(source));
-}
-
-function collectPersistedMatches(
-  dbResults: readonly LoopMatchesResult[],
-  merged: MatchWithLoopName[],
-  seen: Set<string>,
-): void {
-  for (const { loop, response } of dbResults) {
-    const loopName = getLoopDisplayName(loop);
-    const allowsSource = makeSourceFilter(loop);
-    for (const match of response.items) {
-      if (!allowsSource(match.source)) continue;
-      const key = getMatchDedupeKey(match);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      merged.push({ loopName, match });
-    }
-  }
-}
-
-function collectPreviewItems(
-  loop: Loop,
-  loopName: string,
-  sourceId: string,
-  previewItems: readonly DiscoveryRunPreviewItem[],
-  merged: MatchWithLoopName[],
-  seen: Set<string>,
-): void {
-  for (const previewItem of previewItems) {
-    const match = previewItemToMatch(loop.id, sourceId, previewItem);
-    const key = getMatchDedupeKey(match);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    merged.push({
-      loopName,
-      match,
-      isPreview: true,
-      preview: { sourceId, item: previewItem },
-    });
-  }
-}
-
-function collectPreviewMatches(
-  previewResults: readonly LoopPreviewResult[],
-  merged: MatchWithLoopName[],
-  seen: Set<string>,
-): number {
-  let warmingCount = 0;
-  for (const { loop, response } of previewResults) {
-    if (!response) continue;
-    const loopName = getLoopDisplayName(loop);
-    const allowsSource = makeSourceFilter(loop);
-    for (const runItem of response.items) {
-      const sourceId = runItem.sourceId ?? "";
-      if (!allowsSource(sourceId)) continue;
-      if (runItem.reason === "cache_warming") {
-        warmingCount += 1;
-        continue;
-      }
-      collectPreviewItems(loop, loopName, sourceId, runItem.previewItems, merged, seen);
-    }
-  }
-  return warmingCount;
-}
-
-/**
- * Merge persisted matches (source of truth) with a live discovery "добор" so the
- * feed shows the full set of vacancies found per loop — not just the saved few.
- * The backend already drops saved/handled items from the preview, so the streams
- * don't double-count; we still dedupe by (source, externalId|url) defensively in
- * case a freshly-saved match is still cached. Returns the merged rows plus the
- * count of sources still warming so the caller can decide whether to poll again.
- */
-export function buildMergedMatchesFeed(
-  dbResults: readonly LoopMatchesResult[],
-  previewResults: readonly LoopPreviewResult[],
-): MergedMatchesFeed {
-  const merged: MatchWithLoopName[] = [];
-  const seen = new Set<string>();
-  collectPersistedMatches(dbResults, merged, seen);
-  const warmingCount = collectPreviewMatches(previewResults, merged, seen);
-  return { items: merged, warmingCount };
 }
 
 export const STATUS_TAB_LABELS: Record<StatusTab, string> = {
   all: "Все",
   new: "Новые",
   saved: "Сохранённые",
-  converted: "Отклики",
-  ignored: "Скрытые",
 };
 
 export const STATUS_PILL_LABEL: Record<VacancyMatchStatus, string> = {
   new: "Новая",
   saved: "Сохранено",
-  converted: "Отклик",
-  ignored: "Скрыто",
+  converted: "Заявка создана",
 };
 
 export const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: "posted", label: "Сначала свежие" },
-  { value: "match", label: "По матч-скору" },
   { value: "company", label: "По компании (A–Z)" },
   { value: "loop", label: "По циклу" },
 ];
@@ -300,168 +105,61 @@ export function getLoopDisplayName(loop: Loop): string {
   return (loop.title || loop.name || loop.targetRole || loop.id).trim() || loop.id;
 }
 
+/**
+ * Whether a loop's vacancies belong in the Matches feed. Paused and archived
+ * loops are hidden entirely — their matches reappear only once the loop is
+ * resumed. A loop with no explicit status (legacy/default) counts as active.
+ */
+export function isLoopVisibleInMatches(loop: Loop): boolean {
+  return loop.status !== "paused" && loop.status !== "archived";
+}
+
 export function getMatchScore(match: VacancyMatch): number | null {
-  const raw = match.confidence?.score ?? match.confidence?.overall ?? match.confidence?.match;
-  return typeof raw === "number" ? Math.round(raw) : null;
+  // Prefer the backend-owned persisted score (Stage 6c). The legacy
+  // confidence.* keys are a transitional fallback for rows persisted before the
+  // top-level score existed. The frontend never computes a score itself.
+  if (typeof match.score === "number") return Math.round(match.score);
+  const legacy = match.confidence?.score ?? match.confidence?.overall ?? match.confidence?.match;
+  return typeof legacy === "number" ? Math.round(legacy) : null;
 }
 
-export function getMatchScoreOrZero(match: VacancyMatch): number {
-  return getMatchScore(match) ?? 0;
-}
-
-/**
- * Freshness rank in epoch-ms: real source publish date when known
- * (`getVacancyMeta().postedAt`), else the row's `createdAt`. Unparseable
- * timestamps collapse to 0 so they sink to the bottom of a "freshest first" sort.
- */
-export function getMatchFreshnessTs(match: VacancyMatch): number {
-  const postedAt = getVacancyMeta(match).postedAt;
-  const ts = Date.parse(postedAt ?? match.createdAt);
-  return Number.isNaN(ts) ? 0 : ts;
-}
-
-export function normalize(value: string | null | undefined): string {
-  return String(value ?? "").trim().toLowerCase();
-}
-
-/**
- * Whether a row is "unseen" — i.e. belongs in the «Новые» tab. Live preview rows
- * (the live добор, not yet persisted) are always unseen. Persisted matches are
- * unseen until the user marks the list seen: a match counts as unseen when it
- * was created after the watermark, or whenever the user has never marked the
- * list (watermark null → everything is new).
- */
-export function isMatchUnseen(
-  item: Pick<MatchWithLoopName, "isPreview" | "match">,
-  watermark: string | null,
-): boolean {
-  if (item.isPreview) return true;
-  if (!watermark) return true;
-  const seen = Date.parse(watermark);
-  if (Number.isNaN(seen)) return true;
-  const created = Date.parse(item.match.createdAt);
-  if (Number.isNaN(created)) return false;
-  return created > seen;
-}
-
-/** Whether a row belongs in the given status tab. «Новые» means "unseen". */
-function passesStatusTab(
-  item: MatchWithLoopName,
-  status: StatusTab,
-  watermark: string | null,
-): boolean {
-  if (status === "all") return true;
-  if (status === "new") return isMatchUnseen(item, watermark);
-  return item.match.status === status;
-}
-
-export function filterMatches(
-  items: readonly MatchWithLoopName[],
-  args: {
-    q: string;
-    source: string;
-    status: StatusTab;
-    loopId: string;
-    watermark: string | null;
-  },
-): MatchWithLoopName[] {
-  const q = normalize(args.q);
-  const source = normalize(args.source);
-  return items.filter((entry) => {
-    const { match, loopName } = entry;
-    if (args.loopId && match.loopId !== args.loopId) return false;
-    if (!passesStatusTab(entry, args.status, args.watermark)) return false;
-    if (source && normalize(match.source) !== source) return false;
-    if (!q) return true;
-
-    const haystack = [
-      match.roleTitle,
-      match.companyName,
-      match.locationText,
-      match.sourceUrl,
-      loopName,
-    ]
-      .map((part) => normalize(part))
-      .join(" ");
-    return haystack.includes(q);
-  });
-}
-
-export function sortMatches(
-  items: readonly MatchWithLoopName[],
-  sort: SortKey,
-): MatchWithLoopName[] {
-  const copy = [...items];
-  if (sort === "company") {
-    copy.sort((left, right) =>
-      String(left.match.companyName ?? "").localeCompare(
-        String(right.match.companyName ?? ""),
-        undefined,
-        { sensitivity: "base" },
-      ),
-    );
-    return copy;
-  }
-  if (sort === "loop") {
-    copy.sort((left, right) => left.loopName.localeCompare(right.loopName, undefined, { sensitivity: "base" }));
-    return copy;
-  }
-  if (sort === "posted") {
-    copy.sort((left, right) => getMatchFreshnessTs(right.match) - getMatchFreshnessTs(left.match));
-    return copy;
-  }
-  copy.sort((left, right) => getMatchScoreOrZero(right.match) - getMatchScoreOrZero(left.match));
-  return copy;
-}
-
-/**
- * Tab counts for the status bar. «Все» is the total; saved/converted/ignored are
- * by persisted status; «Новые» counts *unseen* rows (preview + matches created
- * after the watermark) — not the legacy status==="new" set.
- */
-export function countMatchesByStatus(
-  items: readonly MatchWithLoopName[],
-  watermark: string | null,
-): Record<StatusTab, number> {
-  const counts: Record<StatusTab, number> = {
-    all: 0,
-    new: 0,
-    saved: 0,
-    converted: 0,
-    ignored: 0,
-  };
-  for (const item of items) {
-    counts.all += 1;
-    const status = item.match.status;
-    if (status === "saved" || status === "converted" || status === "ignored") {
-      counts[status] += 1;
-    }
-    if (isMatchUnseen(item, watermark)) counts.new += 1;
-  }
-  return counts;
+/** True once the user has viewed this match (server-stamped `seenAt`). */
+export function isMatchSeen(match: Pick<VacancyMatch, "seenAt">): boolean {
+  return Boolean(match.seenAt);
 }
 
 export interface SourceBucket {
   key: string;
   label: string;
   color: string;
-  count: number;
+  /** Optional count; omitted for the server-driven feed (no per-source totals). */
+  count?: number;
 }
 
-export function getSourceBuckets(items: readonly MatchWithLoopName[]): SourceBucket[] {
-  const counts = new Map<string, number>();
-  for (const { match } of items) {
-    const key = match.source ?? "other";
-    counts.set(key, (counts.get(key) ?? 0) + 1);
+/**
+ * Source filter chips for the Matches strip, built from the union of sources the
+ * visible loops have enabled (`selectedSources`). The server feed is paginated
+ * and carries no per-source totals, so these are pure filters without counts.
+ */
+export function buildSourceBuckets(loops: readonly Loop[]): SourceBucket[] {
+  const keys = new Set<string>();
+  for (const loop of loops) {
+    for (const source of loop.selectedSources ?? []) {
+      const key = source.trim().toLowerCase();
+      if (key) keys.add(key);
+    }
   }
-  return [...counts.entries()]
-    .map(([key, count]) => ({
-      key,
-      label: getSourceLabel(key === "other" ? null : key),
-      color: getSourceColor(key === "other" ? null : key),
-      count,
-    }))
-    .sort((left, right) => right.count - left.count);
+  return [...keys]
+    .map((key) => ({ key, label: getSourceLabel(key), color: getSourceColor(key) }))
+    .sort((left, right) => {
+      // Product source priority first (Arbeitsagentur and the other legal
+      // boards before LinkedIn — consistent with the Create Loop modal and
+      // Loop Details), alphabetical only as a tie-breaker for unknown sources.
+      const byPriority =
+        getDiscoverySourcePriority(left.key) - getDiscoverySourcePriority(right.key);
+      if (byPriority !== 0) return byPriority;
+      return left.label.localeCompare(right.label, undefined, { sensitivity: "base" });
+    });
 }
 
 export function formatRelativeTime(
@@ -818,6 +516,56 @@ export function localizeEvaluationPenalty(penalty: string): string {
     return "Источник не выбран в цикле";
   }
   return penalty;
+}
+
+// Code-based localization (Stage 6c reason_codes/penalty_codes). Preferred over
+// the English-string localizers above: it is robust to backend copy changes and
+// carries the matched terms explicitly. `terms` holds the matched tokens /
+// keywords for the term-bearing codes.
+export function localizeEvaluationReasonCode(entry: ScoreReasonEntry): string {
+  const terms = entry.terms.join(", ");
+  switch (entry.code) {
+    case "title_match":
+      return `Должность совпадает с целью цикла: ${terms}`;
+    case "keyword_matched":
+      return `Совпало ключевое слово: ${terms}`;
+    case "location_match":
+      return "Локация совпадает с циклом";
+    case "source_selected":
+      return "Источник включён в цикл";
+    case "no_excluded_keywords":
+      return "Стоп-слов не найдено";
+    default:
+      return entry.code;
+  }
+}
+
+export function localizeEvaluationPenaltyCode(entry: ScoreReasonEntry): string {
+  const terms = entry.terms.join(", ");
+  switch (entry.code) {
+    case "excluded_keyword":
+      return `Найдено стоп-слово: ${terms}`;
+    case "source_not_selected":
+      return "Источник не выбран в цикле";
+    default:
+      return entry.code;
+  }
+}
+
+/** Localized reason lines: prefer machine-readable `reasonCodes`, fall back to
+ * the legacy English `reasons` strings for older backends. */
+export function localizeEvaluationReasons(evaluation: VacancyMatchEvaluation): string[] {
+  if (evaluation.reasonCodes.length > 0) {
+    return evaluation.reasonCodes.map(localizeEvaluationReasonCode);
+  }
+  return evaluation.reasons.map(localizeEvaluationReason);
+}
+
+export function localizeEvaluationPenalties(evaluation: VacancyMatchEvaluation): string[] {
+  if (evaluation.penaltyCodes.length > 0) {
+    return evaluation.penaltyCodes.map(localizeEvaluationPenaltyCode);
+  }
+  return evaluation.penalties.map(localizeEvaluationPenalty);
 }
 
 export type EvaluationTone = "positive" | "neutral" | "caution";

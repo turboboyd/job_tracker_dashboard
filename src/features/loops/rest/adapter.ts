@@ -198,7 +198,7 @@ export function mapBackendLoopDtoToLoop(dto: BackendLoopDto): Loop {
     discoveryRadiusKm: dto.discovery_radius_km ?? null,
     lastDiscoveryAt: dto.last_discovery_at ?? null,
     nextRunAt: dto.next_run_at ?? null,
-    discoveryIntervalHours: dto.discovery_interval_hours ?? 24,
+    discoveryIntervalHours: dto.discovery_interval_hours ?? 4,
     createdAt,
     updatedAt,
     createdAtTs: createdAt ? Date.parse(createdAt) : null,

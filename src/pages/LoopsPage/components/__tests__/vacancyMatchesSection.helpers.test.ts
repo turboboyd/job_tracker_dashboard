@@ -13,7 +13,6 @@ import {
 assert.equal(isActionableVacancyMatch({ status: "new" }), true);
 assert.equal(isActionableVacancyMatch({ status: "saved" }), true);
 assert.equal(isActionableVacancyMatch({ status: "converted" }), false);
-assert.equal(isActionableVacancyMatch({ status: "ignored" }), false);
 
 assert.equal(getCreateApplicationButtonLabel(false), "Создать заявку");
 assert.equal(getCreateApplicationButtonLabel(true), "Создаём...");

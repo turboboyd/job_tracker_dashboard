@@ -20,9 +20,6 @@ class UserRead(BaseModel):
     date_format: str
     analysis_plan: PlanName
     resume_text: str | None = None
-    # When the user last marked their Matches list as seen (watermark for the
-    # "Новые"/unseen tab). Null until they first mark it.
-    matches_seen_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

@@ -1,5 +1,5 @@
-import { ExternalLink, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ExternalLink } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import type { Loop } from "src/entities/loop";
@@ -9,10 +9,11 @@ import {
   createApplicationFromVacancyMatchViaRest,
   getLoopVacancyMatchViaRest,
   listLoopVacancyMatchesViaRest,
-  patchLoopVacancyMatchViaRest,
+  markLoopVacancyMatchSeenViaRest,
   type VacancyMatch,
   type VacancyMatchStatus,
 } from "src/features/vacancyMatches";
+import { AppRoutes, RoutePath } from "src/shared/config/routes";
 import { getErrorMessage } from "src/shared/lib";
 
 function getLoopName(loop: Loop | null | undefined): string {
@@ -27,13 +28,11 @@ function getScore(match: VacancyMatch): number | null {
 function getStatusLabel(status: VacancyMatchStatus): string {
   if (status === "new") return "New";
   if (status === "saved") return "Saved";
-  if (status === "ignored") return "Hidden";
   return "Converted";
 }
 
 function getStatusClass(status: VacancyMatchStatus): string {
   if (status === "converted") return "bg-blue-100 text-blue-700";
-  if (status === "ignored") return "bg-muted text-muted-foreground";
   if (status === "saved") return "bg-emerald-100 text-emerald-700";
   return "bg-primary/10 text-primary";
 }
@@ -77,7 +76,9 @@ export default function MatchDetailsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
-  const [hiding, setHiding] = useState(false);
+  // Remember which match ids we already marked seen so opening the page once is
+  // enough and re-renders don't fire redundant requests.
+  const markedSeenRef = useRef<Set<string>>(new Set());
 
   const loop = useMemo(
     () => loops.find((item) => item.id === match?.loopId || item.id === requestedLoopId) ?? null,
@@ -111,6 +112,23 @@ export default function MatchDetailsPage() {
     void loadMatch();
   }, [loadMatch]);
 
+  // Opening the details page counts as "viewing" the vacancy: mark it seen on the
+  // backend (idempotent, best-effort) and reflect it locally. Guarded so it runs
+  // once per match id even across re-renders.
+  useEffect(() => {
+    if (!match || match.seenAt) return;
+    if (markedSeenRef.current.has(match.id)) return;
+    markedSeenRef.current.add(match.id);
+    const { loopId, id } = match;
+    markLoopVacancyMatchSeenViaRest(loopId, id)
+      .then((updated) => {
+        setMatch((current) => (current && current.id === updated.id ? updated : current));
+      })
+      .catch(() => {
+        /* seen-tracking is best-effort */
+      });
+  }, [match]);
+
   async function handleCreateApplication() {
     if (!match) return;
     setConverting(true);
@@ -125,20 +143,6 @@ export default function MatchDetailsPage() {
     }
   }
 
-  async function handleHide() {
-    if (!match) return;
-    setHiding(true);
-    setError(null);
-    try {
-      const updated = await patchLoopVacancyMatchViaRest(match.loopId, match.id, { status: "ignored" });
-      setMatch(updated);
-    } catch (hideError: unknown) {
-      setError(getErrorMessage(hideError));
-    } finally {
-      setHiding(false);
-    }
-  }
-
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       <header className="shrink-0 border-b border-border px-7 py-5">
@@ -147,7 +151,7 @@ export default function MatchDetailsPage() {
             <div className="mb-1 flex items-center gap-2 text-[11.5px] text-muted-foreground/60">
               <span>Loopboard</span>
               <span>/</span>
-              <Link to="/dashboard/matches" className="hover:text-foreground">Matches</Link>
+              <Link to={RoutePath[AppRoutes.MATCHES]} className="hover:text-foreground">Matches</Link>
               <span>/</span>
               <span className="truncate">{match?.roleTitle || "Match details"}</span>
             </div>
@@ -162,7 +166,11 @@ export default function MatchDetailsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
-              to={match?.loopId ? `/dashboard/matches?loopId=${encodeURIComponent(match.loopId)}` : "/dashboard/matches"}
+              to={
+                match?.loopId
+                  ? `${RoutePath[AppRoutes.MATCHES]}?loopId=${encodeURIComponent(match.loopId)}`
+                  : RoutePath[AppRoutes.MATCHES]
+              }
               className="rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted"
             >
               Back
@@ -260,22 +268,13 @@ export default function MatchDetailsPage() {
                   ) : (
                     <button
                       type="button"
-                      disabled={converting || match.status === "ignored"}
+                      disabled={converting}
                       onClick={() => { void handleCreateApplication(); }}
                       className="rounded-md bg-primary px-3 py-2 text-[13px] font-medium text-primary-foreground disabled:opacity-50"
                     >
                       {converting ? "Creating..." : "Create Application"}
                     </button>
                   )}
-                  <button
-                    type="button"
-                    disabled={hiding || match.status === "ignored" || match.status === "converted"}
-                    onClick={() => { void handleHide(); }}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-[13px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
-                  >
-                    {hiding ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : null}
-                    {hiding ? "Hiding..." : "Hide match"}
-                  </button>
                 </div>
               </div>
 

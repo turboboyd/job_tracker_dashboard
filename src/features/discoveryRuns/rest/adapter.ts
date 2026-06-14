@@ -3,6 +3,7 @@ import type {
   DiscoveryRunHistoryItemDto,
   DiscoveryRunHistoryResponse,
   DiscoveryRunHistoryResponseDto,
+  DiscoveryRunInput,
   DiscoveryRunItem,
   DiscoveryRunItemDto,
   DiscoveryRunPreviewInput,
@@ -28,6 +29,15 @@ export function mapDiscoveryRunPreviewInputToDto(
     page: input.page,
     page_size: input.pageSize,
     cache_only: input.cacheOnly,
+  };
+}
+
+export function mapDiscoveryRunInputToDto(input: DiscoveryRunInput): DiscoveryRunRequestDto {
+  return {
+    loop_id: input.loopId,
+    dry_run: false,
+    source_ids: input.sourceIds,
+    search_scope: input.searchScope,
   };
 }
 

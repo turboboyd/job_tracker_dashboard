@@ -121,8 +121,6 @@ async def test_get_me_valid_token_creates_user_and_returns_200(client):
     assert "id" in body
     assert "created_at" in body
     assert "updated_at" in body
-    # New users have not seen their matches list yet.
-    assert body["matches_seen_at"] is None
 
 
 async def test_get_me_repeated_call_returns_same_user_no_duplicate(client):
@@ -208,38 +206,4 @@ async def test_patch_me_no_authorization_returns_401(db_session):
     app = _make_app(db_session, _MockVerifier(_DEFAULT_USER))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.patch("/api/v1/users/me", json={"language": "en"})
-    assert r.status_code == 401
-
-
-# ── POST /api/v1/users/me/matches-seen ──────────────────────────────────────
-
-
-async def test_mark_matches_seen_advances_watermark(client):
-    # Start: never seen.
-    r0 = await client.get("/api/v1/users/me", headers=_BEARER)
-    assert r0.status_code == 200
-    assert r0.json()["matches_seen_at"] is None
-
-    # Mark seen → watermark is set to a timestamp.
-    r1 = await client.post("/api/v1/users/me/matches-seen", headers=_BEARER)
-    assert r1.status_code == 200
-    first = r1.json()["matches_seen_at"]
-    assert first is not None
-
-    # Marking again advances the watermark (monotonic, never goes backwards).
-    r2 = await client.post("/api/v1/users/me/matches-seen", headers=_BEARER)
-    assert r2.status_code == 200
-    second = r2.json()["matches_seen_at"]
-    assert second is not None
-    assert second >= first
-
-    # A subsequent GET reflects the persisted watermark.
-    r3 = await client.get("/api/v1/users/me", headers=_BEARER)
-    assert r3.json()["matches_seen_at"] == second
-
-
-async def test_mark_matches_seen_no_authorization_returns_401(db_session):
-    app = _make_app(db_session, _MockVerifier(_DEFAULT_USER))
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.post("/api/v1/users/me/matches-seen")
     assert r.status_code == 401

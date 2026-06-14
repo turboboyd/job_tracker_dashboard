@@ -3,6 +3,7 @@ import { getBackendConfig } from "src/shared/config";
 
 import {
   mapDiscoveryRunHistoryResponseDto,
+  mapDiscoveryRunInputToDto,
   mapDiscoveryRunPreviewInputToDto,
   mapDiscoveryRunResponseDto,
   mapDiscoverySourceRuntimeStatusResponseDto,
@@ -11,6 +12,7 @@ import type {
   DiscoveryRunHistoryQuery,
   DiscoveryRunHistoryResponse,
   DiscoveryRunHistoryResponseDto,
+  DiscoveryRunInput,
   DiscoveryRunPreviewInput,
   DiscoveryRunResponse,
   DiscoveryRunResponseDto,
@@ -33,6 +35,17 @@ export async function runDiscoveryPreviewViaRest(
   const dto = await restPost<DiscoveryRunResponseDto>(
     buildDiscoveryRunsUrl(apiBaseUrl),
     mapDiscoveryRunPreviewInputToDto(input),
+  );
+  return mapDiscoveryRunResponseDto(dto);
+}
+
+export async function runDiscoveryViaRest(
+  input: DiscoveryRunInput,
+): Promise<DiscoveryRunResponse> {
+  const { apiBaseUrl } = getBackendConfig();
+  const dto = await restPost<DiscoveryRunResponseDto>(
+    buildDiscoveryRunsUrl(apiBaseUrl),
+    mapDiscoveryRunInputToDto(input),
   );
   return mapDiscoveryRunResponseDto(dto);
 }

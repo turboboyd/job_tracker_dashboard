@@ -362,15 +362,20 @@
         ],
         "summary": "Run safe discovery evaluation without fetching sources",
         "operationId": "create_discovery_run_api_v1_discovery_runs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DiscoveryRunRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -393,12 +398,82 @@
               }
             }
           }
-        },
+        }
+      },
+      "get": {
+        "tags": [
+          "discovery-runs"
+        ],
+        "summary": "List persisted discovery run history",
+        "operationId": "list_discovery_runs_api_v1_discovery_runs_get",
         "security": [
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryRunHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/loops": {
@@ -666,6 +741,54 @@
         }
       }
     },
+    "/api/v1/loops/{loop_id}/source-stats": {
+      "get": {
+        "tags": [
+          "loops"
+        ],
+        "summary": "Per-source stats for a loop",
+        "operationId": "get_loop_source_stats_api_v1_loops__loop_id__source_stats_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopSourceStatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/loops/{loop_id}/matches/import-preview": {
       "post": {
         "tags": [
@@ -810,7 +933,6 @@
                   "enum": [
                     "new",
                     "saved",
-                    "ignored",
                     "converted"
                   ],
                   "type": "string"
@@ -820,6 +942,20 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "freshness",
+                "score"
+              ],
+              "type": "string",
+              "default": "freshness",
+              "title": "Sort"
             }
           },
           {
@@ -927,13 +1063,13 @@
         }
       }
     },
-    "/api/v1/loops/{loop_id}/matches/preview-ignores": {
-      "post": {
+    "/api/v1/loops/{loop_id}/matches/{match_id}": {
+      "get": {
         "tags": [
           "vacancy-matches"
         ],
-        "summary": "Hide one discovery preview item from future preview feeds",
-        "operationId": "create_preview_ignore_api_v1_loops__loop_id__matches_preview_ignores_post",
+        "summary": "Get one vacancy match for a loop",
+        "operationId": "get_match_api_v1_loops__loop_id__matches__match_id__get",
         "security": [
           {
             "HTTPBearer": []
@@ -948,25 +1084,25 @@
               "type": "string",
               "title": "Loop Id"
             }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VacancyPreviewIgnoreRequest"
-              }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
             }
           }
-        },
+        ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VacancyPreviewIgnoreResponse"
+                  "$ref": "#/components/schemas/VacancyMatchRead"
                 }
               }
             }
@@ -983,126 +1119,6 @@
           }
         }
       },
-      "get": {
-        "tags": [
-          "vacancy-matches"
-        ],
-        "summary": "List preview items hidden by the current user for a loop",
-        "operationId": "list_preview_ignores_api_v1_loops__loop_id__matches_preview_ignores_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "loop_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Loop Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 500,
-              "minimum": 1,
-              "default": 200,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VacancyPreviewIgnoreListResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/loops/{loop_id}/matches/preview-ignores/{ignore_id}": {
-      "delete": {
-        "tags": [
-          "vacancy-matches"
-        ],
-        "summary": "Remove one hidden discovery preview item",
-        "operationId": "delete_preview_ignore_api_v1_loops__loop_id__matches_preview_ignores__ignore_id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "loop_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Loop Id"
-            }
-          },
-          {
-            "name": "ignore_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Ignore Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/loops/{loop_id}/matches/{match_id}": {
       "patch": {
         "tags": [
           "vacancy-matches"
@@ -1145,6 +1161,64 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyMatchRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/matches/{match_id}/seen": {
+      "post": {
+        "tags": [
+          "vacancy-matches"
+        ],
+        "summary": "Mark one vacancy match as seen by the current user",
+        "description": "Stamp ``seen_at`` the first time the user opens this match.\n\nIdempotent: repeated calls keep the original view timestamp. Drives the\nper-match \"\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440\u0435\u043d\u043e\" badge and the \"\u041d\u043e\u0432\u044b\u0435\" (unseen) tab.",
+        "operationId": "mark_match_seen_api_v1_loops__loop_id__matches__match_id__seen_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1333,6 +1407,190 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConvertMatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matches": {
+      "get": {
+        "tags": [
+          "matches-feed"
+        ],
+        "summary": "Paginated cross-loop feed of saved vacancy matches",
+        "description": "List persisted matches across all of the user's visible loops.\n\n- ``tab``: ``all`` | ``new`` (unseen and not saved/applied) | ``saved``.\n- ``source``: restrict to one source id (case-insensitive).\n- ``q``: substring match over company / role / location.\n- ``sort``: ``posted`` (freshest, default) | ``company`` | ``loop`` |\n  ``score`` (persisted match score, best first, unscored rows last).\nCounts for every tab are returned alongside the current page.",
+        "operationId": "list_matches_feed_api_v1_matches_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tab",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "new",
+                "saved"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Tab"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "posted",
+                "company",
+                "loop",
+                "score"
+              ],
+              "type": "string",
+              "default": "posted",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchesFeedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loops/{loop_id}/applications/from-preview": {
+      "post": {
+        "tags": [
+          "loop-applications"
+        ],
+        "summary": "Save a discovery preview item directly as an Application with status Saved",
+        "operationId": "save_preview_as_application_api_v1_loops__loop_id__applications_from_preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "loop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VacancyMatchFromPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationFromPreviewResponse"
                 }
               }
             }
@@ -1911,8 +2169,13 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Successful Response"
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -2161,8 +2424,13 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Successful Response"
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -2658,6 +2926,11 @@
           },
           "features": {
             "$ref": "#/components/schemas/AnalysisPlanFeatures"
+          },
+          "ai_available": {
+            "type": "boolean",
+            "title": "Ai Available",
+            "default": false
           }
         },
         "type": "object",
@@ -2966,6 +3239,46 @@
           "role_title"
         ],
         "title": "ApplicationCreate"
+      },
+      "ApplicationFromPreviewResponse": {
+        "properties": {
+          "application": {
+            "$ref": "#/components/schemas/ApplicationRead"
+          },
+          "match_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Id"
+          },
+          "application_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Application Id"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "application",
+          "application_id",
+          "created",
+          "duplicate"
+        ],
+        "title": "ApplicationFromPreviewResponse"
       },
       "ApplicationListResponse": {
         "properties": {
@@ -4229,6 +4542,118 @@
         ],
         "title": "DiscoveryPreviewResponse"
       },
+      "DiscoveryRunHistoryItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "completed_with_warnings",
+              "failed",
+              "skipped"
+            ],
+            "title": "Status"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "items_found": {
+            "type": "integer",
+            "title": "Items Found"
+          },
+          "items_new": {
+            "type": "integer",
+            "title": "Items New"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms"
+          },
+          "error_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "run_id",
+          "loop_id",
+          "status",
+          "sources",
+          "items_found",
+          "items_new",
+          "duration_ms",
+          "error_text",
+          "started_at",
+          "finished_at"
+        ],
+        "title": "DiscoveryRunHistoryItem"
+      },
+      "DiscoveryRunHistoryResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryRunHistoryItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "DiscoveryRunHistoryResponse"
+      },
       "DiscoveryRunItem": {
         "properties": {
           "loop_id": {
@@ -4304,6 +4729,32 @@
           "message"
         ],
         "title": "DiscoveryRunItem"
+      },
+      "DiscoveryRunPreviewInsight": {
+        "properties": {
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "default": 0.0
+          },
+          "matched": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          }
+        },
+        "type": "object",
+        "title": "DiscoveryRunPreviewInsight",
+        "description": "Lightweight, read-time heuristic 'fit' breakdown for a preview item.\n\nComputed on the fly against the loop's current role/keywords/location (never\ncached) so the user gets an at-a-glance relevance read *before* saving a\nvacancy \u2014 without any external/LLM call."
       },
       "DiscoveryRunPreviewItem": {
         "properties": {
@@ -4388,6 +4839,16 @@
             },
             "type": "object",
             "title": "Confidence"
+          },
+          "insight": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscoveryRunPreviewInsight"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -4449,10 +4910,15 @@
           },
           "page_size": {
             "type": "integer",
-            "maximum": 5.0,
+            "maximum": 20.0,
             "minimum": 1.0,
             "title": "Page Size",
-            "default": 5
+            "default": 20
+          },
+          "cache_only": {
+            "type": "boolean",
+            "title": "Cache Only",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -5218,6 +5684,57 @@
         ],
         "title": "LoopListResponse"
       },
+      "LoopMetrics": {
+        "properties": {
+          "matches_saved": {
+            "type": "integer",
+            "title": "Matches Saved",
+            "default": 0
+          },
+          "applications_total": {
+            "type": "integer",
+            "title": "Applications Total",
+            "default": 0
+          },
+          "applied_count": {
+            "type": "integer",
+            "title": "Applied Count",
+            "default": 0
+          },
+          "interview_count": {
+            "type": "integer",
+            "title": "Interview Count",
+            "default": 0
+          },
+          "offer_count": {
+            "type": "integer",
+            "title": "Offer Count",
+            "default": 0
+          },
+          "rejected_count": {
+            "type": "integer",
+            "title": "Rejected Count",
+            "default": 0
+          },
+          "response_rate": {
+            "type": "number",
+            "title": "Response Rate",
+            "default": 0.0
+          },
+          "interview_rate": {
+            "type": "number",
+            "title": "Interview Rate",
+            "default": 0.0
+          },
+          "offer_rate": {
+            "type": "number",
+            "title": "Offer Rate",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "title": "LoopMetrics"
+      },
       "LoopRead": {
         "properties": {
           "id": {
@@ -5340,6 +5857,23 @@
             ],
             "title": "Last Discovery At"
           },
+          "next_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Run At"
+          },
+          "discovery_interval_hours": {
+            "type": "integer",
+            "title": "Discovery Interval Hours",
+            "default": 4
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -5349,6 +5883,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoopMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -5373,6 +5917,68 @@
           "updated_at"
         ],
         "title": "LoopRead"
+      },
+      "LoopSourceStat": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches",
+            "default": 0
+          },
+          "applied": {
+            "type": "integer",
+            "title": "Applied",
+            "default": 0
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "health": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warning",
+              "error",
+              "never"
+            ],
+            "title": "Health",
+            "default": "never"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_id"
+        ],
+        "title": "LoopSourceStat"
+      },
+      "LoopSourceStatsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LoopSourceStat"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "LoopSourceStatsResponse"
       },
       "LoopUpdate": {
         "properties": {
@@ -5547,11 +6153,293 @@
               }
             ],
             "title": "Discovery Radius Km"
+          },
+          "discovery_interval_hours": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 168.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discovery Interval Hours"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "LoopUpdate"
+      },
+      "MatchesFeedCounts": {
+        "properties": {
+          "all": {
+            "type": "integer",
+            "title": "All"
+          },
+          "new": {
+            "type": "integer",
+            "title": "New"
+          },
+          "saved": {
+            "type": "integer",
+            "title": "Saved"
+          }
+        },
+        "type": "object",
+        "required": [
+          "all",
+          "new",
+          "saved"
+        ],
+        "title": "MatchesFeedCounts",
+        "description": "Tab badge counts, computed under the same q/source/loop scope.\n\nEach count applies its own status rule regardless of the active tab, so the\nbadges stay stable while the user switches tabs."
+      },
+      "MatchesFeedItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          },
+          "loop_id": {
+            "type": "string",
+            "title": "Loop Id"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "location_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Text"
+          },
+          "vacancy_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vacancy Description"
+          },
+          "raw_metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Raw Metadata"
+          },
+          "confidence": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Confidence"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "application_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id"
+          },
+          "seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seen At"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "score_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Version"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "loop_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loop Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "loop_id",
+          "source_url",
+          "source",
+          "company_name",
+          "role_title",
+          "location_text",
+          "vacancy_description",
+          "confidence",
+          "warnings",
+          "status",
+          "application_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "MatchesFeedItem",
+        "description": "A feed row: a vacancy match plus its owning loop's display name."
+      },
+      "MatchesFeedResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MatchesFeedItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MatchesFeedCounts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "counts"
+        ],
+        "title": "MatchesFeedResponse"
       },
       "ReminderItem": {
         "properties": {
@@ -5621,6 +6509,27 @@
         },
         "type": "object",
         "title": "SalaryRange"
+      },
+      "ScoreReasonEntry": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Terms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "ScoreReasonEntry",
+        "description": "Machine-readable scoring explanation entry. Clients localize by ``code``\n(terms carry the matched tokens/keywords) instead of parsing the legacy\nEnglish strings."
       },
       "StatusTransitionRequest": {
         "properties": {
@@ -5728,6 +6637,18 @@
               }
             ],
             "title": "Date Format"
+          },
+          "resume_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Text"
           }
         },
         "additionalProperties": false,
@@ -5800,6 +6721,17 @@
             ],
             "title": "Analysis Plan"
           },
+          "resume_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Text"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -5840,9 +6772,15 @@
             "default": "basic"
           },
           "resume_text": {
-            "type": "string",
-            "maxLength": 20000,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20000
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Resume Text"
           },
           "language": {
@@ -5865,9 +6803,6 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "resume_text"
-        ],
         "title": "VacancyAnalysisCreate"
       },
       "VacancyAnalysisListResponse": {
@@ -6464,7 +7399,6 @@
             "enum": [
               "new",
               "saved",
-              "ignored",
               "converted"
             ],
             "title": "Status",
@@ -6550,6 +7484,20 @@
             },
             "type": "array",
             "title": "Penalties"
+          },
+          "reason_codes": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreReasonEntry"
+            },
+            "type": "array",
+            "title": "Reason Codes"
+          },
+          "penalty_codes": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreReasonEntry"
+            },
+            "type": "array",
+            "title": "Penalty Codes"
           },
           "duplicate_status": {
             "type": "string",
@@ -6828,7 +7776,6 @@
                 "enum": [
                   "new",
                   "saved",
-                  "ignored",
                   "converted"
                 ]
               },
@@ -6964,6 +7911,52 @@
             ],
             "title": "Application Id"
           },
+          "seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seen At"
+          },
+          "posted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted At"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "score_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Version"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -6994,199 +7987,6 @@
           "updated_at"
         ],
         "title": "VacancyMatchRead"
-      },
-      "VacancyPreviewIgnoreListResponse": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/VacancyPreviewIgnoreRead"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "type": "object",
-        "required": [
-          "items",
-          "total",
-          "limit",
-          "offset"
-        ],
-        "title": "VacancyPreviewIgnoreListResponse"
-      },
-      "VacancyPreviewIgnoreRead": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "User Id"
-          },
-          "loop_id": {
-            "type": "string",
-            "title": "Loop Id"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id"
-          },
-          "source_url": {
-            "type": "string",
-            "title": "Source Url"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          },
-          "company": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "user_id",
-          "loop_id",
-          "source_id",
-          "source_url",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "VacancyPreviewIgnoreRead"
-      },
-      "VacancyPreviewIgnoreRequest": {
-        "properties": {
-          "source_id": {
-            "type": "string",
-            "maxLength": 64,
-            "minLength": 1,
-            "pattern": "^[a-z0-9_]+$",
-            "title": "Source Id"
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 255
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id"
-          },
-          "source_url": {
-            "type": "string",
-            "maxLength": 2048,
-            "minLength": 1,
-            "title": "Source Url"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 500
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          },
-          "company": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 500
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Company"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "source_id",
-          "source_url"
-        ],
-        "title": "VacancyPreviewIgnoreRequest"
-      },
-      "VacancyPreviewIgnoreResponse": {
-        "properties": {
-          "item": {
-            "$ref": "#/components/schemas/VacancyPreviewIgnoreRead"
-          },
-          "created": {
-            "type": "boolean",
-            "title": "Created"
-          },
-          "duplicate": {
-            "type": "boolean",
-            "title": "Duplicate"
-          }
-        },
-        "type": "object",
-        "required": [
-          "item",
-          "created",
-          "duplicate"
-        ],
-        "title": "VacancyPreviewIgnoreResponse"
       },
       "ValidationError": {
         "properties": {

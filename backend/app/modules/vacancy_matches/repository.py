@@ -1,13 +1,48 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.vacancy_match import VacancyMatch
-from app.db.models.vacancy_preview_ignore import VacancyPreviewIgnore
+
+
+def _escape_like(value: str) -> str:
+    """Escape LIKE/ILIKE wildcards so user input is matched literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _freshness_order_by() -> list[Any]:
+    """Shared server-side freshness ordering for every match listing.
+
+    Newest first, with deterministic fallbacks so ordering is stable and the
+    global feed and the per-loop feed agree on what "fresh" means:
+
+      1. ``posted_at``  DESC NULLS LAST  — source posting time when known; rows
+         without a known posting time sort after dated ones.
+      2. ``updated_at`` DESC            — last persisted change (fallback when
+         ``posted_at`` is null or ties).
+      3. ``created_at`` DESC            — first time we saw the row.
+      4. ``id``         ASC             — final stable tiebreak for pagination.
+    """
+    return [
+        VacancyMatch.posted_at.desc().nulls_last(),
+        VacancyMatch.updated_at.desc(),
+        VacancyMatch.created_at.desc(),
+        VacancyMatch.id.asc(),
+    ]
+
+
+def _score_order_by() -> list[Any]:
+    """Score-ranked ordering: best persisted score first, unscored rows last,
+    freshness chain as the deterministic tie-break."""
+    return [
+        VacancyMatch.score.desc().nulls_last(),
+        *_freshness_order_by(),
+    ]
 
 
 class VacancyMatchesRepository:
@@ -42,6 +77,7 @@ class VacancyMatchesRepository:
         user_id: UUID,
         loop_id: str,
         status: str | None = None,
+        sort: str = "freshness",
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[list[VacancyMatch], int]:
@@ -49,16 +85,126 @@ class VacancyMatchesRepository:
         if status:
             conditions.append(VacancyMatch.status == status)
 
+        order_by = (
+            _score_order_by() if sort == "score" else _freshness_order_by()
+        )
+
         count_query = select(func.count()).select_from(VacancyMatch).where(*conditions)
         total = (await self._db.execute(count_query)).scalar_one()
         result = await self._db.execute(
             select(VacancyMatch)
             .where(*conditions)
-            .order_by(VacancyMatch.updated_at.desc(), VacancyMatch.id.asc())
+            .order_by(*order_by)
             .limit(limit)
             .offset(offset)
         )
         return list(result.scalars().all()), total
+
+    async def list_feed(
+        self,
+        *,
+        user_id: UUID,
+        loop_source_filters: list[tuple[str, list[str]]],
+        loop_rank: dict[str, int],
+        tab: str,
+        q: str | None,
+        source: str | None,
+        sort: str,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[VacancyMatch], dict[str, int]]:
+        """Cross-loop paginated feed over persisted matches.
+
+        ``loop_source_filters`` is a list of ``(loop_id, allowed_sources)`` for
+        the user's visible loops; an empty ``allowed_sources`` means the loop
+        accepts any source. Counts ({all,new,saved}) are computed once under the
+        shared q/source/loop scope so tab badges stay stable.
+        """
+        empty_counts = {"all": 0, "new": 0, "saved": 0}
+        if not loop_source_filters:
+            return [], empty_counts
+
+        loop_clauses = []
+        for loop_id_str, allowed in loop_source_filters:
+            if allowed:
+                loop_clauses.append(
+                    and_(
+                        VacancyMatch.loop_id == loop_id_str,
+                        func.lower(VacancyMatch.source).in_(allowed),
+                    )
+                )
+            else:
+                loop_clauses.append(VacancyMatch.loop_id == loop_id_str)
+
+        base_conditions = [VacancyMatch.user_id == user_id, or_(*loop_clauses)]
+
+        if source:
+            base_conditions.append(func.lower(VacancyMatch.source) == source)
+
+        if q:
+            like = f"%{_escape_like(q)}%"
+            base_conditions.append(
+                or_(
+                    VacancyMatch.company_name.ilike(like, escape="\\"),
+                    VacancyMatch.role_title.ilike(like, escape="\\"),
+                    VacancyMatch.location_text.ilike(like, escape="\\"),
+                )
+            )
+
+        new_filter = and_(
+            VacancyMatch.status == "new", VacancyMatch.seen_at.is_(None)
+        )
+        saved_filter = VacancyMatch.status.in_(["saved", "converted"])
+
+        counts_row = (
+            await self._db.execute(
+                select(
+                    func.count().label("all"),
+                    func.count().filter(new_filter).label("new"),
+                    func.count().filter(saved_filter).label("saved"),
+                ).where(*base_conditions)
+            )
+        ).one()
+        counts = {
+            "all": counts_row.all,
+            "new": counts_row.new,
+            "saved": counts_row.saved,
+        }
+
+        conditions = list(base_conditions)
+        if tab == "new":
+            conditions.append(new_filter)
+        elif tab == "saved":
+            conditions.append(saved_filter)
+
+        freshness = _freshness_order_by()
+        if sort == "company":
+            order_by = [
+                func.lower(VacancyMatch.company_name).asc().nulls_last(),
+                *freshness,
+            ]
+        elif sort == "score":
+            order_by = _score_order_by()
+        elif sort == "loop" and loop_rank:
+            whens = [
+                (VacancyMatch.loop_id == lid, rank)
+                for lid, rank in loop_rank.items()
+            ]
+            order_by = [
+                case(*whens, else_=len(loop_rank)).asc(),
+                *freshness,
+            ]
+        else:  # "posted" (default) and the loop-sort fallback
+            order_by = freshness
+
+        result = await self._db.execute(
+            select(VacancyMatch)
+            .where(*conditions)
+            .order_by(*order_by)
+            .limit(limit)
+            .offset(offset)
+        )
+        return list(result.scalars().all()), counts
 
     async def get_by_source_external_id(
         self,
@@ -104,90 +250,14 @@ class VacancyMatchesRepository:
         await self._db.refresh(match)
         return match
 
-    async def create_preview_ignore(
-        self,
-        ignore: VacancyPreviewIgnore,
-    ) -> VacancyPreviewIgnore:
-        self._db.add(ignore)
-        await self._db.flush()
-        await self._db.refresh(ignore)
-        return ignore
+    async def mark_seen(self, match: VacancyMatch) -> VacancyMatch:
+        """Stamp ``seen_at`` once (idempotent: keeps the first view time).
 
-    async def get_preview_ignore_by_source_external_id(
-        self,
-        *,
-        user_id: UUID,
-        loop_id: str,
-        source_id: str,
-        external_id: str,
-    ) -> VacancyPreviewIgnore | None:
-        result = await self._db.execute(
-            select(VacancyPreviewIgnore).where(
-                VacancyPreviewIgnore.user_id == user_id,
-                VacancyPreviewIgnore.loop_id == loop_id,
-                VacancyPreviewIgnore.source_id == source_id,
-                VacancyPreviewIgnore.external_id == external_id,
-            )
-        )
-        return result.scalar_one_or_none()
-
-    async def get_preview_ignore_by_source_url(
-        self,
-        *,
-        user_id: UUID,
-        loop_id: str,
-        source_id: str,
-        source_url: str,
-    ) -> VacancyPreviewIgnore | None:
-        result = await self._db.execute(
-            select(VacancyPreviewIgnore).where(
-                VacancyPreviewIgnore.user_id == user_id,
-                VacancyPreviewIgnore.loop_id == loop_id,
-                VacancyPreviewIgnore.source_id == source_id,
-                VacancyPreviewIgnore.source_url == source_url,
-            )
-        )
-        return result.scalar_one_or_none()
-
-    async def list_preview_ignores_for_loop(
-        self,
-        *,
-        user_id: UUID,
-        loop_id: str,
-        limit: int = 200,
-        offset: int = 0,
-    ) -> tuple[list[VacancyPreviewIgnore], int]:
-        conditions = [
-            VacancyPreviewIgnore.user_id == user_id,
-            VacancyPreviewIgnore.loop_id == loop_id,
-        ]
-        count_query = select(func.count()).select_from(VacancyPreviewIgnore).where(*conditions)
-        total = (await self._db.execute(count_query)).scalar_one()
-        result = await self._db.execute(
-            select(VacancyPreviewIgnore)
-            .where(*conditions)
-            .order_by(VacancyPreviewIgnore.updated_at.desc(), VacancyPreviewIgnore.id.asc())
-            .limit(limit)
-            .offset(offset)
-        )
-        return list(result.scalars().all()), total
-
-    async def get_preview_ignore_owned_in_loop(
-        self,
-        *,
-        user_id: UUID,
-        loop_id: str,
-        ignore_id: UUID,
-    ) -> VacancyPreviewIgnore | None:
-        result = await self._db.execute(
-            select(VacancyPreviewIgnore).where(
-                VacancyPreviewIgnore.id == ignore_id,
-                VacancyPreviewIgnore.user_id == user_id,
-                VacancyPreviewIgnore.loop_id == loop_id,
-            )
-        )
-        return result.scalar_one_or_none()
-
-    async def delete_preview_ignore(self, ignore: VacancyPreviewIgnore) -> None:
-        await self._db.delete(ignore)
-        await self._db.flush()
+        Does not bump ``updated_at`` so marking a match seen never reshuffles
+        the freshness sort or looks like a content edit.
+        """
+        if match.seen_at is None:
+            match.seen_at = datetime.now(UTC)
+            await self._db.flush()
+            await self._db.refresh(match)
+        return match

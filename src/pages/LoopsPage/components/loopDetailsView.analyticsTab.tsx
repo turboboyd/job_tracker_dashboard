@@ -20,7 +20,7 @@ export function LoopAnalyticsTab({
   const { t } = useTranslation();
   const counts = useMemo(() => countMatchesByStatus(matches), [matches]);
   const buckets = useMemo(() => groupMatchesBySource(matches), [matches]);
-  const total = counts.new + counts.saved + counts.converted + counts.ignored;
+  const total = counts.new + counts.saved + counts.converted;
   const metrics = loop.metrics;
   const applications = metrics?.applications_total ?? counts.converted;
   const saved = metrics?.matches_saved ?? counts.saved + counts.converted;

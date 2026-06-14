@@ -56,8 +56,12 @@ class Loop(Base):
     next_run_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Default discovery interval is 4h, matching the scheduler's WARM_INTERVAL_HOURS
+    # and the product "auto-discovery every 4 hours" contract. The Python default
+    # governs ORM inserts (the real creation path); the DB-level server_default ("4",
+    # set in migration 0022) keeps raw/DB-level inserts consistent with the app.
     discovery_interval_hours: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=24, server_default="24"
+        Integer, nullable=False, default=4, server_default="4"
     )
     status: Mapped[str] = mapped_column(
         String,

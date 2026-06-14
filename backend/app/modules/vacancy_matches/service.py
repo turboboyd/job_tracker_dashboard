@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import UUID
@@ -9,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models.application import Application
 from app.db.models.user import User
 from app.db.models.vacancy_match import VacancyMatch
-from app.db.models.vacancy_preview_ignore import VacancyPreviewIgnore
 from app.modules.applications.repository import ApplicationsRepository
 from app.modules.applications.schemas import ApplicationCreate
 from app.modules.applications.service import ApplicationsService
@@ -25,7 +25,11 @@ from app.modules.vacancy_matches.schemas import (
     VacancyMatchEvaluationResponse,
     VacancyMatchFromPreviewRequest,
     VacancyMatchPatch,
-    VacancyPreviewIgnoreRequest,
+)
+from app.modules.vacancy_matches.scoring import (
+    apply_score,
+    score_input_from_match,
+    score_match,
 )
 
 
@@ -46,11 +50,6 @@ class VacancyMatchNotFoundError(VacancyMatchError):
 class VacancyMatchConvertValidationError(VacancyMatchError):
     code = "VACANCY_MATCH_CONVERT_INVALID"
     status_code = 422
-
-
-class VacancyMatchIgnoredError(VacancyMatchError):
-    code = "VACANCY_MATCH_IGNORED"
-    status_code = 409
 
 
 class VacancyMatchPreviewValidationError(VacancyMatchError):
@@ -100,6 +99,33 @@ def sanitize_raw_metadata(raw_metadata: dict) -> dict:
     return sanitized if isinstance(sanitized, dict) else {}
 
 
+def _normalize_source(value: str | None) -> str:
+    """Lowercase + trim a source id for case-insensitive comparison."""
+    return (value or "").strip().lower()
+
+
+def parse_posted_at(value: str | None) -> datetime | None:
+    """Best-effort parse of a source's free-form ``posted_at`` into a datetime.
+
+    Returns a timezone-aware UTC datetime for ISO-8601-ish inputs (the common
+    case across adapters), or ``None`` for relative/unparseable strings. Callers
+    store ``None`` and fall back to ``created_at`` for the freshness sort.
+    """
+    if not value:
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    candidate = text[:-1] + "+00:00" if text.endswith("Z") else text
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
 class VacancyMatchesService:
     def __init__(
         self,
@@ -128,9 +154,10 @@ class VacancyMatchesService:
         loop_id: str,
         payload: VacancyMatchCreate,
     ) -> VacancyMatch:
-        await self._loops.require_owned_active(user, loop_id)
+        loop = await self._loops.require_owned_active(user, loop_id)
         data = payload.model_dump()
         match = VacancyMatch(user_id=user.id, loop_id=loop_id, **data)
+        apply_score(match, score_match(loop, score_input_from_match(match)))
         return await self._repo.create(match)
 
     async def create_from_preview(
@@ -139,7 +166,7 @@ class VacancyMatchesService:
         loop_id: str,
         payload: VacancyMatchFromPreviewRequest,
     ) -> tuple[VacancyMatch, bool]:
-        await self._loops.require_owned_active(user, loop_id)
+        loop = await self._loops.require_owned_active(user, loop_id)
 
         source = get_discovery_source(payload.source_id)
         if source is None:
@@ -192,7 +219,9 @@ class VacancyMatchesService:
             confidence=payload.confidence,
             warnings=[],
             status="saved",
+            posted_at=parse_posted_at(payload.posted_at),
         )
+        apply_score(match, score_match(loop, score_input_from_match(match)))
         return await self._repo.create(match), True
 
     async def save_preview_as_application(
@@ -201,7 +230,7 @@ class VacancyMatchesService:
         loop_id: str,
         payload: VacancyMatchFromPreviewRequest,
     ) -> tuple[Application, VacancyMatch | None, bool, bool]:
-        await self._loops.require_owned_active(user, loop_id)
+        loop = await self._loops.require_owned_active(user, loop_id)
 
         source = get_discovery_source(payload.source_id)
         if source is None:
@@ -275,7 +304,9 @@ class VacancyMatchesService:
             warnings=[],
             status="converted",
             application_id=app.id,
+            posted_at=parse_posted_at(payload.posted_at),
         )
+        apply_score(match, score_match(loop, score_input_from_match(match)))
         return app, await self._repo.create(match), True, False
 
     async def _make_application(
@@ -300,91 +331,13 @@ class VacancyMatchesService:
             ),
         )
 
-    async def create_preview_ignore(
-        self,
-        user: User,
-        loop_id: str,
-        payload: VacancyPreviewIgnoreRequest,
-    ) -> tuple[VacancyPreviewIgnore, bool]:
-        await self._loops.require_owned_active(user, loop_id)
-
-        source = get_discovery_source(payload.source_id)
-        if source is None:
-            raise VacancyMatchPreviewValidationError("source_id is not registered")
-        if not source.enabled:
-            raise VacancyMatchPreviewValidationError("source_id is disabled")
-
-        normalized_url = normalize_source_url(payload.source_url)
-        external_id = payload.external_id.strip() if payload.external_id else None
-
-        if external_id:
-            existing = await self._repo.get_preview_ignore_by_source_external_id(
-                user_id=user.id,
-                loop_id=loop_id,
-                source_id=payload.source_id,
-                external_id=external_id,
-            )
-            if existing is not None:
-                return existing, False
-
-        existing = await self._repo.get_preview_ignore_by_source_url(
-            user_id=user.id,
-            loop_id=loop_id,
-            source_id=payload.source_id,
-            source_url=normalized_url,
-        )
-        if existing is not None:
-            return existing, False
-
-        ignore = VacancyPreviewIgnore(
-            user_id=user.id,
-            loop_id=loop_id,
-            source_id=payload.source_id,
-            external_id=external_id,
-            source_url=normalized_url,
-            title=payload.title,
-            company=payload.company,
-        )
-        return await self._repo.create_preview_ignore(ignore), True
-
-    async def list_preview_ignores_for_loop(
-        self,
-        user: User,
-        loop_id: str,
-        *,
-        limit: int = 200,
-        offset: int = 0,
-    ) -> tuple[list[VacancyPreviewIgnore], int]:
-        await self._loops.require_owned_for_read(user, loop_id)
-        return await self._repo.list_preview_ignores_for_loop(
-            user_id=user.id,
-            loop_id=loop_id,
-            limit=limit,
-            offset=offset,
-        )
-
-    async def delete_preview_ignore(
-        self,
-        user: User,
-        loop_id: str,
-        ignore_id: UUID,
-    ) -> None:
-        await self._loops.require_owned_active(user, loop_id)
-        ignore = await self._repo.get_preview_ignore_owned_in_loop(
-            user_id=user.id,
-            loop_id=loop_id,
-            ignore_id=ignore_id,
-        )
-        if ignore is None:
-            raise VacancyMatchNotFoundError("Preview ignore not found")
-        await self._repo.delete_preview_ignore(ignore)
-
     async def list_for_loop(
         self,
         user: User,
         loop_id: str,
         *,
         status: str | None = None,
+        sort: str = "freshness",
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[list[VacancyMatch], int]:
@@ -393,9 +346,64 @@ class VacancyMatchesService:
             user_id=user.id,
             loop_id=loop_id,
             status=status,
+            sort=sort,
             limit=limit,
             offset=offset,
         )
+
+    async def list_feed(
+        self,
+        user: User,
+        *,
+        tab: str = "all",
+        q: str | None = None,
+        source: str | None = None,
+        sort: str = "posted",
+        limit: int = 20,
+        offset: int = 0,
+    ) -> tuple[list[tuple[VacancyMatch, str | None]], dict[str, int]]:
+        """Cross-loop matches feed restricted to the user's visible loops.
+
+        Visible = not paused and not archived. Each visible loop contributes its
+        per-loop source allow-list (empty list = any source). Returns matches
+        paired with their loop's display name, plus {all,new,saved} counts.
+        """
+        loops, _ = await self._loops.list_for_user(
+            user, include_archived=False, limit=500, offset=0
+        )
+        visible = [loop for loop in loops if loop.status not in ("paused", "archived")]
+
+        loop_source_filters: list[tuple[str, list[str]]] = []
+        loop_rank: dict[str, int] = {}
+        name_by_id: dict[str, str] = {}
+        ranked = sorted(visible, key=lambda loop: (loop.title or "").lower())
+        for rank, loop in enumerate(ranked):
+            loop_id_str = str(loop.id)
+            allowed = [
+                normalized
+                for raw in (loop.selected_sources or [])
+                if (normalized := _normalize_source(raw))
+            ]
+            loop_source_filters.append((loop_id_str, allowed))
+            loop_rank[loop_id_str] = rank
+            name_by_id[loop_id_str] = loop.title
+
+        q_norm = q.strip() if q else None
+        source_norm = _normalize_source(source) if source else None
+
+        matches, counts = await self._repo.list_feed(
+            user_id=user.id,
+            loop_source_filters=loop_source_filters,
+            loop_rank=loop_rank,
+            tab=tab,
+            q=q_norm or None,
+            source=source_norm or None,
+            sort=sort,
+            limit=limit,
+            offset=offset,
+        )
+        items = [(match, name_by_id.get(match.loop_id)) for match in matches]
+        return items, counts
 
     async def get_owned_in_loop(
         self,
@@ -411,6 +419,21 @@ class VacancyMatchesService:
         if match is None:
             raise VacancyMatchNotFoundError("Vacancy match not found")
         return match
+
+    async def mark_seen(
+        self,
+        user: User,
+        loop_id: str,
+        match_id: UUID,
+    ) -> VacancyMatch:
+        """Record that the user viewed this match (idempotent).
+
+        Uses read-level ownership so a match stays markable even when its loop
+        is paused/archived. The first view wins; later calls are no-ops.
+        """
+        await self._loops.require_owned_for_read(user, loop_id)
+        match = await self.get_owned_in_loop(user, loop_id, match_id)
+        return await self._repo.mark_seen(match)
 
     async def patch(
         self,
@@ -481,11 +504,6 @@ class VacancyMatchesService:
             existing = await self._apps_repo.get_by_id(match.application_id)
             if existing is not None and existing.user_id == user.id:
                 return existing, match, False, True
-
-        if match.status == "ignored":
-            raise VacancyMatchIgnoredError(
-                "Ignored vacancy match must be restored before conversion"
-            )
 
         if not match.company_name or not match.role_title:
             raise VacancyMatchConvertValidationError(

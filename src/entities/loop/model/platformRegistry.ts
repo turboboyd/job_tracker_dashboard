@@ -46,10 +46,10 @@ function p(
 
 export const PLATFORM_REGISTRY = [
   // ---------- Recommended / Top ----------
-  p("linkedin", "LinkedIn", "recommended", buildLinkedInUrl, true),
-  p("indeed", "Indeed (DE)", "recommended", buildIndeedUrl, true),
-  p("stepstone", "StepStone", "recommended", buildStepstoneUrl, true),
-  p("xing", "XING Jobs", "recommended", buildXingUrl, true),
+  // Order is product-defined: legal/easier-to-integrate job boards first,
+  // LinkedIn intentionally last and never default-promoted (see
+  // DEFAULT_SELECTED_PLATFORMS below). This order drives every source list in
+  // the UI (Create Loop modal, Edit Sources, source chips).
   p(
     "arbeitsagentur",
     "Jobbörse Arbeitsagentur",
@@ -57,9 +57,13 @@ export const PLATFORM_REGISTRY = [
     buildArbeitsagenturUrl,
     true
   ),
+  p("indeed", "Indeed (DE)", "recommended", buildIndeedUrl, true),
+  p("stepstone", "StepStone", "recommended", buildStepstoneUrl, true),
+  p("xing", "XING Jobs", "recommended", buildXingUrl, true),
   p("jobvector", "Jobvector", "recommended", buildJobvectorUrl, true),
   p("joblift", "Joblift", "recommended", buildJobliftUrl, true),
   p("kimeta", "Kimeta", "recommended", buildKimetaUrl, true),
+  p("linkedin", "LinkedIn", "recommended", buildLinkedInUrl, true),
 
   // ---------- Germany ----------
   p("meinestadt", "meinestadt.de", "germany", buildMeinestadtUrl),
@@ -115,6 +119,13 @@ export const RECOMMENDED_PLATFORMS: LoopPlatform[] = PLATFORM_REGISTRY.filter(
   (x) => x.recommended
 ).map((x) => x.id);
 
+// Pre-selected sources for a new loop. LinkedIn stays visible in the
+// recommended group but is deliberately NOT pre-selected: the default set
+// prefers the legal/easier-to-integrate boards (Arbeitsagentur, Indeed,
+// StepStone, XING, …) and the user opts into LinkedIn explicitly.
+export const DEFAULT_SELECTED_PLATFORMS: LoopPlatform[] =
+  RECOMMENDED_PLATFORMS.filter((id) => id !== "linkedin");
+
 export const PLATFORM_LABEL_BY_ID: Record<LoopPlatform, string> =
   PLATFORM_REGISTRY.reduce((acc, x) => {
     acc[x.id] = x.label;
@@ -145,6 +156,43 @@ export const GROUPS: { id: PlatformMeta["group"]; title: string }[] = [
   { id: "remote", title: "Remote" },
   { id: "ausbildung", title: "Ausbildung / Praktikum" },
 ];
+
+// Canonical display priority for backend discovery source ids: legal/easier
+// job boards first, LinkedIn after all board/API sources (supported but never
+// first or default-promoted), manual entries last. Single source of truth for
+// every discovery-source list in the UI — Loop Details sources/settings, the
+// Overview source rail and the Matches sources strip all derive their order
+// from this list. Keep it consistent with the recommended block above.
+export const DISCOVERY_SOURCE_PRIORITY: readonly string[] = [
+  "arbeitsagentur",
+  "indeed",
+  "stepstone",
+  "xing",
+  "adzuna",
+  "remotive",
+  "arbeitnow",
+  "remotejobs",
+  "himalayas",
+  "remoteok",
+  "greenhouse",
+  "lever",
+  "linkedin",
+  "manual_url",
+  "company_websites",
+];
+
+const DISCOVERY_SOURCE_PRIORITY_INDEX: ReadonlyMap<string, number> = new Map(
+  DISCOVERY_SOURCE_PRIORITY.map((id, index) => [id, index]),
+);
+
+/** Priority rank of a discovery source id (case-insensitive); unknown sources
+ * rank after all known ones. */
+export function getDiscoverySourcePriority(sourceId: string): number {
+  return (
+    DISCOVERY_SOURCE_PRIORITY_INDEX.get(sourceId.toLowerCase()) ??
+    Number.MAX_SAFE_INTEGER
+  );
+}
 
 export function platformsByGroup(group: PlatformMeta["group"]): LoopPlatform[] {
   if (group === "recommended") {

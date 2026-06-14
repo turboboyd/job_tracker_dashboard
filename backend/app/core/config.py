@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     # Required for production; leave empty to use mocked auth in tests.
     FIREBASE_CREDENTIALS_JSON_PATH: str = ""
 
+    # DEV/QA ONLY. When set (e.g. "127.0.0.1:9099"), firebase-admin (wired in a
+    # later stage) trusts tokens minted by the local Firebase Auth Emulator
+    # instead of verifying real Google signatures. MUST be empty in production —
+    # enforced by validate_production_settings below. Inert until a later stage
+    # actually consumes it; declaring it here only adds validation + the prod guard.
+    FIREBASE_AUTH_EMULATOR_HOST: str = ""
+
     # ── Document Storage ───────────────────────────────────────────────────────
     # Local filesystem root for uploaded documents (dev/test only).
     DOCUMENT_STORAGE_ROOT: str = "storage/documents"
@@ -100,6 +107,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "FIREBASE_CREDENTIALS_JSON_PATH must be set in production. "
                 "Point it to the Firebase service-account JSON file."
+            )
+        if self.FIREBASE_AUTH_EMULATOR_HOST.strip():
+            raise ValueError(
+                "FIREBASE_AUTH_EMULATOR_HOST must be empty in production. "
+                "The auth emulator is a DEV/QA-only tool and must never be "
+                "reachable from a production deployment."
             )
         return self
 

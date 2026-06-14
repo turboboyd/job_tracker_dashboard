@@ -33,25 +33,6 @@ async def patch_me(
     return UserRead.model_validate(updated)
 
 
-@router.post(
-    "/me/matches-seen",
-    response_model=UserRead,
-    summary="Mark the Matches list as seen",
-)
-async def mark_matches_seen(
-    current_user: CurrentUser,
-    db: DbSession,
-) -> UserRead:
-    """Advance the user's Matches "seen" watermark to now.
-
-    The Matches "Новые" tab treats matches created after this timestamp as
-    unseen; calling this marks everything currently visible as seen.
-    """
-    service = UsersService(db)
-    updated = await service.mark_matches_seen(current_user)
-    return UserRead.model_validate(updated)
-
-
 @router.get(
     "/me/analysis-plan",
     response_model=AnalysisPlanRead,

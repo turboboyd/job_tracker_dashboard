@@ -56,23 +56,8 @@ def make_match(**overrides):
         "warnings": [],
         "status": "saved",
         "application_id": None,
-        "created_at": NOW,
-        "updated_at": NOW,
-    }
-    data.update(overrides)
-    return SimpleNamespace(**data)
-
-
-def make_preview_ignore(**overrides):
-    data = {
-        "id": uuid4(),
-        "user_id": USER_ID,
-        "loop_id": "loop-1",
-        "source_id": "arbeitsagentur",
-        "external_id": "job-1",
-        "source_url": "https://example.com/jobs/frontend",
-        "title": "Frontend Developer",
-        "company": "Acme GmbH",
+        "seen_at": None,
+        "posted_at": None,
         "created_at": NOW,
         "updated_at": NOW,
     }
@@ -131,10 +116,8 @@ def make_application(**overrides):
 @dataclass
 class FakeVacancyMatchesService:
     matches: list = field(default_factory=lambda: [make_match()])
-    preview_ignores: list = field(default_factory=list)
     preview_calls: int = 0
     create_calls: int = 0
-    ignore_calls: int = 0
     convert_missing_required: bool = False
 
     async def import_preview(
@@ -200,59 +183,13 @@ class FakeVacancyMatchesService:
         self.matches.append(match)
         return match, True
 
-    async def create_preview_ignore(self, user: User, loop_id: str, payload):
-        self.ignore_calls += 1
-        for item in self.preview_ignores:
-            if (
-                item.user_id == user.id
-                and item.loop_id == loop_id
-                and item.source_id == payload.source_id
-                and item.external_id
-                and item.external_id == payload.external_id
-            ):
-                return item, False
-        item = make_preview_ignore(
-            user_id=user.id,
-            loop_id=loop_id,
-            source_id=payload.source_id,
-            external_id=payload.external_id,
-            source_url=payload.source_url,
-            title=payload.title,
-            company=payload.company,
-        )
-        self.preview_ignores.append(item)
-        return item, True
-
-    async def list_preview_ignores_for_loop(
-        self,
-        user: User,
-        loop_id: str,
-        *,
-        limit=200,
-        offset=0,
-    ):
-        items = [
-            item
-            for item in self.preview_ignores
-            if item.user_id == user.id and item.loop_id == loop_id
-        ]
-        return items[offset : offset + limit], len(items)
-
-    async def delete_preview_ignore(self, user: User, loop_id: str, ignore_id: UUID):
-        for item in self.preview_ignores:
-            if item.id == ignore_id and item.user_id == user.id and item.loop_id == loop_id:
-                self.preview_ignores = [
-                    existing for existing in self.preview_ignores if existing.id != ignore_id
-                ]
-                return None
-        raise VacancyMatchNotFoundError("Preview ignore not found")
-
     async def list_for_loop(
         self,
         user: User,
         loop_id: str,
         *,
         status=None,
+        sort="freshness",
         limit=20,
         offset=0,
     ):
@@ -270,6 +207,12 @@ class FakeVacancyMatchesService:
             if item.id == match_id and item.user_id == user.id and item.loop_id == loop_id:
                 return item
         raise VacancyMatchNotFoundError("Vacancy match not found")
+
+    async def mark_seen(self, user: User, loop_id: str, match_id: UUID):
+        match = await self.get_owned_in_loop(user, loop_id, match_id)
+        if match.seen_at is None:
+            match.seen_at = NOW
+        return match
 
     async def patch(self, user: User, loop_id: str, match_id: UUID, payload):
         for item in self.matches:
@@ -448,102 +391,11 @@ def test_create_match_from_preview_duplicate_returns_existing() -> None:
     assert data["match"]["id"] == str(existing.id)
 
 
-def test_create_preview_ignore_does_not_create_match() -> None:
-    service = FakeVacancyMatchesService(matches=[])
-    with make_client(service) as client:
-        response = client.post(
-            "/api/v1/loops/loop-1/matches/preview-ignores",
-            json={
-                "source_id": "arbeitsagentur",
-                "external_id": "job-1",
-                "source_url": "https://example.com/jobs/frontend",
-                "title": "Frontend Developer",
-                "company": "Acme GmbH",
-            },
-            headers={"Authorization": "Bearer test"},
-        )
-
-    assert response.status_code == 201
-    data = response.json()
-    assert data["created"] is True
-    assert data["duplicate"] is False
-    assert data["item"]["loop_id"] == "loop-1"
-    assert data["item"]["source_id"] == "arbeitsagentur"
-    assert service.ignore_calls == 1
-    assert service.create_calls == 0
-    assert service.matches == []
-
-
-def test_create_preview_ignore_duplicate_returns_existing() -> None:
-    existing = make_preview_ignore()
-    service = FakeVacancyMatchesService(matches=[], preview_ignores=[existing])
-    with make_client(service) as client:
-        response = client.post(
-            "/api/v1/loops/loop-1/matches/preview-ignores",
-            json={
-                "source_id": "arbeitsagentur",
-                "external_id": "job-1",
-                "source_url": "https://example.com/jobs/frontend",
-            },
-            headers={"Authorization": "Bearer test"},
-        )
-
-    assert response.status_code == 201
-    data = response.json()
-    assert data["created"] is False
-    assert data["duplicate"] is True
-    assert data["item"]["id"] == str(existing.id)
-
-
-def test_list_preview_ignores_scoped_to_current_user() -> None:
-    service = FakeVacancyMatchesService(
-        matches=[],
-        preview_ignores=[
-            make_preview_ignore(),
-            make_preview_ignore(id=uuid4(), user_id=OTHER_USER_ID),
-        ],
-    )
-    with make_client(service) as client:
-        response = client.get(
-            "/api/v1/loops/loop-1/matches/preview-ignores",
-            headers={"Authorization": "Bearer test"},
-        )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["total"] == 1
-    assert data["items"][0]["source_id"] == "arbeitsagentur"
-
-
-def test_delete_preview_ignore_removes_item() -> None:
-    existing = make_preview_ignore()
-    service = FakeVacancyMatchesService(matches=[], preview_ignores=[existing])
-    with make_client(service) as client:
-        response = client.delete(
-            f"/api/v1/loops/loop-1/matches/preview-ignores/{existing.id}",
-            headers={"Authorization": "Bearer test"},
-        )
-
-    assert response.status_code == 204
-    assert service.preview_ignores == []
-
-
-def test_delete_preview_ignore_unknown_id_returns_404() -> None:
-    service = FakeVacancyMatchesService(matches=[], preview_ignores=[])
-    with make_client(service) as client:
-        response = client.delete(
-            f"/api/v1/loops/loop-1/matches/preview-ignores/{uuid4()}",
-            headers={"Authorization": "Bearer test"},
-        )
-
-    assert response.status_code == 404
-
-
 def test_list_matches_scoped_to_current_user_and_status() -> None:
     service = FakeVacancyMatchesService(
         matches=[
             make_match(id=uuid4(), status="saved"),
-            make_match(id=uuid4(), status="ignored"),
+            make_match(id=uuid4(), status="new"),
             make_match(id=uuid4(), user_id=OTHER_USER_ID, status="saved"),
         ]
     )
@@ -574,18 +426,45 @@ def test_get_match_scoped_to_loop_and_current_user() -> None:
     assert data["role_title"] == "Frontend Developer"
 
 
-def test_patch_match() -> None:
-    service = FakeVacancyMatchesService()
+def test_mark_match_seen_stamps_seen_at() -> None:
+    service = FakeVacancyMatchesService(matches=[make_match()])
     with make_client(service) as client:
-        response = client.patch(
-            f"/api/v1/loops/loop-1/matches/{MATCH_ID}",
-            json={"status": "ignored", "role_title": "Backend Developer"},
+        response = client.post(
+            f"/api/v1/loops/loop-1/matches/{MATCH_ID}/seen",
             headers={"Authorization": "Bearer test"},
         )
 
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "ignored"
+    assert data["id"] == str(MATCH_ID)
+    assert data["seen_at"] is not None
+
+
+def test_mark_match_seen_unknown_match_returns_404() -> None:
+    service = FakeVacancyMatchesService(matches=[])
+    with make_client(service) as client:
+        response = client.post(
+            f"/api/v1/loops/loop-1/matches/{MATCH_ID}/seen",
+            headers={"Authorization": "Bearer test"},
+        )
+
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"]["message"]["code"] == "VACANCY_MATCH_NOT_FOUND"
+
+
+def test_patch_match() -> None:
+    service = FakeVacancyMatchesService()
+    with make_client(service) as client:
+        response = client.patch(
+            f"/api/v1/loops/loop-1/matches/{MATCH_ID}",
+            json={"status": "new", "role_title": "Backend Developer"},
+            headers={"Authorization": "Bearer test"},
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "new"
     assert data["role_title"] == "Backend Developer"
 
 

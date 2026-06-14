@@ -1,3 +1,5 @@
+import { Eye } from "lucide-react";
+
 import { AutoRefreshCountdown } from "./MatchesAutoRefresh";
 import {
   getMatchInitial,
@@ -6,6 +8,7 @@ import {
   getSourceColor,
   getSourceLabel,
   getVacancyMetaChips,
+  isMatchSeen,
   type MatchWithLoopName,
 } from "./matchesV2.helpers";
 
@@ -15,12 +18,10 @@ interface MatchesListPanelProps {
   activeMatchId: string | null;
   onSelect: (matchId: string) => void;
   isLoading: boolean;
-  /** Backend preview cache is warming; live "добор" rows are still arriving. */
-  isWarming?: boolean;
   page: number;
   totalPages: number;
   onPageChange: (next: number) => void;
-  /** ISO of the selected loop's next run; enables the live auto-refresh countdown. */
+  /** ISO of the soonest scheduled run; enables the live auto-refresh countdown. */
   nextRunAt?: string | null;
   onAutoRefresh?: () => void;
 }
@@ -63,7 +64,7 @@ function MatchRow({
   onSelect: (matchId: string) => void;
 }) {
   const { match, loopName } = item;
-  const isPreview = item.isPreview ?? false;
+  const seen = isMatchSeen(match);
   const score = getMatchScore(match);
   const tags = getMatchTags(match);
   const metaChips = getVacancyMetaChips(match).slice(0, 3);
@@ -95,9 +96,13 @@ function MatchRow({
             <span className="truncate text-[13.5px] font-medium text-foreground">
               {match.roleTitle || "Без названия"}
             </span>
-            {isPreview ? (
-              <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-medium text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-900/30 dark:text-emerald-300">
-                Найдено
+            {seen ? (
+              <span
+                title="Просмотрено"
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10.5px] text-muted-foreground"
+              >
+                <Eye className="h-3 w-3" />
+                Просмотрено
               </span>
             ) : null}
             {match.status === "saved" ? (
@@ -107,7 +112,7 @@ function MatchRow({
             ) : null}
             {match.status === "converted" ? (
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10.5px] text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                Отклик
+                Заявка создана
               </span>
             ) : null}
             {match.status === "new" && score !== null && score >= 90 ? (
@@ -258,7 +263,6 @@ export function MatchesListPanel({
   activeMatchId,
   onSelect,
   isLoading,
-  isWarming,
   page,
   totalPages,
   onPageChange,
@@ -272,9 +276,6 @@ export function MatchesListPanel({
           <strong className="font-semibold text-foreground tabular-nums">{items.length}</strong>
           {" / "}
           <span className="tabular-nums">{totalCount}</span> вакансий
-          {isWarming ? (
-            <span className="ml-2 text-[11px] text-muted-foreground/70">· обновляем базу…</span>
-          ) : null}
         </span>
         {nextRunAt ? (
           <AutoRefreshCountdown targetIso={nextRunAt} onElapsed={onAutoRefresh} />

@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, ExternalLink, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Eye, ExternalLink, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { VacancyAnalysisPanel } from "src/features/vacancyAnalysis";
@@ -14,8 +14,9 @@ import {
   getSourceColor,
   getSourceLabel,
   getVacancyMetaChips,
-  localizeEvaluationPenalty,
-  localizeEvaluationReason,
+  isMatchSeen,
+  localizeEvaluationPenalties,
+  localizeEvaluationReasons,
   STATUS_PILL_LABEL,
   type MatchWithLoopName,
 } from "./matchesV2.helpers";
@@ -24,11 +25,9 @@ import { useMatchEvaluation, type MatchEvaluationState } from "./useMatchEvaluat
 interface MatchesDetailPanelProps {
   item: MatchWithLoopName | null;
   isConverting: boolean;
-  isIgnoring: boolean;
   isSaving: boolean;
   onConvert: (match: VacancyMatch) => void;
   onSave: (match: VacancyMatch) => void;
-  onIgnore: (match: VacancyMatch) => void;
   onOpenDetails: (match: VacancyMatch) => void;
 }
 
@@ -87,8 +86,9 @@ function EvaluationShell({ children }: { children: ReactNode }) {
 
 function EvaluationBody({ evaluation }: { evaluation: VacancyMatchEvaluation }) {
   const verdict = getEvaluationVerdict(evaluation);
-  const reasons = evaluation.reasons.map(localizeEvaluationReason);
-  const penalties = evaluation.penalties.map(localizeEvaluationPenalty);
+  // Prefer machine-readable reason_codes (Stage 6c); fall back to legacy strings.
+  const reasons = localizeEvaluationReasons(evaluation);
+  const penalties = localizeEvaluationPenalties(evaluation);
   const duplicateLabel = getDuplicateLabel(evaluation.duplicateStatus);
 
   return (
@@ -161,54 +161,49 @@ function EvaluationSection({
 interface DetailActionHandlers {
   onConvert: (match: VacancyMatch) => void;
   onSave: (match: VacancyMatch) => void;
-  onIgnore: (match: VacancyMatch) => void;
   onOpenDetails: (match: VacancyMatch) => void;
 }
 
 interface DetailActionFlags {
   isConverting: boolean;
-  isIgnoring: boolean;
   isSaving: boolean;
 }
 
 function DetailActions({
   match,
-  isPreview,
   canAct,
   sourceLabel,
   flags,
   handlers,
 }: {
   match: VacancyMatch;
-  isPreview: boolean;
   canAct: boolean;
   sourceLabel: string;
   flags: DetailActionFlags;
   handlers: DetailActionHandlers;
 }) {
-  const { isConverting, isIgnoring, isSaving } = flags;
-  const { onConvert, onSave, onIgnore, onOpenDetails } = handlers;
+  const { isConverting, isSaving } = flags;
+  const { onConvert, onSave, onOpenDetails } = handlers;
   return (
     <div className="flex flex-wrap gap-2">
-      {isPreview ? (
+      <button
+        type="button"
+        disabled={!canAct || isConverting}
+        onClick={() => onConvert(match)}
+        className="rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {isConverting ? "Сохраняем…" : "Создать заявку"}
+      </button>
+      {match.status === "new" ? (
         <button
           type="button"
           disabled={isSaving}
           onClick={() => onSave(match)}
-          className="rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground disabled:opacity-50"
+          className="rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
         >
           {isSaving ? "Сохраняем…" : "Сохранить"}
         </button>
-      ) : (
-        <button
-          type="button"
-          disabled={!canAct || isConverting}
-          onClick={() => onConvert(match)}
-          className="rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {isConverting ? "Сохраняем…" : "Создать заявку"}
-        </button>
-      )}
+      ) : null}
       <a
         href={match.sourceUrl}
         target="_blank"
@@ -218,37 +213,23 @@ function DetailActions({
         Открыть на {sourceLabel}
         <ExternalLink className="h-3 w-3" />
       </a>
-      {!isPreview ? (
-        <button
-          type="button"
-          onClick={() => onOpenDetails(match)}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] text-foreground hover:bg-muted"
-        >
-          Подробнее
-        </button>
-      ) : null}
-      {isPreview || canAct ? (
-        <button
-          type="button"
-          disabled={isIgnoring}
-          onClick={() => onIgnore(match)}
-          className="rounded-md px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-muted disabled:opacity-50"
-        >
-          {isIgnoring ? "…" : "Скрыть"}
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={() => onOpenDetails(match)}
+        className="rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] text-foreground hover:bg-muted"
+      >
+        Подробнее
+      </button>
     </div>
   );
 }
 
 function DetailHeader({
   item,
-  isPreview,
   flags,
   handlers,
 }: {
   item: MatchWithLoopName;
-  isPreview: boolean;
   flags: DetailActionFlags;
   handlers: DetailActionHandlers;
 }) {
@@ -258,7 +239,8 @@ function DetailHeader({
   const sourceLabel = getSourceLabel(match.source);
   const initial = getMatchInitial(match);
   const canAct = match.status === "new" || match.status === "saved";
-  const statusLabel = isPreview ? "Найдено" : STATUS_PILL_LABEL[match.status];
+  const statusLabel = STATUS_PILL_LABEL[match.status];
+  const seen = isMatchSeen(match);
   const subtitle =
     [match.companyName, match.locationText].filter(Boolean).join(" · ") || loopName;
 
@@ -276,6 +258,12 @@ function DetailHeader({
             <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
               {statusLabel}
             </span>
+            {seen ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
+                <Eye className="h-3 w-3" />
+                Просмотрено
+              </span>
+            ) : null}
             <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[10.5px] text-muted-foreground">
               <span
                 aria-hidden="true"
@@ -307,7 +295,6 @@ function DetailHeader({
 
       <DetailActions
         match={match}
-        isPreview={isPreview}
         canAct={canAct}
         sourceLabel={sourceLabel}
         flags={flags}
@@ -349,23 +336,11 @@ function ScoreCard({ score, warnings }: { score: number | null; warnings: string
   );
 }
 
-function PreviewSaveHint() {
-  return (
-    <div className="rounded-[10px] border border-dashed border-border bg-muted/30 p-3.5 text-[12.5px] leading-relaxed text-muted-foreground">
-      Эта вакансия найдена в источнике и пока не сохранена. Нажмите «Сохранить»,
-      чтобы добавить её в матчи и получить AI-оценку и подробный анализ
-      соответствия.
-    </div>
-  );
-}
-
 function DetailBody({
   item,
-  isPreview,
   evaluation,
 }: {
   item: MatchWithLoopName;
-  isPreview: boolean;
   evaluation: MatchEvaluationState;
 }) {
   const { match, loopName } = item;
@@ -415,15 +390,9 @@ function DetailBody({
         </>
       ) : null}
 
-      {isPreview ? (
-        <PreviewSaveHint />
-      ) : (
-        <>
-          <EvaluationSection state={evaluation} fallbackScore={score} />
+      <EvaluationSection state={evaluation} fallbackScore={score} />
 
-          <VacancyAnalysisPanel loopId={match.loopId} matchId={match.id} />
-        </>
-      )}
+      <VacancyAnalysisPanel loopId={match.loopId} matchId={match.id} />
     </div>
   );
 }
@@ -431,20 +400,12 @@ function DetailBody({
 export function MatchesDetailPanel({
   item,
   isConverting,
-  isIgnoring,
   isSaving,
   onConvert,
   onSave,
-  onIgnore,
   onOpenDetails,
 }: MatchesDetailPanelProps) {
-  const isPreview = item?.isPreview ?? false;
-  // Preview rows have a synthetic id; skip the match-id-bound /evaluate call
-  // (it would 404) by passing a null matchId — the hook then never fetches.
-  const evaluation = useMatchEvaluation(
-    isPreview ? null : item?.match.loopId ?? null,
-    isPreview ? null : item?.match.id ?? null,
-  );
+  const evaluation = useMatchEvaluation(item?.match.loopId ?? null, item?.match.id ?? null);
 
   if (!item) {
     return (
@@ -458,11 +419,10 @@ export function MatchesDetailPanel({
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[14px] border border-border bg-card">
       <DetailHeader
         item={item}
-        isPreview={isPreview}
-        flags={{ isConverting, isIgnoring, isSaving }}
-        handlers={{ onConvert, onSave, onIgnore, onOpenDetails }}
+        flags={{ isConverting, isSaving }}
+        handlers={{ onConvert, onSave, onOpenDetails }}
       />
-      <DetailBody item={item} isPreview={isPreview} evaluation={evaluation} />
+      <DetailBody item={item} evaluation={evaluation} />
     </div>
   );
 }

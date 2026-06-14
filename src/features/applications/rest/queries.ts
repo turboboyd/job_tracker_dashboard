@@ -277,7 +277,8 @@ export function buildApplicationsListUrl(
   appendQueryParam(params, "is_favorite", query.isFavorite);
 
   const queryString = params.toString();
-  return `${apiBaseUrl}/applications${queryString ? `?${queryString}` : ""}`;
+  const suffix = queryString ? `?${queryString}` : "";
+  return `${apiBaseUrl}/applications${suffix}`;
 }
 
 export function buildVacancyImportPreviewUrl(apiBaseUrl: string): string {

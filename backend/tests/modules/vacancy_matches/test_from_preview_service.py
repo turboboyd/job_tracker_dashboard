@@ -8,9 +8,7 @@ import pytest
 from app.db.models.user import User
 from app.modules.loops.service import LoopNotFoundError
 from app.modules.vacancy_matches.schemas import VacancyMatchFromPreviewRequest
-from app.modules.vacancy_matches.schemas import VacancyPreviewIgnoreRequest
 from app.modules.vacancy_matches.service import (
-    VacancyMatchNotFoundError,
     VacancyMatchPreviewValidationError,
     VacancyMatchesService,
 )
@@ -63,7 +61,6 @@ class FakeLoops:
 class FakeRepo:
     def __init__(self) -> None:
         self.items = []
-        self.ignores = []
 
     async def get_by_source_external_id(self, *, user_id, loop_id, source, external_id):
         for item in self.items:
@@ -87,57 +84,6 @@ class FakeRepo:
         match.id = uuid4()
         self.items.append(match)
         return match
-
-    async def get_preview_ignore_by_source_external_id(
-        self,
-        *,
-        user_id,
-        loop_id,
-        source_id,
-        external_id,
-    ):
-        for item in self.ignores:
-            if (
-                item.user_id == user_id
-                and item.loop_id == loop_id
-                and item.source_id == source_id
-                and item.external_id == external_id
-            ):
-                return item
-        return None
-
-    async def get_preview_ignore_by_source_url(self, *, user_id, loop_id, source_id, source_url):
-        for item in self.ignores:
-            if (
-                item.user_id == user_id
-                and item.loop_id == loop_id
-                and item.source_id == source_id
-                and item.source_url == source_url
-            ):
-                return item
-        return None
-
-    async def create_preview_ignore(self, ignore):
-        ignore.id = uuid4()
-        self.ignores.append(ignore)
-        return ignore
-
-    async def list_preview_ignores_for_loop(self, *, user_id, loop_id, limit=200, offset=0):
-        items = [
-            item
-            for item in self.ignores
-            if item.user_id == user_id and item.loop_id == loop_id
-        ]
-        return items[offset : offset + limit], len(items)
-
-    async def get_preview_ignore_owned_in_loop(self, *, user_id, loop_id, ignore_id):
-        for item in self.ignores:
-            if item.id == ignore_id and item.user_id == user_id and item.loop_id == loop_id:
-                return item
-        return None
-
-    async def delete_preview_ignore(self, ignore):
-        self.ignores = [item for item in self.ignores if item.id != ignore.id]
 
 
 def make_service(repo: FakeRepo) -> VacancyMatchesService:
@@ -252,109 +198,3 @@ async def test_create_from_preview_unknown_loop_is_safe() -> None:
 
     with pytest.raises(LoopNotFoundError):
         await service.create_from_preview(make_user(), "missing-loop", make_payload())
-
-
-@pytest.mark.asyncio
-async def test_create_preview_ignore_persists_without_match_or_application() -> None:
-    repo = FakeRepo()
-    service = make_service(repo)
-
-    ignore, created = await service.create_preview_ignore(
-        make_user(),
-        "loop-1",
-        VacancyPreviewIgnoreRequest(
-            source_id="arbeitsagentur",
-            external_id="ref-1",
-            source_url="HTTPS://Example.com/jobs/123/?b=2&a=1#fragment",
-            title="Backend Engineer",
-            company="Acme GmbH",
-        ),
-    )
-
-    assert created is True
-    assert ignore.source_id == "arbeitsagentur"
-    assert ignore.external_id == "ref-1"
-    assert ignore.source_url == "https://example.com/jobs/123?a=1&b=2"
-    assert ignore.title == "Backend Engineer"
-    assert repo.items == []
-
-
-@pytest.mark.asyncio
-async def test_create_preview_ignore_dedups_by_external_id() -> None:
-    repo = FakeRepo()
-    service = make_service(repo)
-    user = make_user()
-    existing, _ = await service.create_preview_ignore(
-        user,
-        "loop-1",
-        VacancyPreviewIgnoreRequest(
-            source_id="arbeitsagentur",
-            external_id="ref-1",
-            source_url="https://example.com/jobs/123",
-        ),
-    )
-
-    duplicate, created = await service.create_preview_ignore(
-        user,
-        "loop-1",
-        VacancyPreviewIgnoreRequest(
-            source_id="arbeitsagentur",
-            external_id="ref-1",
-            source_url="https://example.com/jobs/other",
-        ),
-    )
-
-    assert created is False
-    assert duplicate.id == existing.id
-    assert len(repo.ignores) == 1
-
-
-@pytest.mark.asyncio
-async def test_list_preview_ignores_for_loop_returns_saved_ignores() -> None:
-    repo = FakeRepo()
-    service = make_service(repo)
-    user = make_user()
-    await service.create_preview_ignore(
-        user,
-        "loop-1",
-        VacancyPreviewIgnoreRequest(
-            source_id="remotive",
-            external_id=None,
-            source_url="https://example.com/jobs/remote",
-        ),
-    )
-
-    items, total = await service.list_preview_ignores_for_loop(user, "loop-1")
-
-    assert total == 1
-    assert items[0].source_id == "remotive"
-
-
-@pytest.mark.asyncio
-async def test_delete_preview_ignore_removes_saved_ignore() -> None:
-    repo = FakeRepo()
-    service = make_service(repo)
-    user = make_user()
-    ignore, _ = await service.create_preview_ignore(
-        user,
-        "loop-1",
-        VacancyPreviewIgnoreRequest(
-            source_id="remotive",
-            external_id="remote-1",
-            source_url="https://example.com/jobs/remote",
-        ),
-    )
-
-    await service.delete_preview_ignore(user, "loop-1", ignore.id)
-
-    items, total = await service.list_preview_ignores_for_loop(user, "loop-1")
-    assert total == 0
-    assert items == []
-
-
-@pytest.mark.asyncio
-async def test_delete_preview_ignore_unknown_id_is_safe() -> None:
-    service = make_service(FakeRepo())
-
-    with pytest.raises(VacancyMatchNotFoundError):
-        await service.delete_preview_ignore(make_user(), "loop-1", uuid4())

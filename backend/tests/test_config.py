@@ -47,6 +47,35 @@ def test_production_rejects_wildcard_cors_origin():
         _production_settings(CORS_ALLOWED_ORIGINS=["*"])
 
 
+def test_production_rejects_auth_emulator_host():
+    with pytest.raises(ValidationError, match="FIREBASE_AUTH_EMULATOR_HOST must be empty"):
+        _production_settings(FIREBASE_AUTH_EMULATOR_HOST="127.0.0.1:9099")
+
+
+def test_development_allows_auth_emulator_host():
+    settings = Settings(
+        ENVIRONMENT="development",
+        DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/job_tracker",
+        FIREBASE_AUTH_EMULATOR_HOST="127.0.0.1:9099",
+    )
+
+    assert settings.FIREBASE_AUTH_EMULATOR_HOST == "127.0.0.1:9099"
+
+
+def test_auth_emulator_host_defaults_empty():
+    settings = Settings(DATABASE_URL=_TEST_DATABASE_URL)
+
+    assert settings.FIREBASE_AUTH_EMULATOR_HOST == ""
+
+
+def test_production_with_empty_emulator_host_still_valid():
+    # Regression: the new guard must not break a correctly-configured prod boot.
+    settings = _production_settings()  # emulator host defaults to ""
+
+    assert settings.is_production
+    assert settings.FIREBASE_AUTH_EMULATOR_HOST == ""
+
+
 def test_ai_analysis_provider_defaults_to_deterministic():
     settings = Settings(DATABASE_URL=_TEST_DATABASE_URL)
 

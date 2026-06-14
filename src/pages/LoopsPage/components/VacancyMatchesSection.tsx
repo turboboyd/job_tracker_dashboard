@@ -5,7 +5,6 @@ import { VacancyAnalysisPanel } from "src/features/vacancyAnalysis";
 import {
   createApplicationFromVacancyMatchViaRest,
   listLoopVacancyMatchesViaRest,
-  patchLoopVacancyMatchViaRest,
   type VacancyMatch,
   type VacancyMatchStatus,
 } from "src/features/vacancyMatches";
@@ -35,12 +34,10 @@ const STATUS_TABS: Array<{ key: StatusTab; label: string }> = [
   { key: "new",       label: "New"       },
   { key: "saved",     label: "Saved"     },
   { key: "converted", label: "Converted" },
-  { key: "ignored",   label: "Ignored"   },
 ];
 
 function getStatusLabel(match: VacancyMatch): string {
   if (match.status === "converted" && match.applicationId) return "Application created";
-  if (match.status === "ignored")   return "Ignored";
   if (match.status === "saved")     return "Saved";
   return "New";
 }
@@ -68,7 +65,6 @@ function StatusBadge({ status }: { status: VacancyMatchStatus }) {
     new:       "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     saved:     "bg-muted text-muted-foreground",
     converted: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    ignored:   "bg-muted text-muted-foreground/60",
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium ${styles[status]}`}>
@@ -171,22 +167,18 @@ function MatchRow({
   match,
   isExpanded,
   convertingId,
-  ignoringId,
   applicationFeedback,
   onToggle,
   onConvert,
-  onIgnore,
   onNavigate,
 }: {
   loopId: string;
   match: VacancyMatch;
   isExpanded: boolean;
   convertingId: string | null;
-  ignoringId: string | null;
   applicationFeedback: VacancyMatchConversionFeedback | null;
   onToggle: () => void;
   onConvert: (m: VacancyMatch) => void;
-  onIgnore: (m: VacancyMatch) => void;
   onNavigate: (appId: string) => void;
 }) {
   const actionable = isActionableVacancyMatch(match);
@@ -218,24 +210,14 @@ function MatchRow({
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {actionable ? (
-            <>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onIgnore(match); }}
-                disabled={ignoringId === match.id}
-                className="rounded-[6px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
-              >
-                {ignoringId === match.id ? "…" : "Ignore"}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onConvert(match); }}
-                disabled={convertingId === match.id}
-                className="rounded-[6px] bg-primary px-2.5 py-1.5 text-[11.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {getCreateApplicationButtonLabel(convertingId === match.id)}
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onConvert(match); }}
+              disabled={convertingId === match.id}
+              className="rounded-[6px] bg-primary px-2.5 py-1.5 text-[11.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {getCreateApplicationButtonLabel(convertingId === match.id)}
+            </button>
           ) : (
             <a
               href={match.sourceUrl}
@@ -292,11 +274,9 @@ function MatchesBody({
   totalCount,
   expandedId,
   convertingId,
-  ignoringId,
   conversionFeedback,
   onToggle,
   onConvert,
-  onIgnore,
   onNavigate,
   onOpenSources,
 }: {
@@ -306,11 +286,9 @@ function MatchesBody({
   totalCount: number;
   expandedId: string | null;
   convertingId: string | null;
-  ignoringId: string | null;
   conversionFeedback: Record<string, VacancyMatchConversionFeedback>;
   onToggle: (id: string) => void;
   onConvert: (m: VacancyMatch) => void;
-  onIgnore: (m: VacancyMatch) => void;
   onNavigate: (appId: string) => void;
   onOpenSources?: () => void;
 }) {
@@ -365,11 +343,9 @@ function MatchesBody({
           match={match}
           isExpanded={expandedId === match.id}
           convertingId={convertingId}
-          ignoringId={ignoringId}
           applicationFeedback={conversionFeedback[match.id] ?? null}
           onToggle={() => onToggle(match.id)}
           onConvert={onConvert}
-          onIgnore={onIgnore}
           onNavigate={onNavigate}
         />
       ))}
@@ -382,7 +358,6 @@ export function VacancyMatchesSection({ loopId, reloadKey = 0, onAddVacancy, onO
   const [matches, setMatches] = useState<VacancyMatch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [convertingId, setConvertingId] = useState<string | null>(null);
-  const [ignoringId, setIgnoringId] = useState<string | null>(null);
   const [conversionFeedback, setConversionFeedback] = useState<Record<string, VacancyMatchConversionFeedback>>({});
   const [error, setError] = useState<string | null>(null);
   const [activeSource, setActiveSource] = useState<string>("all");
@@ -437,7 +412,7 @@ export function VacancyMatchesSection({ loopId, reloadKey = 0, onAddVacancy, onO
     const base = sortedMatches.filter(
       (m) => activeSource === "all" || normalizeSource(m.source) === activeSource,
     );
-    const counts: Record<StatusTab, number> = { all: base.length, new: 0, saved: 0, converted: 0, ignored: 0 };
+    const counts: Record<StatusTab, number> = { all: base.length, new: 0, saved: 0, converted: 0 };
     for (const m of base) counts[m.status] = (counts[m.status] ?? 0) + 1;
     return counts;
   }, [sortedMatches, activeSource]);
@@ -474,19 +449,6 @@ export function VacancyMatchesSection({ loopId, reloadKey = 0, onAddVacancy, onO
       setError(getErrorMessage(convertError));
     } finally {
       setConvertingId(null);
-    }
-  }
-
-  async function handleIgnore(match: VacancyMatch) {
-    setIgnoringId(match.id);
-    setError(null);
-    try {
-      const updated = await patchLoopVacancyMatchViaRest(loopId, match.id, { status: "ignored" });
-      setMatches((current) => current.map((item) => (item.id === match.id ? updated : item)));
-    } catch (ignoreError: unknown) {
-      setError(getErrorMessage(ignoreError));
-    } finally {
-      setIgnoringId(null);
     }
   }
 
@@ -537,11 +499,9 @@ export function VacancyMatchesSection({ loopId, reloadKey = 0, onAddVacancy, onO
         totalCount={sortedMatches.length}
         expandedId={expandedId}
         convertingId={convertingId}
-        ignoringId={ignoringId}
         conversionFeedback={conversionFeedback}
         onToggle={handleToggle}
         onConvert={handleConvert}
-        onIgnore={handleIgnore}
         onNavigate={handleNavigate}
         onOpenSources={onOpenSources}
       />

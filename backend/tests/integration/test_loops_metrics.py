@@ -13,9 +13,12 @@ from __future__ import annotations
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.firebase import DecodedFirebaseToken, get_verifier
+from app.db.models.user import User
+from app.db.models.vacancy_match import VacancyMatch
 from app.db.session import get_db
 from app.main import create_app
 
@@ -93,6 +96,36 @@ async def _get_loop(client: AsyncClient, loop_id: str) -> dict:
     return r.json()
 
 
+def _match(user_id, loop_id: str, **over) -> VacancyMatch:
+    data = {
+        "user_id": user_id,
+        "loop_id": str(loop_id),
+        "source_url": f"https://example.com/jobs/{over.get('external_id', 'x')}",
+        "source": "indeed",
+        "external_id": None,
+        "company_name": "Acme",
+        "role_title": "Backend Engineer",
+        "location_text": "Berlin",
+        "vacancy_description": "Python role.",
+        "raw_metadata": {},
+        "confidence": {},
+        "warnings": [],
+        "status": "new",
+        "seen_at": None,
+        "posted_at": None,
+    }
+    data.update(over)
+    return VacancyMatch(**data)
+
+
+async def _current_user(db_session: AsyncSession) -> User:
+    return (
+        await db_session.execute(
+            select(User).where(User.firebase_uid == _USER["firebase_uid"])
+        )
+    ).scalar_one()
+
+
 async def test_get_loop_empty_funnel(client):
     loop_id = await _create_loop(client)
     body = await _get_loop(client, loop_id)
@@ -134,3 +167,41 @@ async def test_get_loop_funnel_progression(client):
     assert metrics["response_rate"] == pytest.approx(2 / 3, abs=1e-3)
     assert metrics["interview_rate"] == pytest.approx(1 / 3, abs=1e-3)
     assert metrics["offer_rate"] == pytest.approx(1 / 3, abs=1e-3)
+
+
+async def test_matches_saved_counts_saved_and_converted_only(client, db_session):
+    """matches_saved is the canonical Saved stage: status IN ('saved', 'converted').
+
+    Auto-persisted 'new' candidates must NOT inflate the count, so the per-loop
+    metric agrees with the global /api/v1/matches saved tab.
+    """
+    loop_id = await _create_loop(client, "Saved Metric Loop")
+    user = await _current_user(db_session)
+
+    db_session.add_all([
+        _match(user.id, loop_id, external_id="n1", status="new"),
+        _match(user.id, loop_id, external_id="n2", status="new"),
+        _match(user.id, loop_id, external_id="s1", status="saved"),
+        _match(user.id, loop_id, external_id="c1", status="converted"),
+    ])
+    await db_session.commit()
+
+    metrics = (await _get_loop(client, loop_id))["metrics"]
+    # 1 saved + 1 converted = 2; the two 'new' candidates are excluded.
+    assert metrics["matches_saved"] == 2
+
+
+async def test_matches_saved_zero_when_only_new(client, db_session):
+    """A loop with only auto-persisted 'new' candidates reports 0 saved."""
+    loop_id = await _create_loop(client, "New Only Loop")
+    user = await _current_user(db_session)
+
+    db_session.add_all([
+        _match(user.id, loop_id, external_id="x1", status="new"),
+        _match(user.id, loop_id, external_id="x2", status="new"),
+        _match(user.id, loop_id, external_id="x3", status="new"),
+    ])
+    await db_session.commit()
+
+    metrics = (await _get_loop(client, loop_id))["metrics"]
+    assert metrics["matches_saved"] == 0

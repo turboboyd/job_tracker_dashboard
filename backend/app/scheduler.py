@@ -1,18 +1,25 @@
 """Background discovery scheduler (cache-warm + match persistence).
 
 Runs as an asyncio task (started via FastAPI lifespan). Every TICK_SECONDS it
-finds active loops whose cache is due for a refresh (next_run_at is null or in
-the past) and runs a real discovery pass for each: freshly-found vacancies are
-persisted as "new" matches (deduped against existing ones) and the preview
-cache is refreshed as a side effect. User-facing requests then serve straight
-from the DB instead of hitting external job boards on every page view, and the
-Matches list keeps filling with fresh vacancies several times a day without the
-user pressing refresh.
+finds active loops that have auto-discovery enabled and whose cache is due for a
+refresh (next_run_at is null or in the past) and runs a real discovery pass for
+each: freshly-found vacancies are persisted as "new" matches (deduped against
+existing ones) and the preview cache is refreshed as a side effect. User-facing
+requests then serve straight from the DB instead of hitting external job boards
+on every page view, and the Matches list keeps filling with fresh vacancies
+several times a day without the user pressing refresh.
+
+Loops with auto-discovery DISABLED are never warmed by the scheduler — they only
+gain matches when the user explicitly runs discovery. This keeps such loops
+(e.g. dev-QA seed loops) stable and predictable.
 
 This module owns ``Loop.next_run_at``: after running a loop it schedules the
-next refresh. Auto-discovery loops use their configured interval; all other
-active loops are refreshed on a fixed WARM_INTERVAL_HOURS cadence so the
-Matches list never goes fully stale.
+next refresh. Refreshes are snapped to wall-clock boundaries aligned to
+midnight Europe/Berlin (every WARM_INTERVAL_HOURS → 00:00, 04:00, 08:00 …
+local), so the whole fleet warms on predictable, human-friendly times instead
+of drifting by the runtime of each pass. Auto-discovery loops with a custom
+interval keep their own cadence; those without one use the shared
+WARM_INTERVAL_HOURS step.
 """
 
 from __future__ import annotations
@@ -20,6 +27,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -44,6 +52,18 @@ FAILURE_BACKOFF_MINUTES = 30
 # no need to scan every 60s tick).
 CLEANUP_INTERVAL_HOURS = 6
 
+# Refreshes are aligned to midnight in this zone (00:00, 04:00, … local). Windows
+# has no system tz database, so this resolves only when the ``tzdata`` package is
+# installed; if it isn't we fall back to plain interval arithmetic.
+try:
+    BERLIN_TZ: ZoneInfo | None = ZoneInfo("Europe/Berlin")
+except Exception:  # pragma: no cover - depends on host tz data availability
+    BERLIN_TZ = None
+    logger.warning(
+        "Scheduler: Europe/Berlin tz data unavailable; refreshes fall back to "
+        "drifting interval arithmetic (install the 'tzdata' package to fix)."
+    )
+
 _last_cleanup_at: datetime | None = None
 
 
@@ -51,6 +71,32 @@ def _interval_hours_for(loop: Loop) -> int:
     if loop.auto_discovery_enabled:
         return max(1, loop.discovery_interval_hours or WARM_INTERVAL_HOURS)
     return WARM_INTERVAL_HOURS
+
+
+def _next_aligned_run_at(now: datetime, interval_hours: int) -> datetime:
+    """Next wall-clock refresh boundary aligned to Berlin midnight.
+
+    Boundaries fall every ``interval_hours`` starting at 00:00 Europe/Berlin
+    (4h → 00, 04, 08, 12, 16, 20 local). Returns the first boundary strictly
+    after ``now``, as an aware UTC datetime. DST-safe: it snaps the local hour
+    with ``replace`` rather than adding a timedelta (which would be off by an
+    hour across a DST transition). Falls back to ``now + interval`` when tz data
+    is unavailable.
+    """
+    step = max(1, interval_hours)
+    if BERLIN_TZ is None:
+        return now + timedelta(hours=step)
+
+    local = now.astimezone(BERLIN_TZ)
+    for hour in range(0, 24, step):
+        candidate = local.replace(hour=hour, minute=0, second=0, microsecond=0)
+        if candidate > local:
+            return candidate.astimezone(timezone.utc)
+    # Past the last boundary of the day — roll over to tomorrow's midnight.
+    tomorrow = (local + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return tomorrow.astimezone(timezone.utc)
 
 
 async def _maybe_cleanup(db: AsyncSession, *, now: datetime) -> None:
@@ -80,6 +126,7 @@ async def scheduler_tick(factory: async_sessionmaker[AsyncSession]) -> None:
                 await db.execute(
                     select(Loop).where(
                         Loop.status == "active",
+                        Loop.auto_discovery_enabled.is_(True),
                         or_(
                             Loop.next_run_at.is_(None),
                             Loop.next_run_at <= now,
@@ -111,11 +158,11 @@ async def scheduler_tick(factory: async_sessionmaker[AsyncSession]) -> None:
                     continue
 
                 runs_svc = DiscoveryRunsService(loops=LoopsService(db), db=db)
-                # Every due active loop runs a real (non-dry) pass so freshly-found
-                # vacancies are persisted as "new" matches and surface in the
-                # user's Matches list — not just the auto-discovery loops. The
-                # service dedupes against existing matches, so re-warming a loop
-                # never double-creates rows; it only adds genuinely new vacancies.
+                # Each due auto-discovery loop runs a real (non-dry) pass so
+                # freshly-found vacancies are persisted as "new" matches and
+                # surface in the user's Matches list. The service dedupes against
+                # existing matches, so re-warming a loop never double-creates
+                # rows; it only adds genuinely new vacancies.
                 payload = DiscoveryRunRequest(
                     loop_id=str(loop.id),
                     dry_run=False,
@@ -127,12 +174,12 @@ async def scheduler_tick(factory: async_sessionmaker[AsyncSession]) -> None:
                 await runs_svc.run(user=user, payload=payload)
 
                 interval_h = _interval_hours_for(loop)
-                loop.next_run_at = now + timedelta(hours=interval_h)
+                loop.next_run_at = _next_aligned_run_at(now, interval_h)
                 await db.commit()
                 logger.info(
-                    "Scheduler: warmed loop %s (next refresh in %dh)",
+                    "Scheduler: warmed loop %s (next refresh at %s)",
                     loop.id,
-                    interval_h,
+                    loop.next_run_at.isoformat(),
                 )
             except Exception:
                 logger.warning(

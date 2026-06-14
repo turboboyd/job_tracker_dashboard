@@ -69,6 +69,17 @@ export interface DiscoveryRunPreviewInput {
   cacheOnly?: boolean;
 }
 
+/**
+ * A real (non-dry) discovery run that persists freshly-found vacancies as
+ * matches. Used by the Matches page «Обновить» button to trigger an on-demand
+ * "добор" before re-reading the persisted feed.
+ */
+export interface DiscoveryRunInput {
+  loopId: string;
+  sourceIds?: string[];
+  searchScope?: DiscoverySearchScope;
+}
+
 export type DiscoverySourceConfigurationStatus =
   | "ready"
   | "not_configured"

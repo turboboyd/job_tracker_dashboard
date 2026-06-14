@@ -10,7 +10,6 @@ from app.db.models.loop import Loop  # noqa: F401
 from app.db.models.user import User  # noqa: F401
 from app.db.models.vacancy_analysis import AnalysisUsageDaily, VacancyMatchAnalysis  # noqa: F401
 from app.db.models.vacancy_match import VacancyMatch  # noqa: F401
-from app.db.models.vacancy_preview_ignore import VacancyPreviewIgnore  # noqa: F401
 
 __all__ = [
     "ActivityEvent",
@@ -24,5 +23,4 @@ __all__ = [
     "User",
     "VacancyMatchAnalysis",
     "VacancyMatch",
-    "VacancyPreviewIgnore",
 ]

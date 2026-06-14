@@ -1,5 +1,5 @@
 """Integration test: the discovery preview feed never re-offers vacancies the
-user already saved as a match (or explicitly ignored).
+user already saved as a match.
 
 Reproduces the bug where a saved vacancy kept showing a "Сохранить как
 совпадение" button after a page reload — because the preview run served cached
@@ -167,29 +167,3 @@ async def test_saved_match_is_filtered_from_preview(client, db_session):
     assert item2["items_previewed"] == 1
     remaining = {p["external_id"] for p in item2["preview_items"]}
     assert remaining == {"job-2"}
-
-
-async def test_ignored_preview_is_filtered_from_preview(client, db_session):
-    loop_id = await _create_loop(client)
-    db_session.add(_seed_cache(loop_id))
-    await db_session.commit()
-
-    ignore = await client.post(
-        f"/api/v1/loops/{loop_id}/matches/preview-ignores",
-        json={
-            "source_id": SOURCE_ID,
-            "external_id": "job-2",
-            "source_url": JOB_2_URL,
-            "title": "Frontend React Developer",
-            "company": "Example GmbH",
-        },
-        headers=_BEARER,
-    )
-    assert ignore.status_code == 201, ignore.text
-    await db_session.commit()
-
-    body = await _run_preview(client, loop_id)
-    item = body["items"][0]
-    assert item["items_previewed"] == 1
-    remaining = {p["external_id"] for p in item["preview_items"]}
-    assert remaining == {"job-1"}

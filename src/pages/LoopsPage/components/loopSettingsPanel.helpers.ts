@@ -1,4 +1,8 @@
-import type { Loop } from "src/entities/loop";
+import {
+  DISCOVERY_SOURCE_PRIORITY,
+  getDiscoverySourcePriority,
+  type Loop,
+} from "src/entities/loop";
 import type { DiscoverySourceRuntimeStatus } from "src/features/discoveryRuns";
 import type { UpdateBackendLoopInput } from "src/features/loops";
 
@@ -30,23 +34,41 @@ export interface LoopSettingsOption {
   label: string;
 }
 
-export const DISCOVERY_SOURCE_OPTIONS: readonly LoopSettingsOption[] = [
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "indeed", label: "Indeed" },
-  { value: "stepstone", label: "StepStone" },
-  { value: "xing", label: "XING" },
-  { value: "arbeitsagentur", label: "Jobbörse Arbeitsagentur" },
-  { value: "adzuna", label: "Adzuna" },
-  { value: "remotive", label: "Remotive" },
-  { value: "arbeitnow", label: "Arbeit Now" },
-  { value: "remotejobs", label: "Remote Jobs" },
-  { value: "himalayas", label: "Himalayas" },
-  { value: "remoteok", label: "RemoteOK" },
-  { value: "greenhouse", label: "Greenhouse company boards" },
-  { value: "lever", label: "Lever company boards" },
-  { value: "manual_url", label: "Вручную по ссылке" },
-  { value: "company_websites", label: "Сайты компаний" },
-];
+const DISCOVERY_SOURCE_LABELS: Record<string, string> = {
+  arbeitsagentur: "Jobbörse Arbeitsagentur",
+  indeed: "Indeed",
+  stepstone: "StepStone",
+  xing: "XING",
+  adzuna: "Adzuna",
+  remotive: "Remotive",
+  arbeitnow: "Arbeit Now",
+  remotejobs: "Remote Jobs",
+  himalayas: "Himalayas",
+  remoteok: "RemoteOK",
+  greenhouse: "Greenhouse company boards",
+  lever: "Lever company boards",
+  linkedin: "LinkedIn",
+  manual_url: "Вручную по ссылке",
+  company_websites: "Сайты компаний",
+};
+
+// Ordered by the product source priority (DISCOVERY_SOURCE_PRIORITY in
+// entities/loop): legal/easier job boards first, LinkedIn after all board/API
+// sources. Drives the Sources tab, the settings panel and, via
+// sortSourcesByPriority, the Overview source rail.
+export const DISCOVERY_SOURCE_OPTIONS: readonly LoopSettingsOption[] =
+  DISCOVERY_SOURCE_PRIORITY.map((value) => ({
+    value,
+    label: DISCOVERY_SOURCE_LABELS[value] ?? value,
+  }));
+
+/** Order source ids by the product priority; unknown sources keep their
+ * relative order after all known ones. Case-insensitive, non-mutating. */
+export function sortSourcesByPriority(sources: readonly string[]): string[] {
+  return [...sources].sort(
+    (a, b) => getDiscoverySourcePriority(a) - getDiscoverySourcePriority(b),
+  );
+}
 
 export const EMPLOYMENT_TYPE_OPTIONS: readonly LoopSettingsOption[] = [
   { value: "full_time", label: "Полная занятость" },
@@ -103,7 +125,7 @@ export const createLoopSettingsDraft = (
   discoveryRadiusKmText:
     loop.discoveryRadiusKm == null ? "" : String(loop.discoveryRadiusKm),
   autoDiscoveryEnabled: loop.autoDiscoveryEnabled ?? false,
-  discoveryIntervalHoursText: String(loop.discoveryIntervalHours ?? 24),
+  discoveryIntervalHoursText: String(loop.discoveryIntervalHours ?? 4),
 });
 
 export const mapLoopSettingsDraftToPatch = (

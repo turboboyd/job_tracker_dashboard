@@ -61,7 +61,8 @@ The page must make these boundaries clear:
 - saved matches are not Applications
 - Applications are created only after an explicit user action
 - no external employer submission happens from this workflow
-- no scheduled background refresh is enabled yet
+- a bounded scheduled refresh persists matches for active loops every 4 hours
+  (aligned to midnight Europe/Berlin); it never creates Applications
 
 Current UI behavior:
 
@@ -85,18 +86,14 @@ Current UI behavior:
 - Source summary cards show whether a source returned no current results,
   returned a count, how many preview items are new vs already saved, and whether
   more preview items may be available.
-- Already saved preview items are hidden by default so the review feed
-  prioritizes new candidates. The user can disable the filter with
-  `Показать сохранённые` / `Скрыть сохранённые` when they need to inspect saved
-  preview items again.
-- Preview cards can also be hidden with `Не интересно`. The backend stores this
-  as a preview ignore, not as a Vacancy Match. It does not create an
-  Application and does not submit anything externally.
-- Hidden preview cards can be temporarily shown with `Показать скрытые`. A
-  shown ignored card can be restored with `Вернуть в preview`, which deletes
-  the preview ignore record.
-- The "Обновить вакансии" action remains a manual refresh for the same safe
-  dry-run preview.
+- The persisted feed is filtered by tabs `Все` / `Новые` / `Сохранённые`.
+  `Новые` shows matches that are unseen **and** not yet saved/converted. Opening
+  a card (or following its source link) marks it seen via
+  `POST /loops/{loop_id}/matches/{match_id}/seen`, so it leaves the `Новые` tab.
+- There is no per-card hide/ignore action. The previous `Не интересно`
+  preview-ignore feature and the "hide saved" client filter were removed.
+- The "Обновить" добор action runs a manual safe dry-run preview to surface
+  fresh candidates; persisted matches remain the source of truth for the feed.
 - Preview cards can be opened on the source site.
 - A preview card can be saved as a Vacancy Match only after the user clicks
   "Сохранить как совпадение".
@@ -123,12 +120,17 @@ Save one selected preview item:
 POST /api/v1/loops/{loop_id}/matches/from-preview
 ```
 
-Hide one preview item from future preview feeds:
+Read the persisted cross-loop feed that backs `/dashboard/matches`
+(tabs `all` / `new` / `saved`, freshest-first, paginated):
 
 ```http
-POST /api/v1/loops/{loop_id}/matches/preview-ignores
-GET /api/v1/loops/{loop_id}/matches/preview-ignores
-DELETE /api/v1/loops/{loop_id}/matches/preview-ignores/{ignore_id}
+GET /api/v1/matches
+```
+
+Mark one match as seen (drives the «Просмотрено» badge and the «Новые» tab):
+
+```http
+POST /api/v1/loops/{loop_id}/matches/{match_id}/seen
 ```
 
 Analyze one saved match:
@@ -147,9 +149,9 @@ POST /api/v1/loops/{loop_id}/matches/{match_id}/create-application
 
 Future stages can add:
 
-- bulk review tools for hidden preview items
+- bulk review tools for the persisted feed
 - better cross-source deduplication before display
-- scheduled refresh with explicit limits, logs, and source controls
+- richer scheduler controls (per-loop cadence, manual run history)
 - additional source adapters after separate safety review
 
 These future stages must preserve the core boundary: Applications are never

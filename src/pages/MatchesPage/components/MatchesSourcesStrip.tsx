@@ -58,9 +58,11 @@ export function MatchesSourcesStrip({
               style={{ background: bucket.color }}
             />
             <span>{bucket.label}</span>
-            <span className="rounded-full bg-muted px-1.5 text-[10.5px] text-muted-foreground tabular-nums">
-              {bucket.count}
-            </span>
+            {bucket.count !== undefined ? (
+              <span className="rounded-full bg-muted px-1.5 text-[10.5px] text-muted-foreground tabular-nums">
+                {bucket.count}
+              </span>
+            ) : null}
           </button>
         );
       })}

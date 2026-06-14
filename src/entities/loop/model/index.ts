@@ -20,6 +20,9 @@ export {
 export {
   ALL_PLATFORMS,
   buildUrlByPlatform,
+  DEFAULT_SELECTED_PLATFORMS,
+  DISCOVERY_SOURCE_PRIORITY,
+  getDiscoverySourcePriority,
   GROUPS,
   PLATFORM_BY_ID,
   PLATFORM_LABEL_BY_ID,

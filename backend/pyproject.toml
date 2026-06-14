@@ -19,6 +19,10 @@ dependencies = [
     "firebase-admin>=6.0",
     "python-multipart>=0.0.12",
     "httpx>=0.28",
+    # IANA timezone database — Windows ships no system tz data, so zoneinfo
+    # can't resolve "Europe/Berlin" without this. The scheduler needs it to
+    # align refreshes to local (Berlin) midnight boundaries.
+    "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]

@@ -1,8 +1,8 @@
 """Integration test: the already-handled filter is scoped *per source*.
 
-``DiscoveryRunsService._load_handled_keys_by_source`` loads every saved/ignored
-key for a loop in two queries and groups them by source (replacing the old
-per-source N+1 query). This test guards the grouping: a vacancy saved under one
+``DiscoveryRunsService._load_handled_keys_by_source`` loads every saved key for
+a loop in one query and groups them by source (replacing the old per-source N+1
+query). This test guards the grouping: a vacancy saved under one
 source must NOT suppress a same-``external_id`` vacancy coming from a *different*
 source. If grouping regressed to one merged bucket, the second source's item
 would be wrongly filtered out.

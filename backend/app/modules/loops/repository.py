@@ -104,11 +104,16 @@ class LoopsRepository:
 
         str_ids = [str(lid) for lid in loop_ids]
 
+        # Canonical "Saved" funnel stage = status IN ('saved', 'converted').
+        # A converted match was intentionally selected by the user, so it stays
+        # counted (Found -> Saved -> Applied). This mirrors the global matches
+        # feed's saved tab; "new" rows are auto-persisted candidates and are
+        # excluded so the per-loop metric matches /api/v1/matches counts.
         match_query = (
             select(VacancyMatch.loop_id, func.count().label("cnt"))
             .where(
                 VacancyMatch.loop_id.in_(str_ids),
-                VacancyMatch.status.in_(["new", "saved"]),
+                VacancyMatch.status.in_(["saved", "converted"]),
             )
             .group_by(VacancyMatch.loop_id)
         )

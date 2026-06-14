@@ -16,7 +16,11 @@ from app.modules.loops.router import router as loops_router
 from app.modules.users.router import router as users_router
 from app.modules.vacancy_analysis.router import router as vacancy_analysis_router
 from app.modules.vacancy_import.router import router as vacancy_import_router
-from app.modules.vacancy_matches.router import loop_applications_router, router as vacancy_matches_router
+from app.modules.vacancy_matches.router import (
+    loop_applications_router,
+    matches_feed_router,
+    router as vacancy_matches_router,
+)
 
 router = APIRouter()
 
@@ -55,6 +59,7 @@ router.include_router(discovery_preview_router)
 router.include_router(discovery_runs_router)
 router.include_router(loops_router)
 router.include_router(vacancy_matches_router)
+router.include_router(matches_feed_router)
 router.include_router(loop_applications_router)
 router.include_router(vacancy_analysis_router)
 router.include_router(applications_router)

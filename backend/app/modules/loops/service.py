@@ -25,6 +25,7 @@ class LoopNotFoundError(APIError):
 
 class LoopsService:
     def __init__(self, db: AsyncSession) -> None:
+        self._db = db
         self._repo = LoopsRepository(db)
 
     async def list_for_user(
@@ -60,7 +61,7 @@ class LoopsService:
         patched = await self._repo.patch(loop, updates)
         # When auto-discovery is enabled and next_run_at is not yet scheduled, schedule it now.
         if patched.auto_discovery_enabled and patched.next_run_at is None:
-            interval_h = max(1, patched.discovery_interval_hours or 24)
+            interval_h = max(1, patched.discovery_interval_hours or 4)
             patched = await self._repo.patch(
                 patched,
                 {"next_run_at": datetime.now(timezone.utc) + timedelta(hours=interval_h)},
@@ -68,6 +69,19 @@ class LoopsService:
         # When auto-discovery is disabled, clear the pending run.
         elif not patched.auto_discovery_enabled and patched.next_run_at is not None:
             patched = await self._repo.patch(patched, {"next_run_at": None})
+
+        # Changing what the loop searches for invalidates the persisted match
+        # scores — recompute them now (synchronous, capped) so score-ranked
+        # lists never disagree with a fresh evaluation. Irrelevant patches
+        # (e.g. a title rename) skip this entirely. Imported from the
+        # standalone rescore module to avoid a service-level import cycle.
+        from app.modules.vacancy_matches.rescore import (
+            is_score_relevant_update,
+            rescore_loop_matches,
+        )
+
+        if is_score_relevant_update(set(updates)):
+            await rescore_loop_matches(self._db, patched)
         return patched
 
     async def archive(self, user: User, loop_id: UUID) -> Loop:

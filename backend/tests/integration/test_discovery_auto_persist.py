@@ -176,6 +176,16 @@ async def test_non_dry_run_persists_new_matches_without_duplicating(
     assert {r.source for r in rows} == {SOURCE_ID}
     assert {r.external_id for r in rows} == {"persist-0", "persist-1"}
 
+    # Stage 6c: every auto-persisted match is scored at write time by the
+    # scoring core. Title "Backend Engineer {i}" fully overlaps the loop's
+    # target_role (25) and the source is selected (15) → 40.
+    for row in rows:
+        assert row.score == 40
+        assert row.score_version == 1
+        assert row.score_details is not None
+        assert row.score_details["components"]["title"] == 25
+        assert row.score_details["components"]["source"] == 15
+
     # ── Run 2: same source → already-handled filter drops them, no duplicates ──
     second = await _make_service(db_session, adapter).run(
         user,
@@ -196,3 +206,38 @@ async def test_non_dry_run_persists_new_matches_without_duplicating(
         .all()
     )
     assert count == 2  # still exactly two — no duplicate rows
+
+
+async def test_dry_run_writes_no_vacancy_matches(client, db_session):
+    """Explicit guard for the preview/persist boundary: a dry-run (preview)
+    discovery pass must NEVER write vacancy_matches rows — «Предварительный
+    поиск — не сохраняется автоматически» is a hard product contract."""
+    loop_id = await _create_loop(client)
+    await db_session.commit()
+
+    user = (
+        await db_session.execute(
+            select(User).where(User.firebase_uid == _USER["firebase_uid"])
+        )
+    ).scalar_one()
+
+    adapter = _FakeAdapter()
+    response = await _make_service(db_session, adapter).run(
+        user,
+        DiscoveryRunRequest(loop_id=loop_id, source_ids=[SOURCE_ID], dry_run=True),
+    )
+    assert response.dry_run is True
+    assert response.matches_created == 0
+    assert response.matches_previewed > 0  # previews were produced …
+
+    await db_session.commit()
+    rows = (
+        (
+            await db_session.execute(
+                select(VacancyMatch).where(VacancyMatch.loop_id == loop_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert rows == []  # … but nothing was persisted

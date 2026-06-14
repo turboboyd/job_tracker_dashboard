@@ -206,6 +206,13 @@ npm run dev
 - [PR Review Checklist](docs/PR_REVIEW_CHECKLIST.md)
 - [Quality Gate](docs/QUALITY_GATE.md)
 
+### Loops / Matches architecture
+
+- [Loops → Matches → Applications](docs/LOOPS_MATCHES_ARCHITECTURE.md)
+- [ADR-001 — Match Score ownership](docs/adr/ADR-001-match-score-ownership.md)
+- [ADR-002 — Preview search vs persisted matches](docs/adr/ADR-002-preview-search-vs-persisted-matches.md)
+- [ADR-003 — Discovery source priority](docs/adr/ADR-003-discovery-source-priority.md)
+
 ---
 
 ## 📌 License

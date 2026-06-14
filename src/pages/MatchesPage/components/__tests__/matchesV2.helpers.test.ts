@@ -1,40 +1,29 @@
 import assert from "node:assert/strict";
 
 import type { Loop } from "src/entities/loop";
-import type {
-  DiscoveryRunPreviewItem,
-  DiscoveryRunResponse,
-} from "src/features/discoveryRuns";
-import type {
-  VacancyMatch,
-  VacancyMatchEvaluation,
-  VacancyMatchListEnvelope,
-} from "src/features/vacancyMatches";
+import type { VacancyMatch, VacancyMatchEvaluation } from "src/features/vacancyMatches";
 
 import {
   buildLoopMetaLine,
-  buildMergedMatchesFeed,
-  countMatchesByStatus,
-  filterMatches,
+  buildSourceBuckets,
   formatCountdownClock,
   formatTimeUntil,
   getDuplicateLabel,
   getEvaluationVerdict,
   getLoopPlatformCount,
   getLoopSyncState,
-  getMatchDedupeKey,
-  getMatchFreshnessTs,
+  getMatchScore,
+  getSourceColor,
+  getSourceLabel,
   getVacancyMeta,
   getVacancyMetaChips,
-  isMatchUnseen,
+  isLoopVisibleInMatches,
+  isMatchSeen,
+  localizeEvaluationPenalties,
   localizeEvaluationPenalty,
   localizeEvaluationReason,
+  localizeEvaluationReasons,
   pluralRu,
-  previewItemToMatch,
-  sortMatches,
-  type LoopMatchesResult,
-  type LoopPreviewResult,
-  type MatchWithLoopName,
 } from "../matchesV2.helpers";
 
 function loop(patch: Partial<Loop> & Pick<Loop, "id" | "name">): Loop {
@@ -72,9 +61,17 @@ function match(rawMetadata: Record<string, unknown>): VacancyMatch {
     warnings: [],
     status: "new",
     applicationId: null,
+    seenAt: null,
+    postedAt: null,
+    score: null,
+    scoreVersion: null,
     createdAt: "2026-06-01T09:00:00.000Z",
     updatedAt: "2026-06-04T09:00:00.000Z",
   };
+}
+
+function dbMatch(patch: Partial<VacancyMatch>): VacancyMatch {
+  return { ...match({}), ...patch };
 }
 
 // --- pluralRu -------------------------------------------------------------
@@ -99,6 +96,12 @@ assert.equal(
   false,
 );
 
+// --- isLoopVisibleInMatches -----------------------------------------------
+// Only active loops feed the Matches list; paused/archived are hidden.
+assert.equal(isLoopVisibleInMatches(loop({ id: "a", name: "A", status: "active" })), true);
+assert.equal(isLoopVisibleInMatches(loop({ id: "b", name: "B", status: "paused" })), false);
+assert.equal(isLoopVisibleInMatches(loop({ id: "c", name: "C", status: "archived" })), false);
+
 // --- getLoopPlatformCount -------------------------------------------------
 assert.equal(
   getLoopPlatformCount(loop({ id: "d", name: "D", selectedSources: ["linkedin", "xing"] })),
@@ -111,6 +114,43 @@ assert.equal(
   3,
 );
 assert.equal(getLoopPlatformCount(loop({ id: "f", name: "F" })), 0);
+
+// --- getSourceLabel / getSourceColor --------------------------------------
+assert.equal(getSourceLabel("linkedin"), "LinkedIn");
+assert.equal(getSourceLabel("arbeitnow"), "Arbeitnow");
+// Unknown source → capitalized id; nullish → "Другое".
+assert.equal(getSourceLabel("acme"), "Acme");
+assert.equal(getSourceLabel(null), "Другое");
+assert.equal(getSourceColor("linkedin"), "#0a66c2");
+// Unknown / nullish source → shared fallback color.
+assert.equal(getSourceColor("totally-unknown"), getSourceColor(null));
+
+// --- buildSourceBuckets ---------------------------------------------------
+// Union of the visible loops' enabled sources, de-duped/normalized, ordered by
+// the product source priority (legal boards first, LinkedIn after all board/API
+// sources), and carrying NO counts (server feed has no per-source totals).
+const buckets = buildSourceBuckets([
+  loop({ id: "1", name: "One", selectedSources: ["linkedin", "Arbeitnow"] }),
+  loop({ id: "2", name: "Two", selectedSources: ["arbeitnow", "indeed", "  "] }),
+]);
+assert.deepEqual(
+  buckets.map((bucket) => bucket.key),
+  ["indeed", "arbeitnow", "linkedin"],
+);
+assert.deepEqual(
+  buckets.map((bucket) => bucket.label),
+  ["Indeed", "Arbeitnow", "LinkedIn"],
+);
+// No counts are attached for the server-driven feed.
+assert.equal(buckets.every((bucket) => bucket.count === undefined), true);
+// Colors are populated from the source palette.
+assert.equal(buckets.find((bucket) => bucket.key === "linkedin")?.color, "#0a66c2");
+// Loops with no selected sources contribute nothing.
+assert.deepEqual(buildSourceBuckets([loop({ id: "x", name: "X" })]), []);
+
+// --- isMatchSeen ----------------------------------------------------------
+assert.equal(isMatchSeen(dbMatch({ seenAt: "2026-06-05T00:00:00.000Z" })), true);
+assert.equal(isMatchSeen(dbMatch({ seenAt: null })), false);
 
 // --- formatTimeUntil ------------------------------------------------------
 const now = Date.parse("2026-06-04T12:00:00.000Z");
@@ -278,6 +318,8 @@ function evaluation(patch: Partial<VacancyMatchEvaluation>): VacancyMatchEvaluat
     sourceScore: 0,
     reasons: [],
     penalties: [],
+    reasonCodes: [],
+    penaltyCodes: [],
     duplicateStatus: "none",
     duplicateOfMatchId: null,
     duplicateApplicationId: null,
@@ -299,315 +341,63 @@ assert.equal(
   "caution",
 );
 
-// --- getMatchDedupeKey ----------------------------------------------------
-// externalId (when present) is the stable identity, regardless of URL.
-assert.equal(
-  getMatchDedupeKey(match({})),
-  // match() fixture has source="arbeitnow", externalId=null, url=…/job/1
-  "arbeitnow:url:https://example.com/job/1",
-);
-function dbMatch(patch: Partial<VacancyMatch>): VacancyMatch {
-  return { ...match({}), ...patch };
-}
-assert.equal(
-  getMatchDedupeKey(dbMatch({ externalId: "x1" })),
-  "arbeitnow:id:x1",
-);
-// Trailing slashes are stripped so .../1 and .../1/ collapse to one key.
-assert.equal(
-  getMatchDedupeKey(dbMatch({ externalId: null, sourceUrl: "https://example.com/job/1///" })),
-  "arbeitnow:url:https://example.com/job/1",
-);
+// --- getMatchScore --------------------------------------------------------
+// Prefers the backend-owned top-level score; never computes one client-side.
+assert.equal(getMatchScore(dbMatch({ score: 73 })), 73);
+assert.equal(getMatchScore(dbMatch({ score: 72.6 })), 73); // rounded
+// Null top-level score with no legacy confidence → null (neutral fallback).
+assert.equal(getMatchScore(dbMatch({ score: null })), null);
+// Legacy confidence.score is used only when the top-level score is absent.
+assert.equal(getMatchScore(dbMatch({ score: null, confidence: { score: 41 } })), 41);
+// Top-level score wins over a stale legacy confidence value.
+assert.equal(getMatchScore(dbMatch({ score: 80, confidence: { score: 41 } })), 80);
 
-// --- previewItemToMatch ---------------------------------------------------
-function previewItem(patch: Partial<DiscoveryRunPreviewItem>): DiscoveryRunPreviewItem {
-  return {
-    externalId: "p1",
-    sourceUrl: "https://example.com/job/p1",
-    title: "Backend Engineer",
-    company: "Globex",
-    location: "Munich",
-    snippet: "A role.",
-    postedAt: null,
-    rawMetadata: {},
-    confidence: {},
-    insight: null,
-    ...patch,
-  };
-}
-const synthesized = previewItemToMatch("loop-1", "arbeitnow", previewItem({}));
-assert.equal(synthesized.id, "preview:loop-1:arbeitnow:p1");
-assert.equal(synthesized.status, "new");
-assert.equal(synthesized.source, "arbeitnow");
-assert.equal(synthesized.externalId, "p1");
-// insight score is surfaced under confidence.score so it ranks like a real match.
-assert.equal(
-  previewItemToMatch("loop-1", "arbeitnow", previewItem({ insight: { score: 73, matched: [], missing: [] } }))
-    .confidence.score,
-  73,
-);
-
-// --- buildMergedMatchesFeed -----------------------------------------------
-function matchesEnvelope(items: VacancyMatch[]): VacancyMatchListEnvelope {
-  return { items, total: items.length, limit: 200, offset: 0 };
-}
-function runResponse(
-  items: DiscoveryRunResponse["items"],
-): DiscoveryRunResponse {
-  return {
-    runId: "run-1",
-    status: "completed",
-    dryRun: true,
-    loopsChecked: 1,
-    sourcesChecked: 1,
-    matchesCreated: 0,
-    matchesPreviewed: items.length,
-    warnings: [],
-    items,
-  };
-}
-function runItem(patch: Partial<DiscoveryRunResponse["items"][number]>): DiscoveryRunResponse["items"][number] {
-  return {
-    loopId: "loop-1",
-    sourceId: "arbeitnow",
-    status: "would_run",
-    reason: "preview",
-    message: "",
-    itemsPreviewed: 0,
-    previewItems: [],
-    warnings: [],
-    errors: [],
-    ...patch,
-  };
-}
-
-const feedLoop = loop({ id: "loop-1", name: "Backend EU" });
-
-// DB match + a live preview for the *same* externalId → one row (no double count).
-const dbResults: LoopMatchesResult[] = [
-  { loop: feedLoop, response: matchesEnvelope([dbMatch({ externalId: "dup", status: "saved" })]) },
-];
-const previewResultsDup: LoopPreviewResult[] = [
-  {
-    loop: feedLoop,
-    response: runResponse([
-      runItem({ previewItems: [previewItem({ externalId: "dup", sourceUrl: "https://other.example/x" })] }),
-    ]),
-  },
-];
-const dedupFeed = buildMergedMatchesFeed(dbResults, previewResultsDup);
-assert.equal(dedupFeed.items.length, 1);
-assert.equal(dedupFeed.items[0]?.isPreview ?? false, false); // persisted row wins
-assert.equal(dedupFeed.warmingCount, 0);
-
-// A fresh preview (unseen externalId) is appended as an isPreview row.
-const previewResultsNew: LoopPreviewResult[] = [
-  {
-    loop: feedLoop,
-    response: runResponse([runItem({ previewItems: [previewItem({ externalId: "fresh" })] })]),
-  },
-];
-const mixedFeed = buildMergedMatchesFeed(dbResults, previewResultsNew);
-assert.equal(mixedFeed.items.length, 2);
-const freshRow = mixedFeed.items.find((row) => row.match.externalId === "fresh");
-assert.equal(freshRow?.isPreview, true);
-assert.equal(freshRow?.preview?.sourceId, "arbeitnow");
-assert.equal(freshRow?.loopName, "Backend EU");
-
-// cache_warming run items contribute no rows but bump warmingCount.
-const warmingFeed = buildMergedMatchesFeed(
-  [],
-  [{ loop: feedLoop, response: runResponse([runItem({ reason: "cache_warming" })]) }],
-);
-assert.equal(warmingFeed.items.length, 0);
-assert.equal(warmingFeed.warmingCount, 1);
-
-// A failed preview fetch (response: null) is skipped without throwing.
-const nullPreviewFeed = buildMergedMatchesFeed(dbResults, [{ loop: feedLoop, response: null }]);
-assert.equal(nullPreviewFeed.items.length, 1);
-assert.equal(nullPreviewFeed.warmingCount, 0);
-
-// --- buildMergedMatchesFeed: per-loop enabled-source filter ---------------
-// A loop that only enables "arbeitnow" must hide vacancies from other sources,
-// both persisted (linkedin) and live previews (indeed) — only arbeitnow rows pass.
-const sourceScopedLoop = loop({ id: "loop-1", name: "Backend EU", selectedSources: ["arbeitnow"] });
-const scopedDbResults: LoopMatchesResult[] = [
-  {
-    loop: sourceScopedLoop,
-    response: matchesEnvelope([
-      dbMatch({ externalId: "keep", source: "arbeitnow" }),
-      dbMatch({ externalId: "drop", source: "linkedin", sourceUrl: "https://example.com/job/li" }),
-    ]),
-  },
-];
-const scopedPreviewResults: LoopPreviewResult[] = [
-  {
-    loop: sourceScopedLoop,
-    response: runResponse([
-      runItem({ sourceId: "arbeitnow", previewItems: [previewItem({ externalId: "anw-fresh" })] }),
-      runItem({ sourceId: "indeed", previewItems: [previewItem({ externalId: "indeed-fresh" })] }),
-    ]),
-  },
-];
-const scopedFeed = buildMergedMatchesFeed(scopedDbResults, scopedPreviewResults);
+// --- localizeEvaluationReasons / Penalties (code-first, string fallback) ---
+// Prefers reason_codes when present.
 assert.deepEqual(
-  scopedFeed.items.map((r) => r.match.externalId).sort(),
-  ["anw-fresh", "keep"],
-);
-
-// Two loops, each enabling a different source → both loops show, each only its source.
-const loopA = loop({ id: "A", name: "Loop A", selectedSources: ["arbeitsagentur"] });
-const loopB = loop({ id: "B", name: "Loop B", selectedSources: ["arbeitnow"] });
-const twoLoopFeed = buildMergedMatchesFeed(
-  [
-    {
-      loop: loopA,
-      response: matchesEnvelope([
-        dbMatch({ externalId: "a-ok", source: "arbeitsagentur" }),
-        dbMatch({ externalId: "a-no", source: "arbeitnow", sourceUrl: "https://example.com/job/a-no" }),
-      ]),
-    },
-    {
-      loop: loopB,
-      response: matchesEnvelope([
-        dbMatch({ externalId: "b-ok", source: "arbeitnow", sourceUrl: "https://example.com/job/b-ok" }),
-        dbMatch({ externalId: "b-no", source: "arbeitsagentur", sourceUrl: "https://example.com/job/b-no" }),
-      ]),
-    },
-  ],
-  [],
-);
-assert.deepEqual(
-  twoLoopFeed.items.map((r) => `${r.loopName}:${r.match.externalId}`).sort(),
-  ["Loop A:a-ok", "Loop B:b-ok"],
-);
-
-// A loop with NO selected sources imposes no constraint (legacy/unconfigured → show all).
-const unconstrainedFeed = buildMergedMatchesFeed(
-  [
-    {
-      loop: loop({ id: "u", name: "Loop U" }),
-      response: matchesEnvelope([
-        dbMatch({ externalId: "u1", source: "linkedin" }),
-        dbMatch({ externalId: "u2", source: "indeed", sourceUrl: "https://example.com/job/u2" }),
-      ]),
-    },
-  ],
-  [],
-);
-assert.equal(unconstrainedFeed.items.length, 2);
-
-// --- getMatchFreshnessTs --------------------------------------------------
-// Real source publish date (posted_at) wins over createdAt.
-assert.equal(
-  getMatchFreshnessTs(
-    dbMatch({
-      rawMetadata: { posted_at: "2026-06-05T00:00:00.000Z" },
-      createdAt: "2026-06-01T00:00:00.000Z",
+  localizeEvaluationReasons(
+    evaluation({
+      reasonCodes: [
+        { code: "title_match", terms: ["frontend", "developer"] },
+        { code: "keyword_matched", terms: ["react"] },
+        { code: "location_match", terms: [] },
+        { code: "source_selected", terms: [] },
+        { code: "no_excluded_keywords", terms: [] },
+      ],
+      // Legacy strings present but must be ignored when codes exist.
+      reasons: ["IGNORED"],
     }),
   ),
-  Date.parse("2026-06-05T00:00:00.000Z"),
+  [
+    "Должность совпадает с целью цикла: frontend, developer",
+    "Совпало ключевое слово: react",
+    "Локация совпадает с циклом",
+    "Источник включён в цикл",
+    "Стоп-слов не найдено",
+  ],
 );
-// No posted_at → falls back to createdAt.
-assert.equal(
-  getMatchFreshnessTs(dbMatch({ rawMetadata: {}, createdAt: "2026-06-02T00:00:00.000Z" })),
-  Date.parse("2026-06-02T00:00:00.000Z"),
-);
-// Unparseable timestamps collapse to 0 (sink to bottom).
-assert.equal(getMatchFreshnessTs(dbMatch({ rawMetadata: {}, createdAt: "nope" })), 0);
-
-// --- sortMatches: "posted" = freshest first -------------------------------
-function row(id: string, patch: Partial<VacancyMatch>): MatchWithLoopName {
-  return { loopName: "L", match: dbMatch({ id, ...patch }) };
-}
-const freshnessRows: MatchWithLoopName[] = [
-  // older publish date, but newest createdAt — publish date must win.
-  row("old-posted", {
-    rawMetadata: { posted_at: "2026-06-01T00:00:00.000Z" },
-    createdAt: "2026-06-09T00:00:00.000Z",
-  }),
-  row("new-posted", {
-    rawMetadata: { posted_at: "2026-06-08T00:00:00.000Z" },
-    createdAt: "2026-06-02T00:00:00.000Z",
-  }),
-  // no publish date → ranked by createdAt.
-  row("created-mid", { rawMetadata: {}, createdAt: "2026-06-05T00:00:00.000Z" }),
-];
-const sortedByPosted = sortMatches(freshnessRows, "posted");
+// Falls back to legacy English strings when no codes are present.
 assert.deepEqual(
-  sortedByPosted.map((r) => r.match.id),
-  ["new-posted", "created-mid", "old-posted"],
+  localizeEvaluationReasons(evaluation({ reasons: ["Matched keyword: react."] })),
+  ["Совпало ключевое слово: react"],
 );
-// sortMatches does not mutate the input array.
-assert.equal(freshnessRows[0]?.match.id, "old-posted");
-
-// --- isMatchUnseen / «Новые» = unseen -------------------------------------
-const WATERMARK = "2026-06-05T00:00:00.000Z";
-// Persisted match created AFTER the watermark → unseen.
-assert.equal(
-  isMatchUnseen({ match: dbMatch({ createdAt: "2026-06-06T00:00:00.000Z" }) }, WATERMARK),
-  true,
-);
-// Persisted match created BEFORE the watermark → seen.
-assert.equal(
-  isMatchUnseen({ match: dbMatch({ createdAt: "2026-06-04T00:00:00.000Z" }) }, WATERMARK),
-  false,
-);
-// Null watermark (never marked seen) → everything is unseen.
-assert.equal(
-  isMatchUnseen({ match: dbMatch({ createdAt: "2026-06-04T00:00:00.000Z" }) }, null),
-  true,
-);
-// Live preview rows are always unseen, regardless of createdAt vs. watermark.
-assert.equal(
-  isMatchUnseen(
-    { isPreview: true, match: dbMatch({ createdAt: "2026-06-01T00:00:00.000Z" }) },
-    WATERMARK,
+// Penalties: code-first, then string fallback.
+assert.deepEqual(
+  localizeEvaluationPenalties(
+    evaluation({
+      penaltyCodes: [
+        { code: "excluded_keyword", terms: ["senior"] },
+        { code: "source_not_selected", terms: [] },
+      ],
+    }),
   ),
-  true,
+  ["Найдено стоп-слово: senior", "Источник не выбран в цикле"],
 );
-
-// --- filterMatches: status "new" filters by unseen, not status ------------
-function feedRow(id: string, patch: Partial<VacancyMatch>, isPreview = false): MatchWithLoopName {
-  const base: MatchWithLoopName = { loopName: "L", match: dbMatch({ id, ...patch }) };
-  return isPreview ? { ...base, isPreview: true } : base;
-}
-const watermarkFeed: MatchWithLoopName[] = [
-  feedRow("seen-new", { status: "new", createdAt: "2026-06-04T00:00:00.000Z" }),
-  feedRow("unseen-new", { status: "new", createdAt: "2026-06-06T00:00:00.000Z" }),
-  feedRow("saved-old", { status: "saved", createdAt: "2026-06-04T00:00:00.000Z" }),
-  feedRow("preview-row", { status: "new", createdAt: "2026-06-01T00:00:00.000Z" }, true),
-];
-const newTab = filterMatches(watermarkFeed, {
-  q: "",
-  source: "",
-  status: "new",
-  loopId: "",
-  watermark: WATERMARK,
-});
-// «Новые» = unseen rows: the post-watermark match + the always-unseen preview.
 assert.deepEqual(
-  newTab.map((r) => r.match.id).sort(),
-  ["preview-row", "unseen-new"],
+  localizeEvaluationPenalties(
+    evaluation({ penalties: ["Source is not selected for this Loop."] }),
+  ),
+  ["Источник не выбран в цикле"],
 );
-// «Сохранённые» still filters by persisted status, ignoring the watermark.
-const savedTab = filterMatches(watermarkFeed, {
-  q: "",
-  source: "",
-  status: "saved",
-  loopId: "",
-  watermark: WATERMARK,
-});
-assert.deepEqual(savedTab.map((r) => r.match.id), ["saved-old"]);
-
-// --- countMatchesByStatus: «Новые» counts unseen --------------------------
-const counts = countMatchesByStatus(watermarkFeed, WATERMARK);
-assert.equal(counts.all, 4);
-assert.equal(counts.new, 2); // unseen-new + preview-row
-assert.equal(counts.saved, 1);
-assert.equal(counts.converted, 0);
-assert.equal(counts.ignored, 0);
-// With a null watermark, every row counts as new.
-assert.equal(countMatchesByStatus(watermarkFeed, null).new, 4);
 
 console.log("matchesV2.helpers.test passed");

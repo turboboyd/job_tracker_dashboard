@@ -46,7 +46,8 @@ export function buildVacancyAnalysesUrl(
   if (query.offset !== undefined) params.set("offset", String(Math.max(0, query.offset)));
 
   const qs = params.toString();
-  return `${analysesBaseUrl(apiBaseUrl, loopId, matchId)}${qs ? `?${qs}` : ""}`;
+  const suffix = qs ? `?${qs}` : "";
+  return `${analysesBaseUrl(apiBaseUrl, loopId, matchId)}${suffix}`;
 }
 
 export function buildLatestVacancyAnalysisUrl(

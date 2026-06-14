@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth.deps import CurrentUser
 from app.db.session import DbSession
@@ -18,6 +18,12 @@ from app.modules.vacancy_matches.schemas import (
     ConvertMatchResponse,
     CreateApplicationFromMatchRequest,
     CreateApplicationFromMatchResponse,
+    LoopMatchesSort,
+    MatchesFeedCounts,
+    MatchesFeedItem,
+    MatchesFeedResponse,
+    MatchesFeedSort,
+    MatchesFeedTab,
     VacancyMatchCreate,
     VacancyMatchEvaluationResponse,
     VacancyMatchFromPreviewRequest,
@@ -26,10 +32,6 @@ from app.modules.vacancy_matches.schemas import (
     VacancyMatchPatch,
     VacancyMatchRead,
     VacancyMatchStatus,
-    VacancyPreviewIgnoreListResponse,
-    VacancyPreviewIgnoreRead,
-    VacancyPreviewIgnoreRequest,
-    VacancyPreviewIgnoreResponse,
 )
 from app.modules.vacancy_matches.service import VacancyMatchError, VacancyMatchesService
 
@@ -106,78 +108,13 @@ async def create_match_from_preview(
     )
 
 
-@router.post(
-    "/preview-ignores",
-    response_model=VacancyPreviewIgnoreResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Hide one discovery preview item from future preview feeds",
-)
-async def create_preview_ignore(
-    loop_id: str,
-    payload: VacancyPreviewIgnoreRequest,
-    current_user: CurrentUser,
-    svc: VacancyMatchesSvc,
-) -> VacancyPreviewIgnoreResponse:
-    try:
-        item, created = await svc.create_preview_ignore(current_user, loop_id, payload)
-    except VacancyMatchError as error:
-        raise _match_http_error(error) from error
-    return VacancyPreviewIgnoreResponse(
-        item=VacancyPreviewIgnoreRead.model_validate(item),
-        created=created,
-        duplicate=not created,
-    )
-
-
-@router.get(
-    "/preview-ignores",
-    response_model=VacancyPreviewIgnoreListResponse,
-    summary="List preview items hidden by the current user for a loop",
-)
-async def list_preview_ignores(
-    loop_id: str,
-    current_user: CurrentUser,
-    svc: VacancyMatchesSvc,
-    limit: int = Query(default=200, ge=1, le=500),
-    offset: int = Query(default=0, ge=0),
-) -> VacancyPreviewIgnoreListResponse:
-    items, total = await svc.list_preview_ignores_for_loop(
-        current_user,
-        loop_id,
-        limit=limit,
-        offset=offset,
-    )
-    return VacancyPreviewIgnoreListResponse(
-        items=[VacancyPreviewIgnoreRead.model_validate(item) for item in items],
-        total=total,
-        limit=limit,
-        offset=offset,
-    )
-
-
-@router.delete(
-    "/preview-ignores/{ignore_id}",
-    summary="Remove one hidden discovery preview item",
-)
-async def delete_preview_ignore(
-    loop_id: str,
-    ignore_id: UUID,
-    current_user: CurrentUser,
-    svc: VacancyMatchesSvc,
-) -> Response:
-    try:
-        await svc.delete_preview_ignore(current_user, loop_id, ignore_id)
-    except VacancyMatchError as error:
-        raise _match_http_error(error) from error
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @router.get("", response_model=VacancyMatchListResponse, summary="List vacancy matches for a loop")
 async def list_matches(
     loop_id: str,
     current_user: CurrentUser,
     svc: VacancyMatchesSvc,
     status_filter: VacancyMatchStatus | None = Query(default=None, alias="status"),
+    sort: LoopMatchesSort = Query(default="freshness"),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> VacancyMatchListResponse:
@@ -185,6 +122,7 @@ async def list_matches(
         current_user,
         loop_id,
         status=status_filter,
+        sort=sort,
         limit=limit,
         offset=offset,
     )
@@ -209,6 +147,29 @@ async def get_match(
 ) -> VacancyMatchRead:
     try:
         match = await svc.get_owned_in_loop(current_user, loop_id, match_id)
+    except VacancyMatchError as error:
+        raise _match_http_error(error) from error
+    return VacancyMatchRead.model_validate(match)
+
+
+@router.post(
+    "/{match_id}/seen",
+    response_model=VacancyMatchRead,
+    summary="Mark one vacancy match as seen by the current user",
+)
+async def mark_match_seen(
+    loop_id: str,
+    match_id: UUID,
+    current_user: CurrentUser,
+    svc: VacancyMatchesSvc,
+) -> VacancyMatchRead:
+    """Stamp ``seen_at`` the first time the user opens this match.
+
+    Idempotent: repeated calls keep the original view timestamp. Drives the
+    per-match "Просмотрено" badge and the "Новые" (unseen) tab.
+    """
+    try:
+        match = await svc.mark_seen(current_user, loop_id, match_id)
     except VacancyMatchError as error:
         raise _match_http_error(error) from error
     return VacancyMatchRead.model_validate(match)
@@ -330,4 +291,58 @@ async def save_preview_as_application(
         application_id=app.id,
         created=created,
         duplicate=duplicate,
+    )
+
+
+matches_feed_router = APIRouter(prefix="/matches", tags=["matches-feed"])
+
+
+@matches_feed_router.get(
+    "",
+    response_model=MatchesFeedResponse,
+    summary="Paginated cross-loop feed of saved vacancy matches",
+)
+async def list_matches_feed(
+    current_user: CurrentUser,
+    svc: VacancyMatchesSvc,
+    tab: MatchesFeedTab = Query(default="all"),
+    q: str | None = Query(default=None, max_length=200),
+    source: str | None = Query(default=None, max_length=64),
+    sort: MatchesFeedSort = Query(default="posted"),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> MatchesFeedResponse:
+    """List persisted matches across all of the user's visible loops.
+
+    - ``tab``: ``all`` | ``new`` (unseen and not saved/applied) | ``saved``.
+    - ``source``: restrict to one source id (case-insensitive).
+    - ``q``: substring match over company / role / location.
+    - ``sort``: ``posted`` (freshest, default) | ``company`` | ``loop`` |
+      ``score`` (persisted match score, best first, unscored rows last).
+    Counts for every tab are returned alongside the current page.
+    """
+    items, counts = await svc.list_feed(
+        current_user,
+        tab=tab,
+        q=q,
+        source=source,
+        sort=sort,
+        limit=limit,
+        offset=offset,
+    )
+    feed_items = [
+        MatchesFeedItem(
+            **VacancyMatchRead.model_validate(match).model_dump(),
+            loop_name=loop_name,
+        )
+        for match, loop_name in items
+    ]
+    counts_model = MatchesFeedCounts(**counts)
+    total = getattr(counts_model, tab)
+    return MatchesFeedResponse(
+        items=feed_items,
+        total=total,
+        limit=limit,
+        offset=offset,
+        counts=counts_model,
     )

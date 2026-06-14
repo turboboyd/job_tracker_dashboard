@@ -46,13 +46,6 @@ class User(Base):
     # it without the user pasting it on every request.
     resume_text: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Watermark for the Matches "Новые" (unseen) tab: when the user last marked
-    # their matches list as seen. Matches created after this point are "unseen".
-    # Null until the user first opens/marks the list.
-    matches_seen_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

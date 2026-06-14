@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
@@ -30,14 +28,6 @@ class UsersService:
         if not updates:
             return user
         return await self._repo.patch(user, updates)
-
-    async def mark_matches_seen(self, user: User) -> User:
-        """Advance the user's Matches "seen" watermark to now (UTC).
-
-        Matches created after this timestamp are considered "unseen" by the
-        Matches "Новые" tab.
-        """
-        return await self._repo.set_matches_seen_at(user, datetime.now(UTC))
 
     def get_analysis_plan(self, user: User) -> AnalysisPlanRead:
         return get_analysis_plan_for_user(user)

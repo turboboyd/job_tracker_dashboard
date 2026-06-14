@@ -5,6 +5,8 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "webpack serve --mode development --config config/webpack.config.ts",
+    "dev:qa": "cross-env USE_FIREBASE_AUTH_EMULATOR=true FIREBASE_AUTH_EMULATOR_URL=http://127.0.0.1:9099 npm run dev",
+    "firebase:emulator:auth": "firebase emulators:start --only auth",
     "build": "webpack --mode production --config config/webpack.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",

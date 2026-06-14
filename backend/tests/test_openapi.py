@@ -33,7 +33,6 @@ _REQUIRED_PATHS = [
     "/api/v1/health",
     "/api/v1/health/ready",
     "/api/v1/users/me",
-    "/api/v1/users/me/matches-seen",
     "/api/v1/users/me/analysis-plan",
     "/api/v1/dev/users/me/analysis-plan",
     "/api/v1/applications",
@@ -43,11 +42,13 @@ _REQUIRED_PATHS = [
     "/api/v1/discovery-preview",
     "/api/v1/discovery-runs",
     "/api/v1/loops",
+    "/api/v1/matches",
     "/api/v1/loops/{loop_id}",
     "/api/v1/loops/{loop_id}/matches/import-preview",
     "/api/v1/loops/{loop_id}/matches",
     "/api/v1/loops/{loop_id}/matches/from-preview",
     "/api/v1/loops/{loop_id}/matches/{match_id}",
+    "/api/v1/loops/{loop_id}/matches/{match_id}/seen",
     "/api/v1/loops/{loop_id}/matches/{match_id}/create-application",
     "/api/v1/loops/{loop_id}/matches/{match_id}/evaluate",
     "/api/v1/loops/{loop_id}/matches/{match_id}/analyses",
@@ -93,8 +94,8 @@ def test_users_me_has_get_and_patch(paths):
     assert "patch" in paths["/api/v1/users/me"]
 
 
-def test_users_me_matches_seen_has_post_only(paths):
-    ops = paths["/api/v1/users/me/matches-seen"]
+def test_match_seen_has_post_only(paths):
+    ops = paths["/api/v1/loops/{loop_id}/matches/{match_id}/seen"]
     assert "post" in ops
     assert "get" not in ops
     assert "patch" not in ops
@@ -259,6 +260,41 @@ def test_vacancy_match_paths_have_expected_methods(paths):
     assert "post" in paths[
         "/api/v1/loops/{loop_id}/matches/{match_id}/convert-to-application"
     ]
+
+
+def test_matches_feed_path_has_get_only(paths):
+    ops = paths["/api/v1/matches"]
+    assert "get" in ops
+    assert "post" not in ops
+    assert "patch" not in ops
+
+
+def test_matches_feed_has_filter_params(paths):
+    params = {
+        p["name"] for p in paths["/api/v1/matches"]["get"].get("parameters", [])
+    }
+    for expected in ("tab", "q", "source", "sort", "limit", "offset"):
+        assert expected in params, f"matches feed missing param: {expected}"
+
+
+def test_matches_feed_schemas_exist(components):
+    assert "MatchesFeedResponse" in components
+    assert "MatchesFeedItem" in components
+    assert "MatchesFeedCounts" in components
+
+
+def test_matches_feed_response_shape(components):
+    props = components["MatchesFeedResponse"].get("properties", {})
+    for field in ("items", "total", "limit", "offset", "counts"):
+        assert field in props
+
+    counts_props = components["MatchesFeedCounts"].get("properties", {})
+    for field in ("all", "new", "saved"):
+        assert field in counts_props
+
+    item_props = components["MatchesFeedItem"].get("properties", {})
+    for field in ("id", "loop_id", "loop_name", "seen_at", "posted_at", "status"):
+        assert field in item_props
 
 
 def test_vacancy_analysis_paths_have_expected_methods(paths):
@@ -687,7 +723,7 @@ def test_openapi_version_present(schema):
 
 
 def test_openapi_path_count(paths):
-    assert len(paths) == 36, f"Expected 36 paths, got {len(paths)}: {sorted(paths)}"
+    assert len(paths) == 35, f"Expected 35 paths, got {len(paths)}: {sorted(paths)}"
 
 
 # ── ApplicationListResponse envelope ──────────────────────────────────────────

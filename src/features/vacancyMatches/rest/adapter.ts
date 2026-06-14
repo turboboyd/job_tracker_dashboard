@@ -1,4 +1,4 @@
-export type VacancyMatchStatus = "new" | "saved" | "ignored" | "converted";
+export type VacancyMatchStatus = "new" | "saved" | "converted";
 
 export interface VacancyMatchPreviewDto {
   source_url: string;
@@ -27,6 +27,12 @@ export interface VacancyMatchDto {
   warnings: string[];
   status: VacancyMatchStatus;
   application_id: string | null;
+  seen_at?: string | null;
+  posted_at?: string | null;
+  // Backend-owned persisted match score (0–100). Null = not yet scored
+  // (rows created before the scoring migration). See Stage 6c.
+  score?: number | null;
+  score_version?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -77,32 +83,6 @@ export interface SaveDiscoveryPreviewAsApplicationResult {
   duplicate: boolean;
 }
 
-export interface VacancyPreviewIgnoreDto {
-  id: string;
-  user_id: string;
-  loop_id: string;
-  source_id: string;
-  external_id?: string | null;
-  source_url: string;
-  title?: string | null;
-  company?: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface VacancyPreviewIgnoreResponseDto {
-  item: VacancyPreviewIgnoreDto;
-  created: boolean;
-  duplicate: boolean;
-}
-
-export interface VacancyPreviewIgnoreListEnvelopeDto {
-  items: VacancyPreviewIgnoreDto[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
 export interface VacancyMatchPreview {
   sourceUrl: string;
   source: string;
@@ -130,6 +110,12 @@ export interface VacancyMatch {
   warnings: string[];
   status: VacancyMatchStatus;
   applicationId: string | null;
+  seenAt: string | null;
+  postedAt: string | null;
+  // Backend-owned persisted match score (0–100), or null when not yet scored.
+  // The frontend only DISPLAYS this — it never computes a match score.
+  score: number | null;
+  scoreVersion: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -172,40 +158,6 @@ export interface SaveDiscoveryPreviewMatchResult {
   match: VacancyMatch;
   created: boolean;
   duplicate: boolean;
-}
-
-export interface IgnoreDiscoveryPreviewInput {
-  sourceId: string;
-  externalId?: string | null;
-  sourceUrl: string;
-  title?: string | null;
-  company?: string | null;
-}
-
-export interface VacancyPreviewIgnore {
-  id: string;
-  userId: string;
-  loopId: string;
-  sourceId: string;
-  externalId: string | null;
-  sourceUrl: string;
-  title: string | null;
-  company: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface IgnoreDiscoveryPreviewResult {
-  item: VacancyPreviewIgnore;
-  created: boolean;
-  duplicate: boolean;
-}
-
-export interface VacancyPreviewIgnoreListEnvelope {
-  items: VacancyPreviewIgnore[];
-  total: number;
-  limit: number;
-  offset: number;
 }
 
 export interface CreateApplicationFromMatchInput {
@@ -259,8 +211,84 @@ export function mapVacancyMatchDto(dto: VacancyMatchDto): VacancyMatch {
     warnings: dto.warnings,
     status: dto.status,
     applicationId: dto.application_id,
+    seenAt: dto.seen_at ?? null,
+    postedAt: dto.posted_at ?? null,
+    score: dto.score ?? null,
+    scoreVersion: dto.score_version ?? null,
     createdAt: dto.created_at,
     updatedAt: dto.updated_at,
+  };
+}
+
+// ── Cross-loop matches feed (GET /matches) ─────────────────────────────────
+export type MatchesFeedTab = "all" | "new" | "saved";
+// "posted" stays the default; "score" orders by the backend-owned match score.
+export type MatchesFeedSort = "posted" | "company" | "loop" | "score";
+
+export interface MatchesFeedItemDto extends VacancyMatchDto {
+  loop_name: string | null;
+}
+
+export interface MatchesFeedCountsDto {
+  all: number;
+  new: number;
+  saved: number;
+}
+
+export interface MatchesFeedResponseDto {
+  items: MatchesFeedItemDto[];
+  total: number;
+  limit: number;
+  offset: number;
+  counts: MatchesFeedCountsDto;
+}
+
+export interface MatchesFeedItem {
+  match: VacancyMatch;
+  loopName: string | null;
+}
+
+export interface MatchesFeedCounts {
+  all: number;
+  new: number;
+  saved: number;
+}
+
+export interface MatchesFeedResponse {
+  items: MatchesFeedItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  counts: MatchesFeedCounts;
+}
+
+export interface ListMatchesFeedInput {
+  tab?: MatchesFeedTab;
+  q?: string | null;
+  source?: string | null;
+  sort?: MatchesFeedSort;
+  limit?: number;
+  offset?: number;
+}
+
+export function mapMatchesFeedItemDto(dto: MatchesFeedItemDto): MatchesFeedItem {
+  return {
+    match: mapVacancyMatchDto(dto),
+    loopName: dto.loop_name ?? null,
+  };
+}
+
+export function mapMatchesFeedResponseDto(dto: MatchesFeedResponseDto): MatchesFeedResponse {
+  return {
+    items: dto.items.map(mapMatchesFeedItemDto),
+    total: dto.total,
+    limit: dto.limit,
+    offset: dto.offset,
+    counts: {
+      all: dto.counts.all,
+      new: dto.counts.new,
+      saved: dto.counts.saved,
+    },
   };
 }
 
@@ -296,45 +324,6 @@ export function mapSaveDiscoveryPreviewMatchInputToDto(
     ...(input.postedAt !== undefined ? { posted_at: input.postedAt } : {}),
     raw_metadata: input.rawMetadata ?? {},
     confidence: input.confidence ?? {},
-  };
-}
-
-export function mapIgnoreDiscoveryPreviewInputToDto(
-  input: IgnoreDiscoveryPreviewInput,
-): Record<string, unknown> {
-  return {
-    source_id: input.sourceId,
-    ...(input.externalId !== undefined ? { external_id: input.externalId } : {}),
-    source_url: input.sourceUrl,
-    ...(input.title !== undefined ? { title: input.title } : {}),
-    ...(input.company !== undefined ? { company: input.company } : {}),
-  };
-}
-
-export function mapVacancyPreviewIgnoreDto(
-  dto: VacancyPreviewIgnoreDto,
-): VacancyPreviewIgnore {
-  return {
-    id: dto.id,
-    userId: dto.user_id,
-    loopId: dto.loop_id,
-    sourceId: dto.source_id,
-    externalId: dto.external_id ?? null,
-    sourceUrl: dto.source_url,
-    title: dto.title ?? null,
-    company: dto.company ?? null,
-    createdAt: dto.created_at,
-    updatedAt: dto.updated_at,
-  };
-}
-
-export function mapVacancyPreviewIgnoreResponseDto(
-  dto: VacancyPreviewIgnoreResponseDto,
-): IgnoreDiscoveryPreviewResult {
-  return {
-    item: mapVacancyPreviewIgnoreDto(dto.item),
-    created: dto.created,
-    duplicate: dto.duplicate,
   };
 }
 
@@ -398,6 +387,19 @@ export type DuplicateStatus =
   | "likely_duplicate"
   | "exact_duplicate";
 
+/** Machine-readable scoring explanation entry. Clients localize by `code`
+ * (with `terms` carrying matched tokens/keywords) instead of parsing the legacy
+ * English strings. Added in Stage 6c. */
+export interface ScoreReasonEntryDto {
+  code: string;
+  terms: string[];
+}
+
+export interface ScoreReasonEntry {
+  code: string;
+  terms: string[];
+}
+
 export interface VacancyMatchEvaluationDto {
   match_id: string;
   loop_id: string;
@@ -411,6 +413,10 @@ export interface VacancyMatchEvaluationDto {
   source_score: number;
   reasons: string[];
   penalties: string[];
+  // Preferred over `reasons`/`penalties` when present (Stage 6c). Optional so
+  // the mapper stays backward-compatible with older backends.
+  reason_codes?: ScoreReasonEntryDto[];
+  penalty_codes?: ScoreReasonEntryDto[];
   duplicate_status: DuplicateStatus;
   duplicate_of_match_id: string | null;
   duplicate_application_id: string | null;
@@ -430,6 +436,8 @@ export interface VacancyMatchEvaluation {
   sourceScore: number;
   reasons: string[];
   penalties: string[];
+  reasonCodes: ScoreReasonEntry[];
+  penaltyCodes: ScoreReasonEntry[];
   duplicateStatus: DuplicateStatus;
   duplicateOfMatchId: string | null;
   duplicateApplicationId: string | null;
@@ -452,6 +460,14 @@ export function mapVacancyMatchEvaluationDto(
     sourceScore: dto.source_score,
     reasons: dto.reasons,
     penalties: dto.penalties,
+    reasonCodes: (dto.reason_codes ?? []).map((entry) => ({
+      code: entry.code,
+      terms: entry.terms ?? [],
+    })),
+    penaltyCodes: (dto.penalty_codes ?? []).map((entry) => ({
+      code: entry.code,
+      terms: entry.terms ?? [],
+    })),
     duplicateStatus: dto.duplicate_status,
     duplicateOfMatchId: dto.duplicate_of_match_id,
     duplicateApplicationId: dto.duplicate_application_id,

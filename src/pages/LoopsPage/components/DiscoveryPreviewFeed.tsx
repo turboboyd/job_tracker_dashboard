@@ -74,7 +74,9 @@ function formatPostedAt(postedAt: string | null): string | null {
 function stripHtml(value: string | null | undefined): string {
   if (!value) return "";
   const decoded = value
-    .replace(/<[^>]*>/g, " ")
+    // Bounded length keeps the tag-strip regex linear (sonarjs/slow-regex);
+    // real HTML tags are well under this cap, so behavior is unchanged.
+    .replace(/<[^>]{0,2048}>/g, " ")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -414,7 +416,7 @@ export function DiscoveryPreviewFeed({
         </div>
       ) : !isLoadingFirst && Object.keys(sourceStates).length > 0 && items.length === 0 ? (
         <div className="mt-4 rounded-[10px] border border-dashed border-border bg-background p-3 text-[12.5px] text-muted-foreground">
-          Вакансии не найдены. Попробуйте уточнить профессию или ключевые слова в настройках.
+          Вакансии не найдены. Попробуйте уточнить профессию, локацию или ключевые слова.
         </div>
       ) : null}
 

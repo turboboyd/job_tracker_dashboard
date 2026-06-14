@@ -34,10 +34,3 @@ class UsersRepository:
         user.updated_at = datetime.now(UTC)
         await self._db.flush()
         return user
-
-    async def set_matches_seen_at(self, user: User, seen_at: datetime) -> User:
-        """Advance the Matches "seen" watermark and flush."""
-        user.matches_seen_at = seen_at
-        user.updated_at = datetime.now(UTC)
-        await self._db.flush()
-        return user

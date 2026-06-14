@@ -1,4 +1,4 @@
-import type { CreateLoopInput, Loop } from "../../model";
+import type { CanonicalFilters, CreateLoopInput, Loop } from "../../model";
 
 export interface CreateLoopModalProps {
   onCreateLoop: (input: CreateLoopInput) => Promise<Pick<Loop, "id">>;
@@ -12,4 +12,9 @@ export interface CreateLoopForm {
   name: string;
   platforms: string[];
   role: string;
+  /** Numeric text input; empty falls back to the 30 km default. */
+  radiusKm: string;
+  workMode: CanonicalFilters["workMode"];
+  includeKeywords: string;
+  excludeKeywords: string;
 }
