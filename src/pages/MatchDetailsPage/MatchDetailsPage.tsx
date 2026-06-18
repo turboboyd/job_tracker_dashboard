@@ -70,7 +70,7 @@ export default function MatchDetailsPage() {
   const matchId = String(params.matchId ?? "");
   const requestedLoopId = searchParams.get("loopId") ?? "";
   const loopsQ = useBackendLoopsQuery({ includeArchived: false });
-  const loops = loopsQ.data ?? [];
+  const loops = useMemo(() => loopsQ.data ?? [], [loopsQ.data]);
 
   const [match, setMatch] = useState<VacancyMatch | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -143,6 +143,35 @@ export default function MatchDetailsPage() {
     }
   }
 
+  // Loading / error / not-found blocker for the main area — extracted from a
+  // nested ternary into an ordered if/else (sonarjs/no-nested-conditional).
+  // Returns the status element, or null when the match content should render.
+  // Branch order, conditions, text and class names are unchanged.
+  function renderStatusBlock() {
+    if (isLoading || loopsQ.isLoading) {
+      return (
+        <div className="rounded-[12px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
+          Loading match...
+        </div>
+      );
+    }
+    if (error && !match) {
+      return (
+        <div className="rounded-[12px] border border-destructive/30 bg-destructive/5 p-6 text-[13px] text-destructive">
+          {error}
+        </div>
+      );
+    }
+    if (!match) {
+      return (
+        <div className="rounded-[12px] border border-dashed border-border bg-card p-6 text-[13px] text-muted-foreground">
+          Vacancy match not found.
+        </div>
+      );
+    }
+    return null;
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       <header className="shrink-0 border-b border-border px-7 py-5">
@@ -191,19 +220,7 @@ export default function MatchDetailsPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto p-7">
-        {isLoading || loopsQ.isLoading ? (
-          <div className="rounded-[12px] border border-border bg-card p-6 text-[13px] text-muted-foreground">
-            Loading match...
-          </div>
-        ) : error && !match ? (
-          <div className="rounded-[12px] border border-destructive/30 bg-destructive/5 p-6 text-[13px] text-destructive">
-            {error}
-          </div>
-        ) : !match ? (
-          <div className="rounded-[12px] border border-dashed border-border bg-card p-6 text-[13px] text-muted-foreground">
-            Vacancy match not found.
-          </div>
-        ) : (
+        {renderStatusBlock() ?? (match && (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
             <section className="min-w-0 space-y-5">
               <div className="rounded-[12px] border border-border bg-card p-5">
@@ -303,7 +320,7 @@ export default function MatchDetailsPage() {
               </div>
             </aside>
           </div>
-        )}
+        ))}
       </main>
     </div>
   );

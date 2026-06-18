@@ -11,9 +11,8 @@ import {
   type ApplicationReadDto,
 } from "../adapter";
 
-function test(name: string, run: () => void) {
+function test(_name: string, run: () => void) {
   run();
-  void name;
 }
 
 function makeDto(overrides: Partial<ApplicationReadDto> = {}): ApplicationReadDto {

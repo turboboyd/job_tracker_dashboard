@@ -53,8 +53,23 @@ export interface ReminderRow {
   text: string;
 }
 
+// Opaque, prefixed client id. Uses crypto.randomUUID() (with a crypto fallback,
+// matching the project's uidLike pattern) instead of Math.random — clears
+// sonarjs/pseudo-random. These ids are only used as React keys / local row
+// tracking / history correlation tokens; their format is never parsed.
+function createClientId(prefix: string): string {
+  const c = (globalThis as { crypto?: Crypto }).crypto;
+  if (c?.randomUUID) return `${prefix}-${c.randomUUID()}`;
+  const bytes = new Uint8Array(16);
+  c?.getRandomValues?.(bytes);
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `${prefix}-${hex}`;
+}
+
 function makeRowId(): string {
-  return `r-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  return createClientId("r");
 }
 
 function logRestError(context: string, e: unknown): void {
@@ -613,7 +628,7 @@ export function useApplicationDetailsController() {
 
       // Single correlation id for both events emitted by this action so the
       // History tab can render them as one logical block.
-      const correlationId = `wzd-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const correlationId = createClientId("wzd");
 
       // Optimistic comment in history
       const optimisticComment: ApplicationHistoryItem = {

@@ -10,24 +10,29 @@ import { DiscoveryPreviewFeed, type FeedSource } from "./DiscoveryPreviewFeed";
 import { DISCOVERY_SOURCE_OPTIONS } from "./loopSettingsPanel.helpers";
 import { isBackendLoopId } from "./loopsPage.helpers";
 
-export function LoopPreviewTab({
-  loop,
-  onRefreshSourceStats,
-  onMatchSaved,
-}: {
+interface LoopPreviewTabProps {
   loop: Loop;
   onRefreshSourceStats: () => void;
   onMatchSaved: () => void;
-}) {
-  const isBackendId = isBackendLoopId(loop.id);
-  const sources = loop.selectedSources ?? [];
+}
+
+interface LoopPreviewTabContentProps extends LoopPreviewTabProps {
+  isBackendId: boolean;
+}
+
+function LoopPreviewTabContent({
+  loop,
+  onRefreshSourceStats,
+  onMatchSaved,
+  isBackendId,
+}: LoopPreviewTabContentProps) {
+  const sources = useMemo(() => loop.selectedSources ?? [], [loop.selectedSources]);
   const [runtimeStatuses, setRuntimeStatuses] = useState<DiscoverySourceRuntimeStatus[]>([]);
   const [runtimeStatusesLoading, setRuntimeStatusesLoading] = useState(isBackendId);
 
   useEffect(() => {
     if (!isBackendId) return;
     let cancelled = false;
-    setRuntimeStatusesLoading(true);
     getDiscoverySourceRuntimeStatusViaRest()
       .then((res) => {
         if (!cancelled) setRuntimeStatuses(res.items);
@@ -75,6 +80,18 @@ export function LoopPreviewTab({
       sources={runnableSources}
       onMatchSaved={onMatchSaved}
       onRunComplete={onRefreshSourceStats}
+    />
+  );
+}
+
+export function LoopPreviewTab(props: LoopPreviewTabProps) {
+  const isBackendId = isBackendLoopId(props.loop.id);
+
+  return (
+    <LoopPreviewTabContent
+      key={isBackendId ? "backend" : "local"}
+      {...props}
+      isBackendId={isBackendId}
     />
   );
 }

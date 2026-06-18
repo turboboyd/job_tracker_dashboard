@@ -24,7 +24,9 @@ export function useActiveReminders(userId: string | null): {
 } {
   const [reminders, setReminders] = useState<ActiveReminder[]>([]);
   const [isReady, setIsReady] = useState(false);
-  const [nowTick, setNowTick] = useState<number>(Date.now());
+  // Lazy init so Date.now() is not called during render (react-hooks/purity).
+  // The minute-interval below keeps this fresh; the initial value is identical.
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
 
   useEffect(() => {
     if (!userId) {

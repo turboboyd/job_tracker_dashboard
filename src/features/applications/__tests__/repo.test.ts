@@ -342,6 +342,9 @@ async function run() {
   }
 }
 
+// Fire-and-forget async test entry; cleanup runs in .finally. A rejection
+// surfaces as an unhandled rejection (test failure) — intentionally not caught.
+// eslint-disable-next-line sonarjs/void-use -- intentional fire-and-forget test runner
 void run().finally(() => {
   globalThis.fetch = originalFetch;
   _resetBackendConfig();

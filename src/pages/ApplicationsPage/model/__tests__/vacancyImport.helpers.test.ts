@@ -17,9 +17,8 @@ import {
   VACANCY_IMPORT_INVALID_URL_MESSAGE,
 } from "../vacancyImport.helpers";
 
-function test(name: string, run: () => void) {
+function test(_name: string, run: () => void) {
   run();
-  void name;
 }
 
 const baseForm: CreateFormState = {

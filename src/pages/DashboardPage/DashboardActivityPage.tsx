@@ -99,6 +99,29 @@ type MatchLike = {
   title?: string | null;
 };
 
+// Value-level mappings extracted from nested ternaries (sonarjs/no-nested-conditional).
+// Behavior is identical to the previous inline ternaries.
+function activityTypeFor(status: string): ActivityType {
+  if (["INTERVIEW_1", "INTERVIEW_2"].includes(status)) return "interview";
+  if (status === "TEST_TASK") return "note";
+  if (status === "OFFER" || status === "HIRED") return "match";
+  if (status === "REJECTED" || status === "NO_RESPONSE") return "system";
+  return "apply";
+}
+
+function activityActionFor(type: ActivityType): string {
+  if (type === "interview") return "прошёл интервью";
+  if (type === "match") return "получил оффер от";
+  if (type === "system") return "получил отказ от";
+  return "обновил статус в";
+}
+
+function streakLabel(streak: number): string {
+  if (streak === 1) return "день подряд";
+  if (streak >= 2 && streak <= 4) return "дня подряд";
+  return "дней подряд";
+}
+
 function deriveActivity(matches: MatchLike[]): ActivityItem[] {
   return [...matches]
     .filter((m) => toMillis(m.updatedAt) > 0)
@@ -109,24 +132,9 @@ function deriveActivity(matches: MatchLike[]): ActivityItem[] {
       const role = m.title ?? "";
       const target = role ? `${company} · ${role}` : company;
 
-      const type: ActivityType = ["INTERVIEW_1", "INTERVIEW_2"].includes(status)
-        ? "interview"
-        : status === "TEST_TASK"
-          ? "note"
-          : status === "OFFER" || status === "HIRED"
-            ? "match"
-            : status === "REJECTED" || status === "NO_RESPONSE"
-              ? "system"
-              : "apply";
+      const type: ActivityType = activityTypeFor(status);
 
-      const action =
-        type === "interview"
-          ? "прошёл интервью"
-          : type === "match"
-            ? "получил оффер от"
-            : type === "system"
-              ? "получил отказ от"
-              : "обновил статус в";
+      const action = activityActionFor(type);
 
       const timeMs = toMillis(m.updatedAt) ?? 0;
 
@@ -301,7 +309,10 @@ export default function DashboardActivityPage() {
     null,
   );
 
-  const nowMs = Date.now();
+  // Lazily-initialized stable "now" (react-hooks/purity): the activity feed
+  // groups by day and uses a 7-day window — it does not live-tick, so freezing
+  // at mount yields identical output and also stabilizes the useMemo below.
+  const [nowMs] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -490,11 +501,7 @@ export default function DashboardActivityPage() {
                   {streak}
                 </span>
                 <span className="text-[13px] text-muted-foreground">
-                  {streak === 1
-                    ? "день подряд"
-                    : streak >= 2 && streak <= 4
-                      ? "дня подряд"
-                      : "дней подряд"}
+                  {streakLabel(streak)}
                 </span>
               </div>
               <p className="text-[12px] text-muted-foreground mb-3">

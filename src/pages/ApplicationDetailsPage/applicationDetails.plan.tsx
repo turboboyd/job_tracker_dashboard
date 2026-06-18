@@ -316,7 +316,6 @@ export function ApplicationPlanCard({
   buildEmptyRow,
   text,
 }: ApplicationPlanCardProps) {
-  void _onCompleteReminder;
   const { i18n } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -396,6 +395,38 @@ export function ApplicationPlanCard({
     );
   };
 
+  const renderReminderContent = () => {
+    if (!app) {
+      return <DetailsMutedMessage>{text.notFound}</DetailsMutedMessage>;
+    }
+
+    if (reminders.length === 0) {
+      return <DetailsMutedMessage>{text.planEmpty}</DetailsMutedMessage>;
+    }
+
+    return (
+      <div className="space-y-1.5">
+        {reminders.map((row) => (
+          <ReminderListItem
+            key={row.id}
+            row={row}
+            isMutating={isMutating}
+            onEdit={() => handleEditClick(row.id)}
+            onRemove={() => onRemoveReminder(row.id)}
+            onComplete={() => {
+              setOutcomeRowId(row.id);
+              setOutcomeOpen(true);
+            }}
+            onSnoozeMinutes={(minutes) => onSnoozeReminder(row.id, minutes)}
+            onSnoozeTomorrow={() => onSnoozeReminderTo(row.id, tomorrowAt9From(new Date()))}
+            text={text}
+            locale={i18n.language}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Card padding="md" shadow="sm" className="space-y-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -431,31 +462,7 @@ export function ApplicationPlanCard({
         </div>
       </div>
 
-      {!app ? (
-        <DetailsMutedMessage>{text.notFound}</DetailsMutedMessage>
-      ) : reminders.length === 0 ? (
-        <DetailsMutedMessage>{text.planEmpty}</DetailsMutedMessage>
-      ) : (
-        <div className="space-y-1.5">
-          {reminders.map((row) => (
-            <ReminderListItem
-              key={row.id}
-              row={row}
-              isMutating={isMutating}
-              onEdit={() => handleEditClick(row.id)}
-              onRemove={() => onRemoveReminder(row.id)}
-              onComplete={() => {
-                setOutcomeRowId(row.id);
-                setOutcomeOpen(true);
-              }}
-              onSnoozeMinutes={(minutes) => onSnoozeReminder(row.id, minutes)}
-              onSnoozeTomorrow={() => onSnoozeReminderTo(row.id, tomorrowAt9From(new Date()))}
-              text={text}
-              locale={i18n.language}
-            />
-          ))}
-        </div>
-      )}
+      {renderReminderContent()}
 
       {!isExportDisabled ? (
         <div className="flex justify-end pt-1">

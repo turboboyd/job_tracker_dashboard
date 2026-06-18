@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { classNames } from "src/shared/lib";
@@ -56,14 +56,17 @@ export function ReminderModal({
   const { i18n } = useTranslation();
   const [draft, setDraft] = useState<ReminderDraft>(() => initial ?? emptyDraft());
   const [touched, setTouched] = useState(false);
+  const [previousOpen, setPreviousOpen] = useState(open);
+  const [previousInitial, setPreviousInitial] = useState(initial);
 
-  // Reset whenever popup re-opens
-  useEffect(() => {
+  if (previousOpen !== open || previousInitial !== initial) {
+    setPreviousOpen(open);
+    setPreviousInitial(initial);
     if (open) {
       setDraft(initial ?? emptyDraft());
       setTouched(false);
     }
-  }, [open, initial]);
+  }
 
   const minDate = useMemo(() => formatDateInput(startOfDay(new Date())), []);
 

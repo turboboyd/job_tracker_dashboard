@@ -4,9 +4,8 @@ import type { ApplicationDoc } from "src/features/applications";
 
 import { getApplicationVacancyDescription } from "../applicationDetails.helpers";
 
-function test(name: string, run: () => void) {
+function test(_name: string, run: () => void) {
   run();
-  void name;
 }
 
 function makeApplication(overrides: Partial<ApplicationDoc> = {}): ApplicationDoc {

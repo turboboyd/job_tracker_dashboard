@@ -12,7 +12,7 @@ import { useTimeAgoLabel } from "./loopDetailsView.hooks";
 import { HistoryRow } from "./loopDetailsView.parts";
 import { isBackendLoopId } from "./loopsPage.helpers";
 
-export function LoopHistoryTab({ loop }: { loop: Loop }) {
+function LoopHistoryTabContent({ loop }: { loop: Loop }) {
   const { t } = useTranslation();
   const formatTimeAgo = useTimeAgoLabel();
   const lastAgo = formatTimeAgo(timeAgoFromIso(loop.lastDiscoveryAt));
@@ -24,7 +24,6 @@ export function LoopHistoryTab({ loop }: { loop: Loop }) {
   useEffect(() => {
     if (!isBackendId) return;
     let cancelled = false;
-    setLoading(true);
     listDiscoveryRunHistoryViaRest({ loopId: loop.id, limit: 50 })
       .then((envelope) => {
         if (!cancelled) {
@@ -45,6 +44,51 @@ export function LoopHistoryTab({ loop }: { loop: Loop }) {
       cancelled = true;
     };
   }, [loop.id, isBackendId]);
+
+  // History panel body — extracted from a nested ternary into an ordered
+  // if/else (sonarjs/no-nested-conditional). Branch order, conditions, text and
+  // class names are unchanged.
+  function renderHistoryBody() {
+    if (loading) {
+      return (
+        <div className="px-5 py-6 text-[12.5px] text-muted-foreground">
+          {t("loops.loading", "Loading…")}
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="px-5 py-6 text-[12.5px] text-rose-600 dark:text-rose-400">
+          {error}
+        </div>
+      );
+    }
+    if (history.length === 0) {
+      return (
+        <div className="px-5 py-8 text-center">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-[16px]">
+            ↻
+          </div>
+          <div className="text-[13px] font-medium text-foreground">
+            {t("loops.historyEmptyShort", "No runs yet")}
+          </div>
+          <p className="mx-auto mt-1 max-w-md text-[12px] leading-relaxed text-muted-foreground">
+            {t(
+              "loops.historyEmptyHint",
+              "Trigger a manual run from the Sources tab — entries will appear here as soon as the first run completes.",
+            )}
+          </p>
+        </div>
+      );
+    }
+    return (
+      <ul className="divide-y divide-border">
+        {history.map((row) => (
+          <HistoryRow key={row.id} row={row} />
+        ))}
+      </ul>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -77,37 +121,12 @@ export function LoopHistoryTab({ loop }: { loop: Loop }) {
           </span>
         </div>
 
-        {loading ? (
-          <div className="px-5 py-6 text-[12.5px] text-muted-foreground">
-            {t("loops.loading", "Loading…")}
-          </div>
-        ) : error ? (
-          <div className="px-5 py-6 text-[12.5px] text-rose-600 dark:text-rose-400">
-            {error}
-          </div>
-        ) : history.length === 0 ? (
-          <div className="px-5 py-8 text-center">
-            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted text-[16px]">
-              ↻
-            </div>
-            <div className="text-[13px] font-medium text-foreground">
-              {t("loops.historyEmptyShort", "No runs yet")}
-            </div>
-            <p className="mx-auto mt-1 max-w-md text-[12px] leading-relaxed text-muted-foreground">
-              {t(
-                "loops.historyEmptyHint",
-                "Trigger a manual run from the Sources tab — entries will appear here as soon as the first run completes.",
-              )}
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {history.map((row) => (
-              <HistoryRow key={row.id} row={row} />
-            ))}
-          </ul>
-        )}
+        {renderHistoryBody()}
       </div>
     </div>
   );
+}
+
+export function LoopHistoryTab({ loop }: { loop: Loop }) {
+  return <LoopHistoryTabContent key={loop.id} loop={loop} />;
 }

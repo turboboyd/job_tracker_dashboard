@@ -92,6 +92,13 @@ export function NextRunCountdown({ nextRunAt }: { nextRunAt: string | null | und
       </div>
     );
   }
+  // Intentional Date.now() in render: this coarse (minute/hour) countdown
+  // reflects the current time on each render and does not live-tick. Freezing
+  // "now" in state would make it stale across re-renders (e.g. when nextRunAt
+  // updates after a sync on a long-open page); adding an interval would
+  // introduce live-ticking the UI does not currently have. A benign concurrent
+  // double-render computes the same displayed minute/hour value either way.
+  // eslint-disable-next-line react-hooks/purity -- benign, coarse, non-ticking countdown
   const diffMs = Date.parse(nextRunAt) - Date.now();
   if (diffMs <= 0) {
     return (

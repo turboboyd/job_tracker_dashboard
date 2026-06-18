@@ -206,6 +206,18 @@ const STAGE_STEPS: { status: ProcessStatus; label: string }[] = [
 ];
 const TERMINAL_NEG: ProcessStatus[] = ["REJECTED", "NO_RESPONSE"];
 
+function stageRibbonSegmentClass(isActive: boolean, isPast: boolean): string {
+  if (isActive) return "bg-primary";
+  if (isPast) return "bg-primary/50";
+  return "bg-border";
+}
+
+function formatPipelineDaysLabel(days: number): string {
+  if (days === 1) return "день";
+  if (days < 5) return "дня";
+  return "дней";
+}
+
 function StageRibbon({ current }: { current: ProcessStatus }) {
   const isNeg = TERMINAL_NEG.includes(current);
   const currentIdx = STAGE_STEPS.findIndex((s) => s.status === current);
@@ -220,11 +232,7 @@ function StageRibbon({ current }: { current: ProcessStatus }) {
             <div
               className={[
                 "h-[4px] rounded-full mb-1.5 transition-colors",
-                isActive
-                  ? "bg-primary"
-                  : isPast
-                    ? "bg-primary/50"
-                    : "bg-border",
+                stageRibbonSegmentClass(isActive, isPast),
               ].join(" ")}
             />
             <div
@@ -668,7 +676,7 @@ export default function ApplicationDetailsPage() {
   }
 
   // ── Field save helpers ────────────────────────────────────────────────────
-  // TODO(backend-migration): PATCH /api/v1/applications/:appId
+  // Backend migration: PATCH /api/v1/applications/:appId
 
   async function saveField(
     patch: Record<string, unknown>,
@@ -806,7 +814,7 @@ export default function ApplicationDetailsPage() {
                   )}
                   {days > 0 && (
                     <span>
-                      · {days} {days === 1 ? "день" : days < 5 ? "дня" : "дней"}{" "}
+                      · {days} {formatPipelineDaysLabel(days)}{" "}
                       в воронке
                     </span>
                   )}
@@ -1014,7 +1022,7 @@ export default function ApplicationDetailsPage() {
                         </>
                       ) : (
                         <p className="text-[13px] text-muted-foreground">
-                          {/* TODO(backend-migration): GET /api/v1/applications/:appId/matching — AI-бриф генерируется на сервере после анализа JD и CV */}
+                          {/* Backend migration: GET /api/v1/applications/:appId/matching — AI-бриф генерируется на сервере после анализа JD и CV */}
                           AI-анализ ещё не доступен. Добавьте описание вакансии
                           и навыки в профиль.
                         </p>
@@ -1046,7 +1054,7 @@ export default function ApplicationDetailsPage() {
                     </div>
 
                     {/* Next action stub */}
-                    {/* TODO(backend-migration): GET /api/v1/applications/:appId/next-action */}
+                    {/* Backend migration: GET /api/v1/applications/:appId/next-action */}
                     <div
                       className="rounded-[14px] border bg-card p-5"
                       style={
@@ -1060,7 +1068,7 @@ export default function ApplicationDetailsPage() {
                     >
                       <SLabel>Следующее действие</SLabel>
                       <p className="mt-3 text-[13px] text-muted-foreground">
-                        {/* TODO(backend-migration): backend should compute next recommended action */}
+                        {/* Backend migration: backend should compute next recommended action */}
                         Запланируйте следующий шаг — отправка, интервью или
                         follow-up.
                       </p>
@@ -1333,7 +1341,7 @@ export default function ApplicationDetailsPage() {
                       <Sparkles className="h-4 w-4 text-primary" />
                       <SLabel>Подготовка к интервью</SLabel>
                     </div>
-                    {/* TODO(backend-migration): POST /api/v1/applications/:appId/prep — AI generates checklist and questions based on JD + user profile */}
+                    {/* Backend migration: POST /api/v1/applications/:appId/prep — AI generates checklist and questions based on JD + user profile */}
                     <p className="text-[13px] text-muted-foreground leading-relaxed">
                       Подготовка генерируется AI на основе описания вакансии и
                       вашего профиля. Добавьте описание вакансии на вкладке
@@ -1343,7 +1351,7 @@ export default function ApplicationDetailsPage() {
                   </div>
                   <div className="rounded-[14px] border border-border bg-card p-5">
                     <SLabel>Материалы</SLabel>
-                    {/* TODO(backend-migration): GET /api/v1/resources?tags=... — linked learning resources */}
+                    {/* Backend migration: GET /api/v1/resources?tags=... — linked learning resources */}
                     <p className="mt-3 text-[12px] text-muted-foreground">
                       Материалы для подготовки появятся после анализа вакансии.
                     </p>
@@ -1357,7 +1365,7 @@ export default function ApplicationDetailsPage() {
                   <div className="rounded-[14px] border border-border bg-card overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                       <SLabel>Контакты по заявке</SLabel>
-                      {/* TODO(backend-migration): POST /api/v1/applications/:appId/contacts */}
+                      {/* Backend migration: POST /api/v1/applications/:appId/contacts */}
                       <button
                         type="button"
                         className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors"
@@ -1366,7 +1374,7 @@ export default function ApplicationDetailsPage() {
                         Привязать контакт
                       </button>
                     </div>
-                    {/* TODO(backend-migration): GET /api/v1/applications/:appId/contacts — contact list from DB */}
+                    {/* Backend migration: GET /api/v1/applications/:appId/contacts — contact list from DB */}
                     <div className="px-5 py-10 text-center">
                       <p className="text-[13px] text-muted-foreground">
                         Контакты не добавлены. Привяжите рекрутера или HR из

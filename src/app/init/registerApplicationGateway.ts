@@ -11,7 +11,10 @@ import { getBackendConfig } from "src/shared/config";
 const { applicationsBackend } = getBackendConfig();
 
 if (applicationsBackend === "rest") {
-  // Lazy import keeps the REST bundle out of the Firestore path.
+  // Lazy import keeps the REST bundle out of the Firestore path. Fire-and-forget
+  // at module init: an import failure intentionally leaves the gateway
+  // unregistered (no error handler to add — preserves existing behavior).
+  // eslint-disable-next-line sonarjs/void-use -- intentional fire-and-forget module init
   void import("src/features/applications").then(({ createRestApplicationGateway }) => {
     registerApplicationGateway(createRestApplicationGateway());
   });

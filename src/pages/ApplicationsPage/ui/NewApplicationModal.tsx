@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -74,11 +74,12 @@ export function NewApplicationModal({
 }: NewApplicationModalProps) {
   const { t } = useTranslation();
   const [contact, setContact] = useState<NewApplicationContactInput>(EMPTY_CONTACT);
+  const [previousOpen, setPreviousOpen] = useState(open);
 
-  // Reset contact whenever modal re-opens
-  useEffect(() => {
+  if (previousOpen !== open) {
+    setPreviousOpen(open);
     if (open) setContact(EMPTY_CONTACT);
-  }, [open]);
+  }
 
   const handleSubmit = async () => {
     const ok = await onCreate(contact.firstName.trim() ? contact : undefined);

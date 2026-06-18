@@ -186,13 +186,19 @@ export function ApplicationsListCard(props: {
       }) ?? "No applications yet.") as string;
   }
 
-  return (
-    <div className="rounded-[14px] border border-border bg-card overflow-hidden">
-      {filteredSorted.length === 0 ? (
+  // Card body — extracted from a nested ternary into an ordered if/else
+  // (sonarjs/no-nested-conditional). Branch order (empty → list → grid),
+  // conditions, text, props and class names are unchanged.
+  function renderBody() {
+    if (filteredSorted.length === 0) {
+      return (
         <div className="px-3 py-6 text-sm text-muted-foreground">
           {query ? "No applications match your search." : emptyText}
         </div>
-      ) : displayMode === "list" ? (
+      );
+    }
+    if (displayMode === "list") {
+      return (
         <div>
           <ListHeader />
           <div>
@@ -210,21 +216,28 @@ export function ApplicationsListCard(props: {
             ))}
           </div>
         </div>
-      ) : (
-        <div className="grid gap-3 p-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
-          {filteredSorted.map((row) => (
-            <ApplicationCardTile
-              key={row.id}
-              row={row}
-              onToggleFavorite={onToggleFavorite}
-              onArchiveApplication={onArchiveApplication}
-              onRestoreApplication={onRestoreApplication}
-              isArchivedView={isArchivedView}
-              loopTitleById={loopTitleById}
-            />
-          ))}
-        </div>
-      )}
+      );
+    }
+    return (
+      <div className="grid gap-3 p-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+        {filteredSorted.map((row) => (
+          <ApplicationCardTile
+            key={row.id}
+            row={row}
+            onToggleFavorite={onToggleFavorite}
+            onArchiveApplication={onArchiveApplication}
+            onRestoreApplication={onRestoreApplication}
+            isArchivedView={isArchivedView}
+            loopTitleById={loopTitleById}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-[14px] border border-border bg-card overflow-hidden">
+      {renderBody()}
     </div>
   );
 }

@@ -388,6 +388,41 @@ export function DiscoveryPreviewFeed({
   const hasMore = Object.values(sourceStates).some((s) => s.hasMore);
   const sourceNames = sources.map((s) => s.label).join(" · ");
 
+  // Status message above the results — extracted from a nested ternary into an
+  // ordered if/else (sonarjs/no-nested-conditional). Branch order, conditions,
+  // text and class names are unchanged.
+  function renderStatusMessage() {
+    if (error) {
+      return (
+        <div className="mt-4 rounded-[10px] border border-border bg-background p-3 text-[12.5px] text-muted-foreground">
+          {error}
+        </div>
+      );
+    }
+    if (isLoadingFirst) {
+      return (
+        <div className="mt-4 rounded-[10px] bg-muted/30 p-3 text-[12.5px] text-muted-foreground">
+          Ищем вакансии в {sourceNames}…
+        </div>
+      );
+    }
+    if (isWarming && items.length === 0) {
+      return (
+        <div className="mt-4 rounded-[10px] bg-muted/30 p-3 text-[12.5px] text-muted-foreground">
+          Обновляем базу вакансий — это займёт несколько секунд…
+        </div>
+      );
+    }
+    if (!isLoadingFirst && Object.keys(sourceStates).length > 0 && items.length === 0) {
+      return (
+        <div className="mt-4 rounded-[10px] border border-dashed border-border bg-background p-3 text-[12.5px] text-muted-foreground">
+          Вакансии не найдены. Попробуйте уточнить профессию, локацию или ключевые слова.
+        </div>
+      );
+    }
+    return null;
+  }
+
   return (
     <section className="rounded-[16px] border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -402,23 +437,7 @@ export function DiscoveryPreviewFeed({
         </Button>
       </div>
 
-      {error ? (
-        <div className="mt-4 rounded-[10px] border border-border bg-background p-3 text-[12.5px] text-muted-foreground">
-          {error}
-        </div>
-      ) : isLoadingFirst ? (
-        <div className="mt-4 rounded-[10px] bg-muted/30 p-3 text-[12.5px] text-muted-foreground">
-          Ищем вакансии в {sourceNames}…
-        </div>
-      ) : isWarming && items.length === 0 ? (
-        <div className="mt-4 rounded-[10px] bg-muted/30 p-3 text-[12.5px] text-muted-foreground">
-          Обновляем базу вакансий — это займёт несколько секунд…
-        </div>
-      ) : !isLoadingFirst && Object.keys(sourceStates).length > 0 && items.length === 0 ? (
-        <div className="mt-4 rounded-[10px] border border-dashed border-border bg-background p-3 text-[12.5px] text-muted-foreground">
-          Вакансии не найдены. Попробуйте уточнить профессию, локацию или ключевые слова.
-        </div>
-      ) : null}
+      {renderStatusMessage()}
 
       {items.length > 0 ? (
         <div className="mt-4 space-y-2">

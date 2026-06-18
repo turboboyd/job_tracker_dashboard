@@ -208,36 +208,35 @@ function ContactPicker({
   );
 }
 
-export function OutcomeWizard({
-  open,
-  onOpenChange,
+interface OutcomeWizardContentProps {
+  contactOptions?: { id: string; label: string }[] | undefined;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (payload: OutcomeWizardSubmit) => void;
+  text: ApplicationDetailsText;
+  minDate: string;
+}
+
+function OutcomeWizardContent({
   contactOptions,
+  onOpenChange,
   onSubmit,
   text,
-}: OutcomeWizardProps) {
+  minDate,
+}: OutcomeWizardContentProps) {
   const [step, setStep] = useState<Step>("type");
   const [type, setType] = useState<OutcomeType | null>(null);
   const [selectedOption, setSelectedOption] = useState<OutcomeOption | null>(null);
   const [commentText, setCommentText] = useState("");
   const [contactId, setContactId] = useState<string>("");
-  const [manualDate, setManualDate] = useState<string>(formatDateInput(tomorrowAt9()));
-  const [manualTime, setManualTime] = useState<string>(formatTimeInput(tomorrowAt9()));
-
-  const minDate = useMemo(() => formatDateInput(startOfDay(new Date())), []);
-
-  // Reset on open
-  useEffect(() => {
-    if (open) {
-      setStep("type");
-      setType(null);
-      setSelectedOption(null);
-      setCommentText("");
-      setContactId("");
-      const tomorrow = tomorrowAt9();
-      setManualDate(formatDateInput(tomorrow));
-      setManualTime(formatTimeInput(tomorrow));
-    }
-  }, [open]);
+  const [initialManualValues] = useState(() => {
+    const tomorrow = tomorrowAt9();
+    return {
+      date: formatDateInput(tomorrow),
+      time: formatTimeInput(tomorrow),
+    };
+  });
+  const [manualDate, setManualDate] = useState<string>(initialManualValues.date);
+  const [manualTime, setManualTime] = useState<string>(initialManualValues.time);
 
   const options = useMemo(() => (type ? outcomesByType(type) : []), [type]);
 
@@ -279,14 +278,7 @@ export function OutcomeWizard({
   };
 
   return (
-    <Modal
-      open={open}
-      onOpenChange={onOpenChange}
-      size="md"
-      showClose={false}
-      title={text.outcomeWizardTitle}
-      description={text.outcomeWizardSubtitle}
-    >
+    <>
       {step === "type" ? (
         <div className="space-y-md">
           <div className="text-xs text-muted-foreground">{text.outcomeWizardStep1Hint}</div>
@@ -477,6 +469,35 @@ export function OutcomeWizard({
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+export function OutcomeWizard({
+  open,
+  onOpenChange,
+  contactOptions,
+  onSubmit,
+  text,
+}: OutcomeWizardProps) {
+  const minDate = useMemo(() => formatDateInput(startOfDay(new Date())), []);
+
+  return (
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      size="md"
+      showClose={false}
+      title={text.outcomeWizardTitle}
+      description={text.outcomeWizardSubtitle}
+    >
+      <OutcomeWizardContent
+        contactOptions={contactOptions}
+        onOpenChange={onOpenChange}
+        onSubmit={onSubmit}
+        text={text}
+        minDate={minDate}
+      />
     </Modal>
   );
 }

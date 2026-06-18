@@ -67,6 +67,9 @@ export async function requestGoogleCalendarAccessToken({
   }
 
   return new Promise((resolve, reject) => {
+    // Fire-and-forget: the token resolves/rejects via the callback below; the
+    // factory's own promise is intentionally discarded (no behavior change).
+    // eslint-disable-next-line sonarjs/void-use -- intentional fire-and-forget; settled via callback
     void Promise.resolve(
       tokenClientFactory({
         callback(response) {

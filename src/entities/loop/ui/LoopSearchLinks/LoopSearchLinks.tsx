@@ -41,6 +41,11 @@ export function LoopSearchLinks(props: LoopSearchLinksProps) {
     userId,
   } = useLoopSearchLinksController(props);
 
+  const defaultPlatformProps: { defaultPlatform?: typeof defaultPlatform } = {};
+  if (defaultPlatform !== undefined) {
+    defaultPlatformProps.defaultPlatform = defaultPlatform;
+  }
+
   return (
     <div className="space-y-4">
       <LoopSearchSettingsSection
@@ -92,7 +97,7 @@ export function LoopSearchLinks(props: LoopSearchLinksProps) {
             open={isAddMatchModalOpen}
             onOpenChange={setIsAddMatchModalOpen}
             loopId={loop.id}
-            {...(defaultPlatform !== undefined ? { defaultPlatform } : {})}
+            {...defaultPlatformProps}
           />
         ) : null}
       </div>

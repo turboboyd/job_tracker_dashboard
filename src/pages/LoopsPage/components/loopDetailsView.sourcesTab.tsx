@@ -38,7 +38,7 @@ export function LoopSourcesTab({
 }) {
   const { t } = useTranslation();
   const formatTimeAgo = useTimeAgoLabel();
-  const sources = loop.selectedSources ?? [];
+  const sources = useMemo(() => loop.selectedSources ?? [], [loop.selectedSources]);
   const buckets = useMemo(() => groupMatchesBySource(matches), [matches]);
 
   // Source currently mid-flight to the backend (disable its toggle until done).
@@ -88,6 +88,58 @@ export function LoopSourcesTab({
     [loop.id, sources, pendingSource, onLoopUpdated, onRefreshSourceStats],
   );
 
+  const getLastRunLabel = (stat: LoopSourceStat | undefined) => {
+    if (sourceStatsLoading) {
+      return "…";
+    }
+
+    if (stat?.lastRunAt) {
+      return formatTimeAgo(timeAgoFromIso(stat.lastRunAt));
+    }
+
+    return t("loops.sourceNeverRun", "Never run");
+  };
+
+  const renderSourceHealthBadge = (enabled: boolean, health: SourceHealth) => {
+    if (!enabled) {
+      return (
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
+          {t("loops.sourceDisabled", "Выключен")}
+        </span>
+      );
+    }
+
+    if (health === "ok") {
+      return (
+        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+          {t("loops.sourceStatusOnline", "● Онлайн")}
+        </span>
+      );
+    }
+
+    if (health === "warning") {
+      return (
+        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          {t("loops.sourceStatusSlow", "Медленно")}
+        </span>
+      );
+    }
+
+    if (health === "error") {
+      return (
+        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10.5px] font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
+          {t("loops.sourceStatusError", "Ошибка")}
+        </span>
+      );
+    }
+
+    return (
+      <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
+        {t("loops.sourceStatusNever", "Не запускался")}
+      </span>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-5">
       <div className="overflow-hidden rounded-[12px] border border-border bg-card">
@@ -129,11 +181,7 @@ export function LoopSourcesTab({
             const health: SourceHealth = sourceStatsLoading
               ? "never"
               : (stat?.health ?? "never");
-            const lastRunLabel = sourceStatsLoading
-              ? "…"
-              : stat?.lastRunAt
-                ? formatTimeAgo(timeAgoFromIso(stat.lastRunAt))
-                : t("loops.sourceNeverRun", "Never run");
+            const lastRunLabel = getLastRunLabel(stat);
             const label = option.label;
             return (
               <li
@@ -155,27 +203,7 @@ export function LoopSourcesTab({
                     <span className="truncate text-[13.5px] font-medium text-foreground">
                       {label}
                     </span>
-                    {!enabled ? (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
-                        {t("loops.sourceDisabled", "Выключен")}
-                      </span>
-                    ) : health === "ok" ? (
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10.5px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                        {t("loops.sourceStatusOnline", "● Онлайн")}
-                      </span>
-                    ) : health === "warning" ? (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10.5px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                        {t("loops.sourceStatusSlow", "Медленно")}
-                      </span>
-                    ) : health === "error" ? (
-                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10.5px] font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
-                        {t("loops.sourceStatusError", "Ошибка")}
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
-                        {t("loops.sourceStatusNever", "Не запускался")}
-                      </span>
-                    )}
+                    {renderSourceHealthBadge(enabled, health)}
                   </div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
                     {enabled

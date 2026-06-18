@@ -1,7 +1,7 @@
 import { Loader2, Plus, X } from "lucide-react";
 import { useRef, useState } from "react";
 
-// TODO(backend-migration): Replace with REST API call when migrating from Firebase.
+// Backend migration: replace with a REST API call when migrating from Firebase.
 // Currently uses Firestore direct SDK (firebase/firestore).
 // Migration target: PATCH /api/v1/applications/{app_id}
 

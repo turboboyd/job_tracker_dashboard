@@ -63,6 +63,14 @@ const EMPTY: WizardState = {
 
 // ─── Step progress bar ────────────────────────────────────────────────────────
 
+// Width/colour for a progress dot. Extracted from a nested ternary
+// (sonarjs/no-nested-conditional); the produced class string is unchanged.
+function progressDotClass(i: number, current: number): string {
+  if (i === current) return "w-5 bg-primary";
+  if (i < current) return "w-1.5 bg-primary/40";
+  return "w-1.5 bg-border";
+}
+
 function StepDots({ total, current }: { total: number; current: number }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -71,11 +79,7 @@ function StepDots({ total, current }: { total: number; current: number }) {
           key={i}
           className={[
             "h-1.5 rounded-full transition-all duration-200",
-            i === current
-              ? "w-5 bg-primary"
-              : i < current
-                ? "w-1.5 bg-primary/40"
-                : "w-1.5 bg-border",
+            progressDotClass(i, current),
           ].join(" ")}
         />
       ))}
@@ -115,16 +119,16 @@ export default function ProfileQuestionsPage() {
     // In a real app: persist to Firestore here
   }
 
-  const canNext =
-    step === 0
-      ? form.searchStatus.length > 0
-      : step === 1
-        ? form.roles.length > 0
-        : step === 2
-          ? form.locations.length > 0
-          : step === 3
-            ? form.seniority.length > 0
-            : true;
+  // Per-step "can advance" validation, as a lookup instead of a nested ternary
+  // (sonarjs/no-nested-conditional). All checks are side-effect-free reads, so
+  // eager evaluation is equivalent; steps without an entry default to true.
+  const stepCanAdvance: Record<number, boolean> = {
+    0: form.searchStatus.length > 0,
+    1: form.roles.length > 0,
+    2: form.locations.length > 0,
+    3: form.seniority.length > 0,
+  };
+  const canNext = stepCanAdvance[step] ?? true;
 
   const stepTitles = [
     t("profileQuestions.step1.title", "Job search status"),
