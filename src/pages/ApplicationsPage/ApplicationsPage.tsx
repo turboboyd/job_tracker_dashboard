@@ -27,6 +27,19 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "score", label: "Match score" },
 ];
 
+function useRouteDrivenCreateDialogState(shouldOpenFromRoute: boolean) {
+  const [isOpen, setIsOpen] = useState(shouldOpenFromRoute);
+  const [previousShouldOpenFromRoute, setPreviousShouldOpenFromRoute] =
+    useState(shouldOpenFromRoute);
+
+  if (previousShouldOpenFromRoute !== shouldOpenFromRoute) {
+    setPreviousShouldOpenFromRoute(shouldOpenFromRoute);
+    if (shouldOpenFromRoute) setIsOpen(true);
+  }
+
+  return [isOpen, setIsOpen] as const;
+}
+
 export default function ApplicationsPage() {
   const { t } = useTranslation();
   const { userId, isAuthReady } = useAuthSelectors();
@@ -37,7 +50,8 @@ export default function ApplicationsPage() {
   const shouldOpenCreateDialog = searchParams.get("create") === "1";
   const repo = useMemo(() => createApplicationsRepo(db), []);
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] =
+    useRouteDrivenCreateDialogState(shouldOpenCreateDialog);
   const [displayMode, setDisplayModeState] = useState<ApplicationsDisplayMode>(() =>
     readStoredApplicationsDisplayMode() ?? "list",
   );
@@ -106,10 +120,6 @@ export default function ApplicationsPage() {
     next.delete("mode");
     setSearchParams(next, { replace: true });
   }
-
-  useEffect(() => {
-    if (shouldOpenCreateDialog) setIsCreateOpen(true);
-  }, [shouldOpenCreateDialog]);
 
   // Close sort dropdown on outside click
   useEffect(() => {
