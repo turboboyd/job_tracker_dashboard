@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[278],{278(e){e.exports=JSON.parse('{"title":"О проекте","subtitle":"Инструмент помогает вести поиск работы спокойно и системно: заявки, статусы, заметки и полезные ресурсы собраны в одном месте."}')}}]);

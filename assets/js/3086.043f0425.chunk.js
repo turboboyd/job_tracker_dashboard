@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[3086],{93086(e){e.exports=JSON.parse('{"title":"Seite nicht gefunden","subtitle":"Die gesuchte Seite existiert nicht."}')}}]);

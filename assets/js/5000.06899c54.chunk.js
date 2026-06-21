@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[5e3],{5e3(e){e.exports=JSON.parse('{"title":"Über das Projekt","subtitle":"Das Tool hilft dir, deine Jobsuche ruhig und systematisch zu organisieren: Bewerbungen, Status, Notizen und Ressourcen an einem Ort."}')}}]);

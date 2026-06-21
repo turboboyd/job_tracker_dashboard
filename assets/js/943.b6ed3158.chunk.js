@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[943],{943(e){e.exports=JSON.parse('{"title":"Posteingang","subtitle":"Kommt bald. Sammle Recruiter-Mails und Erinnerungen an einem Ort."}')}}]);

@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[6011],{46011(e){e.exports=JSON.parse('{"title":"CV Checker","subtitle":"Coming soon. Upload or paste your CV to get structure and clarity feedback."}')}}]);

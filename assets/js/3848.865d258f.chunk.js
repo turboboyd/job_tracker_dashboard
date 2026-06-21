@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkjob_tracker_dashboard=self.webpackChunkjob_tracker_dashboard||[]).push([[3848],{93848(e){e.exports=JSON.parse('{"pageTitle":"Что нового","pageSubtitle":"Последние обновления, сформированные на основе релизов GitHub."}')}}]);
