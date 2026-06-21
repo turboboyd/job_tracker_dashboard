@@ -422,9 +422,9 @@ function parseFilenameFromContentDisposition(
   const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
   if (utf8Match?.[1]) {
     try {
-      return decodeURIComponent(utf8Match[1].replace(/^"|"$/g, ""));
+      return decodeURIComponent(utf8Match[1].replace(/(?:^"|"$)/g, ""));
     } catch {
-      return utf8Match[1].replace(/^"|"$/g, "");
+      return utf8Match[1].replace(/(?:^"|"$)/g, "");
     }
   }
 
