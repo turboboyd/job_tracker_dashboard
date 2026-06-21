@@ -306,6 +306,7 @@ export function useApplicationDetailsController() {
     setReminderRows(rowsFromApp(app));
     // We intentionally key only on the reminders + legacy fields so user edits
     // aren't blown away by unrelated app state changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `app` is intentionally narrowed to reminder-bearing fields; whole-app updates can overwrite in-progress local reminder edits.
   }, [
     app?.process.reminders,
     app?.process.nextActionAt,

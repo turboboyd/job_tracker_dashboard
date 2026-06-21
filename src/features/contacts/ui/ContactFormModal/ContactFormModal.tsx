@@ -127,6 +127,79 @@ function parseTags(raw: string): string[] {
     .filter(Boolean);
 }
 
+export interface ContactFormPayloadValues {
+  firstName: string;
+  lastName: string;
+  role: ContactRole;
+  phones: PhoneRowState[];
+  emails: EmailRowState[];
+  companyName: string;
+  linkedInUrl: string;
+  notes: string;
+  tagsInput: string;
+}
+
+function buildContactPayloadBase(form: ContactFormPayloadValues) {
+  const companyTrimmed = form.companyName.trim();
+  const linkedInTrimmed = form.linkedInUrl.trim();
+  const notesTrimmed = form.notes.trim();
+
+  return {
+    firstName: form.firstName.trim(),
+    lastName: form.lastName.trim(),
+    role: form.role,
+    phones: form.phones.filter((phone) => phone.number.trim()),
+    emails: form.emails.filter((email) => email.address.trim()),
+    tags: parseTags(form.tagsInput),
+    ...(companyTrimmed ? { companyName: companyTrimmed } : {}),
+    ...(linkedInTrimmed ? { linkedInUrl: linkedInTrimmed } : {}),
+    ...(notesTrimmed ? { notes: notesTrimmed } : {}),
+  };
+}
+
+export function buildUpdateContactInput(
+  form: ContactFormPayloadValues,
+): UpdateContactInput {
+  return buildContactPayloadBase(form);
+}
+
+export function buildCreateContactInput(
+  form: ContactFormPayloadValues,
+  applicationId?: string,
+): CreateContactInput {
+  return {
+    ...buildContactPayloadBase(form),
+    ...(applicationId ? { applicationIds: [applicationId] } : {}),
+  };
+}
+
+async function persistContactForm({
+  form,
+  isEdit,
+  contactId,
+  applicationId,
+  onSaveCreate,
+  onSaveUpdate,
+}: {
+  form: ContactFormPayloadValues;
+  isEdit: boolean;
+  contactId?: string;
+  applicationId?: string;
+  onSaveCreate: ContactFormModalProps["onSaveCreate"];
+  onSaveUpdate: ContactFormModalProps["onSaveUpdate"];
+}): Promise<void> {
+  if (isEdit && contactId) {
+    await onSaveUpdate(contactId, buildUpdateContactInput(form));
+    return;
+  }
+
+  await onSaveCreate(buildCreateContactInput(form, applicationId));
+}
+
+function getContactSaveErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Failed to save.";
+}
+
 function getSaveButtonLabel(isSaving: boolean, isEdit: boolean): string {
   if (isSaving) return "Saving...";
   return isEdit ? "Save changes" : "Create contact";
@@ -165,47 +238,18 @@ export function ContactFormModal({
     setError(null);
 
     try {
-      const cleanPhones = form.phones.filter((p) => p.number.trim());
-      const cleanEmails = form.emails.filter((e) => e.address.trim());
-
-      if (isEdit && contactId) {
-        const companyTrimmed = form.companyName.trim();
-        const linkedInTrimmed = form.linkedInUrl.trim();
-        const notesTrimmed = form.notes.trim();
-        const input: UpdateContactInput = {
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          role: form.role,
-          phones: cleanPhones,
-          emails: cleanEmails,
-          tags: parseTags(form.tagsInput),
-          ...(companyTrimmed ? { companyName: companyTrimmed } : {}),
-          ...(linkedInTrimmed ? { linkedInUrl: linkedInTrimmed } : {}),
-          ...(notesTrimmed ? { notes: notesTrimmed } : {}),
-        };
-        await onSaveUpdate(contactId, input);
-      } else {
-        const companyTrimmed = form.companyName.trim();
-        const linkedInTrimmed = form.linkedInUrl.trim();
-        const notesTrimmed = form.notes.trim();
-        const input: CreateContactInput = {
-          firstName: form.firstName.trim(),
-          lastName: form.lastName.trim(),
-          role: form.role,
-          phones: cleanPhones,
-          emails: cleanEmails,
-          tags: parseTags(form.tagsInput),
-          ...(companyTrimmed ? { companyName: companyTrimmed } : {}),
-          ...(applicationId ? { applicationIds: [applicationId] } : {}),
-          ...(linkedInTrimmed ? { linkedInUrl: linkedInTrimmed } : {}),
-          ...(notesTrimmed ? { notes: notesTrimmed } : {}),
-        };
-        await onSaveCreate(input);
-      }
+      await persistContactForm({
+        form,
+        isEdit,
+        contactId,
+        applicationId,
+        onSaveCreate,
+        onSaveUpdate,
+      });
 
       handleClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to save.");
+      setError(getContactSaveErrorMessage(err));
     } finally {
       setIsSaving(false);
     }

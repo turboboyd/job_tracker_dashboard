@@ -27,6 +27,38 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: "score", label: "Match score" },
 ];
 
+function LoopFilterBanner({
+  loopFilterId,
+  loopName,
+  isLoadingLoops,
+  onClear,
+}: {
+  loopFilterId: string | null;
+  loopName: string | undefined;
+  isLoadingLoops: boolean;
+  onClear: () => void;
+}) {
+  if (!loopFilterId) return null;
+
+  let label = loopName ?? "Unknown loop";
+  if (loopName == null && isLoadingLoops) {
+    label = "загружается…";
+  }
+
+  return (
+    <div className="mt-3 flex w-fit items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-[12.5px] text-primary">
+      <span>Направление поиска: {label}</span>
+      <button
+        type="button"
+        onClick={onClear}
+        className="rounded px-1.5 py-0.5 text-[11px] hover:bg-primary/10"
+      >
+        Сбросить
+      </button>
+    </div>
+  );
+}
+
 function useRouteDrivenCreateDialogState(shouldOpenFromRoute: boolean) {
   const [isOpen, setIsOpen] = useState(shouldOpenFromRoute);
   const [previousShouldOpenFromRoute, setPreviousShouldOpenFromRoute] =
@@ -361,18 +393,12 @@ export default function ApplicationsPage() {
             </div>
           ) : null}
 
-          {loopFilterId ? (
-            <div className="mt-3 flex w-fit items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-[12.5px] text-primary">
-              <span>Направление поиска: {loopFilter?.name ?? (isLoadingLoops ? "загружается…" : "Unknown loop")}</span>
-              <button
-                type="button"
-                onClick={clearLoopFilter}
-                className="rounded px-1.5 py-0.5 text-[11px] hover:bg-primary/10"
-              >
-                Сбросить
-              </button>
-            </div>
-          ) : null}
+          <LoopFilterBanner
+            loopFilterId={loopFilterId}
+            loopName={loopFilter?.name}
+            isLoadingLoops={isLoadingLoops}
+            onClear={clearLoopFilter}
+          />
 
           {/* View mode switcher — underline tab style */}
           <div className="flex items-center gap-0.5 mt-3 mb-0">

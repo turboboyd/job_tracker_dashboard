@@ -50,6 +50,46 @@ const textareaFields: Array<{
   },
 ];
 
+function SaveStatusSection({
+  error,
+  saved,
+  isSaving,
+  t,
+}: {
+  error: string | null;
+  saved: boolean;
+  isSaving: boolean;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  return (
+    <>
+      {error ? (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+
+      {saved ? (
+        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          {t("loops.settingsSaveSuccess", "Настройки сохранены.")}
+        </p>
+      ) : null}
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          className="inline-flex items-center justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSaving}
+        >
+          {isSaving
+            ? t("loops.settingsSaving", "Сохраняем...")
+            : t("loops.settingsSave", "Сохранить настройки")}
+        </button>
+      </div>
+    </>
+  );
+}
+
 export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPaused }: LoopSettingsPanelProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<LoopSettingsDraft>(() =>
@@ -251,29 +291,12 @@ export function LoopSettingsPanel({ loop, onSave, onPauseResume, onArchive, isPa
           ) : null}
         </div>
 
-        {error ? (
-          <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
-
-        {saved ? (
-          <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
-            {t("loops.settingsSaveSuccess", "Настройки сохранены.")}
-          </p>
-        ) : null}
-
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isSaving}
-          >
-            {isSaving
-              ? t("loops.settingsSaving", "Сохраняем...")
-              : t("loops.settingsSave", "Сохранить настройки")}
-          </button>
-        </div>
+        <SaveStatusSection
+          error={error}
+          saved={saved}
+          isSaving={isSaving}
+          t={t}
+        />
       </form>
 
       {(onPauseResume ?? onArchive) ? (

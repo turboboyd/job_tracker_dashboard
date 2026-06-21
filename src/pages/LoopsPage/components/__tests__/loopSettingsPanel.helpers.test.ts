@@ -161,3 +161,56 @@ test("source status labels explain configured and future sources", () => {
   );
   assert.equal(getLoopSettingsSourceStatusLabel("manual_url", null), "Ручное добавление");
 });
+
+test("source status fallbacks preserve categories and status presence", () => {
+  const readySources = [
+    "arbeitsagentur",
+    "remotive",
+    "arbeitnow",
+    "remotejobs",
+    "himalayas",
+    "remoteok",
+  ];
+  const configurationSources = ["adzuna", "greenhouse", "lever"];
+  const previewUnavailableSources = [
+    "stepstone",
+    "indeed",
+    "linkedin",
+    "xing",
+  ];
+
+  for (const sourceId of readySources) {
+    assert.equal(
+      getLoopSettingsSourceStatusLabel(sourceId),
+      "Статус проверяется",
+    );
+    assert.equal(
+      getLoopSettingsSourceStatusLabel(sourceId, []),
+      "Готов к preview",
+    );
+  }
+
+  for (const sourceId of configurationSources) {
+    assert.equal(
+      getLoopSettingsSourceStatusLabel(sourceId, null),
+      "Статус проверяется",
+    );
+    assert.equal(
+      getLoopSettingsSourceStatusLabel(sourceId, []),
+      "Нужна настройка сервера",
+    );
+  }
+
+  for (const sourceId of previewUnavailableSources) {
+    assert.equal(
+      getLoopSettingsSourceStatusLabel(sourceId),
+      "Preview пока не подключён",
+    );
+  }
+
+  assert.equal(
+    getLoopSettingsSourceStatusLabel("company_websites"),
+    "Широкий поиск пока не подключён",
+  );
+  assert.equal(getLoopSettingsSourceStatusLabel("unknown_source", []), null);
+});

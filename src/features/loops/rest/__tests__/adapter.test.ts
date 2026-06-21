@@ -133,6 +133,7 @@ test("mapCreateLoopInputToDto maps camelCase create input to snake_case payload"
 });
 
 test("mapUpdateLoopInputToDto only includes fields present in the patch", () => {
+  assert.deepEqual(mapUpdateLoopInputToDto({}), {});
   assert.deepEqual(mapUpdateLoopInputToDto({ status: "active" }), {
     status: "active",
   });
@@ -159,6 +160,37 @@ test("mapUpdateLoopInputToDto maps settings patch to snake_case payload", () => 
       work_modes: ["remote"],
       selected_sources: ["linkedin"],
       discovery_radius_km: 100,
+    },
+  );
+});
+
+test("mapUpdateLoopInputToDto preserves explicit null and empty patch values", () => {
+  assert.deepEqual(
+    mapUpdateLoopInputToDto({
+      location: null,
+      radiusKm: null,
+      sources: [],
+      selectedSources: [],
+      keywords: [],
+      excludedKeywords: [],
+      employmentTypes: [],
+      workModes: [],
+      autoDiscoveryEnabled: false,
+      discoveryIntervalHours: 0,
+      discoveryRadiusKm: null,
+    }),
+    {
+      location: null,
+      radius_km: null,
+      sources: [],
+      keywords: [],
+      excluded_keywords: [],
+      employment_types: [],
+      work_modes: [],
+      selected_sources: [],
+      auto_discovery_enabled: false,
+      discovery_interval_hours: 0,
+      discovery_radius_km: null,
     },
   );
 });

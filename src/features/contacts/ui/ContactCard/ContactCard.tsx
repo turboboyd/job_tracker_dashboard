@@ -51,6 +51,51 @@ function ActionLink({
   );
 }
 
+function ContactLinks({
+  telHref,
+  mailHref,
+  primaryPhone,
+  primaryEmail,
+  linkedInUrl,
+}: {
+  telHref?: string;
+  mailHref?: string;
+  primaryPhone?: string;
+  primaryEmail?: string;
+  linkedInUrl?: string;
+}) {
+  if (!telHref && !mailHref && !linkedInUrl) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
+      {telHref && primaryPhone ? (
+        <ActionLink
+          href={telHref}
+          icon={Phone}
+          label={primaryPhone}
+          title="Call"
+        />
+      ) : null}
+      {mailHref && primaryEmail ? (
+        <ActionLink
+          href={mailHref}
+          icon={Mail}
+          label={primaryEmail}
+          title="Send email"
+        />
+      ) : null}
+      {linkedInUrl ? (
+        <ActionLink
+          href={linkedInUrl}
+          icon={ExternalLink}
+          label="LinkedIn"
+          title="Open LinkedIn profile"
+        />
+      ) : null}
+    </div>
+  );
+}
+
 export function ContactCard({
   contactId,
   contact,
@@ -98,34 +143,13 @@ export function ContactCard({
       </div>
 
       {/* Contact links */}
-      {(telHref || mailHref || contact.linkedInUrl) ? (
-        <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3">
-          {telHref && primaryPhone ? (
-            <ActionLink
-              href={telHref}
-              icon={Phone}
-              label={primaryPhone}
-              title="Call"
-            />
-          ) : null}
-          {mailHref && primaryEmail ? (
-            <ActionLink
-              href={mailHref}
-              icon={Mail}
-              label={primaryEmail}
-              title="Send email"
-            />
-          ) : null}
-          {contact.linkedInUrl ? (
-            <ActionLink
-              href={contact.linkedInUrl}
-              icon={ExternalLink}
-              label="LinkedIn"
-              title="Open LinkedIn profile"
-            />
-          ) : null}
-        </div>
-      ) : null}
+      <ContactLinks
+        telHref={telHref}
+        mailHref={mailHref}
+        primaryPhone={primaryPhone}
+        primaryEmail={primaryEmail}
+        linkedInUrl={contact.linkedInUrl}
+      />
 
       {/* Tags */}
       {contact.tags && contact.tags.length > 0 ? (

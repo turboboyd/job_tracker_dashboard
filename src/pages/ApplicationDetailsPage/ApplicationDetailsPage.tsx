@@ -157,6 +157,87 @@ function documentKindLabel(kind: string): string {
   }
 }
 
+function DocumentsContent({
+  documents,
+  isDocumentsLoading,
+  isMutating,
+  onDownloadDocument,
+  onDeleteDocument,
+}: {
+  documents: readonly ApplicationDocument[];
+  isDocumentsLoading: boolean;
+  isMutating: boolean;
+  onDownloadDocument: (documentId: string) => void | Promise<void>;
+  onDeleteDocument: (documentId: string) => void | Promise<void>;
+}) {
+  if (isDocumentsLoading) {
+    return (
+      <div className="px-5 py-10 text-center text-[13px] text-muted-foreground">
+        Загрузка файлов…
+      </div>
+    );
+  }
+
+  if (documents.length === 0) {
+    return (
+      <div className="px-5 py-10 text-center">
+        <FileText className="mx-auto h-8 w-8 text-muted-foreground/40 mb-3" />
+        <p className="text-[13px] text-muted-foreground">
+          Файлы не прикреплены. Добавьте PDF, DOCX, TXT или ZIP
+          до 10 MB.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-border">
+      {documents.map((item) => (
+        <div
+          key={item.id}
+          className="flex items-center justify-between gap-4 px-5 py-4"
+        >
+          <div className="min-w-0 flex items-start gap-3">
+            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-medium text-foreground">
+                {item.originalFilename}
+              </p>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                {documentKindLabel(item.kind)} ·{" "}
+                {item.contentType} ·{" "}
+                {formatBytes(item.sizeBytes)}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground/80">
+                {item.status} ·{" "}
+                {formatIsoDate(item.createdAt)}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void onDownloadDocument(item.id)}
+              disabled={isMutating}
+              className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void onDeleteDocument(item.id)}
+              disabled={isMutating}
+              className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground hover:text-destructive disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function daysAgo(ts: unknown): number {
   if (!ts) return 0;
   try {
@@ -404,13 +485,34 @@ function SLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Match bar ───────────────────────────────────────────────────────────────
 
+function getMatchBarColorClass(score: number): string {
+  if (score >= 85) {
+    return "bg-emerald-500";
+  }
+
+  if (score >= 70) {
+    return "bg-primary";
+  }
+
+  return "bg-muted-foreground/40";
+}
+
+function getMatchingDecisionText(
+  decision: NonNullable<ApplicationDoc["matching"]>["decision"],
+): string {
+  if (decision === "match") {
+    return "Сильное совпадение с вакансией.";
+  }
+
+  if (decision === "maybe") {
+    return "Возможное совпадение.";
+  }
+
+  return "Слабое совпадение с вакансией.";
+}
+
 function MatchBar({ score }: { score: number }) {
-  const color =
-    score >= 85
-      ? "bg-emerald-500"
-      : score >= 70
-        ? "bg-primary"
-        : "bg-muted-foreground/40";
+  const color = getMatchBarColorClass(score);
   return (
     <div>
       <div className="flex items-baseline gap-2 mt-2">
@@ -472,6 +574,7 @@ const HISTORY_TYPE_FILTERS: Array<{ label: string; value: HistoryTypeFilter }> =
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- This route-level page intentionally coordinates application, history, document, and mutation state; broad decomposition risks callback ordering and data-flow behavior.
 export default function ApplicationDetailsPage() {
   const navigate = useNavigate();
   const { appId } = useParams<{ appId: string }>();
@@ -989,11 +1092,7 @@ export default function ApplicationDetailsPage() {
                       {app.matching ? (
                         <>
                           <p className="text-[13.5px] leading-[1.65] text-muted-foreground">
-                            {app.matching.decision === "match"
-                              ? "Сильное совпадение с вакансией."
-                              : app.matching.decision === "maybe"
-                                ? "Возможное совпадение."
-                                : "Слабое совпадение с вакансией."}
+                            {getMatchingDecisionText(app.matching.decision)}
                             {app.matching.matchedSkillsTop?.length > 0
                               ? ` Совпадают: ${app.matching.matchedSkillsTop.join(", ")}.`
                               : ""}
@@ -1433,64 +1532,13 @@ export default function ApplicationDetailsPage() {
                       </div>
                     </div>
 
-                    {isDocumentsLoading ? (
-                      <div className="px-5 py-10 text-center text-[13px] text-muted-foreground">
-                        Загрузка файлов…
-                      </div>
-                    ) : documents.length === 0 ? (
-                      <div className="px-5 py-10 text-center">
-                        <FileText className="mx-auto h-8 w-8 text-muted-foreground/40 mb-3" />
-                        <p className="text-[13px] text-muted-foreground">
-                          Файлы не прикреплены. Добавьте PDF, DOCX, TXT или ZIP
-                          до 10 MB.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-border">
-                        {documents.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center justify-between gap-4 px-5 py-4"
-                          >
-                            <div className="min-w-0 flex items-start gap-3">
-                              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                              <div className="min-w-0">
-                                <p className="truncate text-[13px] font-medium text-foreground">
-                                  {item.originalFilename}
-                                </p>
-                                <p className="mt-1 text-[12px] text-muted-foreground">
-                                  {documentKindLabel(item.kind)} ·{" "}
-                                  {item.contentType} ·{" "}
-                                  {formatBytes(item.sizeBytes)}
-                                </p>
-                                <p className="mt-1 text-[11px] text-muted-foreground/80">
-                                  {item.status} ·{" "}
-                                  {formatIsoDate(item.createdAt)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => void onDownloadDocument(item.id)}
-                                disabled={isMutating}
-                                className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground hover:text-foreground disabled:opacity-50"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void onDeleteDocument(item.id)}
-                                disabled={isMutating}
-                                className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground hover:text-destructive disabled:opacity-50"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <DocumentsContent
+                      documents={documents}
+                      isDocumentsLoading={isDocumentsLoading}
+                      isMutating={isMutating}
+                      onDownloadDocument={onDownloadDocument}
+                      onDeleteDocument={onDeleteDocument}
+                    />
 
                     <div className="flex justify-end border-t border-border px-5 py-3">
                       <button

@@ -20,7 +20,7 @@ export const initAuthListener = () => (dispatch: Dispatch) => {
 
   isInitializing = true;
 
-  void Promise.all([
+  Promise.all([
     import("firebase/auth"),
     import("src/shared/config/firebase/auth"),
   ])

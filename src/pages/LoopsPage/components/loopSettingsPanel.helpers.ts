@@ -180,40 +180,72 @@ export function getLoopSettingsOptionLabel(
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
+const SOURCE_READY_LABEL = "Готов к preview";
+const SOURCE_STATUS_PENDING_LABEL = "Статус проверяется";
+const SOURCE_NOT_CONFIGURED_LABEL = "Нужна настройка сервера";
+const SOURCE_NOT_RUNNABLE_LABEL = "Только ручной/будущий источник";
+
+const READY_FALLBACK_SOURCES = new Set([
+  "arbeitsagentur",
+  "remotive",
+  "arbeitnow",
+  "remotejobs",
+  "himalayas",
+  "remoteok",
+]);
+
+const CONFIGURATION_FALLBACK_SOURCES = new Set([
+  "adzuna",
+  "greenhouse",
+  "lever",
+]);
+
+const STATIC_SOURCE_STATUS_LABELS: Readonly<Record<string, string>> = {
+  manual_url: "Ручное добавление",
+  stepstone: "Preview пока не подключён",
+  indeed: "Preview пока не подключён",
+  linkedin: "Preview пока не подключён",
+  xing: "Preview пока не подключён",
+  company_websites: "Широкий поиск пока не подключён",
+};
+
+function getRuntimeSourceStatusLabel(
+  status?: DiscoverySourceRuntimeStatus,
+): string | null {
+  if (status?.runnable) return SOURCE_READY_LABEL;
+  if (status?.configurationStatus === "not_configured") {
+    return SOURCE_NOT_CONFIGURED_LABEL;
+  }
+  if (status?.configurationStatus === "not_runnable") {
+    return SOURCE_NOT_RUNNABLE_LABEL;
+  }
+  return null;
+}
+
+function getFallbackSourceStatusLabel(
+  value: string,
+  statuses?: readonly DiscoverySourceRuntimeStatus[] | null,
+): string | null {
+  if (READY_FALLBACK_SOURCES.has(value)) {
+    return statuses ? SOURCE_READY_LABEL : SOURCE_STATUS_PENDING_LABEL;
+  }
+  if (CONFIGURATION_FALLBACK_SOURCES.has(value)) {
+    return statuses
+      ? SOURCE_NOT_CONFIGURED_LABEL
+      : SOURCE_STATUS_PENDING_LABEL;
+  }
+  return STATIC_SOURCE_STATUS_LABELS[value] ?? null;
+}
+
 export function getLoopSettingsSourceStatusLabel(
   value: string,
   statuses?: readonly DiscoverySourceRuntimeStatus[] | null,
 ): string | null {
   const status = statuses?.find((item) => item.sourceId === value);
-
-  if (status) {
-    if (status.runnable) return "Готов к preview";
-    if (status.configurationStatus === "not_configured") return "Нужна настройка сервера";
-    if (status.configurationStatus === "not_runnable") return "Только ручной/будущий источник";
-  }
-
-  if (
-    value === "arbeitsagentur" ||
-    value === "remotive" ||
-    value === "arbeitnow" ||
-    value === "remotejobs" ||
-    value === "himalayas" ||
-    value === "remoteok"
-  ) {
-    return statuses ? "Готов к preview" : "Статус проверяется";
-  }
-
-  if (value === "adzuna" || value === "greenhouse" || value === "lever") {
-    return statuses ? "Нужна настройка сервера" : "Статус проверяется";
-  }
-
-  if (value === "manual_url") return "Ручное добавление";
-  if (value === "stepstone" || value === "indeed" || value === "linkedin" || value === "xing") {
-    return "Preview пока не подключён";
-  }
-  if (value === "company_websites") return "Широкий поиск пока не подключён";
-
-  return null;
+  return (
+    getRuntimeSourceStatusLabel(status) ??
+    getFallbackSourceStatusLabel(value, statuses)
+  );
 }
 
 export function mergeKnownAndSelectedOptions(

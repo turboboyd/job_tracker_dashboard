@@ -149,110 +149,186 @@ function isoToTs(iso: string): Timestamp {
 
 // ── REST DTO → ApplicationDoc ──────────────────────────────────────────────────
 
-export function mapDtoToDoc(dto: ApplicationReadDto, userId: string): ApplicationDoc {
-  const reminders: ReminderEntry[] | undefined = dto.reminders
-    ? dto.reminders.map((r) => ({
-        id: r.id,
-        at: isoToTs(r.at),
-        ...(r.text !== undefined ? { text: r.text } : {}),
-      }))
-    : undefined;
+function mapReminderDto(dto: ReminderDto): ReminderEntry {
+  return {
+    id: dto.id,
+    at: isoToTs(dto.at),
+    ...(dto.text !== undefined ? { text: dto.text } : {}),
+  };
+}
 
-  const doc: ApplicationDoc = {
+function mapReminderDtos(
+  reminders: ApplicationReadDto["reminders"],
+): ReminderEntry[] | undefined {
+  return reminders ? reminders.map(mapReminderDto) : undefined;
+}
+
+function mapJobDto(dto: ApplicationReadDto): ApplicationDoc["job"] {
+  return {
+    companyName: dto.company_name,
+    roleTitle: dto.role_title,
+    ...(dto.location_text !== null ? { locationText: dto.location_text } : {}),
+    ...(dto.vacancy_url !== null ? { vacancyUrl: dto.vacancy_url } : {}),
+    ...(dto.source !== null ? { source: dto.source } : {}),
+    ...(dto.employment_type !== null
+      ? { employmentType: dto.employment_type as EmploymentType }
+      : {}),
+    ...(dto.work_mode !== null ? { workMode: dto.work_mode as WorkMode } : {}),
+    ...(dto.salary !== null ? { salary: dto.salary } : {}),
+    ...(dto.posted_at !== null ? { postedAt: isoToTs(dto.posted_at) } : {}),
+  };
+}
+
+function mapProcessDto(
+  dto: ApplicationReadDto,
+  reminders: ReminderEntry[] | undefined,
+): ApplicationDoc["process"] {
+  return {
+    status: dto.status as ProcessStatus,
+    ...(dto.stage !== null ? { stage: dto.stage as ProcessStage } : {}),
+    ...(dto.sub_status !== null ? { subStatus: dto.sub_status } : {}),
+    lastStatusChangeAt: isoToTs(dto.last_status_change_at),
+    ...(dto.applied_at !== null ? { appliedAt: isoToTs(dto.applied_at) } : {}),
+    ...(dto.applied_via !== null
+      ? { appliedVia: dto.applied_via as AppliedVia }
+      : {}),
+    ...(dto.next_action_at !== null
+      ? { nextActionAt: isoToTs(dto.next_action_at) }
+      : {}),
+    ...(dto.next_action_text !== null
+      ? { nextActionText: dto.next_action_text }
+      : {}),
+    contactAttempts: dto.contact_attempts,
+    ...(dto.last_contact_at !== null
+      ? { lastContactAt: isoToTs(dto.last_contact_at) }
+      : {}),
+    ...(dto.last_follow_up_at !== null
+      ? { lastFollowUpAt: isoToTs(dto.last_follow_up_at) }
+      : {}),
+    followUpLevel: dto.follow_up_level,
+    needsFollowUp: dto.needs_follow_up,
+    ...(dto.follow_up_due_at !== null
+      ? { followUpDueAt: isoToTs(dto.follow_up_due_at) }
+      : {}),
+    needsReapplySuggestion: dto.needs_reapply_suggestion,
+    ...(dto.reapply_eligible_at !== null
+      ? { reapplyEligibleAt: isoToTs(dto.reapply_eligible_at) }
+      : {}),
+    ...(dto.reapply_reason !== null
+      ? { reapplyReason: dto.reapply_reason }
+      : {}),
+    ...(reminders !== undefined ? { reminders } : {}),
+  };
+}
+
+function mapNotesDto(dto: ApplicationReadDto): Pick<ApplicationDoc, "notes"> {
+  if (
+    dto.current_note === null &&
+    (dto.tags === null || dto.tags.length === 0)
+  ) {
+    return {};
+  }
+
+  return {
+    notes: {
+      ...(dto.current_note !== null ? { currentNote: dto.current_note } : {}),
+      ...(dto.tags !== null ? { tags: dto.tags } : {}),
+    },
+  };
+}
+
+function mapVacancyDto(
+  dto: ApplicationReadDto,
+): Pick<ApplicationDoc, "vacancy"> {
+  if (dto.vacancy_description === null && dto.role_fingerprint === null) {
+    return {};
+  }
+
+  return {
+    vacancy: {
+      ...(dto.vacancy_description !== null
+        ? { rawDescription: dto.vacancy_description }
+        : {}),
+      ...(dto.role_fingerprint !== null
+        ? { roleFingerprint: dto.role_fingerprint }
+        : {}),
+    },
+  };
+}
+
+function mapLoopLinkageDto(
+  dto: ApplicationReadDto,
+): Pick<ApplicationDoc, "loopLinkage"> {
+  if (dto.loop_id === null) {
+    return {};
+  }
+
+  return {
+    loopLinkage: {
+      loopId: dto.loop_id,
+      source: "manual",
+    },
+  };
+}
+
+function mapDayMetricsDto(
+  dto: ApplicationReadDto,
+): Pick<
+  ApplicationDoc,
+  "daysInPipeline" | "daysSinceApplied" | "daysInCurrentStatus"
+> {
+  return {
+    ...(dto.days_in_pipeline !== null && dto.days_in_pipeline !== undefined
+      ? { daysInPipeline: dto.days_in_pipeline }
+      : {}),
+    ...(dto.days_since_applied !== null &&
+    dto.days_since_applied !== undefined
+      ? { daysSinceApplied: dto.days_since_applied }
+      : {}),
+    ...(dto.days_in_current_status !== null &&
+    dto.days_in_current_status !== undefined
+      ? { daysInCurrentStatus: dto.days_in_current_status }
+      : {}),
+  };
+}
+
+function mapCvLinkageDto(
+  dto: ApplicationReadDto,
+): Pick<ApplicationDoc, "cvLinkage"> {
+  if (dto.cv_version_id === null && dto.profile_version_id === null) {
+    return {};
+  }
+
+  return {
+    cvLinkage: {
+      ...(dto.cv_version_id !== null
+        ? { cvVersionId: dto.cv_version_id }
+        : {}),
+      ...(dto.profile_version_id !== null
+        ? { profileVersionId: dto.profile_version_id }
+        : {}),
+    },
+  };
+}
+
+export function mapDtoToDoc(dto: ApplicationReadDto, userId: string): ApplicationDoc {
+  const reminders = mapReminderDtos(dto.reminders);
+
+  return {
     createdAt: isoToTs(dto.created_at),
     updatedAt: isoToTs(dto.updated_at),
     createdBy: userId,
     archived: dto.archived,
     isFavorite: dto.is_favorite,
-
-    job: {
-      companyName: dto.company_name,
-      roleTitle: dto.role_title,
-      ...(dto.location_text !== null ? { locationText: dto.location_text } : {}),
-      ...(dto.vacancy_url !== null ? { vacancyUrl: dto.vacancy_url } : {}),
-      ...(dto.source !== null ? { source: dto.source } : {}),
-      ...(dto.employment_type !== null
-        ? { employmentType: dto.employment_type as EmploymentType }
-        : {}),
-      ...(dto.work_mode !== null ? { workMode: dto.work_mode as WorkMode } : {}),
-      ...(dto.salary !== null ? { salary: dto.salary } : {}),
-      ...(dto.posted_at !== null ? { postedAt: isoToTs(dto.posted_at) } : {}),
-    },
-
-    process: {
-      status: dto.status as ProcessStatus,
-      ...(dto.stage !== null ? { stage: dto.stage as ProcessStage } : {}),
-      ...(dto.sub_status !== null ? { subStatus: dto.sub_status } : {}),
-      lastStatusChangeAt: isoToTs(dto.last_status_change_at),
-      ...(dto.applied_at !== null ? { appliedAt: isoToTs(dto.applied_at) } : {}),
-      ...(dto.applied_via !== null ? { appliedVia: dto.applied_via as AppliedVia } : {}),
-      ...(dto.next_action_at !== null ? { nextActionAt: isoToTs(dto.next_action_at) } : {}),
-      ...(dto.next_action_text !== null ? { nextActionText: dto.next_action_text } : {}),
-      contactAttempts: dto.contact_attempts,
-      ...(dto.last_contact_at !== null ? { lastContactAt: isoToTs(dto.last_contact_at) } : {}),
-      ...(dto.last_follow_up_at !== null
-        ? { lastFollowUpAt: isoToTs(dto.last_follow_up_at) }
-        : {}),
-      followUpLevel: dto.follow_up_level,
-      needsFollowUp: dto.needs_follow_up,
-      ...(dto.follow_up_due_at !== null ? { followUpDueAt: isoToTs(dto.follow_up_due_at) } : {}),
-      needsReapplySuggestion: dto.needs_reapply_suggestion,
-      ...(dto.reapply_eligible_at !== null
-        ? { reapplyEligibleAt: isoToTs(dto.reapply_eligible_at) }
-        : {}),
-      ...(dto.reapply_reason !== null ? { reapplyReason: dto.reapply_reason } : {}),
-      ...(reminders !== undefined ? { reminders } : {}),
-    },
-
-    ...(dto.current_note !== null || (dto.tags !== null && dto.tags.length > 0)
-      ? {
-          notes: {
-            ...(dto.current_note !== null ? { currentNote: dto.current_note } : {}),
-            ...(dto.tags !== null ? { tags: dto.tags } : {}),
-          },
-        }
-      : {}),
-
-    ...(dto.vacancy_description !== null || dto.role_fingerprint !== null
-      ? {
-          vacancy: {
-            ...(dto.vacancy_description !== null
-              ? { rawDescription: dto.vacancy_description }
-              : {}),
-            ...(dto.role_fingerprint !== null ? { roleFingerprint: dto.role_fingerprint } : {}),
-          },
-        }
-      : {}),
-
-    ...(dto.loop_id !== null
-      ? { loopLinkage: { loopId: dto.loop_id, source: "manual" as const } }
-      : {}),
-
+    job: mapJobDto(dto),
+    process: mapProcessDto(dto, reminders),
+    ...mapNotesDto(dto),
+    ...mapVacancyDto(dto),
+    ...mapLoopLinkageDto(dto),
     hasLoop: dto.has_loop,
-
-    ...(dto.days_in_pipeline !== null && dto.days_in_pipeline !== undefined
-      ? { daysInPipeline: dto.days_in_pipeline }
-      : {}),
-    ...(dto.days_since_applied !== null && dto.days_since_applied !== undefined
-      ? { daysSinceApplied: dto.days_since_applied }
-      : {}),
-    ...(dto.days_in_current_status !== null && dto.days_in_current_status !== undefined
-      ? { daysInCurrentStatus: dto.days_in_current_status }
-      : {}),
-
-    ...(dto.cv_version_id !== null || dto.profile_version_id !== null
-      ? {
-          cvLinkage: {
-            ...(dto.cv_version_id !== null ? { cvVersionId: dto.cv_version_id } : {}),
-            ...(dto.profile_version_id !== null
-              ? { profileVersionId: dto.profile_version_id }
-              : {}),
-          },
-        }
-      : {}),
+    ...mapDayMetricsDto(dto),
+    ...mapCvLinkageDto(dto),
   };
-
-  return doc;
 }
 
 // ── CreateApplicationInput → REST body ─────────────────────────────────────────

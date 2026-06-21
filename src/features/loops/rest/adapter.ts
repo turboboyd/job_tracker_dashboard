@@ -302,23 +302,50 @@ export function mapLoopSourceStatsResponseDto(
   return { items: dto.items.map(mapLoopSourceStatDto) };
 }
 
+function deleteDtoFieldWhenInputsUndefined(
+  dto: Record<string, unknown>,
+  field: string,
+  inputs: readonly unknown[],
+): void {
+  if (inputs.every((value) => value === undefined)) {
+    delete dto[field];
+  }
+}
+
 export function mapUpdateLoopInputToDto(input: UpdateBackendLoopInput): Record<string, unknown> {
   const dto = mapCreateLoopInputToDto(input);
-  if (input.title === undefined && input.name === undefined) delete dto.title;
-  if (input.status === undefined) delete dto.status;
-  if (input.autoDiscoveryEnabled === undefined) delete dto.auto_discovery_enabled;
-  if (input.discoveryIntervalHours === undefined) delete dto.discovery_interval_hours;
-  if (input.sources === undefined && input.platforms === undefined) delete dto.sources;
-  if (input.selectedSources === undefined && input.platforms === undefined) delete dto.selected_sources;
-  if (input.keywords === undefined && input.filters?.includeKeywords === undefined) delete dto.keywords;
-  if (input.excludedKeywords === undefined && input.filters?.excludeKeywords === undefined) {
-    delete dto.excluded_keywords;
-  }
-  if (input.employmentTypes === undefined && input.filters?.employmentType === undefined) {
-    delete dto.employment_types;
-  }
-  if (input.workModes === undefined && input.filters?.workMode === undefined && input.remoteMode === undefined) {
-    delete dto.work_modes;
-  }
+  deleteDtoFieldWhenInputsUndefined(dto, "title", [input.title, input.name]);
+  deleteDtoFieldWhenInputsUndefined(dto, "status", [input.status]);
+  deleteDtoFieldWhenInputsUndefined(dto, "auto_discovery_enabled", [
+    input.autoDiscoveryEnabled,
+  ]);
+  deleteDtoFieldWhenInputsUndefined(dto, "discovery_interval_hours", [
+    input.discoveryIntervalHours,
+  ]);
+  deleteDtoFieldWhenInputsUndefined(dto, "sources", [
+    input.sources,
+    input.platforms,
+  ]);
+  deleteDtoFieldWhenInputsUndefined(dto, "selected_sources", [
+    input.selectedSources,
+    input.platforms,
+  ]);
+  deleteDtoFieldWhenInputsUndefined(dto, "keywords", [
+    input.keywords,
+    input.filters?.includeKeywords,
+  ]);
+  deleteDtoFieldWhenInputsUndefined(dto, "excluded_keywords", [
+    input.excludedKeywords,
+    input.filters?.excludeKeywords,
+  ]);
+  deleteDtoFieldWhenInputsUndefined(dto, "employment_types", [
+    input.employmentTypes,
+    input.filters?.employmentType,
+  ]);
+  deleteDtoFieldWhenInputsUndefined(dto, "work_modes", [
+    input.workModes,
+    input.filters?.workMode,
+    input.remoteMode,
+  ]);
   return dto;
 }

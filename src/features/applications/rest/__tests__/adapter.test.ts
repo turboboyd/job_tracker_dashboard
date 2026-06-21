@@ -103,6 +103,8 @@ test("mapDtoToDoc maps optional job fields when present", () => {
       source: "LinkedIn",
       employment_type: "FULL_TIME",
       work_mode: "HYBRID",
+      salary: { currency: "EUR", min: 60_000, max: 80_000 },
+      posted_at: "2026-02-01T00:00:00.000Z",
     }),
     "user-1",
   );
@@ -111,6 +113,15 @@ test("mapDtoToDoc maps optional job fields when present", () => {
   assert.equal(doc.job.source, "LinkedIn");
   assert.equal(doc.job.employmentType, "FULL_TIME");
   assert.equal(doc.job.workMode, "HYBRID");
+  assert.deepEqual(doc.job.salary, {
+    currency: "EUR",
+    min: 60_000,
+    max: 80_000,
+  });
+  assert.equal(
+    doc.job.postedAt?.toDate().toISOString(),
+    "2026-02-01T00:00:00.000Z",
+  );
 });
 
 test("mapDtoToDoc omits optional job fields when null", () => {
@@ -135,6 +146,68 @@ test("mapDtoToDoc maps reminders to Firestore Timestamps", () => {
   assert.equal(reminders?.[0]?.text, "Follow up");
 });
 
+test("mapDtoToDoc preserves empty reminders and omitted reminder text", () => {
+  const emptyDoc = mapDtoToDoc(makeDto({ reminders: [] }), "user-1");
+  assert.deepEqual(emptyDoc.process.reminders, []);
+
+  const doc = mapDtoToDoc(
+    makeDto({
+      reminders: [{ id: "r-2", at: "2026-03-02T09:00:00.000Z" }],
+    }),
+    "user-1",
+  );
+  assert.equal("text" in (doc.process.reminders?.[0] ?? {}), false);
+});
+
+test("mapDtoToDoc maps optional process fields without changing timestamps", () => {
+  const doc = mapDtoToDoc(
+    makeDto({
+      stage: "INTERVIEW",
+      sub_status: "technical",
+      applied_at: "2026-03-01T09:00:00.000Z",
+      applied_via: "LINKEDIN",
+      next_action_at: "2026-03-03T09:00:00.000Z",
+      next_action_text: "Follow up",
+      last_contact_at: "2026-03-01T10:00:00.000Z",
+      last_follow_up_at: "2026-03-02T10:00:00.000Z",
+      follow_up_due_at: "2026-03-04T10:00:00.000Z",
+      reapply_eligible_at: "2026-06-01T10:00:00.000Z",
+      reapply_reason: "cooldown",
+    }),
+    "user-1",
+  );
+
+  assert.equal(doc.process.stage, "INTERVIEW");
+  assert.equal(doc.process.subStatus, "technical");
+  assert.equal(doc.process.appliedVia, "LINKEDIN");
+  assert.equal(
+    doc.process.appliedAt?.toDate().toISOString(),
+    "2026-03-01T09:00:00.000Z",
+  );
+  assert.equal(
+    doc.process.nextActionAt?.toDate().toISOString(),
+    "2026-03-03T09:00:00.000Z",
+  );
+  assert.equal(doc.process.nextActionText, "Follow up");
+  assert.equal(
+    doc.process.lastContactAt?.toDate().toISOString(),
+    "2026-03-01T10:00:00.000Z",
+  );
+  assert.equal(
+    doc.process.lastFollowUpAt?.toDate().toISOString(),
+    "2026-03-02T10:00:00.000Z",
+  );
+  assert.equal(
+    doc.process.followUpDueAt?.toDate().toISOString(),
+    "2026-03-04T10:00:00.000Z",
+  );
+  assert.equal(
+    doc.process.reapplyEligibleAt?.toDate().toISOString(),
+    "2026-06-01T10:00:00.000Z",
+  );
+  assert.equal(doc.process.reapplyReason, "cooldown");
+});
+
 test("mapDtoToDoc maps notes when current_note or tags are present", () => {
   const doc = mapDtoToDoc(
     makeDto({ current_note: "Great role", tags: ["ts", "react"] }),
@@ -147,11 +220,35 @@ test("mapDtoToDoc maps notes when current_note or tags are present", () => {
 test("mapDtoToDoc omits notes block when both fields are null/empty", () => {
   const doc = mapDtoToDoc(makeDto({ current_note: null, tags: null }), "user-1");
   assert.equal("notes" in doc, false);
+
+  const emptyTagsDoc = mapDtoToDoc(
+    makeDto({ current_note: null, tags: [] }),
+    "user-1",
+  );
+  assert.equal("notes" in emptyTagsDoc, false);
+});
+
+test("mapDtoToDoc preserves empty tags when a current note creates the block", () => {
+  const doc = mapDtoToDoc(
+    makeDto({ current_note: "Keep", tags: [] }),
+    "user-1",
+  );
+  assert.equal(doc.notes?.currentNote, "Keep");
+  assert.deepEqual(doc.notes?.tags, []);
 });
 
 test("mapDtoToDoc maps vacancy block when description is present", () => {
   const doc = mapDtoToDoc(makeDto({ vacancy_description: "TypeScript role" }), "user-1");
   assert.equal(doc.vacancy?.rawDescription, "TypeScript role");
+});
+
+test("mapDtoToDoc maps vacancy block when only fingerprint is present", () => {
+  const doc = mapDtoToDoc(
+    makeDto({ role_fingerprint: "frontend|typescript" }),
+    "user-1",
+  );
+  assert.equal(doc.vacancy?.roleFingerprint, "frontend|typescript");
+  assert.equal("rawDescription" in (doc.vacancy ?? {}), false);
 });
 
 test("mapDtoToDoc maps loopLinkage when loop_id is present", () => {
@@ -179,6 +276,46 @@ test("mapDtoToDoc preserves backend-derived day metrics", () => {
   assert.equal(doc.daysInPipeline, 40);
   assert.equal(doc.daysSinceApplied, 12);
   assert.equal(doc.daysInCurrentStatus, 5);
+});
+
+test("mapDtoToDoc omits null and undefined backend-derived day metrics", () => {
+  const doc = mapDtoToDoc(
+    makeDto({
+      days_in_pipeline: null,
+      days_since_applied: undefined,
+      days_in_current_status: null,
+    }),
+    "user-1",
+  );
+
+  assert.equal("daysInPipeline" in doc, false);
+  assert.equal("daysSinceApplied" in doc, false);
+  assert.equal("daysInCurrentStatus" in doc, false);
+});
+
+test("mapDtoToDoc maps CV and profile linkage independently and together", () => {
+  const cvOnly = mapDtoToDoc(makeDto({ cv_version_id: "cv-1" }), "user-1");
+  assert.deepEqual(cvOnly.cvLinkage, { cvVersionId: "cv-1" });
+
+  const profileOnly = mapDtoToDoc(
+    makeDto({ profile_version_id: "profile-1" }),
+    "user-1",
+  );
+  assert.deepEqual(profileOnly.cvLinkage, {
+    profileVersionId: "profile-1",
+  });
+
+  const both = mapDtoToDoc(
+    makeDto({
+      cv_version_id: "cv-2",
+      profile_version_id: "profile-2",
+    }),
+    "user-1",
+  );
+  assert.deepEqual(both.cvLinkage, {
+    cvVersionId: "cv-2",
+    profileVersionId: "profile-2",
+  });
 });
 
 // ── mapCreateInputToDto ──────────────────────────────────────────────────────

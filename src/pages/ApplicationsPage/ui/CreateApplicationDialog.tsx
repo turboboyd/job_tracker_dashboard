@@ -61,6 +61,7 @@ function applyPreview(
   onChange("rawDescription", next.rawDescription);
 }
 
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Route-driven import preview, fallback, and create state transitions intentionally remain together to preserve submit and data-flow behavior.
 export function CreateApplicationDialog(props: Props) {
   const {
     isOpen,

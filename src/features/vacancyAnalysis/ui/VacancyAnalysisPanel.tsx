@@ -109,6 +109,61 @@ function AnalysisResult({ analysis }: { analysis: VacancyAnalysis }) {
   );
 }
 
+function LatestAnalysisSection({
+  latest,
+  history,
+  historySummary,
+  isHistoryOpen,
+  isHistoryLoading,
+  onToggleHistory,
+}: {
+  latest: VacancyAnalysis | null;
+  history: readonly VacancyAnalysis[];
+  historySummary: string;
+  isHistoryOpen: boolean;
+  isHistoryLoading: boolean;
+  onToggleHistory: () => void;
+}) {
+  if (!latest) return null;
+
+  return (
+    <div className="mt-3">
+      <AnalysisResult analysis={latest} />
+      <button
+        type="button"
+        onClick={onToggleHistory}
+        className="mt-3 text-[12px] font-medium text-primary hover:underline"
+      >
+        {historySummary}
+      </button>
+      {isHistoryOpen ? (
+        <div className="mt-2 rounded-[10px] border border-border bg-background p-3">
+          {isHistoryLoading ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              Загружаем историю...
+            </p>
+          ) : null}
+          {!isHistoryLoading && history.length === 0 ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              История пока пуста.
+            </p>
+          ) : null}
+          {!isHistoryLoading && history.length > 0 ? (
+            <ul className="space-y-1 text-[12.5px] text-muted-foreground">
+              {history.map((item) => (
+                <li key={item.id}>
+                  {new Date(item.createdAt).toLocaleString("ru-RU")} ·{" "}
+                  {formatAnalysisType(item.analysisType)} · {item.overallScore}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function VacancyAnalysisPanel({ loopId, matchId }: VacancyAnalysisPanelProps) {
   const [latest, setLatest] = useState<VacancyAnalysis | null>(null);
   const [history, setHistory] = useState<VacancyAnalysis[]>([]);
@@ -260,38 +315,14 @@ export function VacancyAnalysisPanel({ loopId, matchId }: VacancyAnalysisPanelPr
         </div>
       ) : null}
 
-      {latest ? (
-        <div className="mt-3">
-          <AnalysisResult analysis={latest} />
-          <button
-            type="button"
-            onClick={handleToggleHistory}
-            className="mt-3 text-[12px] font-medium text-primary hover:underline"
-          >
-            {historySummary}
-          </button>
-          {isHistoryOpen ? (
-            <div className="mt-2 rounded-[10px] border border-border bg-background p-3">
-              {isHistoryLoading ? (
-                <p className="text-[12.5px] text-muted-foreground">Загружаем историю...</p>
-              ) : null}
-              {!isHistoryLoading && history.length === 0 ? (
-                <p className="text-[12.5px] text-muted-foreground">История пока пуста.</p>
-              ) : null}
-              {!isHistoryLoading && history.length > 0 ? (
-                <ul className="space-y-1 text-[12.5px] text-muted-foreground">
-                  {history.map((item) => (
-                    <li key={item.id}>
-                      {new Date(item.createdAt).toLocaleString("ru-RU")} ·{" "}
-                      {formatAnalysisType(item.analysisType)} · {item.overallScore}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <LatestAnalysisSection
+        latest={latest}
+        history={history}
+        historySummary={historySummary}
+        isHistoryOpen={isHistoryOpen}
+        isHistoryLoading={isHistoryLoading}
+        onToggleHistory={handleToggleHistory}
+      />
 
       <VacancyAnalysisModal
         open={isModalOpen}
