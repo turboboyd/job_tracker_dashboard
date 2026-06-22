@@ -11,4 +11,6 @@ export interface BuildOptions {
   isDev: boolean;
   isProd: boolean;
   paths: BuildPaths;
+  /** Normalised serving base, always trailing-slashed (e.g. "/" or "/dashboard/"). */
+  publicPath: string;
 }

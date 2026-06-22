@@ -26,12 +26,26 @@ Python REST backend for [job-tracker-dashboard](../README.md).
 ```bash
 cd backend
 
+# Create and activate a virtual environment FIRST, then install into it.
+# Installing into a venv (rather than a global/user Python) is what keeps
+# the interpreter that runs the server in sync with the interpreter the
+# dependencies were installed into — the #1 cause of "503 Authentication
+# service is not configured" is launching uvicorn from a Python that does
+# not have firebase-admin installed.
+python -m venv .venv
+# Windows (PowerShell):  .venv\Scripts\Activate.ps1
+# macOS / Linux:         source .venv/bin/activate
+
 # using pip
 pip install -e ".[dev]"
 
 # or using uv (faster)
 uv pip install -e ".[dev]"
 ```
+
+> Whenever you open a new terminal to run the server, tests, or migrations,
+> **activate `.venv` again first.** If `firebase-admin` ever reports as missing,
+> you are almost certainly in the wrong interpreter — re-activate and reinstall.
 
 ### 2. Configure environment
 
@@ -91,13 +105,34 @@ alembic upgrade head
 
 ### 5. Start the API
 
+**Recommended (local full-stack):** use the dev runner. It binds
+`127.0.0.1:8001` (the port the frontend expects) **in the current interpreter**,
+so the running server always uses the venv you installed into, and it fails fast
+with a clear message if `firebase-admin` is missing instead of returning a
+cryptic 503 on every request later.
+
+```bash
+# from backend/, with .venv activated
+python -m scripts.run_dev            # 127.0.0.1:8001, no autoreload (recommended)
+python -m scripts.run_dev --reload   # opt-in autoreload, same interpreter
+```
+
+<details>
+<summary>Plain uvicorn (equivalent)</summary>
+
 ```bash
 # Default — API reachable at http://localhost:8000
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app
 
 # Frontend integration — match the React dev server's REST gateway default
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 ```
+
+Prefer `python -m uvicorn …` over the bare `uvicorn …` console script: `python -m`
+runs uvicorn under the interpreter you invoke it with, whereas a bare `uvicorn`
+resolves the first `uvicorn.exe` on `PATH`, which on Windows is frequently a
+different environment that lacks `firebase-admin` → 503.
+</details>
 
 | Port | Scenario |
 |---|---|
@@ -108,6 +143,14 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 > (`src/shared/config/backendConfig.ts`). Use port **8001** when running both servers
 > locally. The Docker `api` service publishes **8000** — see the comment in
 > `docker-compose.yml` for how to change it.
+
+> **On `--reload`.** Autoreload spawns a child process and, on Windows, that
+> child can lose the dependency/env context if launched from a bare `uvicorn`
+> on `PATH` — this is a classic source of the `No module named 'firebase_admin'`
+> → 503 failure. `python -m scripts.run_dev` (and `python -m scripts.run_dev
+> --reload`) avoid this by always re-using the current interpreter. Separately,
+> the Firebase verifier is built lazily and cached per process, so an `.env`
+> credential change needs a full restart regardless of `--reload`.
 
 ### Health probes
 

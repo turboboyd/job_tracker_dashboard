@@ -12,14 +12,22 @@ import { buildEnv } from "./buildEnv";
 export function buildPlugins(
   options: BuildOptions
 ): webpack.WebpackPluginInstance[] {
-  const { isDev, isProd, paths } = options;
+  const { isDev, isProd, paths, publicPath } = options;
 
   const defineEnv = buildEnv(isProd);
   const shouldRunWebpackLint = isDev || process.env.WEBPACK_LINT === "true";
 
+  // CRA-style %PUBLIC_URL% tokens in public/index.html are not understood by
+  // Webpack. Expose the serving base to the HTML template as an EJS parameter
+  // (<%= PUBLIC_URL %>) instead. Strip the trailing slash so the template's own
+  // "/manifest.json" separator is not doubled: "/" -> "", "/dashboard/" ->
+  // "/dashboard". Empty base then yields a root-absolute "/manifest.json".
+  const publicUrl = publicPath.replace(/\/$/, "");
+
   const plugins: webpack.WebpackPluginInstance[] = [
     new HtmlWebpackPlugin({
       template: path.resolve(paths.public, "index.html"),
+      templateParameters: { PUBLIC_URL: publicUrl },
     }),
 
     new CopyWebpackPlugin({

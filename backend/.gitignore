@@ -39,3 +39,6 @@ storage/
 *serviceAccount*.json
 firebaseServiceAccount*.json
 serviceAccountKey*.json
+# Also match hyphen/underscore spellings (e.g. firebase-service-account.json).
+*service-account*.json
+*service_account*.json

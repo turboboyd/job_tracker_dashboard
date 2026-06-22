@@ -97,10 +97,31 @@ assert.equal(
 );
 
 // --- isLoopVisibleInMatches -----------------------------------------------
-// Only active loops feed the Matches list; paused/archived are hidden.
-assert.equal(isLoopVisibleInMatches(loop({ id: "a", name: "A", status: "active" })), true);
-assert.equal(isLoopVisibleInMatches(loop({ id: "b", name: "B", status: "paused" })), false);
-assert.equal(isLoopVisibleInMatches(loop({ id: "c", name: "C", status: "archived" })), false);
+// A loop contributes to the Matches feed only when active AND it has at least
+// one selected source; paused/archived and sourceless loops are hidden.
+assert.equal(
+  isLoopVisibleInMatches(
+    loop({ id: "a", name: "A", status: "active", selectedSources: ["arbeitsagentur"] }),
+  ),
+  true,
+);
+// Active but all sources removed → searches nothing → not a contributing cycle.
+assert.equal(
+  isLoopVisibleInMatches(loop({ id: "a0", name: "A0", status: "active", selectedSources: [] })),
+  false,
+);
+assert.equal(
+  isLoopVisibleInMatches(
+    loop({ id: "b", name: "B", status: "paused", selectedSources: ["arbeitsagentur"] }),
+  ),
+  false,
+);
+assert.equal(
+  isLoopVisibleInMatches(
+    loop({ id: "c", name: "C", status: "archived", selectedSources: ["arbeitsagentur"] }),
+  ),
+  false,
+);
 
 // --- getLoopPlatformCount -------------------------------------------------
 assert.equal(

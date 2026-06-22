@@ -22,6 +22,8 @@ export default (_env: unknown, argv: { mode?: BuildMode }): Configuration => {
   const isProd = mode === "production";
   const isDev = !isProd;
 
+  const publicPath = getPublicPath();
+
   const options: BuildOptions = {
     mode,
     isProd,
@@ -31,9 +33,8 @@ export default (_env: unknown, argv: { mode?: BuildMode }): Configuration => {
       dist: path.resolve(__dirname, "..", "dist"),
       public: path.resolve(__dirname, "..", "public"),
     },
+    publicPath,
   };
-
-  const publicPath = getPublicPath();
 
   return {
     mode,

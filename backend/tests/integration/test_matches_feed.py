@@ -91,7 +91,7 @@ async def seeded(client, db_session):
     Returns the user and a dict of loop ids. Dataset (only visible-loop,
     source-allowed rows count toward the feed):
 
-      Loop A (open, any source):
+      Loop A (sources: indeed, linkedin, arbeitnow):
         m1 new/unseen indeed UniqueCorp  (posted newest)
         m2 new/seen   indeed
         m3 saved      linkedin
@@ -99,7 +99,7 @@ async def seeded(client, db_session):
       Loop B (restricted to arbeitnow):
         m5 new/unseen arbeitnow          (included)
         m6 new/unseen indeed             (EXCLUDED: source not allowed)
-      Loop C (paused):
+      Loop C (paused, sources: indeed):
         m7 new/unseen indeed             (EXCLUDED: paused loop)
     """
     await client.get("/api/v1/users/me", headers=_BEARER)
@@ -116,14 +116,24 @@ async def seeded(client, db_session):
     await db_session.execute(delete(Loop).where(Loop.user_id == user.id))
     await db_session.commit()
 
-    loop_a = Loop(user_id=user.id, title="Alpha", selected_sources=[], status="active")
+    loop_a = Loop(
+        user_id=user.id,
+        title="Alpha",
+        selected_sources=["indeed", "linkedin", "arbeitnow"],
+        status="active",
+    )
     loop_b = Loop(
         user_id=user.id,
         title="Bravo",
         selected_sources=["arbeitnow"],
         status="active",
     )
-    loop_c = Loop(user_id=user.id, title="Charlie", selected_sources=[], status="paused")
+    loop_c = Loop(
+        user_id=user.id,
+        title="Charlie",
+        selected_sources=["indeed"],
+        status="paused",
+    )
     db_session.add_all([loop_a, loop_b, loop_c])
     await db_session.flush()
 
@@ -203,6 +213,55 @@ async def test_all_tab_scopes_to_visible_loops_and_allowed_sources(client, seede
     assert body["counts"] == {"all": 5, "new": 2, "saved": 2}
     externals = {item["external_id"] for item in body["items"]}
     assert externals == {"m1", "m2", "m3", "m4", "m5"}
+
+
+async def test_loop_with_no_selected_sources_contributes_nothing(client, seeded, db_session):
+    """A still-active loop whose sources were all removed must not surface its
+    old matches in the cross-loop feed — yet the rows are NOT deleted.
+
+    Regression test for the stale-matches bug: clearing a loop's
+    ``selected_sources`` (the user's way of saying "stop searching this") left an
+    empty allow-list that the feed wrongly treated as "any source", so every old
+    match stayed visible. The corrected rule: no selected sources -> no matches.
+    """
+    user = seeded["user"]
+    loop_d = Loop(user_id=user.id, title="Delta", selected_sources=[], status="active")
+    db_session.add(loop_d)
+    await db_session.flush()
+    db_session.add_all(
+        [
+            _match(
+                user.id, loop_d.id, external_id="m8", source="indeed",
+                status="saved", posted_at=_NOW,
+            ),
+            _match(
+                user.id, loop_d.id, external_id="m9", source="remoteok",
+                status="new", posted_at=_NOW,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    r = await client.get("/api/v1/matches", headers=_BEARER)
+    body = r.json()
+    externals = {item["external_id"] for item in body["items"]}
+    # Delta's m8/m9 are absent; the original five remain; counts are unchanged
+    # (the saved m8 does NOT inflate the saved tab).
+    assert "m8" not in externals and "m9" not in externals
+    assert externals == {"m1", "m2", "m3", "m4", "m5"}
+    assert body["counts"] == {"all": 5, "new": 2, "saved": 2}
+
+    # The rows still exist in the database — this is a view filter, not a delete.
+    rows = (
+        (
+            await db_session.execute(
+                select(VacancyMatch).where(VacancyMatch.loop_id == str(loop_d.id))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert {row.external_id for row in rows} == {"m8", "m9"}
 
 
 async def test_items_carry_loop_name(client, seeded):

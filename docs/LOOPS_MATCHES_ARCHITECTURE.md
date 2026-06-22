@@ -123,6 +123,12 @@ safely wipes only the dev-QA user's data (guarded: development + local DB host).
 
 - The **freshness-first default sort** (`posted_at DESC NULLS LAST, updated_at,
   created_at, id`) and the seen/unseen watermark semantics.
+- The **cross-loop feed's active-config scoping**: a loop contributes matches
+  only when it is not paused/archived **and** has ≥1 currently-`selected_sources`,
+  and only for matches whose `source` is in that allow-list. An empty
+  `selected_sources` means the loop searches nothing → it contributes **no**
+  matches (mirrors the scheduler skipping sourceless loops). This is a view
+  filter — rows are never deleted and stay on the loop's own page.
 - The **preview / persist boundary** and the «не сохраняется автоматически» UX
   (Model A) — preview must never auto-persist.
 - **Backend score ownership** — never reintroduce a frontend score calculation.

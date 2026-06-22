@@ -116,9 +116,14 @@ class VacancyMatchesRepository:
         """Cross-loop paginated feed over persisted matches.
 
         ``loop_source_filters`` is a list of ``(loop_id, allowed_sources)`` for
-        the user's visible loops; an empty ``allowed_sources`` means the loop
-        accepts any source. Counts ({all,new,saved}) are computed once under the
-        shared q/source/loop scope so tab badges stay stable.
+        the user's visible loops. A loop contributes a match only when the
+        match's source is in that loop's current allow-list. An **empty**
+        ``allowed_sources`` means the loop has no selected sources (the user
+        cleared them), so it searches nothing and contributes **no** matches —
+        the same rule the scheduler uses when it skips such loops. Rows are never
+        deleted here; this is purely a view filter. Counts ({all,new,saved}) are
+        computed once under the shared q/source/loop scope so tab badges stay
+        stable.
         """
         empty_counts = {"all": 0, "new": 0, "saved": 0}
         if not loop_source_filters:
@@ -126,15 +131,18 @@ class VacancyMatchesRepository:
 
         loop_clauses = []
         for loop_id_str, allowed in loop_source_filters:
-            if allowed:
-                loop_clauses.append(
-                    and_(
-                        VacancyMatch.loop_id == loop_id_str,
-                        func.lower(VacancyMatch.source).in_(allowed),
-                    )
+            # No selected sources → the loop searches nothing → no matches.
+            if not allowed:
+                continue
+            loop_clauses.append(
+                and_(
+                    VacancyMatch.loop_id == loop_id_str,
+                    func.lower(VacancyMatch.source).in_(allowed),
                 )
-            else:
-                loop_clauses.append(VacancyMatch.loop_id == loop_id_str)
+            )
+
+        if not loop_clauses:
+            return [], empty_counts
 
         base_conditions = [VacancyMatch.user_id == user_id, or_(*loop_clauses)]
 

@@ -106,12 +106,17 @@ export function getLoopDisplayName(loop: Loop): string {
 }
 
 /**
- * Whether a loop's vacancies belong in the Matches feed. Paused and archived
- * loops are hidden entirely — their matches reappear only once the loop is
- * resumed. A loop with no explicit status (legacy/default) counts as active.
+ * Whether a loop currently contributes to the Matches feed. A loop qualifies
+ * only when it is neither paused nor archived AND has at least one selected
+ * source. A loop with no selected sources searches nothing — so it surfaces no
+ * matches and must not be counted as an active search cycle (subtitle, source
+ * chips, refresh). This mirrors the backend feed (`vacancy_matches` service)
+ * and the scheduler, both of which skip sourceless loops. A loop with no
+ * explicit status (legacy/default) counts as active.
  */
 export function isLoopVisibleInMatches(loop: Loop): boolean {
-  return loop.status !== "paused" && loop.status !== "archived";
+  if (loop.status === "paused" || loop.status === "archived") return false;
+  return (loop.selectedSources?.length ?? 0) > 0;
 }
 
 export function getMatchScore(match: VacancyMatch): number | null {

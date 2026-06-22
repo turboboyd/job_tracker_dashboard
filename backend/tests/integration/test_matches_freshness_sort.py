@@ -36,7 +36,7 @@ async def ctx(db_session: AsyncSession):
     user = User(firebase_uid="freshness-sort-uid", email="freshness@example.com")
     db_session.add(user)
     await db_session.flush()
-    loop = Loop(user_id=user.id, title="Fresh", selected_sources=[], status="active")
+    loop = Loop(user_id=user.id, title="Fresh", selected_sources=["indeed"], status="active")
     db_session.add(loop)
     await db_session.flush()
     return {"session": db_session, "user": user, "loop": loop}
@@ -91,7 +91,7 @@ async def _loop_order(ctx: dict) -> list[str]:
 async def _feed_order(ctx: dict) -> list[str]:
     items, _ = await _repo(ctx).list_feed(
         user_id=ctx["user"].id,
-        loop_source_filters=[(str(ctx["loop"].id), [])],
+        loop_source_filters=[(str(ctx["loop"].id), ["indeed"])],
         loop_rank={str(ctx["loop"].id): 0},
         tab="all",
         q=None,

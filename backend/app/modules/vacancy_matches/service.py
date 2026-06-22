@@ -362,11 +362,16 @@ class VacancyMatchesService:
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[list[tuple[VacancyMatch, str | None]], dict[str, int]]:
-        """Cross-loop matches feed restricted to the user's visible loops.
+        """Cross-loop matches feed restricted to the user's active loops.
 
-        Visible = not paused and not archived. Each visible loop contributes its
-        per-loop source allow-list (empty list = any source). Returns matches
-        paired with their loop's display name, plus {all,new,saved} counts.
+        A loop contributes to the feed only when it is **not paused/archived**
+        AND **has at least one selected source**. A loop with no selected sources
+        searches nothing (the user cleared its sources), so it must not surface
+        stale matches from a previous configuration — mirroring the scheduler,
+        which skips such loops. Each contributing loop scopes its matches to its
+        current source allow-list. Returns matches paired with their loop's
+        display name, plus {all,new,saved} counts. This is a view filter only:
+        no rows are deleted, and a loop's matches remain on its own Loop page.
         """
         loops, _ = await self._loops.list_for_user(
             user, include_archived=False, limit=500, offset=0
@@ -377,16 +382,21 @@ class VacancyMatchesService:
         loop_rank: dict[str, int] = {}
         name_by_id: dict[str, str] = {}
         ranked = sorted(visible, key=lambda loop: (loop.title or "").lower())
-        for rank, loop in enumerate(ranked):
-            loop_id_str = str(loop.id)
+        rank = 0
+        for loop in ranked:
             allowed = [
                 normalized
                 for raw in (loop.selected_sources or [])
                 if (normalized := _normalize_source(raw))
             ]
+            # No currently-selected sources → contributes no matches.
+            if not allowed:
+                continue
+            loop_id_str = str(loop.id)
             loop_source_filters.append((loop_id_str, allowed))
             loop_rank[loop_id_str] = rank
             name_by_id[loop_id_str] = loop.title
+            rank += 1
 
         q_norm = q.strip() if q else None
         source_norm = _normalize_source(source) if source else None
