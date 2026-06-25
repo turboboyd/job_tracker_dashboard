@@ -1,10 +1,9 @@
 import React from "react";
 
 import type { BoardColumnKey } from "src/entities/application";
-import type { LoopMatch } from "src/entities/loopMatch";
 
 import { createEmptyOrder, ensureIdsExist, loadOrder, saveOrder } from "./order";
-import type { BoardDragPayload, BoardOrderByStatus } from "./types";
+import type { BoardCardItem, BoardDragPayload, BoardOrderByStatus } from "./types";
 
 
 export type BoardOrderController = Readonly<{
@@ -14,9 +13,9 @@ export type BoardOrderController = Readonly<{
 
 export function useBoardOrderState(params: Readonly<{
   userId: string | null | undefined;
-  matches: readonly LoopMatch[];
+  items: readonly BoardCardItem[];
 }>): BoardOrderController {
-  const { userId, matches } = params;
+  const { userId, items } = params;
 
 
   const [orderByStatus, setOrderByStatus] = React.useState<BoardOrderByStatus>(() => {
@@ -38,11 +37,11 @@ export function useBoardOrderState(params: Readonly<{
 
     setOrderByStatus((prev) => {
       const next: BoardOrderByStatus = { ...prev };
-      ensureIdsExist(next, matches);
+      ensureIdsExist(next, items);
       saveOrder(userId, next);
       return next;
     });
-  }, [matches, userId]);
+  }, [items, userId]);
 
   const applyDrop = React.useCallback(
     (payload: BoardDragPayload, toStatus: BoardColumnKey, toIndex: number) => {

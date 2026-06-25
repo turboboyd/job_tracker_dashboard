@@ -1,85 +1,90 @@
 import assert from "node:assert/strict";
 
-import type { LoopMatch } from "src/entities/loopMatch";
-
+import type { BoardCardItem } from "../../model/types";
 import {
-  buildBoardMatchCardViewModel,
-  canOpenBoardMatchCard,
-  getBoardMatchCursorClass,
+  buildBoardCardViewModel,
+  canOpenBoardCard,
+  formatBoardCardDate,
+  getBoardCardCursorClass,
 } from "../BoardMatchCardView.helpers";
-
-const BASE_DATE = "2026-04-20T12:00:00.000Z";
-const LINKEDIN_PLATFORM = "linkedin";
 
 function test(_name: string, run: () => void) {
   run();
 }
 
-function match(overrides: Partial<LoopMatch> = {}): LoopMatch {
+function item(overrides: Partial<BoardCardItem> = {}): BoardCardItem {
   return {
-    id: "match-1",
-    loopId: "loop-1",
-    title: " Frontend Engineer ",
-    company: " Acme GmbH ",
-    location: " Berlin ",
-    platform: LINKEDIN_PLATFORM,
-    url: " https://example.com/job ",
-    description: "",
+    id: "app-1",
     status: "APPLIED",
-    matchedAt: BASE_DATE,
-    createdAt: BASE_DATE,
-    updatedAt: BASE_DATE,
+    loopId: "loop-1",
+    roleTitle: " Frontend Engineer ",
+    companyName: " Acme GmbH ",
+    location: " Berlin ",
+    matchScore: 88,
+    createdAtMs: Date.UTC(2026, 3, 20, 12, 0, 0),
+    isFavorite: false,
     ...overrides,
-  } as LoopMatch;
+  };
 }
 
-test("buildBoardMatchCardViewModel trims display fields and builds metadata", () => {
-  const vm = buildBoardMatchCardViewModel(match(), " Job search loop ");
+test("buildBoardCardViewModel trims fields and derives initial + score", () => {
+  const vm = buildBoardCardViewModel(item(), " Frontend EU ");
 
   assert.equal(vm.title, "Frontend Engineer");
   assert.equal(vm.company, "Acme GmbH");
-  assert.equal(vm.url, "https://example.com/job");
-  assert.equal(vm.hasUrl, true);
-  assert.equal(vm.meta, "Berlin / LINKEDIN / 20.04.2026 / Job search loop");
+  assert.equal(vm.initial, "A");
+  assert.equal(vm.location, "Berlin");
+  assert.equal(vm.loopName, "Frontend EU");
+  assert.equal(vm.hasScore, true);
+  assert.equal(vm.score, 88);
+  assert.notEqual(vm.dateLabel, "");
 });
 
-test("buildBoardMatchCardViewModel uses fallback display values and ignores invalid platform", () => {
-  const vm = buildBoardMatchCardViewModel(
-    match({
-      company: "   ",
-      title: "",
-      location: " Remote ",
-      matchedAt: "not-a-date",
-      platform: "unknown-platform" as LoopMatch["platform"],
-      url: "   ",
+test("buildBoardCardViewModel falls back when fields are blank and score missing", () => {
+  const vm = buildBoardCardViewModel(
+    item({
+      roleTitle: "",
+      companyName: "   ",
+      location: "  ",
+      matchScore: null,
+      createdAtMs: null,
     }),
     "",
   );
 
   assert.equal(vm.title, "-");
   assert.equal(vm.company, "-");
-  assert.equal(vm.url, "");
-  assert.equal(vm.hasUrl, false);
-  assert.equal(vm.meta, "Remote / not-a-date");
+  assert.equal(vm.initial, "?");
+  assert.equal(vm.location, "");
+  assert.equal(vm.loopName, "");
+  assert.equal(vm.hasScore, false);
+  assert.equal(vm.score, 0);
+  assert.equal(vm.dateLabel, "");
 });
 
-test("canOpenBoardMatchCard blocks busy and overlay states", () => {
-  assert.equal(canOpenBoardMatchCard({ busy: false, overlay: false }), true);
-  assert.equal(canOpenBoardMatchCard({ busy: true, overlay: false }), false);
-  assert.equal(canOpenBoardMatchCard({ busy: false, overlay: true }), false);
+test("formatBoardCardDate returns empty string for null/non-finite input", () => {
+  assert.equal(formatBoardCardDate(null), "");
+  assert.equal(formatBoardCardDate(Number.NaN), "");
+  assert.notEqual(formatBoardCardDate(Date.UTC(2026, 3, 20)), "");
 });
 
-test("getBoardMatchCursorClass returns the correct interaction class", () => {
+test("canOpenBoardCard blocks busy and overlay states", () => {
+  assert.equal(canOpenBoardCard({ busy: false, overlay: false }), true);
+  assert.equal(canOpenBoardCard({ busy: true, overlay: false }), false);
+  assert.equal(canOpenBoardCard({ busy: false, overlay: true }), false);
+});
+
+test("getBoardCardCursorClass returns the correct interaction class", () => {
   assert.equal(
-    getBoardMatchCursorClass({ busy: false, overlay: true }),
+    getBoardCardCursorClass({ busy: false, overlay: true }),
     "cursor-grabbing",
   );
   assert.equal(
-    getBoardMatchCursorClass({ busy: true, overlay: false }),
+    getBoardCardCursorClass({ busy: true, overlay: false }),
     "opacity-60 cursor-not-allowed",
   );
   assert.equal(
-    getBoardMatchCursorClass({ busy: false, overlay: false }),
+    getBoardCardCursorClass({ busy: false, overlay: false }),
     "cursor-pointer md:cursor-grab",
   );
 });

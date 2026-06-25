@@ -1,9 +1,7 @@
 import { DragOverlay } from '@dnd-kit/core';
 import React from 'react';
 
-import type { LoopMatch } from 'src/entities/loopMatch';
-
-import type { BoardVM } from '../../model/types';
+import type { BoardCardItem, BoardVM } from '../../model/types';
 import { BoardColumn } from '../BoardColumn';
 import { BoardMatchCardOverlay } from '../BoardMatchCard';
 
@@ -51,16 +49,16 @@ export function BoardColumnsScroller({
           ].join(' ')}
         >
           {statuses.map(({ status, title }) => {
-            const matches = columnsState.get(status) ?? [];
+            const items = columnsState.get(status) ?? [];
             return (
               <div key={status} className="h-full snap-start">
                 <BoardColumn
                   status={status}
                   title={title}
-                  matches={matches}
+                  items={items}
                   loopIdToName={loopIdToName}
                   busy={busy}
-                  onDelete={onDelete}
+                  onArchive={onDelete}
                 />
               </div>
             );
@@ -72,7 +70,7 @@ export function BoardColumnsScroller({
 }
 
 type BoardColumnsOverlayProps = Readonly<{
-  activeMatch: LoopMatch | null;
+  activeMatch: BoardCardItem | null;
   activeLoopName: string;
   busy: boolean;
   onDelete: BoardVM['actions']['onDelete'];
@@ -89,10 +87,10 @@ export function BoardColumnsOverlay({
       {activeMatch ? (
         <div className="pointer-events-none w-[min(92vw,340px)]">
           <BoardMatchCardOverlay
-            match={activeMatch}
+            item={activeMatch}
             loopName={activeLoopName}
             busy={busy}
-            onDelete={onDelete}
+            onArchive={onDelete}
           />
         </div>
       ) : null}

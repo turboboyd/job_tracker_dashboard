@@ -1,48 +1,38 @@
-import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application";
-import type { LoopMatch } from "src/entities/loopMatch";
+import { type BoardColumnKey } from "src/entities/application";
 
-import type { BoardVM } from "../../model/types";
+import { APPLICATION_BOARD_COLUMNS } from "../../model/boardStatusMap";
+import type { BoardCardItem, BoardVM } from "../../model/types";
 
-export type ColumnsState = Map<BoardColumnKey, LoopMatch[]>;
+export type ColumnsState = Map<BoardColumnKey, BoardCardItem[]>;
 
 export function cloneColumns(src: ColumnsState): ColumnsState {
-  const m = new Map<BoardColumnKey, LoopMatch[]>();
+  const m = new Map<BoardColumnKey, BoardCardItem[]>();
   for (const [k, v] of src.entries()) m.set(k, [...v]);
   return m;
 }
 
 export function buildColumnsFromVm(vm: BoardVM): ColumnsState {
-  const m = new Map<BoardColumnKey, LoopMatch[]>();
-  for (const c of BOARD_COLUMNS_LIST) {
-    // "HIRED" is not displayed in the board UI.
-    // We keep the data visible by merging it into ARCHIVED.
-    if (c.key === "HIRED") continue;
-
-    const base = [...(vm.data.byStatus.get(c.key) ?? [])];
-    if (c.key === "ARCHIVED") {
-      const hired = vm.data.byStatus.get("HIRED") ?? [];
-      m.set(c.key, [...base, ...hired]);
-    } else {
-      m.set(c.key, base);
-    }
+  const m = new Map<BoardColumnKey, BoardCardItem[]>();
+  for (const key of APPLICATION_BOARD_COLUMNS) {
+    m.set(key, [...(vm.data.byStatus.get(key) ?? [])]);
   }
   return m;
 }
 
 export function findContainerOfId(
   state: ColumnsState,
-  matchId: string,
+  itemId: string,
 ): BoardColumnKey | null {
   for (const [status, list] of state.entries()) {
-    if (list.some((x) => x.id === matchId)) return status;
+    if (list.some((x) => x.id === itemId)) return status;
   }
   return null;
 }
 
 export function removeFromList(
-  list: LoopMatch[],
+  list: BoardCardItem[],
   id: string,
-): { next: LoopMatch[]; item: LoopMatch | null } {
+): { next: BoardCardItem[]; item: BoardCardItem | null } {
   const idx = list.findIndex((x) => x.id === id);
   if (idx === -1) return { next: list, item: null };
   const item = list[idx] ?? null;
@@ -51,10 +41,10 @@ export function removeFromList(
 }
 
 export function insertIntoList(
-  list: LoopMatch[],
-  item: LoopMatch,
+  list: BoardCardItem[],
+  item: BoardCardItem,
   index: number,
-): LoopMatch[] {
+): BoardCardItem[] {
   const i = Math.max(0, Math.min(index, list.length));
   return [...list.slice(0, i), item, ...list.slice(i)];
 }

@@ -1,53 +1,59 @@
-import {
-  buildMatchMeta,
-  formatMatchedAt,
-  normalizePlatform,
-  type LoopMatch,
-} from "src/entities/loopMatch";
+import type { BoardCardItem } from "../model/types";
 
 const EMPTY_VALUE = "-";
 
-export interface BoardMatchCardViewModel {
-  company: string;
-  hasUrl: boolean;
-  meta: string;
+export interface BoardCardViewModel {
   title: string;
-  url: string;
+  company: string;
+  initial: string;
+  location: string;
+  loopName: string;
+  hasScore: boolean;
+  score: number;
+  dateLabel: string;
 }
 
-function normalizeBoardText(value: string | null | undefined): string {
+function trimText(value: string | null | undefined): string {
   return (value ?? "").trim();
 }
 
-function toBoardDisplayValue(value: string | null | undefined): string {
-  return normalizeBoardText(value) || EMPTY_VALUE;
+export function formatBoardCardDate(ms: number | null): string {
+  if (ms == null || !Number.isFinite(ms)) return "";
+  return new Date(ms).toLocaleDateString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
 }
 
-export function buildBoardMatchCardViewModel(
-  match: LoopMatch,
+export function buildBoardCardViewModel(
+  item: BoardCardItem,
   loopName: string,
-): BoardMatchCardViewModel {
-  const matchedAt = formatMatchedAt(match.matchedAt);
-  const platform = normalizePlatform(match.platform).toUpperCase();
-  const url = normalizeBoardText(match.url);
+): BoardCardViewModel {
+  const company = trimText(item.companyName);
+  const title = trimText(item.roleTitle);
+  const initialSource = company || title || "?";
 
   return {
-    company: toBoardDisplayValue(match.company),
-    hasUrl: Boolean(url),
-    meta: buildMatchMeta([match.location, platform, matchedAt, loopName]),
-    title: toBoardDisplayValue(match.title),
-    url,
+    title: title || EMPTY_VALUE,
+    company: company || EMPTY_VALUE,
+    initial: initialSource.charAt(0).toUpperCase(),
+    location: trimText(item.location),
+    loopName: trimText(loopName),
+    hasScore: item.matchScore != null,
+    score: item.matchScore ?? 0,
+    dateLabel: formatBoardCardDate(item.createdAtMs),
   };
 }
 
-export function canOpenBoardMatchCard(args: {
+export function canOpenBoardCard(args: {
   busy: boolean;
   overlay: boolean;
 }): boolean {
   return !args.busy && !args.overlay;
 }
 
-export function getBoardMatchCursorClass(args: {
+export function getBoardCardCursorClass(args: {
   busy: boolean;
   overlay: boolean;
 }): string {

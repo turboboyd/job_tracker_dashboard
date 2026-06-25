@@ -3,7 +3,7 @@ import React from "react";
 import type { BoardColumnKey } from "src/entities/application";
 import { useAuthSelectors } from "src/features/auth/model";
 
-import { buildBoardColumns, buildLoopIdToName, findMatchById } from "./boardViewModel";
+import { buildBoardColumns, buildLoopIdToName } from "./boardViewModel";
 import type { BoardDragPayload, BoardVM } from "./types";
 import { fireAndForgetMutation, useBoardMutations } from "./useBoardMutations";
 import { useBoardOrderState } from "./useBoardOrderState";
@@ -12,46 +12,49 @@ import { useBoardQueries } from "./useBoardQueries";
 export function useBoardController(): BoardVM {
   const { userId } = useAuthSelectors();
 
-  const { loops, matches, matchesQ } = useBoardQueries();
+  const { items, loops, queryState, reload } = useBoardQueries();
   const loopIdToName = React.useMemo(() => buildLoopIdToName(loops), [loops]);
 
-  const { orderByStatus, applyDrop } = useBoardOrderState({ userId, matches });
+  const { orderByStatus, applyDrop } = useBoardOrderState({ userId, items });
 
-  const { busy, onDeleteById, updateStatus } = useBoardMutations();
+  const { busy, updateStatus, archive } = useBoardMutations();
 
   const byStatus = React.useMemo(
-    () => buildBoardColumns(matches, orderByStatus),
-    [matches, orderByStatus],
+    () => buildBoardColumns(items, orderByStatus),
+    [items, orderByStatus],
   );
 
   const onDelete = React.useCallback(
-    (matchId: string) => {
-      fireAndForgetMutation(onDeleteById(matches, matchId));
+    (itemId: string) => {
+      fireAndForgetMutation(
+        (async () => {
+          await archive(itemId);
+          await reload();
+        })(),
+      );
     },
-    [matches, onDeleteById],
+    [archive, reload],
   );
 
   const onDropToStatus = React.useCallback(
-    async (payload: BoardDragPayload, toStatus: BoardColumnKey, toIndex: number) => {
+    async (payload: BoardDragPayload, toStatus: BoardColumnKey, _toIndex: number) => {
       if (!userId) return;
       if (busy) return;
 
-      applyDrop(payload, toStatus, toIndex);
+      applyDrop(payload, toStatus, _toIndex);
 
       if (payload.fromStatus === toStatus) return;
 
-      const match = findMatchById(matches, payload.matchId);
-      if (!match) return;
-
-      await updateStatus({ matchId: match.id, loopId: match.loopId, status: toStatus });
+      await updateStatus({ itemId: payload.matchId, status: toStatus });
+      await reload();
     },
-    [applyDrop, busy, matches, updateStatus, userId],
+    [applyDrop, busy, reload, updateStatus, userId],
   );
 
   return {
     busy,
-    queries: { matchesQ },
-    data: { matches, byStatus, loopIdToName },
+    queries: { matchesQ: queryState },
+    data: { items, byStatus, loopIdToName },
     actions: { onDelete, onDropToStatus },
   };
 }

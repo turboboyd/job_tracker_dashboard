@@ -6,9 +6,8 @@ import type {
 import React from "react";
 
 import { getBoardColumn } from "src/entities/application";
-import type { LoopMatch } from "src/entities/loopMatch";
 
-import type { BoardVM } from "../../model/types";
+import type { BoardCardItem, BoardVM } from "../../model/types";
 
 import { applyBoardColumnsDragOver } from "./boardColumnsDnd.dragOver";
 import {
@@ -29,7 +28,7 @@ export type UseBoardColumnsDndResult = Readonly<{
   sensors: ReturnType<typeof useBoardColumnsDndSensors>;
   columnsState: ColumnsState;
   activeId: string | null;
-  activeMatch: LoopMatch | null;
+  activeMatch: BoardCardItem | null;
   activeLoopName: string;
   handleDragStart: (e: DragStartEvent) => void;
   handleDragOver: (e: DragOverEvent) => void;
@@ -59,7 +58,7 @@ export function useBoardColumnsDnd(
     }
 
     setColumnsState(buildColumnsFromVm(vm));
-  }, [vm.data.byStatus, vm.data.matches, activeId, vm]);
+  }, [vm.data.byStatus, vm.data.items, activeId, vm]);
 
   const activeMatch = React.useMemo(
     () => findActiveMatchById(columnsState, activeId),

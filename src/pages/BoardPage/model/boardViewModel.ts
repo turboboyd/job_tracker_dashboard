@@ -1,8 +1,9 @@
-import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application";
-import type { LoopMatch } from "src/entities/loopMatch";
+import type { BoardColumnKey } from "src/entities/application";
 
-import { groupMatchesByStatus } from "./grouping";
+import { APPLICATION_BOARD_COLUMNS } from "./boardStatusMap";
+import { groupItemsByStatus } from "./grouping";
 import { sortByOrder } from "./order";
+import type { BoardCardItem, BoardOrderByStatus } from "./types";
 
 export function buildLoopIdToName(
   loops: readonly { id: string; name: string }[],
@@ -12,25 +13,17 @@ export function buildLoopIdToName(
   return map;
 }
 
-export function findMatchById(
-  matches: readonly LoopMatch[],
-  matchId: string,
-): LoopMatch | undefined {
-  return matches.find((match) => match.id === matchId);
-}
-
 export function buildBoardColumns(
-  matches: readonly LoopMatch[],
+  items: readonly BoardCardItem[],
   orderByStatus: Record<BoardColumnKey, string[]>,
-): ReadonlyMap<BoardColumnKey, readonly LoopMatch[]> {
-  const grouped = groupMatchesByStatus(matches);
+): ReadonlyMap<BoardColumnKey, readonly BoardCardItem[]> {
+  const grouped = groupItemsByStatus(items);
 
-  for (const column of BOARD_COLUMNS_LIST) {
-    const status = column.key;
+  for (const status of APPLICATION_BOARD_COLUMNS) {
     const list = grouped.get(status) ?? [];
-    const ordered = sortByOrder(list, orderByStatus[status] ?? []);
+    const ordered = sortByOrder(list, (orderByStatus as BoardOrderByStatus)[status] ?? []);
     grouped.set(status, ordered);
   }
 
-  return grouped as ReadonlyMap<BoardColumnKey, readonly LoopMatch[]>;
+  return grouped as ReadonlyMap<BoardColumnKey, readonly BoardCardItem[]>;
 }

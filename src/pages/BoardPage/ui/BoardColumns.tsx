@@ -2,20 +2,13 @@ import { DndContext, DragOverlay, closestCorners, useDroppable } from "@dnd-kit/
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { BOARD_COLUMNS_LIST, type BoardColumnKey } from "src/entities/application/model/status";
+import type { BoardColumnKey } from "src/entities/application";
 
 import type { BoardVM } from "../model/types";
 
-const COLUMN_COLORS: Record<string, string> = {
-  ACTIVE:      "var(--color-accent-2, #f97316)",
-  INTERVIEW:   "#7c3aed",
-  OFFER:       "#d97706",
-  HIRED:       "#059669",
-  REJECTED:    "#dc2626",
-  NO_RESPONSE: "#94a3b8",
-};
-
 import { BoardColumn } from "./BoardColumn";
+import { getBoardColumnColor } from "./boardColumnColors";
+import { buildBoardStatuses } from "./boardColumns/boardColumns.helpers";
 import { useBoardColumnsDnd } from "./boardColumns/useBoardColumnsDnd";
 import { BoardMatchCardOverlay } from "./BoardMatchCard";
 
@@ -56,14 +49,7 @@ function StatusTabTarget({
 export function BoardColumns({ vm }: { vm: BoardVM }) {
   const { t } = useTranslation();
 
-  const statuses = React.useMemo(
-    () =>
-      BOARD_COLUMNS_LIST.map((c) => ({
-        status: c.key,
-        title: t(c.labelKey, { defaultValue: c.key }),
-      })),
-    [t],
-  );
+  const statuses = React.useMemo(() => buildBoardStatuses(t), [t]);
 
   const [activeStatus, setActiveStatus] = React.useState<BoardColumnKey>(
     (statuses[0]?.status ?? "ACTIVE") as BoardColumnKey,
@@ -167,7 +153,7 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
         >
           <div className="h-full min-h-0 flex items-stretch gap-3.5 min-w-max px-7 py-[18px]">
             {statuses.map(({ status, title }) => {
-              const matches = columnsState.get(status) ?? [];
+              const items = columnsState.get(status) ?? [];
               return (
                 <div
                   key={status}
@@ -177,11 +163,11 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
                   <BoardColumn
                     status={status}
                     title={title}
-                    color={COLUMN_COLORS[status] ?? "#94a3b8"}
-                    matches={matches}
+                    color={getBoardColumnColor(status)}
+                    items={items}
                     loopIdToName={vm.data.loopIdToName}
                     busy={vm.busy}
-                    onDelete={vm.actions.onDelete}
+                    onArchive={vm.actions.onDelete}
                   />
                 </div>
               );
@@ -194,10 +180,10 @@ export function BoardColumns({ vm }: { vm: BoardVM }) {
         {activeMatch ? (
           <div className="w-[min(90vw,320px)]">
             <BoardMatchCardOverlay
-              match={activeMatch}
+              item={activeMatch}
               loopName={activeLoopName}
               busy={vm.busy}
-              onDelete={vm.actions.onDelete}
+              onArchive={vm.actions.onDelete}
             />
           </div>
         ) : null}

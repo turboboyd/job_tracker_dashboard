@@ -6,7 +6,10 @@ import {
   getLoopSettingsOptionLabel,
   getLoopSettingsSourceStatusLabel,
   mapLoopSettingsDraftToPatch,
+  mergeKnownAndSelectedOptions,
   normalizeSettingsListText,
+  sortSourcesByPriority,
+  toggleSettingsValue,
 } from "../loopSettingsPanel.helpers";
 
 function test(_name: string, run: () => void) {
@@ -213,4 +216,58 @@ test("source status fallbacks preserve categories and status presence", () => {
     "Широкий поиск пока не подключён",
   );
   assert.equal(getLoopSettingsSourceStatusLabel("unknown_source", []), null);
+});
+
+test("mergeKnownAndSelectedOptions keeps known source chips and never drops a selected one", () => {
+  // No selection → exactly the known source options. A loop with no selected
+  // sources still renders the full toggle list; nothing extra, nothing thrown.
+  assert.deepEqual(
+    mergeKnownAndSelectedOptions(DISCOVERY_SOURCE_OPTIONS, []),
+    [...DISCOVERY_SOURCE_OPTIONS],
+  );
+
+  // Known selections don't duplicate the option rows.
+  assert.equal(
+    mergeKnownAndSelectedOptions(DISCOVERY_SOURCE_OPTIONS, ["linkedin", "indeed"]).length,
+    DISCOVERY_SOURCE_OPTIONS.length,
+  );
+
+  // A selected-but-unknown source is appended so it can still be toggled back
+  // off — it must not silently vanish from the Sources tab.
+  const withCustom = mergeKnownAndSelectedOptions(DISCOVERY_SOURCE_OPTIONS, ["my_custom_board"]);
+  assert.equal(withCustom.length, DISCOVERY_SOURCE_OPTIONS.length + 1);
+  assert.deepEqual(withCustom[withCustom.length - 1], {
+    value: "my_custom_board",
+    label: "my_custom_board",
+  });
+});
+
+test("sortSourcesByPriority orders by product priority and is non-mutating", () => {
+  // Legal/easier boards rank before LinkedIn (DISCOVERY_SOURCE_PRIORITY).
+  assert.deepEqual(
+    sortSourcesByPriority(["linkedin", "arbeitsagentur"]),
+    ["arbeitsagentur", "linkedin"],
+  );
+  // Unknown sources keep their relative order after all known ones.
+  assert.deepEqual(
+    sortSourcesByPriority(["linkedin", "custom_x", "arbeitsagentur"]),
+    ["arbeitsagentur", "linkedin", "custom_x"],
+  );
+  // Comparison is case-insensitive but the original casing is preserved.
+  assert.deepEqual(
+    sortSourcesByPriority(["LinkedIn", "Arbeitsagentur"]),
+    ["Arbeitsagentur", "LinkedIn"],
+  );
+  // Input array is not mutated.
+  const input = ["linkedin", "arbeitsagentur"];
+  sortSourcesByPriority(input);
+  assert.deepEqual(input, ["linkedin", "arbeitsagentur"]);
+});
+
+test("toggleSettingsValue adds and removes a source without mutating the input", () => {
+  const enabled = ["linkedin"];
+  assert.deepEqual(toggleSettingsValue(enabled, "indeed"), ["linkedin", "indeed"]);
+  assert.deepEqual(toggleSettingsValue(["linkedin", "indeed"], "indeed"), ["linkedin"]);
+  // The original array is left untouched.
+  assert.deepEqual(enabled, ["linkedin"]);
 });

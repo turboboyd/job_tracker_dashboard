@@ -4,7 +4,6 @@ import type {
   ScoreReasonEntry,
   VacancyMatch,
   VacancyMatchEvaluation,
-  VacancyMatchStatus,
 } from "src/features/vacancyMatches";
 
 export const MATCHES_V2_PAGE_SIZE = 20;
@@ -22,23 +21,34 @@ export interface MatchWithLoopName {
   match: VacancyMatch;
 }
 
-export const STATUS_TAB_LABELS: Record<StatusTab, string> = {
-  all: "Все",
-  new: "Новые",
-  saved: "Сохранённые",
-};
-
-export const STATUS_PILL_LABEL: Record<VacancyMatchStatus, string> = {
-  new: "Новая",
-  saved: "Сохранено",
-  converted: "Заявка создана",
-};
-
+// Sort option values drive both the <select> and the URL `sort` param. Labels
+// are English fallbacks; the UI resolves the visible label via i18n
+// (`matches.sort.<value>`), so these are never shown verbatim to a ru/de user.
 export const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
-  { value: "posted", label: "Сначала свежие" },
-  { value: "company", label: "По компании (A–Z)" },
-  { value: "loop", label: "По циклу" },
+  { value: "posted", label: "Newest first" },
+  { value: "company", label: "Company (A–Z)" },
+  { value: "loop", label: "By loop" },
 ];
+
+export const STATUS_TAB_ORDER: StatusTab[] = ["all", "new", "saved"];
+const VALID_TABS = new Set<StatusTab>(STATUS_TAB_ORDER);
+const VALID_SORTS = new Set<SortKey>(SORT_OPTIONS.map((option) => option.value));
+
+/** Coerce a raw URL `status` param into a known tab (defaults to "all"). */
+export function parseTab(raw: string | null): StatusTab {
+  return raw && VALID_TABS.has(raw as StatusTab) ? (raw as StatusTab) : "all";
+}
+
+/** Coerce a raw URL `sort` param into a known sort key (defaults to "posted"). */
+export function parseSort(raw: string | null): SortKey {
+  return raw && VALID_SORTS.has(raw as SortKey) ? (raw as SortKey) : "posted";
+}
+
+/** Coerce a raw URL `page` param into a 1-based page number (defaults to 1). */
+export function parsePageParam(raw: string | null): number {
+  const parsed = Number.parseInt(raw ?? "1", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
 
 const SOURCE_LABELS: Record<string, string> = {
   arbeitsagentur: "Arbeitsagentur",

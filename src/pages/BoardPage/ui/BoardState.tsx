@@ -16,7 +16,7 @@ export function BoardState({ matchesQ, isEmpty, children }: Props) {
   const { t } = useTranslation();
 
   if (matchesQ.isLoading) {
-    return <PageMessage>{t("board.loading", "Loading matches…")}</PageMessage>;
+    return <PageMessage>{t("board.loading", "Загрузка заявок…")}</PageMessage>;
   }
 
   if (matchesQ.isError) {
@@ -24,7 +24,7 @@ export function BoardState({ matchesQ, isEmpty, children }: Props) {
   }
 
   if (isEmpty) {
-    return <PageMessage>{t("board.empty", "No matches yet.")}</PageMessage>;
+    return <PageMessage>{t("board.empty", "Пока нет заявок.")}</PageMessage>;
   }
 
   return <>{children}</>;

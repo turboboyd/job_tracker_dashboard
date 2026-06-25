@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 
 import type { BoardColumnKey } from "src/entities/application";
-import type { LoopMatch } from "src/entities/loopMatch";
 
+import type { BoardCardItem, BoardVM } from "../../../model/types";
 import {
   findActiveMatchById,
   getActiveLoopName,
@@ -18,45 +18,43 @@ import {
   removeFromList,
 } from "../columnsState";
 
-const BASE_DATE = "2026-04-20T12:00:00.000Z";
-const DEFAULT_LOCATION = "Berlin";
-
 function test(_name: string, run: () => void) {
   run();
 }
 
-function match(id: string, status: LoopMatch["status"], loopId = `loop-${id}`): LoopMatch {
+function item(
+  id: string,
+  status: BoardCardItem["status"],
+  loopId = `loop-${id}`,
+): BoardCardItem {
   return {
     id,
-    loopId,
-    title: `Title ${id}`,
-    company: `Company ${id}`,
-    location: DEFAULT_LOCATION,
-    platform: "linkedin",
-    url: "",
-    description: "",
     status,
-    matchedAt: BASE_DATE,
-    createdAt: BASE_DATE,
-    updatedAt: BASE_DATE,
-  } as LoopMatch;
+    loopId,
+    roleTitle: `Role ${id}`,
+    companyName: `Company ${id}`,
+    location: "Berlin",
+    matchScore: null,
+    createdAtMs: null,
+    isFavorite: false,
+  };
 }
 
-function columns(entries: Partial<Record<BoardColumnKey, LoopMatch[]>>): ColumnsState {
-  return new Map(Object.entries(entries) as [BoardColumnKey, LoopMatch[]][]);
+function columns(entries: Partial<Record<BoardColumnKey, BoardCardItem[]>>): ColumnsState {
+  return new Map(Object.entries(entries) as [BoardColumnKey, BoardCardItem[]][]);
 }
 
-test("buildColumnsFromVm merges HIRED matches into ARCHIVED for board display", () => {
-  const archived = match("archived", "ARCHIVED_GENERAL");
-  const hired = match("hired", "OFFER_ACCEPTED");
-  const vm = {
+test("buildColumnsFromVm builds the five application columns from byStatus", () => {
+  const a = item("a", "APPLIED");
+  const b = item("b", "HR_CALL_SCHEDULED");
+  const vm: BoardVM = {
     busy: false,
     queries: { matchesQ: { isLoading: false, isError: false } },
     data: {
-      matches: [archived, hired],
-      byStatus: new Map<BoardColumnKey, readonly LoopMatch[]>([
-        ["ARCHIVED", [archived]],
-        ["HIRED", [hired]],
+      items: [a, b],
+      byStatus: new Map<BoardColumnKey, readonly BoardCardItem[]>([
+        ["ACTIVE", [a]],
+        ["INTERVIEW", [b]],
       ]),
       loopIdToName: new Map<string, string>(),
     },
@@ -68,17 +66,20 @@ test("buildColumnsFromVm merges HIRED matches into ARCHIVED for board display", 
 
   const state = buildColumnsFromVm(vm);
 
+  assert.deepEqual(
+    [...state.keys()],
+    ["ACTIVE", "INTERVIEW", "OFFER", "REJECTED", "NO_RESPONSE"],
+  );
+  assert.deepEqual(state.get("ACTIVE")?.map((entry) => entry.id), ["a"]);
+  assert.deepEqual(state.get("INTERVIEW")?.map((entry) => entry.id), ["b"]);
   assert.equal(state.has("HIRED"), false);
-  assert.deepEqual(state.get("ARCHIVED")?.map((item) => item.id), [
-    "archived",
-    "hired",
-  ]);
+  assert.equal(state.has("ARCHIVED"), false);
 });
 
-test("findContainerOfId locates the column that contains the match", () => {
+test("findContainerOfId locates the column that contains the card", () => {
   const state = columns({
-    ACTIVE: [match("a", "APPLIED")],
-    INTERVIEW: [match("b", "HR_CALL_SCHEDULED")],
+    ACTIVE: [item("a", "APPLIED")],
+    INTERVIEW: [item("b", "HR_CALL_SCHEDULED")],
   });
 
   assert.equal(findContainerOfId(state, "b"), "INTERVIEW");
@@ -86,16 +87,16 @@ test("findContainerOfId locates the column that contains the match", () => {
 });
 
 test("removeFromList and insertIntoList are immutable", () => {
-  const source = [match("a", "APPLIED"), match("b", "APPLIED")];
+  const source = [item("a", "APPLIED"), item("b", "APPLIED")];
 
   const removed = removeFromList(source, "a");
-  assert.deepEqual(removed.next.map((item) => item.id), ["b"]);
+  assert.deepEqual(removed.next.map((entry) => entry.id), ["b"]);
   assert.equal(removed.item?.id, "a");
-  assert.deepEqual(source.map((item) => item.id), ["a", "b"]);
+  assert.deepEqual(source.map((entry) => entry.id), ["a", "b"]);
 
-  const inserted = insertIntoList(source, match("c", "APPLIED"), 1);
-  assert.deepEqual(inserted.map((item) => item.id), ["a", "c", "b"]);
-  assert.deepEqual(source.map((item) => item.id), ["a", "b"]);
+  const inserted = insertIntoList(source, item("c", "APPLIED"), 1);
+  assert.deepEqual(inserted.map((entry) => entry.id), ["a", "c", "b"]);
+  assert.deepEqual(source.map((entry) => entry.id), ["a", "b"]);
 });
 
 test("getLaneStatusFromOverId extracts lane identifiers", () => {
@@ -105,9 +106,9 @@ test("getLaneStatusFromOverId extracts lane identifiers", () => {
 });
 
 test("isPendingDropSettled accepts exact index and clamped end position", () => {
-  const a = match("a", "APPLIED");
-  const b = match("b", "APPLIED");
-  const byStatus = new Map<BoardColumnKey, readonly LoopMatch[]>([["ACTIVE", [a, b]]]);
+  const a = item("a", "APPLIED");
+  const b = item("b", "APPLIED");
+  const byStatus = new Map<BoardColumnKey, readonly BoardCardItem[]>([["ACTIVE", [a, b]]]);
 
   assert.equal(
     isPendingDropSettled({ matchId: "b", toStatus: "ACTIVE", toIndex: 1 }, byStatus),
@@ -124,7 +125,7 @@ test("isPendingDropSettled accepts exact index and clamped end position", () => 
 });
 
 test("findActiveMatchById and getActiveLoopName resolve active card metadata", () => {
-  const active = match("a", "APPLIED", "loop-a");
+  const active = item("a", "APPLIED", "loop-a");
   const state = columns({ ACTIVE: [active] });
   const loopIdToName = new Map([["loop-a", "Frontend searches"]]);
 
@@ -134,8 +135,8 @@ test("findActiveMatchById and getActiveLoopName resolve active card metadata", (
   assert.equal(getActiveLoopName(null, loopIdToName), "");
 });
 
-test("resolveDragStartPayload falls back to the match status when the card is not in columns", () => {
-  const active = match("a", "HR_CALL_SCHEDULED");
+test("resolveDragStartPayload falls back to the card status when not in columns", () => {
+  const active = item("a", "HR_CALL_SCHEDULED");
   const payload = resolveDragStartPayload(
     columns({ ACTIVE: [] }),
     active,

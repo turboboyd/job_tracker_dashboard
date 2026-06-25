@@ -3,7 +3,8 @@ import { Plus } from "lucide-react";
 import React from "react";
 
 import type { BoardColumnKey } from "src/entities/application/model/status";
-import type { LoopMatch } from "src/entities/loopMatch";
+
+import type { BoardCardItem } from "../model/types";
 
 import { BoardLane } from "./BoardLane";
 import { BoardMatchCard } from "./BoardMatchCard";
@@ -12,27 +13,27 @@ type Props = Readonly<{
   status: BoardColumnKey;
   title: string;
   color?: string;
-  matches: readonly LoopMatch[];
+  items: readonly BoardCardItem[];
   loopIdToName: ReadonlyMap<string, string>;
   busy: boolean;
-  onDelete: (matchId: string) => void | Promise<void>;
+  onArchive: (itemId: string) => void | Promise<void>;
 }>;
 
 export function BoardColumn({
   status,
   title,
   color,
-  matches,
+  items,
   loopIdToName,
   busy,
-  onDelete,
+  onArchive,
 }: Props) {
-  const itemIds = React.useMemo(() => matches.map((m) => m.id), [matches]);
+  const itemIds = React.useMemo(() => items.map((m) => m.id), [items]);
 
   return (
     <div className="w-[calc(100vw-2rem)] md:w-[280px] shrink-0 h-full min-h-0 flex flex-col">
       {/* Column container */}
-      <div className="flex flex-col h-full min-h-0 rounded-[10px] border border-border bg-muted/40 p-2.5">
+      <div className="flex flex-col h-full min-h-0 rounded-[10px] border border-border bg-muted p-2.5">
         {/* Column header */}
         <div className="flex items-center justify-between px-1 pb-2.5">
           <div className="flex items-center gap-2">
@@ -45,8 +46,8 @@ export function BoardColumn({
               {title}
             </span>
             {/* Count badge */}
-            <span className="text-[10.5px] px-[5px] py-px rounded-full border border-border bg-card text-muted-foreground tabular-nums">
-              {matches.length}
+            <span className="text-[10.5px] px-[6px] py-px rounded-full border border-border bg-card text-subtle-foreground tabular-nums">
+              {items.length}
             </span>
           </div>
           <button
@@ -65,22 +66,22 @@ export function BoardColumn({
             strategy={verticalListSortingStrategy}
           >
             <div className="flex flex-col gap-2">
-              {matches.map((m, i) => (
+              {items.map((m, i) => (
                 <BoardMatchCard
                   key={m.id}
-                  match={m}
+                  item={m}
                   loopName={loopIdToName.get(m.loopId) ?? ""}
                   busy={busy}
-                  onDelete={onDelete}
+                  onArchive={onArchive}
                   index={i}
                 />
               ))}
             </div>
           </SortableContext>
 
-          {matches.length === 0 && (
+          {items.length === 0 && (
             <div className="rounded-[8px] border border-dashed border-border px-3 py-6 text-center text-[11.5px] text-muted-foreground">
-              Перетащи вакансии сюда
+              Перетащи заявки сюда
             </div>
           )}
         </BoardLane>

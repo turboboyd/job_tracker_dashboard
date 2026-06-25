@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import type { SourceBucket } from "./matchesV2.helpers";
 
 interface MatchesSourcesStripProps {
@@ -13,6 +15,7 @@ export function MatchesSourcesStrip({
   activeSource,
   onChange,
 }: MatchesSourcesStripProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3 overflow-x-auto border-b border-border bg-background px-7 py-3">
       <button
@@ -25,7 +28,7 @@ export function MatchesSourcesStrip({
             : "border-border bg-card text-muted-foreground hover:bg-muted",
         ].join(" ")}
       >
-        Все источники
+        {t("matches.sources.all", "All sources")}
         <span
           className={[
             "rounded-full px-1.5 text-[10.5px] tabular-nums",
@@ -69,7 +72,7 @@ export function MatchesSourcesStrip({
 
       {buckets.length === 0 ? (
         <span className="text-[11.5px] text-muted-foreground">
-          Источники появятся после первого запуска поиска
+          {t("matches.sources.empty", "Sources will appear after the first search run")}
         </span>
       ) : null}
     </div>

@@ -19,6 +19,8 @@ import {
   isApplicationRejected,
   isApplicationSaved,
   isBackendLoopId,
+  isLoopArchived,
+  isLoopPaused,
   shouldShowLoopsPagination,
 } from "../loopsPage.helpers";
 
@@ -234,4 +236,15 @@ test("shouldShowLoopsPagination uses page size 10 boundary", () => {
   assert.equal(shouldShowLoopsPagination(10), false);
   assert.equal(shouldShowLoopsPagination(11), true);
   assert.equal(shouldShowLoopsPagination(11, 5), true);
+});
+
+test("isLoopArchived / isLoopPaused reflect status with active as the default", () => {
+  // No explicit status (legacy/default document) → neither paused nor archived.
+  assert.equal(isLoopArchived(loop("a")), false);
+  assert.equal(isLoopPaused(loop("a")), false);
+  // Paused and archived are mutually exclusive states.
+  assert.equal(isLoopPaused(loop("b", { status: "paused" })), true);
+  assert.equal(isLoopArchived(loop("b", { status: "paused" })), false);
+  assert.equal(isLoopArchived(loop("c", { status: "archived" })), true);
+  assert.equal(isLoopPaused(loop("c", { status: "archived" })), false);
 });

@@ -1,14 +1,14 @@
 import { BOARD_COLUMNS_LIST, getBoardColumn, type BoardColumnKey } from "src/entities/application";
-import type { LoopMatch } from "src/entities/loopMatch";
 
-import type { BoardOrderByStatus } from "./types";
+import { APPLICATION_BOARD_COLUMNS } from "./boardStatusMap";
+import type { BoardCardItem, BoardOrderByStatus } from "./types";
 
 function storageKey(userId: string) {
   return `board_order_v1:${userId}`;
 }
 
 function statusValuesSet(): Set<string> {
-  return new Set(BOARD_COLUMNS_LIST.map((s) => String(s.key)));
+  return new Set(APPLICATION_BOARD_COLUMNS.map((key) => String(key)));
 }
 
 function isValidStatus(value: unknown): value is BoardColumnKey {
@@ -50,19 +50,19 @@ export function saveOrder(userId: string, order: BoardOrderByStatus): void {
 }
 
 /**
- * Делает order "железобетонным":
- * 1) гарантирует массивы для всех статусов
- * 2) удаляет id, которых нет в matches
- * 3) добавляет отсутствующие id в правильный статус (невалидный статус -> "new")
+ * Keeps the persisted order "bulletproof":
+ * 1) ensures arrays exist for all columns
+ * 2) drops ids that no longer exist among the items
+ * 3) adds missing ids into the right column (non-board columns -> "ACTIVE")
  */
-export function ensureIdsExist(order: BoardOrderByStatus, matches: readonly LoopMatch[]): void {
-  // 1) Ensure all statuses exist
+export function ensureIdsExist(order: BoardOrderByStatus, items: readonly BoardCardItem[]): void {
+  // 1) Ensure all columns exist
   for (const s of BOARD_COLUMNS_LIST) {
     const key = s.key;
     if (!Array.isArray(order[key])) order[key] = [];
   }
 
-  const existingIds = new Set(matches.map((m) => m.id));
+  const existingIds = new Set(items.map((item) => item.id));
 
   // 2) Remove ids that no longer exist
   for (const s of BOARD_COLUMNS_LIST) {
@@ -71,11 +71,11 @@ export function ensureIdsExist(order: BoardOrderByStatus, matches: readonly Loop
   }
 
   // 3) Add missing ids into the correct bucket
-  for (const m of matches) {
-    const col = getBoardColumn(m.status);
+  for (const item of items) {
+    const col = getBoardColumn(item.status);
     const status: BoardColumnKey = isValidStatus(col) ? col : "ACTIVE";
     const arr = order[status] ?? (order[status] = []);
-    if (!arr.includes(m.id)) arr.push(m.id);
+    if (!arr.includes(item.id)) arr.push(item.id);
   }
 }
 
@@ -89,18 +89,18 @@ export function moveInArray<T>(arr: readonly T[], from: number, to: number): T[]
 
 
 export function sortByOrder(
-  matches: readonly LoopMatch[],
+  items: readonly BoardCardItem[],
   orderIds: readonly string[],
-): LoopMatch[] {
+): BoardCardItem[] {
   const idx = new Map<string, number>();
   for (let i = 0; i < orderIds.length; i++) {
     const id = orderIds[i];
     if (id !== undefined) idx.set(id, i);
   }
 
-  const decorated = matches.map((m, i) => ({
-    m,
-    rank: idx.has(m.id) ? (idx.get(m.id)!) : Number.MAX_SAFE_INTEGER,
+  const decorated = items.map((item, i) => ({
+    item,
+    rank: idx.has(item.id) ? (idx.get(item.id)!) : Number.MAX_SAFE_INTEGER,
     stable: i,
   }));
 
@@ -109,5 +109,5 @@ export function sortByOrder(
     return a.stable - b.stable;
   });
 
-  return decorated.map((x) => x.m);
+  return decorated.map((x) => x.item);
 }

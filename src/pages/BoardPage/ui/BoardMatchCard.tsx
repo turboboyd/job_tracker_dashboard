@@ -2,28 +2,29 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import React from "react";
 
-import type { LoopMatch } from "src/entities/loopMatch";
 import { classNames } from "src/shared/lib";
+
+import type { BoardCardItem } from "../model/types";
 
 import { BoardMatchCardView } from "./BoardMatchCardView";
 
 type Props = Readonly<{
-  match: LoopMatch;
+  item: BoardCardItem;
   loopName: string;
   busy: boolean;
-  onDelete: (matchId: LoopMatch["id"]) => void | Promise<void>;
+  onArchive: (itemId: BoardCardItem["id"]) => void | Promise<void>;
   index: number;
   overlay?: boolean;
 }>;
 
-export function BoardMatchCard({ match, loopName, busy, onDelete, index }: Props) {
+export function BoardMatchCard({ item, loopName, busy, onArchive, index }: Props) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
     useSortable({
-      id: match.id,
+      id: item.id,
       disabled: busy,
       data: {
-        matchId: match.id,
-        status: match.status,
+        matchId: item.id,
+        status: item.status,
         index,
       },
     });
@@ -44,10 +45,6 @@ export function BoardMatchCard({ match, loopName, busy, onDelete, index }: Props
       style={style}
       // Mobile: keep vertical scroll usable while still allowing drag after long-press.
       className={classNames(
-        // IMPORTANT for iOS Safari:
-        // - while dragging, disable browser scrolling/gesture handling on the draggable
-        //   element (otherwise pointer events can get "lost" and the drag feels broken).
-        // - when not dragging, allow normal vertical scrolling inside lanes.
         "select-none touch-manipulation",
         isDragging ? "touch-none pointer-events-none" : "touch-pan-y",
         isDragging && "z-10",
@@ -56,10 +53,10 @@ export function BoardMatchCard({ match, loopName, busy, onDelete, index }: Props
       {...listeners}
     >
       <BoardMatchCardView
-        match={match}
+        item={item}
         loopName={loopName}
         busy={busy}
-        onDelete={onDelete}
+        onArchive={onArchive}
         overlay={false}
       />
     </div>
@@ -68,18 +65,18 @@ export function BoardMatchCard({ match, loopName, busy, onDelete, index }: Props
 
 
 export function BoardMatchCardOverlay({
-  match,
+  item,
   loopName,
   busy,
-  onDelete,
+  onArchive,
 }: Omit<Props, "index">) {
   return (
     <div className="rotate-[1deg]">
       <BoardMatchCardView
-        match={match}
+        item={item}
         loopName={loopName}
         busy={busy}
-        onDelete={onDelete}
+        onArchive={onArchive}
         overlay
       />
     </div>

@@ -23,6 +23,9 @@ import {
   localizeEvaluationPenalty,
   localizeEvaluationReason,
   localizeEvaluationReasons,
+  parsePageParam,
+  parseSort,
+  parseTab,
   pluralRu,
 } from "../matchesV2.helpers";
 
@@ -420,5 +423,27 @@ assert.deepEqual(
   ),
   ["Источник не выбран в цикле"],
 );
+
+// --- URL state parsers (drive the backend feed query from the URL) ---------
+// Unknown/missing params fall back to the canonical defaults so a hand-edited
+// URL can never put the feed into an invalid tab/sort/page.
+assert.equal(parseTab("new"), "new");
+assert.equal(parseTab("saved"), "saved");
+assert.equal(parseTab("all"), "all");
+assert.equal(parseTab("bogus"), "all");
+assert.equal(parseTab(null), "all");
+
+assert.equal(parseSort("company"), "company");
+assert.equal(parseSort("loop"), "loop");
+assert.equal(parseSort("posted"), "posted");
+assert.equal(parseSort("bogus"), "posted");
+assert.equal(parseSort(null), "posted");
+
+assert.equal(parsePageParam("3"), 3);
+assert.equal(parsePageParam("1"), 1);
+assert.equal(parsePageParam(null), 1);
+assert.equal(parsePageParam("0"), 1);
+assert.equal(parsePageParam("-2"), 1);
+assert.equal(parsePageParam("abc"), 1);
 
 console.log("matchesV2.helpers.test passed");

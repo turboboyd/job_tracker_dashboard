@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 
-import type { LoopMatch } from "src/entities/loopMatch";
-
 import { applyDropToOrder } from "../applyDropToOrder";
 import {
   createEmptyOrder,
@@ -9,18 +7,24 @@ import {
   moveInArray,
   sortByOrder,
 } from "../order";
-import type { BoardOrderByStatus } from "../types";
+import type { BoardCardItem, BoardOrderByStatus } from "../types";
 
 function test(_name: string, run: () => void) {
   run();
 }
 
-function match(id: string, status: LoopMatch["status"]): LoopMatch {
+function item(id: string, status: BoardCardItem["status"]): BoardCardItem {
   return {
     id,
-    loopId: `loop-${id}`,
     status,
-  } as LoopMatch;
+    loopId: `loop-${id}`,
+    roleTitle: `Role ${id}`,
+    companyName: `Company ${id}`,
+    location: "Berlin",
+    matchScore: null,
+    createdAtMs: null,
+    isFavorite: false,
+  };
 }
 
 test("applyDropToOrder moves a card within the same column", () => {
@@ -66,14 +70,25 @@ test("ensureIdsExist removes stale ids and appends missing ids to their board co
   };
 
   ensureIdsExist(order, [
-    match("a", "APPLIED"),
-    match("b", "HR_CALL_SCHEDULED"),
-    match("c", "OFFER_ACCEPTED"),
+    item("a", "APPLIED"),
+    item("b", "HR_CALL_SCHEDULED"),
+    item("c", "OFFER_RECEIVED"),
   ]);
 
   assert.deepEqual(order.ACTIVE, ["a"]);
   assert.deepEqual(order.INTERVIEW, ["b"]);
-  assert.deepEqual(order.HIRED, ["c"]);
+  assert.deepEqual(order.OFFER, ["c"]);
+});
+
+test("ensureIdsExist buckets non-board columns (e.g. HIRED) into ACTIVE", () => {
+  const order: BoardOrderByStatus = { ...createEmptyOrder() };
+
+  // OFFER_ACCEPTED resolves to the HIRED column, which the board does not render,
+  // so its id must fall back into ACTIVE.
+  ensureIdsExist(order, [item("hired", "OFFER_ACCEPTED")]);
+
+  assert.deepEqual(order.ACTIVE, ["hired"]);
+  assert.deepEqual(order.HIRED, []);
 });
 
 test("moveInArray is immutable and ignores invalid source indexes", () => {
@@ -85,15 +100,15 @@ test("moveInArray is immutable and ignores invalid source indexes", () => {
 });
 
 test("sortByOrder follows stored order and keeps unknown ids stable at the end", () => {
-  const matches = [
-    match("a", "APPLIED"),
-    match("b", "APPLIED"),
-    match("c", "APPLIED"),
-    match("d", "APPLIED"),
+  const items = [
+    item("a", "APPLIED"),
+    item("b", "APPLIED"),
+    item("c", "APPLIED"),
+    item("d", "APPLIED"),
   ];
 
   assert.deepEqual(
-    sortByOrder(matches, ["c", "a"]).map((item) => item.id),
+    sortByOrder(items, ["c", "a"]).map((entry) => entry.id),
     ["c", "a", "b", "d"],
   );
 });

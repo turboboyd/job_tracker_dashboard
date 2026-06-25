@@ -1,8 +1,13 @@
 import { AlertTriangle, CheckCircle2, Eye, ExternalLink, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { VacancyAnalysisPanel } from "src/features/vacancyAnalysis";
-import type { VacancyMatch, VacancyMatchEvaluation } from "src/features/vacancyMatches";
+import type {
+  VacancyMatch,
+  VacancyMatchEvaluation,
+  VacancyMatchStatus,
+} from "src/features/vacancyMatches";
 
 import {
   formatRelativeTime,
@@ -17,38 +22,55 @@ import {
   isMatchSeen,
   localizeEvaluationPenalties,
   localizeEvaluationReasons,
-  STATUS_PILL_LABEL,
   type MatchWithLoopName,
 } from "./matchesV2.helpers";
 import { useMatchEvaluation, type MatchEvaluationState } from "./useMatchEvaluation";
 
-interface MatchesDetailPanelProps {
-  item: MatchWithLoopName | null;
-  isConverting: boolean;
-  isSaving: boolean;
-  onConvert: (match: VacancyMatch) => void;
-  onSave: (match: VacancyMatch) => void;
-  onOpenDetails: (match: VacancyMatch) => void;
-}
+const MATCH_STATUS_FALLBACK: Record<VacancyMatchStatus, string> = {
+  new: "New",
+  saved: "Saved",
+  converted: "Application created",
+};
 
 function AiVerdict({ score }: { score: number | null }) {
+  const { t } = useTranslation();
   if (score !== null && score >= 80) {
     return (
       <>
-        <strong className="font-medium">Скорее да.</strong> Сильный матч по скору ({score}/100). Проверьте детали перед откликом.
+        <strong className="font-medium">
+          {t("matches.evaluation.verdict.strongTitle", "Likely yes.")}
+        </strong>{" "}
+        {t(
+          "matches.evaluation.verdict.strongDetail",
+          "Strong match by score ({{score}}/100). Check the details before applying.",
+          { score },
+        )}
       </>
     );
   }
   if (score !== null && score >= 60) {
     return (
       <>
-        <strong className="font-medium">Стоит изучить.</strong> Средний матч ({score}/100). Посмотрите описание, чтобы решить.
+        <strong className="font-medium">
+          {t("matches.evaluation.verdict.mediumTitle", "Worth a look.")}
+        </strong>{" "}
+        {t(
+          "matches.evaluation.verdict.mediumDetail",
+          "Medium match ({{score}}/100). Read the description to decide.",
+          { score },
+        )}
       </>
     );
   }
   return (
     <>
-      <strong className="font-medium">Изучите внимательно.</strong> Возможны расхождения с вашими фильтрами — откройте оригинал на источнике.
+      <strong className="font-medium">
+        {t("matches.evaluation.verdict.weakTitle", "Review carefully.")}
+      </strong>{" "}
+      {t(
+        "matches.evaluation.verdict.weakDetail",
+        "There may be mismatches with your filters — open the original on the source.",
+      )}
     </>
   );
 }
@@ -69,6 +91,7 @@ function verdictToneClass(tone: "positive" | "neutral" | "caution"): string {
 }
 
 function EvaluationShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-[10px] border border-border bg-muted/40 p-3.5">
       <div className="mb-1.5 flex items-center gap-2">
@@ -76,7 +99,7 @@ function EvaluationShell({ children }: { children: ReactNode }) {
           <Sparkles className="h-3 w-3" />
         </span>
         <span className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
-          AI · стоит ли откликаться?
+          {t("matches.evaluation.heading", "AI · should you apply?")}
         </span>
       </div>
       {children}
@@ -85,8 +108,10 @@ function EvaluationShell({ children }: { children: ReactNode }) {
 }
 
 function EvaluationBody({ evaluation }: { evaluation: VacancyMatchEvaluation }) {
+  const { t } = useTranslation();
+  // Verdict / reasons / penalties / duplicate label come from the backend
+  // evaluation and are localized in the shared mapping layer (matchesV2.helpers).
   const verdict = getEvaluationVerdict(evaluation);
-  // Prefer machine-readable reason_codes (Stage 6c); fall back to legacy strings.
   const reasons = localizeEvaluationReasons(evaluation);
   const penalties = localizeEvaluationPenalties(evaluation);
   const duplicateLabel = getDuplicateLabel(evaluation.duplicateStatus);
@@ -113,7 +138,7 @@ function EvaluationBody({ evaluation }: { evaluation: VacancyMatchEvaluation }) 
         </ul>
       ) : (
         <p className="mb-1.5 text-[12px] text-muted-foreground">
-          Явных совпадений с фильтрами не найдено.
+          {t("matches.evaluation.noReasons", "No explicit matches with the filters were found.")}
         </p>
       )}
       {penalties.length > 0 ? (
@@ -137,11 +162,12 @@ function EvaluationSection({
   state: MatchEvaluationState;
   fallbackScore: number | null;
 }) {
+  const { t } = useTranslation();
   if (state.isLoading) {
     return (
       <EvaluationShell>
         <p className="text-[12.5px] text-muted-foreground">
-          Анализируем соответствие фильтрам цикла…
+          {t("matches.evaluation.analyzing", "Analyzing the fit against the loop filters…")}
         </p>
       </EvaluationShell>
     );
@@ -182,8 +208,10 @@ function DetailActions({
   flags: DetailActionFlags;
   handlers: DetailActionHandlers;
 }) {
+  const { t } = useTranslation();
   const { isConverting, isSaving } = flags;
   const { onConvert, onSave, onOpenDetails } = handlers;
+  const saving = t("matches.detail.saving", "Saving…");
   return (
     <div className="flex flex-wrap gap-2">
       <button
@@ -192,7 +220,7 @@ function DetailActions({
         onClick={() => onConvert(match)}
         className="rounded-md bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground disabled:opacity-50"
       >
-        {isConverting ? "Сохраняем…" : "Создать заявку"}
+        {isConverting ? saving : t("matches.detail.convert", "Create application")}
       </button>
       {match.status === "new" ? (
         <button
@@ -201,7 +229,7 @@ function DetailActions({
           onClick={() => onSave(match)}
           className="rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
         >
-          {isSaving ? "Сохраняем…" : "Сохранить"}
+          {isSaving ? saving : t("matches.detail.save", "Save")}
         </button>
       ) : null}
       <a
@@ -210,7 +238,7 @@ function DetailActions({
         rel="noreferrer"
         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted"
       >
-        Открыть на {sourceLabel}
+        {t("matches.detail.openOn", "Open on {{source}}", { source: sourceLabel })}
         <ExternalLink className="h-3 w-3" />
       </a>
       <button
@@ -218,7 +246,7 @@ function DetailActions({
         onClick={() => onOpenDetails(match)}
         className="rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] text-foreground hover:bg-muted"
       >
-        Подробнее
+        {t("matches.detail.more", "Details")}
       </button>
     </div>
   );
@@ -233,13 +261,14 @@ function DetailHeader({
   flags: DetailActionFlags;
   handlers: DetailActionHandlers;
 }) {
+  const { t } = useTranslation();
   const { match, loopName } = item;
   const metaChips = getVacancyMetaChips(match);
   const sourceColor = getSourceColor(match.source);
   const sourceLabel = getSourceLabel(match.source);
   const initial = getMatchInitial(match);
   const canAct = match.status === "new" || match.status === "saved";
-  const statusLabel = STATUS_PILL_LABEL[match.status];
+  const statusLabel = t(`matches.matchStatus.${match.status}`, MATCH_STATUS_FALLBACK[match.status]);
   const seen = isMatchSeen(match);
   const subtitle =
     [match.companyName, match.locationText].filter(Boolean).join(" · ") || loopName;
@@ -261,7 +290,7 @@ function DetailHeader({
             {seen ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] text-muted-foreground">
                 <Eye className="h-3 w-3" />
-                Просмотрено
+                {t("matches.item.seen", "Viewed")}
               </span>
             ) : null}
             <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[10.5px] text-muted-foreground">
@@ -274,7 +303,7 @@ function DetailHeader({
             </span>
           </div>
           <div className="truncate text-[16px] font-semibold leading-tight text-foreground">
-            {match.roleTitle || "Без названия"}
+            {match.roleTitle || t("matches.item.untitled", "Untitled")}
           </div>
           <div className="mt-0.5 text-[12.5px] text-muted-foreground">{subtitle}</div>
           {metaChips.length > 0 ? (
@@ -305,11 +334,12 @@ function DetailHeader({
 }
 
 function ScoreCard({ score, warnings }: { score: number | null; warnings: string[] }) {
+  const { t } = useTranslation();
   return (
     <div className="mb-4 rounded-[10px] border border-primary/25 bg-primary/5 p-3.5">
       <div className="mb-1.5 flex items-baseline gap-2.5">
         <span className="text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
-          Match-скор
+          {t("matches.detail.scoreLabel", "Match score")}
         </span>
         <span className="text-[28px] font-semibold leading-none text-primary tabular-nums">
           {score ?? "—"}
@@ -329,7 +359,10 @@ function ScoreCard({ score, warnings }: { score: number | null; warnings: string
         </ul>
       ) : (
         <p className="text-[12px] text-muted-foreground">
-          Скор основан на совпадении ключевых навыков, локации и формата работы с фильтрами цикла.
+          {t(
+            "matches.detail.scoreHint",
+            "The score is based on matching key skills, location and work mode against the loop's filters.",
+          )}
         </p>
       )}
     </div>
@@ -343,6 +376,7 @@ function DetailBody({
   item: MatchWithLoopName;
   evaluation: MatchEvaluationState;
 }) {
+  const { t } = useTranslation();
   const { match, loopName } = item;
   const score = getMatchScore(match);
   const tags = getMatchTags(match);
@@ -353,18 +387,28 @@ function DetailBody({
       <ScoreCard score={score} warnings={match.warnings} />
 
       <div className="mb-5 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 text-[12.5px]">
-        <MetaRow label="Цикл" value={loopName} />
-        <MetaRow label="Источник" value={sourceLabel} />
-        {match.locationText ? <MetaRow label="Локация" value={match.locationText} /> : null}
-        {match.companyName ? <MetaRow label="Компания" value={match.companyName} /> : null}
-        <MetaRow label="Обновлено" value={formatRelativeTime(match.updatedAt)} />
-        <MetaRow label="Добавлено" value={formatRelativeTime(match.createdAt)} />
+        <MetaRow label={t("matches.detail.meta.loop", "Loop")} value={loopName} />
+        <MetaRow label={t("matches.detail.meta.source", "Source")} value={sourceLabel} />
+        {match.locationText ? (
+          <MetaRow label={t("matches.detail.meta.location", "Location")} value={match.locationText} />
+        ) : null}
+        {match.companyName ? (
+          <MetaRow label={t("matches.detail.meta.company", "Company")} value={match.companyName} />
+        ) : null}
+        <MetaRow
+          label={t("matches.detail.meta.updated", "Updated")}
+          value={formatRelativeTime(match.updatedAt)}
+        />
+        <MetaRow
+          label={t("matches.detail.meta.created", "Added")}
+          value={formatRelativeTime(match.createdAt)}
+        />
       </div>
 
       {tags.length > 0 ? (
         <>
           <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Технологии
+            {t("matches.detail.technologies", "Technologies")}
           </div>
           <div className="mb-5 flex flex-wrap gap-1.5">
             {tags.map((tag) => (
@@ -382,7 +426,7 @@ function DetailBody({
       {match.vacancyDescription ? (
         <>
           <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            О роли
+            {t("matches.detail.aboutRole", "About the role")}
           </div>
           <div className="mb-5 whitespace-pre-line text-[13px] leading-relaxed text-muted-foreground">
             {match.vacancyDescription}
@@ -405,12 +449,13 @@ export function MatchesDetailPanel({
   onSave,
   onOpenDetails,
 }: MatchesDetailPanelProps) {
+  const { t } = useTranslation();
   const evaluation = useMatchEvaluation(item?.match.loopId ?? null, item?.match.id ?? null);
 
   if (!item) {
     return (
       <div className="flex h-full items-center justify-center rounded-[14px] border border-dashed border-border bg-card p-6 text-[13px] text-muted-foreground">
-        Выберите вакансию слева, чтобы посмотреть детали.
+        {t("matches.detail.selectPrompt", "Select a vacancy on the left to see its details.")}
       </div>
     );
   }
@@ -425,4 +470,13 @@ export function MatchesDetailPanel({
       <DetailBody item={item} evaluation={evaluation} />
     </div>
   );
+}
+
+interface MatchesDetailPanelProps {
+  item: MatchWithLoopName | null;
+  isConverting: boolean;
+  isSaving: boolean;
+  onConvert: (match: VacancyMatch) => void;
+  onSave: (match: VacancyMatch) => void;
+  onOpenDetails: (match: VacancyMatch) => void;
 }

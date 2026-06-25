@@ -8,7 +8,9 @@ function test(_name: string, run: () => void) {
 
 const runtimeFiles = [
   "src/pages/LoopsPage/components/LoopDetailsView.tsx",
-  "src/pages/LoopsPage/components/LoopsListView.tsx",
+  // The loops-list backend REST fetch moved from LoopsListView.tsx into its
+  // colocated data hook during the Stage 10 LoopsPage refactor.
+  "src/pages/LoopsPage/components/useLoopsListData.ts",
   "src/pages/MatchesPage/model/useMatchesQueries.ts",
   "src/pages/BoardPage/model/useBoardQueries.ts",
   "src/pages/DashboardPage/model/useDashboardData.ts",

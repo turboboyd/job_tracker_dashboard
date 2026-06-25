@@ -1,7 +1,6 @@
 import type { BoardColumnKey } from "src/entities/application";
-import type { LoopMatch } from "src/entities/loopMatch";
 
-import type { BoardDragPayload } from "../../model/types";
+import type { BoardCardItem, BoardDragPayload } from "../../model/types";
 
 import type { ColumnsState } from "./columnsState";
 import { findContainerOfId } from "./columnsState";
@@ -18,7 +17,7 @@ export function isMousePointerEvent(event: Event): boolean {
 
 export function isPendingDropSettled(
   pending: PendingDropState,
-  byStatus: ReadonlyMap<BoardColumnKey, readonly LoopMatch[]>,
+  byStatus: ReadonlyMap<BoardColumnKey, readonly BoardCardItem[]>,
 ): boolean {
   const list = byStatus.get(pending.toStatus) ?? [];
   const idx = list.findIndex((item) => item.id === pending.matchId);
@@ -33,7 +32,7 @@ export function isPendingDropSettled(
 export function findActiveMatchById(
   columnsState: ColumnsState,
   activeId: string | null,
-): LoopMatch | null {
+): BoardCardItem | null {
   if (!activeId) return null;
 
   for (const list of columnsState.values()) {
@@ -45,7 +44,7 @@ export function findActiveMatchById(
 }
 
 export function getActiveLoopName(
-  activeMatch: LoopMatch | null,
+  activeMatch: BoardCardItem | null,
   loopIdToName: ReadonlyMap<string, string>,
 ): string {
   if (!activeMatch) return "";
@@ -54,9 +53,9 @@ export function getActiveLoopName(
 
 export function resolveDragStartPayload(
   columnsState: ColumnsState,
-  activeMatch: LoopMatch | null,
+  activeMatch: BoardCardItem | null,
   matchId: string,
-  getBoardColumn: (status: LoopMatch["status"]) => BoardColumnKey,
+  getBoardColumn: (status: BoardCardItem["status"]) => BoardColumnKey,
 ): BoardDragPayload | null {
   const fromStatus: BoardColumnKey | undefined =
     findContainerOfId(columnsState, matchId) ??

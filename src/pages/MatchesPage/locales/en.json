@@ -1,4 +1,88 @@
 {
+  "header": {
+    "title": "Matches",
+    "backToLoop": "Back to loop",
+    "vacancies": "{{count}} vacancies",
+    "subtitleSingle": "Saved vacancies from all your search loops",
+    "subtitleMulti": "Combined list from {{count}} search loops",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…"
+  },
+  "tabs": {
+    "all": "All",
+    "new": "New",
+    "saved": "Saved"
+  },
+  "toolbar": {
+    "searchPlaceholder": "Role, company…",
+    "sortLabel": "Sort:"
+  },
+  "sort": {
+    "posted": "Newest first",
+    "company": "Company (A–Z)",
+    "loop": "By loop"
+  },
+  "sources": {
+    "all": "All sources",
+    "empty": "Sources will appear after the first search run"
+  },
+  "matchStatus": {
+    "new": "New",
+    "saved": "Saved",
+    "converted": "Application created"
+  },
+  "item": {
+    "untitled": "Untitled",
+    "seen": "Viewed",
+    "topMatch": "Top match"
+  },
+  "feed": {
+    "vacanciesWord": "vacancies",
+    "pageOf": "Page {{page}} of {{total}}",
+    "loading": "Loading matches…",
+    "emptyTitle": "Nothing here yet",
+    "emptyHint": "Try switching the tab, picking another source, or running a search loop manually."
+  },
+  "empty": {
+    "loadingLoops": "Loading loops…",
+    "noLoops": "Create a search loop to see matches here."
+  },
+  "autoRefresh": {
+    "label": "Auto-refresh in"
+  },
+  "detail": {
+    "selectPrompt": "Select a vacancy on the left to see its details.",
+    "convert": "Create application",
+    "saving": "Saving…",
+    "save": "Save",
+    "openOn": "Open on {{source}}",
+    "more": "Details",
+    "scoreLabel": "Match score",
+    "scoreHint": "The score is based on matching key skills, location and work mode against the loop's filters.",
+    "technologies": "Technologies",
+    "aboutRole": "About the role",
+    "meta": {
+      "loop": "Loop",
+      "source": "Source",
+      "location": "Location",
+      "company": "Company",
+      "updated": "Updated",
+      "created": "Added"
+    }
+  },
+  "evaluation": {
+    "heading": "AI · should you apply?",
+    "analyzing": "Analyzing the fit against the loop filters…",
+    "noReasons": "No explicit matches with the filters were found.",
+    "verdict": {
+      "strongTitle": "Likely yes.",
+      "strongDetail": "Strong match by score ({{score}}/100). Check the details before applying.",
+      "mediumTitle": "Worth a look.",
+      "mediumDetail": "Medium match ({{score}}/100). Read the description to decide.",
+      "weakTitle": "Review carefully.",
+      "weakDetail": "There may be mismatches with your filters — open the original on the source."
+    }
+  },
   "common": {
     "loading": "Loading…",
     "status": "Status",

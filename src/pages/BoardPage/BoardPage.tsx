@@ -1,102 +1,31 @@
-import { Filter, Plus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-import { BOARD_COLUMNS_LIST } from "src/entities/application/model/status";
 
 import { useBoardController } from "./model/useBoardController";
 import { BoardColumns } from "./ui/BoardColumns";
+import { BoardPageHeader } from "./ui/BoardPageHeader";
 import { BoardState } from "./ui/BoardState";
-
-const COLUMN_COLORS: Record<string, string> = {
-  ACTIVE:      "var(--color-accent-2, #f97316)",
-  INTERVIEW:   "#7c3aed",
-  OFFER:       "#d97706",
-  HIRED:       "#059669",
-  REJECTED:    "#dc2626",
-  NO_RESPONSE: "var(--color-fg-subtle, #94a3b8)",
-};
+import { buildBoardColumnSummaries } from "./ui/boardStats.helpers";
+import { BoardStatsBar } from "./ui/BoardStatsBar";
 
 export default function BoardPage() {
   const vm = useBoardController();
   const { t } = useTranslation();
 
   const matchesQ = vm.queries.matchesQ;
-  const isEmpty = vm.data.matches.length === 0;
-  const total = vm.data.matches.length;
+  const isEmpty = vm.data.items.length === 0;
+  const total = vm.data.items.length;
 
-  const columnCounts = BOARD_COLUMNS_LIST.map((col) => ({
-    key: col.key,
-    label: t(col.labelKey, { defaultValue: col.key }),
-    count: vm.data.byStatus.get(col.key)?.length ?? 0,
-    color: COLUMN_COLORS[col.key] ?? "var(--color-fg-subtle)",
-  }));
+  const columns = buildBoardColumnSummaries(
+    vm.data.byStatus,
+    (key, fallback) => t(key, { defaultValue: fallback }),
+  );
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Page header */}
       <div className="shrink-0 border-b border-border bg-background">
-        <div className="px-7 pt-5 pb-4">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-[11.5px] text-subtle-foreground mb-1">
-                <span>Loopboard</span>
-                <span>/</span>
-                <span className="text-muted-foreground">{t("board.title", "Доска заявок")}</span>
-              </div>
-              <h1 className="text-[22px] font-semibold tracking-[-0.025em] text-foreground leading-none">
-                {t("board.title", "Доска заявок")}
-              </h1>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                Перетаскивай вакансии между колонками, чтобы менять статус.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 pb-1">
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                <Filter className="h-3.5 w-3.5 text-subtle-foreground" />
-                {t("board.allLoops", "Все направления")}
-              </button>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                <Search className="h-3.5 w-3.5 text-subtle-foreground" />
-              </button>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded-[8px] bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {t("board.newApplication", "Новая заявка")}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats bar */}
-        <div className="flex items-center gap-4 px-7 py-2.5 border-t border-border flex-wrap">
-          <div className="flex items-center gap-1.5 text-[12.5px]">
-            <span className="text-subtle-foreground">{t("board.total", "Всего на доске")}:</span>
-            <span className="font-semibold tabular-nums">{total}</span>
-          </div>
-          <div className="h-3.5 w-px bg-border" />
-          <div className="flex items-center gap-4 flex-wrap">
-            {columnCounts.map((col) => (
-              <span key={col.key} className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                <span
-                  className="h-2 w-2 rounded-[2px] shrink-0"
-                  style={{ background: col.color }}
-                />
-                {col.label}
-                {" · "}
-                <span className="font-semibold tabular-nums text-foreground">{col.count}</span>
-              </span>
-            ))}
-          </div>
-        </div>
+        <BoardPageHeader />
+        <BoardStatsBar total={total} columns={columns} />
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">

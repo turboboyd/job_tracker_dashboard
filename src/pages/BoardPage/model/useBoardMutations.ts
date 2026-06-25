@@ -2,67 +2,63 @@ import React from "react";
 
 import type { BoardColumnKey } from "src/entities/application";
 import {
-  useDeleteMatchMutation,
-  useUpdateMatchStatusMutation,
-  type LoopMatch,
-} from "src/entities/loopMatch";
+  changeApplicationStatusViaRest,
+  deleteApplicationViaRest,
+} from "src/features/applications/rest/queries";
+import { useAuthSelectors } from "src/features/auth/model";
 
-import { COLUMN_DEFAULT_STATUS } from "./boardStatusMap";
+import { COLUMN_TO_PROCESS_STATUS } from "./boardStatusMap";
 
 export type BoardMutations = Readonly<{
   busy: boolean;
-  deleteMatch: (args: Readonly<{ matchId: string; loopId: string }>) => Promise<unknown>;
-  updateStatus: (args: Readonly<{ matchId: string; loopId: string; status: BoardColumnKey }>) => Promise<unknown>;
-  onDeleteById: (matches: readonly LoopMatch[], matchId: LoopMatch["id"]) => Promise<void>;
+  updateStatus: (args: Readonly<{ itemId: string; status: BoardColumnKey }>) => Promise<void>;
+  archive: (itemId: string) => Promise<void>;
 }>;
 
-function fireAndForget(p: Promise<unknown>): void {
-  p.catch(() => {
-    // Errors are handled by RTK Query state in UI.
-  });
-}
-
 export function useBoardMutations(): BoardMutations {
-  const [deleteMatchTrigger, deleteState] = useDeleteMatchMutation();
-  const [updateStatusTrigger, updateState] = useUpdateMatchStatusMutation();
+  const { userId } = useAuthSelectors();
+  const [pending, setPending] = React.useState(0);
+  const busy = pending > 0;
 
-  const busy = Boolean(deleteState.isLoading || updateState.isLoading);
-
-  const deleteMatch = React.useCallback(
-    async (args: Readonly<{ matchId: string; loopId: string }>) => {
-      return deleteMatchTrigger(args);
-    },
-    [deleteMatchTrigger],
-  );
+  const run = React.useCallback(async (op: () => Promise<unknown>) => {
+    setPending((n) => n + 1);
+    try {
+      await op();
+    } finally {
+      setPending((n) => Math.max(0, n - 1));
+    }
+  }, []);
 
   const updateStatus = React.useCallback(
-    async (args: Readonly<{ matchId: string; loopId: string; status: BoardColumnKey }>) => {
-      return updateStatusTrigger({
-        matchId: args.matchId,
-        loopId: args.loopId,
-        status: COLUMN_DEFAULT_STATUS[args.status],
-      });
+    async (args: Readonly<{ itemId: string; status: BoardColumnKey }>) => {
+      if (!userId) return;
+      const toStatus = COLUMN_TO_PROCESS_STATUS[args.status];
+      if (!toStatus) return;
+
+      await run(() =>
+        changeApplicationStatusViaRest(userId, args.itemId, {
+          toStatus,
+          subStatus: null,
+          comment: null,
+          correlationId: null,
+        }),
+      );
     },
-    [updateStatusTrigger],
+    [run, userId],
   );
 
-  const onDeleteById = React.useCallback(
-    async (matches: readonly LoopMatch[], matchId: LoopMatch["id"]) => {
-      const match = matches.find((m) => m.id === matchId);
-      if (!match) return;
-      await deleteMatch({ matchId: match.id, loopId: match.loopId });
+  const archive = React.useCallback(
+    async (itemId: string) => {
+      await run(() => deleteApplicationViaRest(itemId));
     },
-    [deleteMatch],
+    [run],
   );
 
-  return {
-    busy,
-    deleteMatch,
-    updateStatus,
-    onDeleteById,
-  };
+  return { busy, updateStatus, archive };
 }
 
 export function fireAndForgetMutation(p: Promise<unknown>): void {
-  fireAndForget(p);
+  p.catch(() => {
+    // Errors are surfaced via query state on the next reload.
+  });
 }

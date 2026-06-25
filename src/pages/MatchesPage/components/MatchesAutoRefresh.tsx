@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { formatCountdownClock } from "./matchesV2.helpers";
 
@@ -15,6 +16,7 @@ interface AutoRefreshCountdownProps {
  * per target when the moment passes.
  */
 export function AutoRefreshCountdown({ targetIso, onElapsed }: AutoRefreshCountdownProps) {
+  const { t } = useTranslation();
   const [nowMs, setNowMs] = useState(() => Date.now());
   const firedForRef = useRef<string | null>(null);
 
@@ -43,7 +45,7 @@ export function AutoRefreshCountdown({ targetIso, onElapsed }: AutoRefreshCountd
         aria-hidden="true"
         className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"
       />
-      Автообновление через <span className="tabular-nums text-muted-foreground">{clock}</span>
+      {t("matches.autoRefresh.label", "Auto-refresh in")} <span className="tabular-nums text-muted-foreground">{clock}</span>
     </span>
   );
 }
