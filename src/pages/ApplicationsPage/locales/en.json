@@ -2,13 +2,79 @@
   "applicationsPage": {
     "title": "My applications",
     "subtitle": "Create and track your job applications in one place.",
+    "searchPlaceholder": "Search company or role…",
+    "newApplication": "New application",
     "views": {
       "pipeline": "Pipeline",
       "today": "Today",
       "followups": "Follow-ups"
     },
+    "sort": {
+      "label": "Sort",
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "company": "Company A–Z",
+      "score": "Match score"
+    },
+    "filters": {
+      "title": "Filters",
+      "companies": "Companies",
+      "reset": "Reset",
+      "noData": "No data",
+      "favorites": "Favorites"
+    },
+    "loopBanner": {
+      "label": "Search direction: {{name}}",
+      "loading": "loading…",
+      "unknown": "Unknown loop"
+    },
+    "archiveTabs": {
+      "active": "Active",
+      "archived": "Archive"
+    },
+    "meta": {
+      "showing": "Showing {{shown}} of {{total}}",
+      "range": "{{from}}–{{to}} of {{total}}",
+      "back": "Back",
+      "next": "Next"
+    },
+    "displayMode": {
+      "list": "List",
+      "cards": "Cards"
+    },
+    "columns": {
+      "role": "Role · Company",
+      "location": "Location",
+      "status": "Status",
+      "direction": "Direction",
+      "match": "Match",
+      "matchTitle": "AI match score: ≥85 strong, ≥70 good, <70 weak"
+    },
+    "item": {
+      "favoriteAdd": "Add to favorites",
+      "favoriteRemove": "Remove from favorites",
+      "restore": "Restore",
+      "archive": "Archive",
+      "direction": "Direction: {{title}}"
+    },
+    "list": {
+      "noMatch": "No applications match your search."
+    },
+    "confirm": {
+      "archive": "Archive this application?"
+    },
+    "errors": {
+      "archivedLoop": "This search direction is archived. Restore it first to add new applications."
+    },
+    "import": {
+      "fallback": "Could not automatically extract data from this page. Some sites block automated reading of vacancies. You can keep the link and fill in the fields manually.",
+      "invalidUrl": "This link can't be imported. Check the URL or fill in the application manually."
+    },
     "create": {
       "title": "New application",
+      "subtitle": "Fill in the essentials — the rest can be added later.",
+      "newBtn": "New",
+      "cancel": "Cancel",
       "preparing": "Preparing…",
       "company": "Company",
       "companyPh": "e.g. ACME GmbH",
@@ -20,8 +86,43 @@
       "sourcePh": "LinkedIn / Indeed / Company site",
       "desc": "Description (optional)",
       "descPh": "Paste vacancy text to improve matching…",
+      "location": "Location",
+      "locationPh": "Berlin / Remote / Hybrid",
       "createBtn": "Create",
-      "creating": "Creating…"
+      "creating": "Creating…",
+      "loadingLoops": "Loading search directions…",
+      "noLoopsTitle": "Create a search direction first",
+      "noLoopsHint": "An application must belong to an active search direction.",
+      "goToLoops": "Go to search directions",
+      "manual": "Manual",
+      "importTab": "Import by link",
+      "loopField": "Search direction",
+      "loopPlaceholder": "Select a search direction",
+      "import": "Import",
+      "importing": "Importing…",
+      "importHint": "Import checks one link, fills the preview, and does not create an application until you click Create.",
+      "previewReady": "Preview ready. Check the fields below and click Create to add the application.",
+      "contact": {
+        "title": "Contact person (optional)",
+        "hint": "Add now or later on the application page.",
+        "firstName": "First name",
+        "firstNamePh": "Anna",
+        "lastName": "Last name",
+        "lastNamePh": "Petrova",
+        "role": "Role",
+        "phone": "Phone",
+        "phonePh": "+49 …",
+        "email": "Email",
+        "emailPh": "name@company.com"
+      },
+      "contactRole": {
+        "HR": "HR",
+        "RECRUITER": "Recruiter",
+        "TECH_INTERVIEWER": "Interviewer",
+        "HIRING_MANAGER": "Hiring Manager",
+        "REFERRAL": "Referral",
+        "OTHER": "Other"
+      }
     },
     "pipeline": {
       "saved": "Saved",

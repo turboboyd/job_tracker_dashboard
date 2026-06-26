@@ -18,11 +18,15 @@ function ViewToggle({
   value: DisplayMode;
   onChange: (v: DisplayMode) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex gap-1 rounded-[7px] border border-border bg-muted p-0.5">
       {(["list", "cards"] as const).map((mode) => {
         const isActive = value === mode;
-        const label = mode === "list" ? "Список" : "Карточки";
+        const label =
+          mode === "list"
+            ? t("applicationsPage.displayMode.list", "List")
+            : t("applicationsPage.displayMode.cards", "Cards");
         return (
           <span
             key={mode}
@@ -48,13 +52,20 @@ function ViewToggle({
 // ─── Table header ─────────────────────────────────────────────────────────────
 
 function ListHeader() {
+  const { t } = useTranslation();
   const cols: { label: string; title?: string }[] = [
     { label: "" },
-    { label: "Должность · Компания" },
-    { label: "Локация" },
-    { label: "Статус" },
-    { label: "Направление" },
-    { label: "Матч", title: "AI match score: ≥85 strong, ≥70 good, <70 weak" },
+    { label: t("applicationsPage.columns.role", "Role · Company") },
+    { label: t("applicationsPage.columns.location", "Location") },
+    { label: t("applicationsPage.columns.status", "Status") },
+    { label: t("applicationsPage.columns.direction", "Direction") },
+    {
+      label: t("applicationsPage.columns.match", "Match"),
+      title: t(
+        "applicationsPage.columns.matchTitle",
+        "AI match score: ≥85 strong, ≥70 good, <70 weak",
+      ),
+    },
     { label: "" },
   ];
 
@@ -193,7 +204,7 @@ export function ApplicationsListCard(props: {
     if (filteredSorted.length === 0) {
       return (
         <div className="px-3 py-6 text-sm text-muted-foreground">
-          {query ? "No applications match your search." : emptyText}
+          {query ? t("applicationsPage.list.noMatch", "No applications match your search.") : emptyText}
         </div>
       );
     }

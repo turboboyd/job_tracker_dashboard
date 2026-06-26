@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { Loop } from "src/entities/loop";
 import { listLoopsViaRest } from "src/features/loops";
@@ -19,7 +20,6 @@ import {
   filterFollowUpApplications,
   filterSelectableApplicationLoops,
   filterTodayApplications,
-  getArchivedLoopCreateErrorMessage,
   getLoopTargetRole,
   getNextRoleTitleAfterLoopSelect,
   isBackendLoopId,
@@ -45,6 +45,16 @@ export function useApplicationsPage(params: {
   loopFilterId?: string | null;
 }) {
   const { userId, isAuthReady, repo, loopFilterId = null } = params;
+  const { t } = useTranslation();
+
+  const archivedLoopError = useCallback(
+    () =>
+      t(
+        "applicationsPage.errors.archivedLoop",
+        "This search direction is archived. Restore it first to add new applications.",
+      ),
+    [t],
+  );
 
   const [view, setView] = useState<ViewMode>("pipeline");
   const [activeStatus, setActiveStatus] = useState<PipelineFilterStatus>("ALL");
@@ -97,13 +107,13 @@ export function useApplicationsPage(params: {
     const loop = activeLoops.find((item) => item.id === loopId);
     if (!loop) {
       setForm((prev) => ({ ...prev, loopId: "" }));
-      setError(getArchivedLoopCreateErrorMessage());
+      setError(archivedLoopError());
       return;
     }
 
     setError(null);
     selectLoop(loop);
-  }, [activeLoops, selectLoop]);
+  }, [activeLoops, selectLoop, archivedLoopError]);
 
   const statusCounts = useMemo<Record<string, number>>(
     () => calculateStatusCounts(countSourceList),
@@ -302,7 +312,7 @@ export function useApplicationsPage(params: {
 
     const selectedLoop = activeLoops.find((loop) => loop.id === form.loopId);
     if (!selectedLoop) {
-      setError(getArchivedLoopCreateErrorMessage());
+      setError(archivedLoopError());
       return;
     }
 
@@ -324,7 +334,7 @@ export function useApplicationsPage(params: {
     } finally {
       setIsCreating(false);
     }
-  }, [activeLoops, repo, userId, canSubmit, form, resetForm, load]);
+  }, [activeLoops, repo, userId, canSubmit, form, resetForm, load, archivedLoopError]);
 
   const goToPreviousPage = useCallback(() => {
     setPageOffset((current) => Math.max(0, current - pageLimit));

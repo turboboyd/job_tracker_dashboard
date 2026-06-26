@@ -10,11 +10,9 @@ import {
   applyVacancyImportPreviewToForm,
   canRunVacancyImportPreview,
   deriveSourceFromVacancyUrl,
-  getVacancyImportFailureMessage,
+  getVacancyImportFailureCode,
   normalizeCreateApplicationInitialMode,
   shouldPreselectCreateApplicationLoop,
-  VACANCY_IMPORT_FALLBACK_MESSAGE,
-  VACANCY_IMPORT_INVALID_URL_MESSAGE,
 } from "../vacancyImport.helpers";
 
 function test(_name: string, run: () => void) {
@@ -112,26 +110,26 @@ test("applyVacancyImportPreviewToForm keeps current values when preview fields a
   assert.equal(result.source, "Manual Source");
 });
 
-test("getVacancyImportFailureMessage maps 502/504/network to manual fallback copy", () => {
+test("getVacancyImportFailureCode maps 502/504/network to the manual fallback code", () => {
   assert.equal(
-    getVacancyImportFailureMessage(new ApiError(502, "PREVIEW_FETCH_FAILED", "Bad gateway")),
-    VACANCY_IMPORT_FALLBACK_MESSAGE,
+    getVacancyImportFailureCode(new ApiError(502, "PREVIEW_FETCH_FAILED", "Bad gateway")),
+    "fallback",
   );
   assert.equal(
-    getVacancyImportFailureMessage(new ApiError(504, "PREVIEW_TIMEOUT", "Timeout")),
-    VACANCY_IMPORT_FALLBACK_MESSAGE,
+    getVacancyImportFailureCode(new ApiError(504, "PREVIEW_TIMEOUT", "Timeout")),
+    "fallback",
   );
-  assert.equal(getVacancyImportFailureMessage(new TypeError("Failed to fetch")), VACANCY_IMPORT_FALLBACK_MESSAGE);
+  assert.equal(getVacancyImportFailureCode(new TypeError("Failed to fetch")), "fallback");
 });
 
-test("getVacancyImportFailureMessage maps invalid URL validation to invalid URL copy", () => {
+test("getVacancyImportFailureCode maps invalid URL validation to the invalid URL code", () => {
   assert.equal(
-    getVacancyImportFailureMessage(new ApiError(400, "INVALID_URL", "Invalid URL")),
-    VACANCY_IMPORT_INVALID_URL_MESSAGE,
+    getVacancyImportFailureCode(new ApiError(400, "INVALID_URL", "Invalid URL")),
+    "invalidUrl",
   );
   assert.equal(
-    getVacancyImportFailureMessage(new ApiError(422, "INVALID_URL", "Invalid URL")),
-    VACANCY_IMPORT_INVALID_URL_MESSAGE,
+    getVacancyImportFailureCode(new ApiError(422, "INVALID_URL", "Invalid URL")),
+    "invalidUrl",
   );
 });
 

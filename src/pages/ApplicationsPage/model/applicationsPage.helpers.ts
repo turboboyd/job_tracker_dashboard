@@ -101,10 +101,6 @@ export function isLoopSelectableForApplicationCreate(loop: Pick<Loop, "id" | "st
   return isBackendLoopId(loop.id) && loop.status !== "archived";
 }
 
-export function getArchivedLoopCreateErrorMessage(): string {
-  return "Это направление поиска находится в архиве. Сначала восстановите его, чтобы добавлять новые заявки.";
-}
-
 export function getLoopDisplayTitle(loop: Pick<Loop, "name" | "titles">): string {
   const name = loop.name.trim();
   if (name.length > 0) return name;

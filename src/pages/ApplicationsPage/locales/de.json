@@ -2,10 +2,73 @@
   "applicationsPage": {
     "title": "Meine Bewerbungen",
     "subtitle": "Erstelle und verfolge deine Bewerbungen an einem Ort.",
+    "searchPlaceholder": "Firma oder Position suchen…",
+    "newApplication": "Neue Bewerbung",
     "views": {
       "pipeline": "Bewerbungsstatus",
       "today": "Heute",
       "followups": "Nachfassen"
+    },
+    "sort": {
+      "label": "Sortierung",
+      "newest": "Neueste",
+      "oldest": "Älteste",
+      "company": "Unternehmen A–Z",
+      "score": "Match-Score"
+    },
+    "filters": {
+      "title": "Filter",
+      "companies": "Firmen",
+      "reset": "Zurücksetzen",
+      "noData": "Keine Daten",
+      "favorites": "Favoriten"
+    },
+    "loopBanner": {
+      "label": "Suchrichtung: {{name}}",
+      "loading": "lädt…",
+      "unknown": "Unbekannter Loop"
+    },
+    "archiveTabs": {
+      "active": "Aktiv",
+      "archived": "Archiv"
+    },
+    "meta": {
+      "showing": "{{shown}} von {{total}} angezeigt",
+      "range": "{{from}}–{{to}} von {{total}}",
+      "back": "Zurück",
+      "next": "Weiter"
+    },
+    "displayMode": {
+      "list": "Liste",
+      "cards": "Karten"
+    },
+    "columns": {
+      "role": "Position · Firma",
+      "location": "Standort",
+      "status": "Status",
+      "direction": "Loop",
+      "match": "Match",
+      "matchTitle": "KI-Match-Score: ≥85 stark, ≥70 gut, <70 schwach"
+    },
+    "item": {
+      "favoriteAdd": "Zu Favoriten",
+      "favoriteRemove": "Aus Favoriten entfernen",
+      "restore": "Wiederherstellen",
+      "archive": "Archivieren",
+      "direction": "Loop: {{title}}"
+    },
+    "list": {
+      "noMatch": "Keine Bewerbungen entsprechen deiner Suche."
+    },
+    "confirm": {
+      "archive": "Diese Bewerbung archivieren?"
+    },
+    "errors": {
+      "archivedLoop": "Diese Suchrichtung ist archiviert. Stelle sie zuerst wieder her, um neue Bewerbungen hinzuzufügen."
+    },
+    "import": {
+      "fallback": "Die Daten dieser Seite konnten nicht automatisch ausgelesen werden. Manche Seiten blockieren das automatische Lesen von Stellen. Du kannst den Link behalten und die Felder manuell ausfüllen.",
+      "invalidUrl": "Dieser Link kann nicht importiert werden. Prüfe die URL oder fülle die Bewerbung manuell aus."
     },
     "create": {
       "title": "Neue Bewerbung",
@@ -23,8 +86,22 @@
       "sourcePh": "LinkedIn / Indeed / Unternehmensseite",
       "desc": "Beschreibung (optional)",
       "descPh": "Füge den Text der Stelle ein, um die Passung genauer zu bewerten…",
+      "location": "Standort",
+      "locationPh": "Berlin / Remote / Hybrid",
       "createBtn": "Erstellen",
       "creating": "Erstelle…",
+      "loadingLoops": "Lade Suchrichtungen…",
+      "noLoopsTitle": "Erstelle zuerst eine Suchrichtung",
+      "noLoopsHint": "Eine Bewerbung muss zu einer aktiven Suchrichtung gehören.",
+      "goToLoops": "Zu den Suchrichtungen",
+      "manual": "Manuell",
+      "importTab": "Per Link importieren",
+      "loopField": "Suchrichtung",
+      "loopPlaceholder": "Suchrichtung auswählen",
+      "import": "Importieren",
+      "importing": "Importiere…",
+      "importHint": "Der Import prüft einen Link, füllt die Vorschau und erstellt erst beim Klick auf Create eine Bewerbung.",
+      "previewReady": "Vorschau bereit. Prüfe die Felder unten und klicke auf Create, um die Bewerbung zu erstellen.",
       "contact": {
         "title": "Ansprechpartner (optional)",
         "hint": "Jetzt oder später auf der Bewerbungsseite hinzufügen.",

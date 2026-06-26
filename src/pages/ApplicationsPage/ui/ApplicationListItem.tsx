@@ -1,6 +1,7 @@
 import { Archive, ChevronDown, ChevronRight, Check, RotateCcw, Star } from "lucide-react";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { normalizeStatusKey, type StatusKey } from "src/entities/application/model/status";
@@ -31,6 +32,7 @@ function getMatchBarColor(score: number): string {
 }
 
 function MatchBar({ score }: { score: number }) {
+  const { t } = useTranslation();
   const barColor = getMatchBarColor(score);
   const pct = Math.min(100, Math.max(0, score));
 
@@ -43,7 +45,7 @@ function MatchBar({ score }: { score: number }) {
         />
       </div>
       <span
-        title="AI match score: ≥85 strong, ≥70 good, <70 weak"
+        title={t("applicationsPage.columns.matchTitle", "AI match score: ≥85 strong, ≥70 good, <70 weak")}
         className="text-[11.5px] tabular-nums text-muted-foreground"
       >
         {score}
@@ -72,6 +74,7 @@ function StatusDropdown({
   onChangeStatus: (appId: string, status: ProcessStatus) => void;
   appId: string;
 }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ left: number; top: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -160,7 +163,9 @@ function StatusDropdown({
                 ].join(" ")}
               >
                 {optSk ? <StatusDot status={optSk} size="xs" /> : <span className="h-[6px] w-[6px]" />}
-                <span className="flex-1 text-left">{opt.label}</span>
+                <span className="flex-1 text-left">
+                  {t(`applicationsPage.statuses.${opt.value.toLowerCase()}`, opt.label)}
+                </span>
                 {isCurrent && <Check className="h-3 w-3 text-primary" />}
               </button>
             );
@@ -180,7 +185,10 @@ function StatusDropdown({
       >
         {sk ? <StatusDot status={sk} size="xs" /> : null}
         <span className="max-w-[70px] truncate text-foreground">
-          {STATUS_OPTIONS.find((o) => o.value === currentStatus)?.label ?? String(currentStatus)}
+          {t(
+            `applicationsPage.statuses.${String(currentStatus).toLowerCase()}`,
+            STATUS_OPTIONS.find((o) => o.value === currentStatus)?.label ?? String(currentStatus),
+          )}
         </span>
         <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
       </button>
@@ -219,6 +227,7 @@ export function ApplicationListItem({
   loopTitleById: ReadonlyMap<string, string>;
 }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { job, process, matching } = row.data;
   const sk = normalizeStatusKey(process.status) as StatusKey | null;
@@ -296,7 +305,7 @@ export function ApplicationListItem({
         {onToggleFavorite ? (
           <button
             type="button"
-            title={isFav ? "Убрать из избранного" : "В избранное"}
+            title={isFav ? t("applicationsPage.item.favoriteRemove", "Remove from favorites") : t("applicationsPage.item.favoriteAdd", "Add to favorites")}
             onClick={() => onToggleFavorite(row.id, !isFav)}
             className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
@@ -306,7 +315,7 @@ export function ApplicationListItem({
         {isArchivedView && onRestoreApplication ? (
           <button
             type="button"
-            title="Восстановить"
+            title={t("applicationsPage.item.restore", "Restore")}
             onClick={() => onRestoreApplication(row.id)}
             className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
@@ -316,7 +325,7 @@ export function ApplicationListItem({
         {!isArchivedView && onArchiveApplication ? (
           <button
             type="button"
-            title="Архивировать"
+            title={t("applicationsPage.item.archive", "Archive")}
             onClick={() => onArchiveApplication(row.id)}
             className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
           >
@@ -347,6 +356,7 @@ export function ApplicationCardTile({
   loopTitleById: ReadonlyMap<string, string>;
 }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { job, process, matching } = row.data;
   const isFav = row.data.isFavorite === true;
@@ -378,7 +388,7 @@ export function ApplicationCardTile({
           {onToggleFavorite ? (
             <button
               type="button"
-              title={isFav ? "Убрать из избранного" : "В избранное"}
+              title={isFav ? t("applicationsPage.item.favoriteRemove", "Remove from favorites") : t("applicationsPage.item.favoriteAdd", "Add to favorites")}
               onClick={() => onToggleFavorite(row.id, !isFav)}
               className="rounded p-1 text-muted-foreground hover:bg-muted"
             >
@@ -388,7 +398,7 @@ export function ApplicationCardTile({
           {isArchivedView && onRestoreApplication ? (
             <button
               type="button"
-              title="Восстановить"
+              title={t("applicationsPage.item.restore", "Restore")}
               onClick={() => onRestoreApplication(row.id)}
               className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
@@ -398,7 +408,7 @@ export function ApplicationCardTile({
           {!isArchivedView && onArchiveApplication ? (
             <button
               type="button"
-              title="Архивировать"
+              title={t("applicationsPage.item.archive", "Archive")}
               onClick={() => onArchiveApplication(row.id)}
               className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
             >
@@ -418,7 +428,7 @@ export function ApplicationCardTile({
           {job.locationText ? <span className="ml-1 opacity-70">· {job.locationText}</span> : null}
         </div>
         <div className="mt-1 truncate text-[11px] text-muted-foreground/80" title={loopTitle}>
-          Направление: {loopTitle}
+          {t("applicationsPage.item.direction", "Direction: {{title}}", { title: loopTitle })}
         </div>
       </div>
 

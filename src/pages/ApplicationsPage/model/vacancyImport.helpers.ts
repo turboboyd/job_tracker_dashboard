@@ -3,10 +3,12 @@ import { ApiError } from "src/shared/api/rest/restClient";
 
 import type { CreateFormState } from "./types";
 
-export const VACANCY_IMPORT_FALLBACK_MESSAGE =
-  "Не удалось автоматически извлечь данные с этой страницы. Некоторые сайты блокируют автоматическое чтение вакансий. Вы можете оставить ссылку и заполнить поля вручную.";
-export const VACANCY_IMPORT_INVALID_URL_MESSAGE =
-  "Ссылка не подходит для импорта. Проверьте URL или заполните заявку вручную.";
+/**
+ * Classification of an import-preview failure. The UI maps the code to a
+ * localized message (`applicationsPage.import.<code>`); the helper itself stays
+ * presentation-free so it has no hardcoded user-facing copy.
+ */
+export type VacancyImportFailureCode = "invalidUrl" | "fallback";
 
 function valueOrCurrent(previewValue: string | null | undefined, currentValue: string): string {
   const normalized = previewValue?.trim();
@@ -63,12 +65,12 @@ export function applyVacancyImportFallbackToForm(
   };
 }
 
-export function getVacancyImportFailureMessage(error: unknown): string {
+export function getVacancyImportFailureCode(error: unknown): VacancyImportFailureCode {
   if (error instanceof ApiError && (error.status === 400 || error.status === 422)) {
-    return VACANCY_IMPORT_INVALID_URL_MESSAGE;
+    return "invalidUrl";
   }
 
-  return VACANCY_IMPORT_FALLBACK_MESSAGE;
+  return "fallback";
 }
 
 export type CreateApplicationInitialMode = "manual" | "import";

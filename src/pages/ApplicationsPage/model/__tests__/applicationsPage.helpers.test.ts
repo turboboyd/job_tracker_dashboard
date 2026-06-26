@@ -14,7 +14,6 @@ import {
   filterFollowUpApplications,
   filterSelectableApplicationLoops,
   filterTodayApplications,
-  getArchivedLoopCreateErrorMessage,
   getLoopTargetRole,
   isBackendLoopId,
   isLoopSelectableForApplicationCreate,
@@ -384,7 +383,6 @@ test("filterSelectableApplicationLoops excludes archived loops from create flow"
   );
   assert.equal(isBackendLoopId("manual"), false);
   assert.equal(isBackendLoopId("11111111-1111-4111-8111-111111111111"), true);
-  assert.equal(getArchivedLoopCreateErrorMessage().includes("архиве"), true);
 });
 
 test("buildLoopTitleMap and resolveApplicationLoopTitle show loop names instead of raw ids", () => {

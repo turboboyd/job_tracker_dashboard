@@ -15,7 +15,7 @@ import {
   applyVacancyImportPreviewToForm,
   applyVacancyImportFallbackToForm,
   canRunVacancyImportPreview,
-  getVacancyImportFailureMessage,
+  getVacancyImportFailureCode,
   normalizeCreateApplicationInitialMode,
   shouldPreselectCreateApplicationLoop,
   type CreateApplicationInitialMode,
@@ -163,7 +163,17 @@ export function CreateApplicationDialog(props: Props) {
       const next = applyVacancyImportFallbackToForm(form, trimmedVacancyUrl);
       onChange("vacancyUrl", next.vacancyUrl);
       onChange("source", next.source);
-      setImportWarning(getVacancyImportFailureMessage(error));
+      setImportWarning(
+        getVacancyImportFailureCode(error) === "invalidUrl"
+          ? t(
+              "applicationsPage.import.invalidUrl",
+              "This link can't be imported. Check the URL or fill in the application manually.",
+            )
+          : t(
+              "applicationsPage.import.fallback",
+              "Could not automatically extract data from this page. Some sites block automated reading of vacancies. You can keep the link and fill in the fields manually.",
+            ),
+      );
       setFallbackUrl(next.vacancyUrl);
       setPreviewedUrl(null);
     } finally {
@@ -228,15 +238,20 @@ export function CreateApplicationDialog(props: Props) {
 
         {isLoadingLoops ? (
           <div className="mb-4 rounded-[10px] border border-border bg-muted/40 p-3 text-[13px] text-muted-foreground">
-            Загружаем направления поиска…
+            {t("applicationsPage.create.loadingLoops", "Loading search directions…")}
           </div>
         ) : null}
 
         {!isLoadingLoops && !hasActiveLoops ? (
           <div className="rounded-[12px] border border-amber-300/60 bg-amber-50 p-4 text-[13px] text-amber-900">
-            <p className="font-medium">Сначала создайте направление поиска</p>
+            <p className="font-medium">
+              {t("applicationsPage.create.noLoopsTitle", "Create a search direction first")}
+            </p>
             <p className="mt-1 text-[12.5px] text-amber-800/90">
-              Заявка должна относиться к активному направлению поиска.
+              {t(
+                "applicationsPage.create.noLoopsHint",
+                "An application must belong to an active search direction.",
+              )}
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -244,10 +259,10 @@ export function CreateApplicationDialog(props: Props) {
                 onClick={onClose}
                 className="rounded-md border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
               >
-                Отмена
+                {t("applicationsPage.create.cancel", "Cancel")}
               </button>
               <Button onClick={onCreateLoopRequested}>
-                Перейти к направлениям поиска
+                {t("applicationsPage.create.goToLoops", "Go to search directions")}
               </Button>
             </div>
           </div>
@@ -266,7 +281,7 @@ export function CreateApplicationDialog(props: Props) {
                     : "text-muted-foreground",
                 ].join(" ")}
               >
-                Вручную
+                {t("applicationsPage.create.manual", "Manual")}
               </button>
               <button
                 type="button"
@@ -278,13 +293,13 @@ export function CreateApplicationDialog(props: Props) {
                     : "text-muted-foreground",
                 ].join(" ")}
               >
-                Импорт по ссылке
+                {t("applicationsPage.create.importTab", "Import by link")}
               </button>
             </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="md:col-span-2">
-                <FormField label="Направление поиска" required>
+                <FormField label={t("applicationsPage.create.loopField", "Search direction")} required>
                   {(p) => (
                     <Select
                       id={p.id}
@@ -293,7 +308,7 @@ export function CreateApplicationDialog(props: Props) {
                       value={form.loopId}
                       onChange={onSelectLoop}
                       options={loopOptions}
-                      placeholderOption="Выберите направление поиска"
+                      placeholderOption={t("applicationsPage.create.loopPlaceholder", "Select a search direction")}
                       disabled={isLoadingLoops}
                     />
                   )}
@@ -328,13 +343,17 @@ export function CreateApplicationDialog(props: Props) {
                         onClick={handleImportPreview}
                         disabled={previewDisabled}
                       >
-                        {isImporting ? "Импорт…" : "Импорт"}
+                        {isImporting
+                          ? t("applicationsPage.create.importing", "Importing…")
+                          : t("applicationsPage.create.import", "Import")}
                       </Button>
                     </div>
                   </div>
                   <p className="mt-2 text-[12px] text-muted-foreground">
-                    Импорт проверяет одну ссылку, заполняет preview и не создаёт
-                    заявку до нажатия Create.
+                    {t(
+                      "applicationsPage.create.importHint",
+                      "Import checks one link, fills the preview, and does not create an application until you click Create.",
+                    )}
                   </p>
                   {importWarning ? (
                     <div className="mt-3 rounded-[10px] border border-amber-300/60 bg-amber-50 p-3 text-[13px] text-amber-900">
@@ -348,8 +367,10 @@ export function CreateApplicationDialog(props: Props) {
                   ) : null}
                   {hasCurrentPreview ? (
                     <div className="mt-3 rounded-[10px] border border-emerald-300/60 bg-emerald-50 p-3 text-[12.5px] text-emerald-900">
-                      Preview получен. Проверьте поля ниже и нажмите Create,
-                      чтобы создать заявку.
+                      {t(
+                        "applicationsPage.create.previewReady",
+                        "Preview ready. Check the fields below and click Create to add the application.",
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -437,7 +458,7 @@ export function CreateApplicationDialog(props: Props) {
                 )}
               </FormField>
 
-              <FormField label="Локация">
+              <FormField label={t("applicationsPage.create.location", "Location")}>
                 {(p) => (
                   <Input
                     id={p.id}
@@ -447,7 +468,7 @@ export function CreateApplicationDialog(props: Props) {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       onChange("locationText", e.target.value)
                     }
-                    placeholder="Berlin / Remote / Hybrid"
+                    placeholder={t("applicationsPage.create.locationPh", "Berlin / Remote / Hybrid")}
                   />
                 )}
               </FormField>
@@ -484,7 +505,7 @@ export function CreateApplicationDialog(props: Props) {
                 onClick={onClose}
                 className="rounded-md border border-border bg-card px-3 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
               >
-                {t("common.cancel", "Отмена")}
+                {t("applicationsPage.create.cancel", "Cancel")}
               </button>
               <Button onClick={onCreate} disabled={createButtonDisabled}>
                 {createButtonLabel}

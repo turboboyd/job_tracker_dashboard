@@ -38,22 +38,23 @@ function LoopFilterBanner({
   isLoadingLoops: boolean;
   onClear: () => void;
 }) {
+  const { t } = useTranslation();
   if (!loopFilterId) return null;
 
-  let label = loopName ?? "Unknown loop";
+  let label = loopName ?? t("applicationsPage.loopBanner.unknown", "Unknown loop");
   if (loopName == null && isLoadingLoops) {
-    label = "загружается…";
+    label = t("applicationsPage.loopBanner.loading", "loading…");
   }
 
   return (
     <div className="mt-3 flex w-fit items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-[12.5px] text-primary">
-      <span>Направление поиска: {label}</span>
+      <span>{t("applicationsPage.loopBanner.label", "Search direction: {{name}}", { name: label })}</span>
       <button
         type="button"
         onClick={onClear}
         className="rounded px-1.5 py-0.5 text-[11px] hover:bg-primary/10"
       >
-        Сбросить
+        {t("applicationsPage.filters.reset", "Reset")}
       </button>
     </div>
   );
@@ -189,13 +190,16 @@ export default function ApplicationsPage() {
       .map(([name, count]) => ({ name, count }));
   }, [allList]);
 
-  const currentSortLabel =
-    SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Sort";
+  const currentSortLabel = t(
+    `applicationsPage.sort.${sortBy}`,
+    SORT_OPTIONS.find((o) => o.value === sortBy)?.label ??
+      t("applicationsPage.sort.label", "Sort"),
+  );
 
   const VIEW_MODES = [
-    { key: "pipeline" as const, label: t("applicationsPage.view.pipeline", "Pipeline") },
-    { key: "today" as const, label: t("applicationsPage.view.today", "Today") },
-    { key: "followups" as const, label: t("applicationsPage.view.followups", "Follow-ups") },
+    { key: "pipeline" as const, label: t("applicationsPage.views.pipeline", "Pipeline") },
+    { key: "today" as const, label: t("applicationsPage.views.today", "Today") },
+    { key: "followups" as const, label: t("applicationsPage.views.followups", "Follow-ups") },
   ];
 
   function clearLoopFilter() {
@@ -228,7 +232,7 @@ export default function ApplicationsPage() {
                 {t("applicationsPage.title", "My Applications")}
               </h1>
               <p className="mt-1 text-[13px] text-muted-foreground">
-                Создавай и отслеживай отклики в одном месте.
+                {t("applicationsPage.subtitle", "Create and track your job applications in one place.")}
               </p>
             </div>
 
@@ -253,7 +257,7 @@ export default function ApplicationsPage() {
                   className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-[12.5px] font-medium text-foreground transition-colors hover:bg-muted"
                 >
                   <Filter className="h-3.5 w-3.5 text-subtle-foreground" />
-                  Фильтры
+                  {t("applicationsPage.filters.title", "Filters")}
                   {selectedCompanies.length > 0 && (
                     <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                       {selectedCompanies.length}
@@ -264,20 +268,24 @@ export default function ApplicationsPage() {
                 {filterOpen && (
                   <div className="absolute right-0 top-full z-50 mt-2 w-[260px] rounded-[12px] border border-border bg-background shadow-lg">
                     <div className="flex items-center justify-between px-4 pt-3 pb-2">
-                      <span className="text-[12px] font-semibold text-foreground">Компании</span>
+                      <span className="text-[12px] font-semibold text-foreground">
+                        {t("applicationsPage.filters.companies", "Companies")}
+                      </span>
                       {selectedCompanies.length > 0 && (
                         <button
                           type="button"
                           onClick={() => setSelectedCompanies([])}
                           className="text-[11.5px] text-primary hover:underline"
                         >
-                          Сбросить
+                          {t("applicationsPage.filters.reset", "Reset")}
                         </button>
                       )}
                     </div>
                     <div className="max-h-[260px] overflow-y-auto px-2 pb-3">
                       {companyOptions.length === 0 ? (
-                        <p className="px-2 py-2 text-[12px] text-muted-foreground">Нет данных</p>
+                        <p className="px-2 py-2 text-[12px] text-muted-foreground">
+                          {t("applicationsPage.filters.noData", "No data")}
+                        </p>
                       ) : (
                         companyOptions.map(({ name, count }) => {
                           const checked = selectedCompanies.includes(name);
@@ -315,7 +323,7 @@ export default function ApplicationsPage() {
                     : "border-border bg-card text-foreground hover:bg-muted",
                 ].join(" ")}
               >
-                ★ Избранные
+                ★ {t("applicationsPage.filters.favorites", "Favorites")}
               </button>
 
               {/* Sort dropdown */}
@@ -345,7 +353,7 @@ export default function ApplicationsPage() {
                             : "text-muted-foreground",
                         ].join(" ")}
                       >
-                        {opt.label}
+                        {t(`applicationsPage.sort.${opt.value}`, opt.label)}
                       </button>
                     ))}
                   </div>
@@ -376,7 +384,7 @@ export default function ApplicationsPage() {
                     : "text-muted-foreground hover:text-foreground",
                 ].join(" ")}
               >
-                Активные
+                {t("applicationsPage.archiveTabs.active", "Active")}
               </button>
               <button
                 type="button"
@@ -388,7 +396,7 @@ export default function ApplicationsPage() {
                     : "text-muted-foreground hover:text-foreground",
                 ].join(" ")}
               >
-                Архив
+                {t("applicationsPage.archiveTabs.archived", "Archive")}
               </button>
             </div>
           ) : null}
@@ -446,11 +454,18 @@ export default function ApplicationsPage() {
       <div className="flex items-center justify-between gap-3 px-7 py-3 border-b border-border bg-background shrink-0">
         <div className="flex items-center gap-3 text-[13px] text-muted-foreground">
           <span>
-            Показано <span className="font-semibold tabular-nums text-foreground">{filteredCount}</span> из {view === "pipeline" ? pageTotal : list.length}
+            {t("applicationsPage.meta.showing", "Showing {{shown}} of {{total}}", {
+              shown: filteredCount,
+              total: view === "pipeline" ? pageTotal : list.length,
+            })}
           </span>
           {view === "pipeline" && pageTotal > 0 ? (
             <span className="text-[12px]">
-              {pageOffset + 1}–{Math.min(pageOffset + pageLimit, pageTotal)} из {pageTotal}
+              {t("applicationsPage.meta.range", "{{from}}–{{to}} of {{total}}", {
+                from: pageOffset + 1,
+                to: Math.min(pageOffset + pageLimit, pageTotal),
+                total: pageTotal,
+              })}
             </span>
           ) : null}
         </div>
@@ -463,7 +478,7 @@ export default function ApplicationsPage() {
                 onClick={goToPreviousPage}
                 className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground disabled:opacity-40"
               >
-                Назад
+                {t("applicationsPage.meta.back", "Back")}
               </button>
               <button
                 type="button"
@@ -471,7 +486,7 @@ export default function ApplicationsPage() {
                 onClick={goToNextPage}
                 className="rounded-md border border-border px-2 py-1 text-[12px] text-muted-foreground disabled:opacity-40"
               >
-                Вперёд
+                {t("applicationsPage.meta.next", "Next")}
               </button>
             </div>
           ) : null}
