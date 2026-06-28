@@ -1,10 +1,16 @@
 {
-  "dropHere": "Drop matches here.",
+  "dropHere": "Drop applications here.",
   "delete": "Delete",
-  "deleteConfirm": "Delete this job from the board?",
-  "empty": "No matches yet.",
-  "loading": "Loading matches…",
+  "deleteConfirm": "Remove this application from the board?",
+  "empty": "No applications yet.",
+  "loading": "Loading applications…",
   "openLink": "Open link",
+  "archive": "Archive",
+  "archiveConfirm": "Archive this application?",
+  "allLoops": "All loops",
+  "search": "Search",
+  "newApplication": "New application",
+  "total": "Total on board",
   "column": {
     "ACTIVE": "Active",
     "INTERVIEW": "Interview",
@@ -20,6 +26,6 @@
   "status.offer": "Offer",
   "status.rejected": "Rejected",
   "status.saved": "Saved",
-  "subtitle": "Drag matches between columns to update status.",
+  "subtitle": "Drag applications between columns to update status.",
   "title": "Board"
 }

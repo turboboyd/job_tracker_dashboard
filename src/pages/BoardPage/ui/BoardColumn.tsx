@@ -1,6 +1,7 @@
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 import type { BoardColumnKey } from "src/entities/application/model/status";
 
@@ -28,6 +29,7 @@ export function BoardColumn({
   busy,
   onArchive,
 }: Props) {
+  const { t } = useTranslation();
   const itemIds = React.useMemo(() => items.map((m) => m.id), [items]);
 
   return (
@@ -81,7 +83,7 @@ export function BoardColumn({
 
           {items.length === 0 && (
             <div className="rounded-[8px] border border-dashed border-border px-3 py-6 text-center text-[11.5px] text-muted-foreground">
-              Перетащи заявки сюда
+              {t("board.dropHere", "Drop applications here.")}
             </div>
           )}
         </BoardLane>

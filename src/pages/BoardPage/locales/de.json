@@ -1,10 +1,16 @@
 {
-  "dropHere": "Ziehe Stellen hierher.",
+  "dropHere": "Ziehe Bewerbungen hierher.",
   "delete": "Löschen",
-  "deleteConfirm": "Diese Stelle vom Board löschen?",
-  "empty": "Noch keine Stellen.",
-  "loading": "Stellen werden geladen…",
+  "deleteConfirm": "Diese Bewerbung vom Board entfernen?",
+  "empty": "Noch keine Bewerbungen.",
+  "loading": "Lade Bewerbungen…",
   "openLink": "Link öffnen",
+  "archive": "Archivieren",
+  "archiveConfirm": "Diese Bewerbung archivieren?",
+  "allLoops": "Alle Loops",
+  "search": "Suche",
+  "newApplication": "Neue Bewerbung",
+  "total": "Gesamt auf dem Board",
   "column": {
     "ACTIVE": "Aktiv",
     "INTERVIEW": "Interview",
@@ -20,6 +26,6 @@
   "status.offer": "Angebot",
   "status.rejected": "Absage",
   "status.saved": "Gespeichert",
-  "subtitle": "Ziehe Stellen zwischen Spalten, um den Status zu ändern.",
+  "subtitle": "Ziehe Bewerbungen zwischen Spalten, um den Status zu ändern.",
   "title": "Bewerbungsboard"
 }

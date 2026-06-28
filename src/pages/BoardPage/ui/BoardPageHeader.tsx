@@ -30,7 +30,7 @@ export function BoardPageHeader({ onFilter, onSearch, onNewApplication }: Props)
             {t("board.title", "Доска заявок")}
           </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            Перетаскивай вакансии между колонками, чтобы менять статус.
+            {t("board.subtitle", "Drag applications between columns to update status.")}
           </p>
         </div>
 
