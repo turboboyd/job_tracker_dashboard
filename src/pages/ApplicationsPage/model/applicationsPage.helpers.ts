@@ -1,8 +1,11 @@
 import type { Loop } from "src/entities/loop";
+import { isApplicationDueToday, isApplicationFollowUpDue } from "src/features/applications";
 import type { ApplicationsRepo, ProcessStatus } from "src/features/applications";
 import { getErrorMessage } from "src/shared/lib";
 
 import type { AppRow, CreateFormState, PipelineFilterStatus, ViewMode } from "./types";
+
+export { isApplicationDueToday, isApplicationFollowUpDue };
 
 const ALL_APPLICATIONS_LIMIT = 500;
 const DEFAULT_APPLICATIONS_LIMIT = 50;
@@ -186,25 +189,8 @@ export function calculateStatusCounts(rows: readonly AppRow[]): Record<string, n
   return counts;
 }
 
-export function isApplicationDueToday(row: AppRow, now: Date = new Date()): boolean {
-  const nextActionAt = row.data.process.nextActionAt?.toDate?.();
-  if (!nextActionAt) return false;
-
-  return isSameLocalDate(nextActionAt, now);
-}
-
 export function filterTodayApplications(rows: readonly AppRow[], now: Date = new Date()): AppRow[] {
   return rows.filter((row) => isApplicationDueToday(row, now));
-}
-
-export function isApplicationFollowUpDue(row: AppRow, now: Date = new Date()): boolean {
-  if (row.data.archived) return false;
-  if (row.data.process.needsFollowUp !== true) return false;
-
-  const dueAt = row.data.process.followUpDueAt?.toDate?.();
-  if (!dueAt) return true;
-
-  return dueAt.getTime() <= now.getTime();
 }
 
 export function filterFollowUpApplications(rows: readonly AppRow[], now: Date = new Date()): AppRow[] {
@@ -272,14 +258,6 @@ function toOptionalTrimmed(value: string): string | undefined {
   const trimmed = value.trim();
 
   return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function isSameLocalDate(left: Date, right: Date): boolean {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
 }
 
 function getSafeLocalStorage(): Storage | undefined {

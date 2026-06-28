@@ -31,3 +31,6 @@ export { createApplicationsRepo } from "./repo";
 export type { ApplicationsRepo } from "./repo";
 
 export { createRestApplicationGateway } from "./rest/gateway";
+
+export type { AppRow } from "./appRow";
+export { isApplicationDueToday, isApplicationFollowUpDue } from "./appRow";

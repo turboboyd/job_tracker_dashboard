@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Timestamp } from "firebase/firestore";
 
 import type { Loop } from "src/entities/loop";
-import type { AppRow } from "src/pages/ApplicationsPage/model/types";
+import type { AppRow } from "src/features/applications";
 
 import {
   buildLoopStatsById,

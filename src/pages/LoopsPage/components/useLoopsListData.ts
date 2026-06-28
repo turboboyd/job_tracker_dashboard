@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { Loop } from "src/entities/loop";
+import type { AppRow } from "src/features/applications";
 import { listApplicationsViaRest } from "src/features/applications/rest/queries";
 import { listLoopsViaRest } from "src/features/loops";
 import { listLoopVacancyMatchesViaRest, type VacancyMatch } from "src/features/vacancyMatches";
-import type { AppRow } from "src/pages/ApplicationsPage/model/types";
 import { getErrorMessage } from "src/shared/lib";
 
 import { APPLICATIONS_PAGE_SIZE } from "./loopListView.helpers";

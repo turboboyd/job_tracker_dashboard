@@ -1,4 +1,6 @@
-import type { ApplicationDoc, ProcessStatus } from "src/features/applications";
+import type { ProcessStatus } from "src/features/applications";
+
+export type { AppRow } from "src/features/applications";
 
 /**
  * View modes for Applications page
@@ -33,11 +35,6 @@ export const EMPTY_CREATE_FORM: CreateFormState = {
   locationText: "",
   rawDescription: "",
 };
-
-export interface AppRow {
-  data: ApplicationDoc;
-  id: string;
-}
 
 /**
  * Pipeline statuses order
