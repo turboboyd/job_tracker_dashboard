@@ -114,6 +114,7 @@ src/shared/ui
 src/entities/admin-vocabulary
 src/entities/application
 src/entities/auth
+src/entities/contact
 src/entities/loop
 src/entities/loopMatch
 src/entities/outcome
@@ -125,11 +126,18 @@ src/entities/userSettings
 src/features/admin
 src/features/applications
 src/features/auth
+src/features/contacts
 src/features/cv-checker
 src/features/cvVersions
+src/features/discoveryRuns
 src/features/i18n
+src/features/loops
+src/features/notifications
 src/features/onboarding
+src/features/reminders
 src/features/userProfile
+src/features/vacancyAnalysis
+src/features/vacancyMatches
 
 src/pages
 ```
