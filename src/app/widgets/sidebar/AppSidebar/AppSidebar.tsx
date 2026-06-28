@@ -35,11 +35,11 @@ type AppSidebarProps = {
 
 const NAV_ITEMS = [
   { labelKey: "common.nav.overview", labelDefault: "Overview", path: RoutePath[AppRoutes.DASHBOARD], Icon: LayoutDashboard, end: true },
-  { labelKey: "common.nav.myApplications", labelDefault: "Applications", path: RoutePath[AppRoutes.APPLICATIONS], Icon: FileText },
-  { labelKey: "common.nav.board", labelDefault: "Board", path: RoutePath[AppRoutes.BOARD], Icon: KanbanSquare },
-  { labelKey: "common.nav.myLoops", labelDefault: "Loops", path: RoutePath[AppRoutes.LOOPS], Icon: Repeat2, isLoops: true },
-  { labelKey: "common.nav.allMatches", labelDefault: "Matches", path: RoutePath[AppRoutes.MATCHES], Icon: Sparkles },
-  { labelKey: "common.nav.calendar", labelDefault: "Calendar", path: RoutePath[AppRoutes.CALENDAR], Icon: CalendarDays },
+  { labelKey: "common.nav.myApplications", labelDefault: "Applications", path: RoutePath[AppRoutes.APPLICATIONS], Icon: FileText, onboardingId: "nav-applications" },
+  { labelKey: "common.nav.board", labelDefault: "Board", path: RoutePath[AppRoutes.BOARD], Icon: KanbanSquare, onboardingId: "nav-board" },
+  { labelKey: "common.nav.myLoops", labelDefault: "Loops", path: RoutePath[AppRoutes.LOOPS], Icon: Repeat2, isLoops: true, onboardingId: "nav-loops" },
+  { labelKey: "common.nav.allMatches", labelDefault: "Matches", path: RoutePath[AppRoutes.MATCHES], Icon: Sparkles, onboardingId: "nav-matches" },
+  { labelKey: "common.nav.calendar", labelDefault: "Calendar", path: RoutePath[AppRoutes.CALENDAR], Icon: CalendarDays, onboardingId: "nav-calendar" },
 ];
 
 const SECONDARY_ITEMS = [
@@ -58,6 +58,7 @@ function SidebarNavItem({
   Icon,
   end,
   isLoops,
+  onboardingId,
   onClose,
 }: {
   labelKey: string;
@@ -66,6 +67,7 @@ function SidebarNavItem({
   Icon: React.ElementType;
   end?: boolean;
   isLoops?: boolean;
+  onboardingId?: string;
   onClose?: () => void;
 }) {
   const { t } = useTranslation();
@@ -91,6 +93,7 @@ function SidebarNavItem({
     return (
       <button
         type="button"
+        data-onboarding-id={onboardingId}
         onClick={() => { navigate(loopsResumeUrl); onClose?.(); }}
         className={cls}
       >
@@ -104,6 +107,7 @@ function SidebarNavItem({
     <NavLink
       to={path}
       end={end}
+      data-onboarding-id={onboardingId}
       onClick={onClose}
       className={cls}
     >
@@ -172,7 +176,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen, onClose }) => {
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-1 flex-col gap-px overflow-y-auto p-3 pt-4">
+      <nav data-onboarding-id="nav" className="flex flex-1 flex-col gap-px overflow-y-auto p-3 pt-4">
         <SidebarLabel>Workspace</SidebarLabel>
         <div className="flex flex-col gap-0.5">
           {NAV_ITEMS.map((item) => (

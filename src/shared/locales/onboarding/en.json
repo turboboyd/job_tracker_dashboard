@@ -1,0 +1,43 @@
+{
+  "tour": {
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Start using Loopboard",
+    "progress": "Step {{current}} of {{total}}",
+    "comingSoon": "Coming soon"
+  },
+  "restart": {
+    "label": "Restart onboarding"
+  },
+  "steps": {
+    "welcome": {
+      "title": "Welcome to Loopboard",
+      "body": "Loopboard helps you run your job search like a CRM: create search directions, find matching vacancies, turn matches into applications, and track the whole process to the result. Everything follows one logic: search direction → match → application → next step."
+    },
+    "loops": {
+      "title": "Start with a search direction",
+      "body": "A search direction is your filter and strategy. For example: Frontend Developer, IT Sales Manager, or CRM Consultant. Inside a direction you can choose sources, keywords, city, radius, and work format. The more precise the direction, the cleaner the matches."
+    },
+    "matches": {
+      "title": "Review the matches you find",
+      "body": "Matches are vacancies the system found for your search directions. Here you compare options, look at the Match Score, the source, and vacancy details, and decide whether to turn a vacancy into an application. The Match Score is calculated by the system — use it as a hint, not as the final decision."
+    },
+    "applications": {
+      "title": "Turn good vacancies into applications",
+      "body": "When a vacancy fits, create an application from it. An application is your real process: company, role, status, contact, notes, and next actions. The point is not just to save vacancies, but to manage them like clients in a CRM."
+    },
+    "board": {
+      "title": "Manage applications on the board",
+      "body": "The board shows your applications by stage: active, interview, offer, rejected, or no response. It helps you quickly see where you stand, what needs attention, and which applications to move forward. Moving a card changes the application's status."
+    },
+    "calendar": {
+      "title": "Plan your next actions",
+      "body": "In the future, Loopboard will help you plan actions for your applications: a call at 10:00, a follow-up tomorrow, an interview, a test-task deadline, or a reminder to check a status. The calendar should be tied to applications, not create random events."
+    },
+    "finish": {
+      "title": "You're ready to start",
+      "body": "Create your first search direction, review the matches, and turn the best vacancies into applications. Work by the system: less chaos, more control, and a clear next step for every opportunity."
+    }
+  }
+}

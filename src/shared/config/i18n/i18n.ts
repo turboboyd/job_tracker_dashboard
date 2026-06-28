@@ -18,6 +18,9 @@ import authRu from "src/shared/locales/auth/ru.json";
 import commonDe from "src/shared/locales/common/de.json";
 import commonEn from "src/shared/locales/common/en.json";
 import commonRu from "src/shared/locales/common/ru.json";
+import onboardingDe from "src/shared/locales/onboarding/de.json";
+import onboardingEn from "src/shared/locales/onboarding/en.json";
+import onboardingRu from "src/shared/locales/onboarding/ru.json";
 
 
 export const supportedLngs = ["en", "ru", "de", "uk"] as const;
@@ -33,6 +36,7 @@ i18n
           common: commonEn,
           auth: authEn,
           header: headerEn,
+          onboarding: onboardingEn,
           ...appPageEn,
         },
       },
@@ -41,6 +45,7 @@ i18n
           common: commonRu,
           auth: authRu,
           header: headerRu,
+          onboarding: onboardingRu,
           ...appPageRu,
         },
       },
@@ -49,6 +54,7 @@ i18n
           common: commonDe,
           auth: authDe,
           header: headerDe,
+          onboarding: onboardingDe,
           ...appPageDe,
         },
       },
@@ -59,6 +65,7 @@ i18n
           common: {},
           auth: {},
           header: {},
+          onboarding: {},
         },
       },
     },

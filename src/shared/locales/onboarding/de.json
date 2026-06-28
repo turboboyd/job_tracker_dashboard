@@ -1,0 +1,43 @@
+{
+  "tour": {
+    "skip": "Überspringen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "finish": "Loopboard starten",
+    "progress": "Schritt {{current}} von {{total}}",
+    "comingSoon": "Demnächst"
+  },
+  "restart": {
+    "label": "Onboarding neu starten"
+  },
+  "steps": {
+    "welcome": {
+      "title": "Willkommen bei Loopboard",
+      "body": "Loopboard hilft dir, deine Jobsuche wie ein CRM zu steuern: Suchrichtungen erstellen, passende Stellen finden, Treffer in Bewerbungen verwandeln und den gesamten Prozess bis zum Ergebnis verfolgen. Alles folgt einer Logik: Suchrichtung → Treffer → Bewerbung → nächster Schritt."
+    },
+    "loops": {
+      "title": "Beginne mit einer Suchrichtung",
+      "body": "Eine Suchrichtung ist dein Filter und deine Strategie. Zum Beispiel: Frontend Developer, IT Sales Manager oder CRM Consultant. Innerhalb einer Richtung kannst du Quellen, Schlüsselwörter, Stadt, Radius und Arbeitsmodell wählen. Je genauer die Richtung, desto sauberer die Treffer."
+    },
+    "matches": {
+      "title": "Prüfe die gefundenen Treffer",
+      "body": "Treffer sind Stellen, die das System zu deinen Suchrichtungen gefunden hat. Hier vergleichst du Optionen, siehst den Match Score, die Quelle und die Details der Stelle und entscheidest, ob du eine Stelle in eine Bewerbung verwandelst. Der Match Score wird vom System berechnet — nutze ihn als Hinweis, nicht als endgültige Entscheidung."
+    },
+    "applications": {
+      "title": "Verwandle gute Stellen in Bewerbungen",
+      "body": "Wenn eine Stelle passt, erstelle daraus eine Bewerbung. Eine Bewerbung ist dein realer Prozess: Unternehmen, Rolle, Status, Kontakt, Notizen und nächste Schritte. Wichtig ist nicht nur, Stellen zu speichern, sondern sie wie Kunden in einem CRM zu steuern."
+    },
+    "board": {
+      "title": "Steuere Bewerbungen auf dem Board",
+      "body": "Das Board zeigt deine Bewerbungen nach Phasen: aktiv, Interview, Angebot, Absage oder keine Antwort. So siehst du schnell, wo du stehst, was Aufmerksamkeit braucht und welche Bewerbungen weiterzubewegen sind. Das Verschieben einer Karte ändert den Status der Bewerbung."
+    },
+    "calendar": {
+      "title": "Plane deine nächsten Schritte",
+      "body": "Künftig hilft dir Loopboard, Aktionen zu deinen Bewerbungen zu planen: ein Anruf um 10:00, ein Follow-up morgen, ein Interview, eine Deadline für die Testaufgabe oder eine Erinnerung, einen Status zu prüfen. Der Kalender soll mit Bewerbungen verbunden sein und keine zufälligen Termine erzeugen."
+    },
+    "finish": {
+      "title": "Du kannst loslegen",
+      "body": "Erstelle deine erste Suchrichtung, prüfe die Treffer und verwandle die besten Stellen in Bewerbungen. Arbeite nach dem System: weniger Chaos, mehr Kontrolle und ein klarer nächster Schritt für jede Möglichkeit."
+    }
+  }
+}

@@ -7,6 +7,7 @@ import {
   AppRoutes,
   RoutePath,
 } from "src/app/providers/router/routeConfig/routeConfig";
+import { OnboardingProvider, RestartOnboardingButton } from "src/features/onboarding";
 
 import { useDashboardData } from "./model/useDashboardData";
 import {
@@ -59,7 +60,8 @@ export default function DashboardPage() {
   const offer = pipelineSummary.byColumn["OFFER"] ?? 0;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <OnboardingProvider>
+      <div className="flex h-full flex-col overflow-hidden">
       {/* Page header */}
       <div className="shrink-0 border-b border-border bg-background">
         <div className="px-7 pt-5 pb-0">
@@ -162,13 +164,16 @@ export default function DashboardPage() {
 
           {/* Row 3: Plan/Onboarding + Goals */}
           <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
-            <DashboardOnboardingActions
-              hasJobs={hasMatches}
-              onGoProfile={goProfile}
-              onGoQuestions={goQuestions}
-              onGoLoop={goLoop}
-              onGoJobs={goMatches}
-            />
+            <div className="flex flex-col gap-3">
+              <DashboardOnboardingActions
+                hasJobs={hasMatches}
+                onGoProfile={goProfile}
+                onGoQuestions={goQuestions}
+                onGoLoop={goLoop}
+                onGoJobs={goMatches}
+              />
+              <RestartOnboardingButton className="self-start" />
+            </div>
             <DashboardGoalsWidget matches={matches} />
           </div>
 
@@ -179,6 +184,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </OnboardingProvider>
   );
 }

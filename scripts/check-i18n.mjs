@@ -10,6 +10,7 @@ const resourceBundles = [
   ['auth', 'src/shared/locales/auth'],
   ['header', 'src/shared/locales/header'],
   ['status', 'src/shared/locales/status'],
+  ['onboarding', 'src/shared/locales/onboarding'],
   ['dashboard', 'src/pages/DashboardPage/locales'],
   ['matches', 'src/pages/MatchesPage/locales'],
   ['board', 'src/pages/BoardPage/locales'],
