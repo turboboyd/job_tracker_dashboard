@@ -7,11 +7,12 @@ import { initReactI18next } from "react-i18next";
 import headerDe from "src/app/widgets/header/AppHeader/locales/de.json";
 import headerEn from "src/app/widgets/header/AppHeader/locales/en.json";
 import headerRu from "src/app/widgets/header/AppHeader/locales/ru.json";
-// NOTE: shared layer must not import from features/auth locales directly.
-// We keep a mirrored copy of auth translations in shared/locales/auth.
-import appPageDe from "src/pages/ApplicationsPage/locales/de.json";
-import appPageEn from "src/pages/ApplicationsPage/locales/en.json";
-import appPageRu from "src/pages/ApplicationsPage/locales/ru.json";
+// NOTE: shared layer must not import locales from the pages/features layers
+// directly. Cross-layer base bundles live mirrored under shared/locales/*
+// (e.g. shared/locales/auth, shared/locales/applications).
+import appPageDe from "src/shared/locales/applications/de.json";
+import appPageEn from "src/shared/locales/applications/en.json";
+import appPageRu from "src/shared/locales/applications/ru.json";
 import authDe from "src/shared/locales/auth/de.json";
 import authEn from "src/shared/locales/auth/en.json";
 import authRu from "src/shared/locales/auth/ru.json";

@@ -64,9 +64,9 @@ export const ApplicationsPage = lazyPage(
   () => import("./ApplicationsPage/ApplicationsPage"),
   "applicationsPage",
   async () => ({
-    en: await import("./ApplicationsPage/locales/en.json"),
-    ru: await import("./ApplicationsPage/locales/ru.json"),
-    de: await import("./ApplicationsPage/locales/de.json"),
+    en: await import("../shared/locales/applications/en.json"),
+    ru: await import("../shared/locales/applications/ru.json"),
+    de: await import("../shared/locales/applications/de.json"),
   }),
 );
 

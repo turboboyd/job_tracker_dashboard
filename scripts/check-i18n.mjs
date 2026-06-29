@@ -14,7 +14,7 @@ const resourceBundles = [
   ['dashboard', 'src/pages/DashboardPage/locales'],
   ['matches', 'src/pages/MatchesPage/locales'],
   ['board', 'src/pages/BoardPage/locales'],
-  ['applicationsPage', 'src/pages/ApplicationsPage/locales'],
+  ['applicationsPage', 'src/shared/locales/applications'],
   ['applicationDetails', 'src/pages/ApplicationDetailsPage/locales'],
   ['questions', 'src/pages/QuestionsPage/locales'],
   ['cvChecker', 'src/pages/CvCheckerPage/locales'],

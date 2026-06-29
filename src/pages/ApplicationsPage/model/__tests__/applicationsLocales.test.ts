@@ -6,7 +6,7 @@ type Json = Record<string, unknown>;
 
 function load(lang: string): Json {
   return JSON.parse(
-    readFileSync(join(process.cwd(), `src/pages/ApplicationsPage/locales/${lang}.json`), "utf8"),
+    readFileSync(join(process.cwd(), `src/shared/locales/applications/${lang}.json`), "utf8"),
   ) as Json;
 }
 
