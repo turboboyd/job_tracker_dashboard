@@ -129,6 +129,7 @@ src/features/auth
 src/features/contacts
 src/features/cv-checker
 src/features/cvVersions
+src/features/dashboard
 src/features/discoveryRuns
 src/features/i18n
 src/features/loops

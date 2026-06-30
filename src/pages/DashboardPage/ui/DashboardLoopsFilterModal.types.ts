@@ -1,6 +1,8 @@
-export type DashboardLoopsFilterValue =
-  | { mode: "all" }
-  | { mode: "selected"; selectedLoopIds: string[] };
+// DashboardLoopsFilterValue moved to the dashboard feature layer; re-exported
+// here so existing ui consumers (and ui/index.ts) keep their import paths.
+import type { DashboardLoopsFilterValue } from "src/features/dashboard";
+
+export type { DashboardLoopsFilterValue };
 
 export interface DashboardLoopOption {
   id: string;

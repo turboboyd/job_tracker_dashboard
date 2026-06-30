@@ -13,7 +13,7 @@ const runtimeFiles = [
   "src/pages/LoopsPage/components/useLoopsListData.ts",
   "src/pages/MatchesPage/model/useMatchesQueries.ts",
   "src/pages/BoardPage/model/useBoardQueries.ts",
-  "src/pages/DashboardPage/model/useDashboardData.ts",
+  "src/features/dashboard/useDashboardData.ts",
 ];
 
 const legacyLoopHooks = [

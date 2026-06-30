@@ -3,15 +3,12 @@ import {
   normalizeStatusKey,
   type StatusKey,
 } from "src/entities/application";
+// RecentJob moved to the dashboard feature layer; re-exported here so existing
+// ui consumers (DashboardRecentJobsCard.tsx, sections, ui/index.ts) are unchanged.
+import type { RecentJob } from "src/features/dashboard";
 import { toMillisOptional } from "src/shared/lib";
 
-export interface RecentJob {
-  company?: string | null;
-  createdAt?: unknown;
-  id: string;
-  status?: unknown;
-  title?: string | null;
-}
+export type { RecentJob };
 
 export type RecentJobStatus = StatusKey | "unknown";
 
